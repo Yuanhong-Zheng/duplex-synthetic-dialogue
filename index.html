@@ -1,0 +1,1338 @@
+<!doctype html><html lang='zh-CN'><head>
+<meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>用户与助手，第一次放进同一条音频 · R4 合成交互 · 1 个案例</title>
+<style>
+:root{--ink:#18232b;--muted:#586875;--line:#ccd6dc;--paper:#f6f8f9;--white:#fff;--green:#146c43;--blue:#1d5875;--orange:#c2410c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+main{max-width:1360px;margin:0 auto;padding:28px 20px 72px}
+h1{font-size:30px;line-height:1.2;margin:0 0 10px}
+h2{font-size:22px;line-height:1.3;margin:0}
+h3{font-size:16px;margin:0 0 10px}
+h4{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:16px 0 6px}
+.intro{color:var(--muted);max-width:980px;margin:0 0 6px}
+.case{margin-top:28px;background:var(--white);border:1px solid var(--line);border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(24,35,43,.05)}
+.case-header{padding:18px 22px;background:#edf3f5;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+.case-id{margin:0 0 2px;color:var(--blue);font-weight:700;font-size:13px;letter-spacing:.05em}
+.case-meta{margin:6px 0 0;color:var(--muted);font-size:13px}
+.pass{color:var(--green);font-weight:700;white-space:nowrap}
+.fail{color:#b91c1c;font-weight:700;white-space:nowrap}
+.info{color:var(--blue);font-weight:700}
+section{padding:18px 22px;border-bottom:1px solid #e2e8eb}
+section:last-child{border-bottom:0}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid #e2e8eb}
+.two-col > div{padding:18px 22px}
+.two-col > div:first-child{border-right:1px solid #e2e8eb}
+dl.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0}
+dl.kv dt{color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap;padding-top:2px}
+dl.kv dd{margin:0;font-size:14px}
+.voice-prompt{margin:10px 0 0;padding:10px 12px;background:#f4f8f9;border-left:3px solid #8aa9b8;font-size:13px;color:#2e4a5a;font-style:italic}
+.situation-block{padding:12px 14px;border-left:3px solid #8aa9b8;background:#f4f8f9;margin:0 0 12px;font-size:14px}
+.situation-block p{margin:4px 0 0}
+.audio-block{padding:12px 14px;border-left:3px solid #4d8b72;background:#f1f8f4;margin:0 0 12px;font-size:14px}
+.audio-block p{margin:4px 0 0}
+.audio-block small{color:var(--muted);font-size:12px}
+.side-speech{margin-top:8px;padding:7px 9px;border-left:3px solid #c58b38;background:#fff8ea;color:#6b4a16;font-size:12px;line-height:1.5}
+.side-speech b{font-weight:700}
+.ref-list{margin:6px 0 0;padding-left:20px}
+.ref-list li{padding:3px 0;font-size:14px;line-height:1.55}
+.cl-list{margin:6px 0 0;padding-left:0;list-style:none}
+.cl-list li{padding:4px 0;font-size:14px;border-bottom:1px solid #edf1f3}
+.cl-list li:last-child{border-bottom:0}
+.badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:11px;font-weight:700;vertical-align:middle;margin-left:4px}
+.badge-hard{background:#fee2e2;color:#991b1b}
+.badge-advisory{background:#fef9c3;color:#854d0e}
+.badge-critical{background:#fce7f3;color:#9d174d}
+.badge-info{background:#dbeafe;color:#1e40af}
+.empty{color:var(--muted);font-style:italic;font-size:14px}
+table.script{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+table.script th,table.script td{border-top:1px solid #e5e7eb;padding:10px 9px;vertical-align:top;text-align:left;overflow-wrap:anywhere;word-break:break-word;line-height:1.55}
+table.script th{background:#f8fafc;font-size:12px;color:var(--muted)}
+table.script th:nth-child(1){width:5%}
+table.script th:nth-child(2){width:5%}
+table.script th:nth-child(3){width:7%}
+table.script th:nth-child(4){width:14%}
+table.script th:nth-child(5){width:18%}
+table.script th:nth-child(6){width:24%}
+table.script th:nth-child(7){width:18%}
+code{background:#e9eff2;border-radius:3px;padding:1px 5px;font:12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.artifact{margin:12px 0 0;border:1px solid var(--line);border-radius:6px;background:#fbfcfc}
+.artifact summary{cursor:pointer;display:flex;justify-content:space-between;gap:16px;align-items:center;padding:9px 12px;font-size:13px;font-weight:700;color:var(--muted)}
+.artifact pre{margin:0;padding:14px;overflow:auto;max-height:500px;border-top:1px solid var(--line);background:#f8fafb;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.overview-wrap{margin:20px 0 28px;overflow-x:auto;border:1px solid var(--line);background:var(--white);border-radius:6px}
+.overview-table{width:100%;border-collapse:collapse;min-width:860px}
+.overview-table th,.overview-table td{padding:9px 12px;border-bottom:1px solid #e2e8eb;text-align:left;vertical-align:top}
+.overview-table th{background:#edf3f5;font-size:12px;color:var(--muted)}
+.overview-table tbody tr:last-child td{border-bottom:0}
+.overview-table span{font-size:12px;color:var(--muted)}
+.rubric-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:8px}
+.rubric-turn{padding:10px 12px;border:1px solid #e2e8eb;border-radius:5px;background:#fbfcfc}
+.rubric-turn h4{margin:0 0 5px;color:var(--blue);text-transform:none;letter-spacing:0}
+.rubric-turn p{margin:4px 0;font-size:14px}
+.rubric-behavior{margin:5px 0 0;padding-left:22px}
+.rubric-behavior li{padding:2px 0;font-size:14px}
+.rubric-status{font-weight:700}
+.audit-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0 14px}
+.audit-summary div{padding:8px 10px;border:1px solid #e2e8eb;border-radius:5px;background:#fbfcfc}
+.audit-summary b{display:block;color:var(--muted);font-size:12px}
+.audit-summary span{font-size:18px;font-weight:700}
+.audit-findings{margin:8px 0 0;padding:0;list-style:none}
+.audit-finding{padding:10px 12px;border:1px solid #f0caca;border-left:4px solid #b91c1c;border-radius:5px;background:#fffafa;margin:8px 0}
+.audit-finding h4{margin:0 0 5px;color:#991b1b;text-transform:none;letter-spacing:0}
+.audit-finding p{margin:3px 0;font-size:13px}
+.audit-dimensions{width:100%;border-collapse:collapse;font-size:13px}
+.audit-dimensions th,.audit-dimensions td{border-top:1px solid #e5e7eb;padding:7px 8px;text-align:left;vertical-align:top}
+.audit-dimensions th{background:#f8fafc;color:var(--muted);font-size:12px}
+.audit-dimensions .audit-fail{color:#b91c1c;font-weight:700}
+.guide-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+.guide-flow a{display:block;padding:14px;background:#f4f8f9;border:1px solid var(--line);border-top:3px solid var(--blue);border-radius:6px;text-decoration:none;color:var(--ink)}
+.guide-flow b{display:block;color:var(--blue);margin-bottom:5px}
+.guide-flow small{display:block;color:var(--muted);line-height:1.5}
+.guide-toc{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0 0}
+.guide-toc a{padding:4px 9px;border:1px solid var(--line);border-radius:4px;color:var(--blue);text-decoration:none;font-size:13px}
+.guide-prose p{max-width:1120px;margin:8px 0;line-height:1.85}
+.guide-prose blockquote{margin:12px 0;padding:12px 16px;border-left:3px solid var(--blue);background:#f4f8f9}
+.guide-table-wrap{overflow-x:auto;margin-top:12px}
+.guide-table-wrap table{min-width:650px;table-layout:auto}
+.guide-table-wrap td{line-height:1.75;overflow-wrap:anywhere}
+section[id]{scroll-margin-top:16px}
+@media(max-width:800px){
+  .two-col{grid-template-columns:1fr}
+  .audit-summary{grid-template-columns:1fr}
+  .two-col > div:first-child{border-right:0;border-bottom:1px solid #e2e8eb}
+  table.script{font-size:12px;display:block;overflow-x:auto;white-space:normal}
+  body{padding:10px}
+  .overview-wrap{font-size:13px}
+  .guide-flow{grid-template-columns:1fr 1fr}
+}
+
+.rx{--rx-blue:#245b78;--rx-blue-soft:#eef5f8;--rx-amber:#925b16;--rx-amber-soft:#fff6e7;--rx-border:#d8e2e8;color:var(--ink);margin-top:26px}
+.rx [hidden]{display:none!important}
+.rx a{color:var(--rx-blue)}
+.rx button,.rx a{touch-action:manipulation}
+.rx button{font:inherit;cursor:pointer}
+.rx button:focus-visible,.rx a:focus-visible,.rx summary:focus-visible{outline:3px solid #e1a33b;outline-offset:3px}
+.rx-hero{position:relative;padding:34px;border:1px solid #bdd0dc;border-radius:14px;background:linear-gradient(120deg,#edf4f7,#fff 80%);overflow:hidden}
+.rx-hero:after{content:"";position:absolute;right:-70px;top:-110px;width:270px;height:270px;border:1px solid #b6ced9;border-radius:50%;opacity:.45;pointer-events:none}
+.rx-eyebrow{font-size:11px;font-weight:800;letter-spacing:.12em;color:var(--rx-blue);margin:0 0 10px}
+.rx-hero h2{font-size:clamp(25px,3vw,37px);line-height:1.35;max-width:850px;letter-spacing:-.02em}
+.rx-lead{max-width:890px;color:var(--muted);font-size:15px;line-height:1.85;margin:14px 0}
+.rx-meta{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 22px}
+.rx-chip{display:inline-flex;gap:5px;align-items:center;padding:4px 10px;border-radius:20px;background:#edf2f5;color:#465c6b;font-size:12px;font-weight:650;max-width:100%;overflow-wrap:anywhere}
+.rx-chip.blue{background:#e6f0f6;color:#245b78}.rx-chip.amber{background:#fff0d9;color:#82510f}.rx-chip.green{background:#e9f5ee;color:#226343}
+.rx-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.rx-metric{padding:16px;border:1px solid #d6e2e9;border-radius:9px;background:#ffffffd9}
+.rx-metric span{display:block;font-size:12px;color:var(--muted)}
+.rx-metric strong{display:block;font-size:27px;line-height:1.3;margin:6px 0;color:#203e50;letter-spacing:-.02em}
+.rx-metric small{color:var(--muted);font-size:12px}.rx-metric.warn{border-color:#dfbc86;background:#fff9ef}.rx-metric.warn strong{color:#8c5514}
+.rx-alert{padding:15px 18px;border:1px solid #e6c695;border-left:4px solid #bc812c;background:var(--rx-amber-soft);border-radius:8px;margin:18px 0 0;color:#6c4817;font-size:14px;line-height:1.8}
+.rx-alert p{margin:4px 0}.rx-alert a{font-weight:700;color:#765019}
+.rx-nav{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;padding:12px 0;margin:14px 0;background:#f6f8f9f2;backdrop-filter:blur(10px)}
+.rx-nav a{display:flex;flex-direction:column;padding:10px 12px;border:1px solid var(--rx-border);border-radius:8px;text-decoration:none;background:#fff;min-width:0;color:var(--muted);font-size:12px}
+.rx-nav b{font-size:14px;color:#29495c;margin-bottom:3px}
+.rx-nav a:hover,.rx-nav a[aria-current=step]{background:#eaf2f7;border-color:#638fa9;color:#29495c;box-shadow:inset 0 -3px #417695}
+.rx-nav.with-runtime{grid-template-columns:repeat(7,minmax(0,1fr))}
+.rx-nav.with-tts{grid-template-columns:repeat(8,minmax(0,1fr))}
+.rx-nav.with-speech{display:flex;overflow-x:auto}.rx-nav.with-speech a{flex:0 0 142px}
+.rx-speech .rx-metrics{margin:18px 0}.rx-speech #rx-speech-pause p{margin:0 0 10px}.rx-speech .rx-button:disabled{opacity:.5;cursor:default}.rx-speech .rx-turn-list{max-height:650px}
+.rx-rollout .rx-metrics{margin:18px 0}.rx-rollout-scroll{overflow-x:auto;max-width:100%;margin:20px 0}.rx-rollout-chart{position:relative;min-width:680px;height:126px;border:1px solid var(--rx-border);border-radius:8px;background:repeating-linear-gradient(to right,#f4f6fa 0,#f4f6fa 1px,transparent 1px,transparent 10%)}.rx-rollout-lane{position:absolute;left:12px;font-size:12px;color:var(--muted)}.rx-rollout-lane.user{top:23px}.rx-rollout-lane.assistant{top:76px}.rx-rollout-bars{position:absolute;left:62px;right:12px;top:0;bottom:0}.rx-rollout-bar{position:absolute;height:30px;top:15px;min-width:3px;padding:0;border:1px solid #4a84a2;border-radius:4px;background:#c9e1ed;cursor:pointer;font-size:10px;overflow:hidden;color:#193d50}.rx-rollout-bar.assistant{top:68px;background:#ded7ef;border-color:#8673af}.rx-rollout-bar.aside{background:#f4d7b6;border-color:#ae722e}.rx-rollout-bar[aria-pressed=true]{outline:3px solid #234c66;outline-offset:1px}.rx-rollout #rx-rollout-segments{max-height:550px}.rx-rollout #rx-rollout-outcome{overflow-wrap:anywhere}
+.rx-stage{border:1px solid var(--rx-border);border-radius:12px;background:#fff;margin:18px 0 26px;overflow:hidden;scroll-margin-top:100px;box-shadow:0 3px 14px #203b4e05}
+.rx-stage-head{padding:23px 26px;display:grid;grid-template-columns:46px minmax(0,1fr) auto;align-items:start;gap:17px;border-bottom:1px solid #e2e9ed;background:#fbfcfd}
+.rx-number{flex:0 0 46px;width:46px;height:46px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#2d5a73;background:#e7f0f5;border-radius:10px}
+.rx-stage-title{flex:1;min-width:0}.rx-stage-title h2{font-size:24px}.rx-stage-title p{margin:7px 0 0;color:var(--muted);line-height:1.75;max-width:820px;font-size:14px}
+.rx-state{padding:5px 10px;font-size:12px;border-radius:6px;background:#eaf5ed;color:#276342;white-space:nowrap;font-weight:700}.rx-state.note{background:#eaf0f8;color:#355e7c}.rx-state.warn{background:#fff0d9;color:#8a5414}
+.rx-stage-body{padding:25px 26px}
+.rx-stage-body h3{font-size:16px;margin:0 0 10px}.rx-stage-body p{line-height:1.8}
+.rx-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.rx-card{padding:20px;border:1px solid var(--rx-border);border-radius:9px;background:#fff;min-width:0}
+.rx-card.soft{background:#f5f8fa}.rx-card.blue{background:#f0f6f9;border-color:#c9dce7}.rx-card.amber{background:#fff8ed;border-color:#ead0a7}
+.rx-card h3{margin:0 0 12px}.rx-card p:last-child{margin-bottom:0}
+.rx-label{font-size:11px;color:#637b89;font-weight:750;letter-spacing:.05em;margin:0 0 7px}
+.rx-goal{font-size:19px;line-height:1.85;margin:10px 0 0;letter-spacing:.01em}
+.rx-meaning{font-size:14px;padding:12px 14px;background:var(--rx-blue-soft);border-left:3px solid #7ea0b6;color:#38586d;line-height:1.85;margin:14px 0}
+.rx-meaning p{margin:0}.rx-meaning strong{color:#244d67}
+.rx-small{font-size:13px;color:var(--muted);line-height:1.8}
+.rx-facts{display:grid;grid-template-columns:110px minmax(0,1fr);gap:10px 16px;margin:0}
+.rx-facts dt{font-size:12px;color:var(--muted)}.rx-facts dd{margin:0;font-size:14px;overflow-wrap:anywhere}
+.rx-source{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:22px;padding-top:16px;border-top:1px solid #e6ecef;font-size:12px;color:var(--muted)}
+.rx-source a,.rx-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #c9d9e2;border-radius:6px;padding:7px 11px;color:#2d5f7c;background:#f5f9fb;text-decoration:none;font-size:12px;font-weight:650}
+.rx-source a:hover,.rx-button:hover{background:#e6f1f7}.rx-button.primary{background:#2f617c;color:#fff;border-color:#2f617c}
+.rx-actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}
+.rx-filter{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 18px}
+.rx-filter button{border:1px solid #d2dfe6;background:#fff;border-radius:20px;padding:7px 13px;font-size:12px;color:#4f6573}
+.rx-filter button[aria-pressed=true]{background:#2f617c;border-color:#2f617c;color:#fff}
+.rx-count{font-size:12px;color:var(--muted);margin-left:auto}
+.rx-people{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.rx-person{border:1px solid #d7e2e8;border-radius:9px;min-width:0;overflow:hidden;background:#fff}
+.rx-person-top{padding:15px 18px;background:#f2f6f8;border-bottom:1px solid #e2e9ed;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rx-person-top h3{font-size:18px;margin:0}.rx-person-top .rx-chip{margin-left:auto}
+.rx-person-body{padding:17px 18px}.rx-person-body p{margin:0 0 12px;font-size:14px}
+.rx-status-list{list-style:none;padding:0;margin:0 0 13px}.rx-status-list li{display:flex;justify-content:space-between;gap:15px;border-top:1px solid #edf1f3;padding:7px 0;font-size:13px}.rx-status-list span{color:var(--muted);flex-shrink:0}.rx-status-list strong{font-weight:550;text-align:right;overflow-wrap:anywhere}
+.rx-pending{padding:10px 12px;background:#fff7e9;border-radius:5px;font-size:13px;line-height:1.8;color:#78531b}
+.rx-person-links{font-size:12px;color:var(--muted);margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
+.rx-details{border:1px solid #dbe5eb;border-radius:7px;margin-top:14px;background:#fcfdfe;overflow:hidden;scroll-margin-top:110px}
+.rx-details>summary{padding:12px 15px;cursor:pointer;font-size:13px;font-weight:650;color:#456275;line-height:1.65}
+.rx-details>div,.rx-details>p{padding:14px 16px;margin:0;border-top:1px solid #e1e9ee;font-size:14px;line-height:1.9}
+.rx-details pre{margin:0;padding:15px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:430px;overflow:auto;border-top:1px solid #e1e9ee;font-size:12px;background:#f4f8fa}
+.rx-details-list{display:grid;gap:8px;margin-top:14px}.rx-details-list .rx-details{margin:0}
+.rx-boundaries{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}.rx-boundaries ul{padding-left:20px;margin:0}.rx-boundaries li{padding:5px 0;font-size:13px;line-height:1.75}
+.rx-turn-layout{display:grid;grid-template-columns:270px minmax(0,1fr);gap:18px;align-items:start}
+.rx-turn-list{display:flex;flex-direction:column;gap:7px;max-height:610px;overflow:auto;padding:2px 5px 3px 2px}
+.rx-turn-button{display:grid;grid-template-columns:36px minmax(0,1fr);gap:4px 8px;align-items:center;text-align:left;padding:10px 12px;border:1px solid #d9e4eb;border-radius:7px;color:#405d70;background:#fafcfd;min-width:0}
+.rx-turn-button b{font-size:12px;align-self:start;margin-top:1px}.rx-turn-button span{font-size:12px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.6}.rx-turn-button small{grid-column:2;font-size:10px;color:#698292}
+.rx-turn-button[aria-pressed=true]{background:#eaf3f8;border-color:#507f9c;box-shadow:inset 3px 0 #386f8d;color:#224e68}
+.rx-turn-button.is-overlap small{color:#9d6013}
+.rx-turn-detail{padding:22px;border:1px solid #ccdfe9;background:#f9fcfe;border-radius:10px;min-width:0;min-height:420px}
+.rx-turn-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}.rx-turn-head h3{font-size:21px;margin:0}
+.rx-utterance{padding:17px 19px;background:#fff;border:1px solid #d8e6ef;border-left:4px solid #417a9a;border-radius:7px;font-size:19px;line-height:1.85;overflow-wrap:anywhere;margin:8px 0 18px}
+.rx-turn-goal{font-size:14px;color:#38596e;margin:0 0 15px}.rx-expected{background:#eff3f6;border-radius:6px;padding:14px;margin-top:13px;line-height:1.8;font-size:14px}.rx-expected p{margin:4px 0 0}
+.rx-cue{padding:11px 13px;border-radius:6px;background:#fff3df;color:#84591e;font-size:13px;line-height:1.8;margin-top:12px}
+.rx-turn-detail .rx-actions{margin-bottom:0}
+.rx-route{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 0 15px;font-size:13px;color:#5d7280}
+.rx-route span{border:1px solid #d4e2e9;border-radius:6px;background:#fff;padding:6px 11px;color:#365c72;font-weight:650}
+.rx-side-box{border:1px solid #e5c28a;background:#fff7e8;border-radius:9px;padding:20px;margin-top:16px}.rx-side-box blockquote{border:0;margin:10px 0;font-size:23px;font-weight:650;line-height:1.8;color:#795016}
+.rx-comparison-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}.rx-comparison-metrics div{padding:12px;background:#f2f6f8;border-radius:7px;text-align:center}.rx-comparison-metrics b{display:block;font-size:20px;color:#2d566c}.rx-comparison-metrics span{font-size:11px;color:var(--muted)}
+.rx-rubric-pills{display:flex;flex-wrap:wrap;gap:7px;margin:15px 0 20px}
+.rx-rubric-pill{padding:8px 10px;border:1px solid #d2e0e8;border-radius:5px;background:#f7fafc;color:#416278;font-size:12px}.rx-rubric-pill[aria-pressed=true]{background:#2f617c;color:#fff;border-color:#2f617c}
+.rx-criteria{list-style:none;padding:0;margin:0;counter-reset:criterion}.rx-criteria li{position:relative;padding:12px 0 12px 32px;border-top:1px solid #e2e9ef;font-size:14px;line-height:1.9;counter-increment:criterion}.rx-criteria li:before{content:counter(criterion);position:absolute;left:0;top:15px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;background:#e7eff5;border-radius:50%;font-size:11px;font-weight:700;color:#365e77}.rx-criteria li:first-child{border-top:0}
+.rx-score-turns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:20px 0}.rx-score-turn{padding:12px;border:1px solid #ccdcd3;background:#f3faf5;border-radius:7px;text-align:left;color:#365c48}.rx-score-turn b,.rx-score-turn span{display:block}.rx-score-turn span{font-size:11px;margin-top:6px;line-height:1.7}.rx-score-turn.has-failure{background:#fff2f1;border-color:#e6b5b0;color:#8c3831}.rx-score-turn.has-insufficient{background:#fff8eb;border-color:#e1c98e;color:#826018}.rx-score-turn[aria-pressed=true]{outline:2px solid #245b78;outline-offset:1px}.rx-score-detail{min-width:0}.rx-score-criterion{border-top:1px solid var(--rx-border);padding:18px 0}.rx-score-criterion-title{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px}.rx-score-status{padding:4px 10px;border-radius:15px;font-size:12px;background:#eef2f5;color:#526571}.rx-score-status.pass{background:#e3f3e9;color:#286142}.rx-score-status.fail{background:#fbe7e5;color:#8c3831}.rx-score-status.insufficient_evidence{background:#fff1d3;color:#826018}.rx-score-original{font-size:15px;line-height:1.9;margin:12px 0 8px}.rx-score-quote{font-size:14px;line-height:1.9;border-left:3px solid #b5ccd8;padding:10px 15px;margin:13px 0;background:#f5f9fb;white-space:pre-wrap;overflow-wrap:anywhere}.rx-score-criterion .rx-button{font-size:12px;margin:5px 8px 5px 0}.rx-scoring-notes{margin-top:20px}.rx-score-detail .rx-details pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.rx-rubric-caption{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.rx-rubric-caption h3{font-size:20px;margin:0}
+.rx-sim-case-filter{margin-top:23px}.rx-sim-detail{min-width:0}.rx-sim-heard{font-size:15px;line-height:1.9;margin:0;overflow-wrap:anywhere}.rx-sim-utterance{font-size:18px;line-height:1.9;overflow-wrap:anywhere}.rx-sim-notes{margin-top:22px}.rx-simulator .rx-metrics{margin:16px 0}.rx-simulator .rx-source{margin-top:17px}.rx-simulator .rx-details pre{max-height:430px}.rx-sim-detail>.rx-grid{align-items:start}.rx-sim-detail .rx-meaning span{overflow-wrap:anywhere}
+.rx-tts-samples{align-items:start}.rx-tts-card{scroll-margin-top:105px}.rx-tts-card h3{line-height:1.6}.rx-tts-card>.rx-small{margin-bottom:12px}.rx-tts-player{display:block;width:100%;max-width:100%;min-width:0;height:54px;margin:16px 0 10px;border-radius:9px;background:#f1f3f4}.rx-tts-player:focus-visible{outline:3px solid #e1a33b;outline-offset:3px}
+.rx-tts-file{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted);line-height:1.8}.rx-tts-file a{font-weight:650}.rx-tts-transcript{font-size:14px;line-height:1.9;overflow-wrap:anywhere}
+.rx-tts-heading{margin:30px 0 18px}.rx-tts-heading h3{font-size:20px}.rx-tts-heading p:last-child{margin-bottom:0}.rx-tts-pauses{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.rx-tts-table{overflow-x:auto;margin:20px 0 0;border:1px solid var(--rx-border);border-radius:8px}.rx-tts-table table{width:100%;border-collapse:collapse;font-size:13px;margin:0}.rx-tts-table caption{text-align:left;padding:13px 15px;font-weight:700;background:#f4f8fa;color:#3f5e71}.rx-tts-table th,.rx-tts-table td{padding:12px 15px;text-align:left;line-height:1.7;border-top:1px solid #dfe8ed;font-variant-numeric:tabular-nums}.rx-tts-table thead th{background:#f8fafb;font-weight:650}
+.rx-tts-figure{margin:0}.rx-tts-figure img{display:block;width:100%;height:auto;border:1px solid #e2e9ee;border-radius:5px}.rx-tts-figure figcaption{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.8}.rx-tts-notes{margin-top:22px}.rx-tts-notes ul{padding-left:20px;font-size:13px;line-height:1.9}
+.rx-score-layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:25px;margin:8px 0 22px}
+.rx-score-total{padding:22px;border:1px solid #e3c795;border-radius:10px;background:#fff8ec;display:flex;flex-direction:column;justify-content:center;align-items:flex-start}
+.rx-score-total strong{font-size:67px;line-height:1;color:#875718;letter-spacing:-.05em;margin:14px 0 7px}.rx-score-total strong small{font-size:20px;letter-spacing:0;color:#9a805c;font-weight:500}
+.rx-score-total p{font-size:13px;line-height:1.8;color:#795b35;margin:8px 0}.rx-score-bars{display:grid;gap:11px;align-content:center;padding:5px 0}
+.rx-score-row{display:grid;grid-template-columns:185px minmax(65px,1fr) 55px;gap:10px;align-items:center;font-size:12px}
+.rx-score-name{line-height:1.5}.rx-score-track{height:9px;border-radius:6px;background:#e9eff2;position:relative;min-width:0}.rx-score-fill{height:100%;display:block;background:#78a38d;border-radius:6px}.rx-score-min{position:absolute;top:-3px;height:15px;width:2px;background:#425b68}.rx-score-value{text-align:right;font-variant-numeric:tabular-nums;color:#3c5b6b;font-weight:650}
+.rx-score-legend{font-size:11px;color:var(--muted);margin-top:12px}.rx-score-legend b{color:#445c68}
+.rx-conflict-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}.rx-conflict-grid pre{white-space:pre-wrap;font-size:15px;line-height:1.8;background:transparent;margin:10px 0 0;overflow-wrap:anywhere}
+.rx-finding{border:1px solid #e6c591;border-left:4px solid #b68031;border-radius:8px;padding:19px;background:#fffaf2;margin-top:19px}.rx-finding h3{color:#80531b}.rx-finding p{font-size:14px;line-height:1.85;margin:9px 0}
+.rx-review-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}.rx-review-grid strong{font-size:13px}.rx-review-grid p{font-size:13px;margin:7px 0 0}
+.rx-footer{padding:24px;border:1px solid #d6e3eb;background:#eef4f7;border-radius:10px;margin:28px 0 36px}.rx-footer h2{font-size:20px}.rx-footer p{font-size:14px;color:#526d7d;line-height:1.8}
+.rx-artifact-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:15px}.rx-artifact-list a{padding:10px 13px;border:1px solid #d3e0e8;border-radius:5px;background:#fff;text-decoration:none;font-size:12px;overflow-wrap:anywhere}.rx-artifact-list small{display:block;color:var(--muted);margin-top:3px}
+.rx-appendix-title{margin:42px 0 14px;scroll-margin-top:22px}.rx-appendix-title h2{font-size:23px}.rx-appendix-title p{font-size:14px;color:var(--muted)}
+.results-canonical .case-header{flex-wrap:wrap}.results-canonical .case>section{overflow-x:auto}.results-canonical table.script{min-width:1050px}
+@media(max-width:1000px){.rx-stage-head{grid-template-columns:46px minmax(0,1fr)}.rx-state{grid-column:2;justify-self:start;margin-left:0}.rx-score-layout{grid-template-columns:200px minmax(0,1fr)}.rx-score-row{grid-template-columns:155px minmax(65px,1fr) 50px}.rx-turn-layout{grid-template-columns:225px minmax(0,1fr)}.rx-stage-body{padding:22px}}
+@media(max-width:700px){.rx-hero{padding:23px 20px}.rx-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.rx-metric{padding:13px}.rx-metric strong{font-size:24px}.rx-nav{display:flex;overflow-x:auto;padding:9px 0;gap:7px;margin:12px 0}.rx-nav a{flex:0 0 136px;padding:9px 10px}.rx-stage{scroll-margin-top:92px}.rx-stage-head{padding:20px;gap:12px;grid-template-columns:37px minmax(0,1fr)}.rx-number{flex-basis:37px;width:37px;height:37px;font-size:15px}.rx-stage-title h2{font-size:21px}.rx-state{margin-left:0}.rx-stage-body{padding:19px 17px}.rx-grid,.rx-people,.rx-boundaries,.rx-conflict-grid,.rx-review-grid{grid-template-columns:1fr}.rx-card{padding:17px}.rx-goal{font-size:17px}.rx-facts{grid-template-columns:85px minmax(0,1fr);gap:10px}.rx-filter{gap:7px}.rx-filter button{padding:7px 11px}.rx-count{width:100%;margin-left:0}.rx-turn-layout{grid-template-columns:1fr;gap:13px}.rx-turn-list{flex-direction:row;max-height:none;overflow-x:auto;padding:2px 2px 8px}.rx-turn-button{flex:0 0 170px;grid-template-columns:31px minmax(0,1fr)}.rx-turn-detail{padding:18px;min-height:0}.rx-utterance{padding:14px;font-size:17px}.rx-comparison-metrics{grid-template-columns:repeat(2,1fr)}.rx-side-box{padding:17px}.rx-side-box blockquote{font-size:19px}.rx-score-layout{grid-template-columns:1fr;gap:19px}.rx-score-total{padding:20px}.rx-score-total strong{font-size:60px}.rx-score-row{grid-template-columns:130px minmax(45px,1fr) 43px;gap:7px;font-size:11px}.rx-artifact-list{grid-template-columns:1fr}.rx-footer{padding:20px}.rx-goal,.rx-card,.rx-stage-title,.rx-lead{overflow-wrap:anywhere}.rx-source a{max-width:100%;overflow-wrap:anywhere}.results-canonical dl.kv{grid-template-columns:1fr}.results-canonical dl.kv dd{margin-bottom:8px}.results-canonical .audit-summary{grid-template-columns:1fr}.results-canonical .case-header h2{font-size:20px}}
+@media(max-width:1100px){.rx-nav.with-tts{display:flex;overflow-x:auto}.rx-nav.with-tts a{flex:0 0 144px}}
+@media(max-width:700px){.rx-tts-pauses{grid-template-columns:1fr}.rx-tts-table th,.rx-tts-table td{padding:10px 9px;font-size:12px}.rx-tts-heading{margin-top:25px}.rx-nav.with-tts a{flex-basis:136px}}
+@media(max-width:700px){.rx-score-turns{grid-template-columns:repeat(2,minmax(0,1fr))}.rx-score-detail{padding:17px}.rx-score-original{font-size:14px}}
+@media(prefers-reduced-motion:reduce){.rx{scroll-behavior:auto}}
+.rx-batch-table{overflow-x:auto}.rx-batch-table table{min-width:600px}.rx-batch-criteria{display:grid;gap:10px;margin-top:16px}.rx-batch-criteria [hidden]{display:none}.rx-batch-criteria p{overflow-wrap:anywhere}
+</style>
+</head><body><main>
+<h1>用户与助手，第一次放进同一条音频 · R4 合成交互 · 1 个案例</h1>
+<p class='intro'>独立用户与助手的真实合成交互：完整音频、已播片段、插话、旁语与原始证据。</p>
+<p class='intro'>同一条任务链的真实阶段输出与阅读说明；完整案例和原始审查保留在页尾。</p><div class="rx" data-results-explorer><article class="rx-stage rx-rollout" id="result-rollout" data-rx-stage>
+<header class="rx-stage-head"><span class="rx-number">R4</span><div class="rx-stage-title"><p class="rx-eyebrow">SYNTHETIC DIALOGUE · 在线部分 4</p><h2>用户与助手，第一次放进同一条音频</h2><p>用户模拟器与独立 GPT 助手真实生成发言，双方使用 MiniMax TTS；按 PCM 采样构造离线合成时间轴。</p></div><span class="rx-state note">合成交互已完成</span></header>
+<div class="rx-stage-body"><div class="rx-meta"><span class="rx-chip blue">GPT-5.6 · 双方独立上下文</span><span class="rx-chip ">MiniMax speech-2.8-hd</span><span class="rx-chip ">左：用户 / 右：助手</span><span class="rx-chip amber">离线合成 · 非原生实时测量</span></div>
+<div class="rx-metrics"><div class="rx-metric"><span>已交付主轮</span><strong>13 / 13</strong><small>只统计实际生成并播放的主表达</small></div><div class="rx-metric"><span>采样时间轴</span><strong>572.0 秒</strong><small>由实际 PCM 音频长度与明确静音构成</small></div><div class="rx-metric"><span>采样中途起声</span><strong>4 次</strong><small>依据已播前缀的语义证据触发</small></div><div class="rx-metric"><span>本次运行的墙钟时间</span><strong>510.2 秒</strong><small>含 API 等待；不计入上面的音频时间轴</small></div></div>
+<div class="rx-meaning"><strong>这一步在做什么：</strong>将原来的用户策略、用户语音和一个独立助手连接起来，保存双方说了什么、何时起声、助手哪里被截断，以及截断后如何回应。助手看不到未来剧本；用户只能看到已消耗音频对应的字幕前缀。</div>
+<h3>先听本次生成的对话</h3><audio id="rx-rollout-audio" class="rx-tts-player" controls preload="none" data-tts-audio="synthetic-dialogue" src="runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/dialogue-stereo.wav" aria-label="用户与助手的合成双声道对话"></audio><p class="rx-small" id="rx-rollout-player-status" role="status">左声道包含用户主表达与旁语，右声道为助手。可选择下方片段并跳到该处试听。</p>
+<div class="rx-rollout-scroll"><div class="rx-rollout-chart" id="rx-rollout-chart" aria-label="合成音频时间轴"><span class="rx-rollout-lane user">用户</span><span class="rx-rollout-lane assistant">助手</span><div class="rx-rollout-bars" id="rx-rollout-bars"></div></div></div>
+<div class="rx-turn-layout"><div class="rx-turn-list" id="rx-rollout-segments" aria-label="选择已播放音频片段"></div><div class="rx-sim-detail"><div class="rx-turn-head"><h3 id="rx-rollout-title"></h3><span class="rx-chip blue" id="rx-rollout-kind"></span></div><p class="rx-small" id="rx-rollout-time"></p><div class="rx-utterance" id="rx-rollout-text"></div><p class="rx-small" id="rx-rollout-outcome"></p><button type="button" class="rx-button" data-rollout-seek>跳到这段前 1 秒试听</button><details class="rx-details" id="rx-rollout-tail" hidden><summary>未播出的助手后半段 · 仅归档，未进入双方已听记忆</summary><pre id="rx-rollout-unplayed"></pre></details><div class="rx-source" id="rx-rollout-files"></div></div></div>
+<div class="rx-grid"><div class="rx-card"><h3>中断到底取消了什么</h3><p class="rx-small">GPT 回复和 TTS 音频在离线采样时间推进前生成；语义收听控制器决定停播后，调度器丢弃未播缓冲，后续助手上下文也只保留已播前缀。本次不声称取消了正在生成的服务端请求，也不据此计算原生模型停声延迟。</p></div><div class="rx-card"><h3>文字如何对应音频</h3><p class="rx-small">实际 MiniMax 请求返回逐词时间戳。词结束采样被消耗后，才向另一方释放相应文字。换行与片段开头逗号仅做明确的位置转换，T02 的原始裁剪和静音采样保留；没有独立 ASR 或按字数估算时长。</p></div></div>
+<div class="rx-card soft"><h3>U11 TTS 失败：保持原请求后的诊断</h3><p>原 WAV＋hex 请求四次稳定返回 HTTP 500；相同全文改为 WAV URL 返回和 MP3 hex 返回均成功。证据指向较大 WAV 的内联返回链路，具体服务端内部异常和大小阈值尚不能确定。</p><div class="rx-tts-table"><table><thead><tr><th>诊断请求</th><th>实际结果</th><th>说明</th></tr></thead><tbody><tr><th scope="row">原请求：WAV + hex</th><td>4 次 HTTP 500</td><td>334 字原文及全部参数逐项一致</td></tr><tr><th scope="row">同接口、同音色的短请求</th><td>HTTP 200</td><td>服务及该音色当前可用</td></tr><tr><th scope="row">原全文，关闭字幕</th><td>HTTP 500</td><td>仅关闭字幕未消除故障</td></tr><tr><th scope="row">原全文，句级字幕</th><td>HTTP 500</td><td>仅改字幕粒度未消除故障</td></tr><tr><th scope="row">原全文仅去换行，逐词字幕</th><td>HTTP 500</td><td>仅去换行未消除故障</td></tr><tr><th scope="row">原全文，WAV + URL</th><td>HTTP 200</td><td>WAV 73.96 秒，完整逐词字幕验证通过</td></tr><tr><th scope="row">原全文，MP3 + hex</th><td>HTTP 200</td><td>同音色、同全文成功返回压缩音频</td></tr></tbody></table></div><p class="rx-small">早期诊断请求原样保留。用户确认后，本次只在 HTTP500 InternalError 后使用同全文 WAV URL 下载恢复；已验证 2 处恢复的生成条件不变。诊断样本没有替换主流程音轨。</p><p class="rx-label">仅供诊断试听 · 未替换交互音轨</p><audio controls preload="none" class="rx-tts-player" data-tts-audio="diagnostic-wav-url" src="runtime/synthetic-dialogue/diagnosis-20261029/transport-controls/wav_url/raw.wav" aria-label="同全文经 URL 返回的诊断 WAV"></audio><p class="rx-small">同一段 334 字原文、同一音色和 16kHz 单声道 WAV；已验证约 73.96 秒音频及完整逐词字幕。主交互已经继续完成；下面可试听完整采样时间轴。</p><div class="rx-actions"><a class="rx-button" href="runtime/synthetic-dialogue/diagnosis-20261029/summary.json" target="_blank" rel="noopener">诊断结论与请求指纹 ↗</a><a class="rx-button" href="runtime/synthetic-dialogue/diagnosis-20261029/diagnostics.zip" download>下载诊断记录 ↓</a><a class="rx-button" href="runtime/synthetic-dialogue/diagnosis-20261029/support-packet.json" target="_blank" rel="noopener">服务商排查材料 ↗</a></div></div>
+<details class="rx-details"><summary>查看本次中途起声、旁语、句内停顿与停播事件</summary><pre>[
+  {
+    &quot;sequence&quot;: 8,
+    &quot;frame&quot;: 880177,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;intra_user_pause_observed&quot;,
+    &quot;focus_turn_id&quot;: &quot;U02&quot;,
+    &quot;pause_frames&quot;: 9920,
+    &quot;listener_decision&quot;: &quot;listen&quot;,
+    &quot;premature_response&quot;: false
+  },
+  {
+    &quot;sequence&quot;: 21,
+    &quot;frame&quot;: 1444944,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_trigger_checked&quot;,
+    &quot;turn_id&quot;: &quot;U03&quot;,
+    &quot;decision&quot;: &quot;ready&quot;,
+    &quot;evidence&quot;: &quot;客户关系管理系统账号已创建，但目前只有只读权限，而培训需要编辑客户记录，这是会卡住十点培训的明确阻塞项。商业智能平台账号尚未创建&quot;,
+    &quot;reason&quot;: &quot;已说明客户关系管理系统的权限角色缺口，并已开始说明商业智能平台的账号状态。&quot;
+  },
+  {
+    &quot;sequence&quot;: 24,
+    &quot;frame&quot;: 1462694,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_queue_discard&quot;,
+    &quot;response_id&quot;: &quot;A002&quot;,
+    &quot;reason&quot;: &quot;semantic listener requested stop on heard input&quot;,
+    &quot;discarded_audio_frames&quot;: 58528,
+    &quot;discarded_text_chars&quot;: 16,
+    &quot;provider_request_cancelled&quot;: false,
+    &quot;native_stop_latency_measured&quot;: false
+  },
+  {
+    &quot;sequence&quot;: 39,
+    &quot;frame&quot;: 2580186,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_audio_started&quot;,
+    &quot;audio_id&quot;: &quot;input-f411462a608f&quot;,
+    &quot;kind_detail&quot;: &quot;side_speech&quot;,
+    &quot;focus_turn_id&quot;: &quot;U05&quot;,
+    &quot;overlap_with_assistant&quot;: true
+  },
+  {
+    &quot;sequence&quot;: 48,
+    &quot;frame&quot;: 2777476,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_trigger_checked&quot;,
+    &quot;turn_id&quot;: &quot;U06&quot;,
+    &quot;decision&quot;: &quot;ready&quot;,
+    &quot;evidence&quot;: &quot;当前最可能的阻塞是工单系统尚无激活记录；另外，多因素认证还没登记，也可能影响登&quot;,
+    &quot;reason&quot;: &quot;已说明工单系统尚未激活，并开始分析多因素认证对登录阻塞的影响。&quot;
+  },
+  {
+    &quot;sequence&quot;: 51,
+    &quot;frame&quot;: 2800687,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_queue_discard&quot;,
+    &quot;response_id&quot;: &quot;A005&quot;,
+    &quot;reason&quot;: &quot;semantic listener requested stop on heard input&quot;,
+    &quot;discarded_audio_frames&quot;: 92007,
+    &quot;discarded_text_chars&quot;: 22,
+    &quot;provider_request_cancelled&quot;: false,
+    &quot;native_stop_latency_measured&quot;: false
+  },
+  {
+    &quot;sequence&quot;: 69,
+    &quot;frame&quot;: 4373472,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;intra_user_pause_observed&quot;,
+    &quot;focus_turn_id&quot;: &quot;U09&quot;,
+    &quot;pause_frames&quot;: 22080,
+    &quot;listener_decision&quot;: &quot;listen&quot;,
+    &quot;premature_response&quot;: false
+  },
+  {
+    &quot;sequence&quot;: 77,
+    &quot;frame&quot;: 4996348,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_trigger_checked&quot;,
+    &quot;turn_id&quot;: &quot;U10&quot;,
+    &quot;decision&quot;: &quot;ready&quot;,
+    &quot;evidence&quot;: &quot;单点登录邀请已发送但没有激活记录，而邮箱要等&quot;,
+    &quot;reason&quot;: &quot;已说明单点登录邀请状态，并开始说明其与邮箱启用之间的等待依赖关系。&quot;
+  },
+  {
+    &quot;sequence&quot;: 80,
+    &quot;frame&quot;: 5013415,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_queue_discard&quot;,
+    &quot;response_id&quot;: &quot;A009&quot;,
+    &quot;reason&quot;: &quot;semantic listener requested stop on heard input&quot;,
+    &quot;discarded_audio_frames&quot;: 316668,
+    &quot;discarded_text_chars&quot;: 89,
+    &quot;provider_request_cancelled&quot;: false,
+    &quot;native_stop_latency_measured&quot;: false
+  },
+  {
+    &quot;sequence&quot;: 89,
+    &quot;frame&quot;: 5650290,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;tts_audio_delivery_recovery&quot;,
+    &quot;response_id&quot;: &quot;A011&quot;,
+    &quot;original_http_status&quot;: 500,
+    &quot;changed_field&quot;: &quot;input.output_format=url&quot;,
+    &quot;synthesis_conditions_unchanged&quot;: true
+  },
+  {
+    &quot;sequence&quot;: 99,
+    &quot;frame&quot;: 5964795,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_trigger_checked&quot;,
+    &quot;turn_id&quot;: &quot;U12&quot;,
+    &quot;decision&quot;: &quot;ready&quot;,
+    &quot;evidence&quot;: &quot;第一，梁舒，九点半跟岗。直接关注客服工单系统邀请没有激活记录，可能卡住查看案例。多因素认证未登记，单列核实，不直接认定会导致登录失败。\n\n第二，&quot;,
+    &quot;reason&quot;: &quot;已完成第一名员工梁舒的优先项，并以“第二”开始后续排序。&quot;
+  },
+  {
+    &quot;sequence&quot;: 102,
+    &quot;frame&quot;: 5983227,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_queue_discard&quot;,
+    &quot;response_id&quot;: &quot;A011&quot;,
+    &quot;reason&quot;: &quot;semantic listener requested stop on heard input&quot;,
+    &quot;discarded_audio_frames&quot;: 873131,
+    &quot;discarded_text_chars&quot;: 241,
+    &quot;provider_request_cancelled&quot;: false,
+    &quot;native_stop_latency_measured&quot;: false
+  },
+  {
+    &quot;sequence&quot;: 111,
+    &quot;frame&quot;: 6858740,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;tts_audio_delivery_recovery&quot;,
+    &quot;response_id&quot;: &quot;A013&quot;,
+    &quot;original_http_status&quot;: 500,
+    &quot;changed_field&quot;: &quot;input.output_format=url&quot;,
+    &quot;synthesis_conditions_unchanged&quot;: true
+  }
+]</pre></details>
+<p class="rx-small">这里验证连接、信息边界和音频证据。事后评分与训练数据导出属于独立环节。原 Stage 5 的 99 分 / repair / EV01 保持原样。</p>
+<div class="rx-actions"><a class="rx-button primary" href="https://github.com/Yuanhong-Zheng/duplex-synthetic-dialogue/releases/download/r4-20261029/synthetic-dialogue-records.zip" download>下载本次合成交互记录 ↓</a><a class="rx-button" href="runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/result.json" target="_blank" rel="noopener">运行结果 JSON ↗</a><a class="rx-button" href="runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/integrity.json" target="_blank" rel="noopener">因果与音频完整性核验 ↗</a><a class="rx-button" href="runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/timeline.json" target="_blank" rel="noopener">完整采样时间轴 ↗</a></div></div></article><div class="rx-actions"><a class="rx-button" href="#results-complete-case">查看完整冻结任务环境与原始审查 ↓</a></div></div><script type="application/json" id="results-explorer-data">{"view": "synthetic_rollout", "case_id": "R01-V01", "synthetic_rollout": {"status": "completed", "failure_reason": "", "delivered_turns": 13, "duration_seconds": 572.0099375, "interruptions": 4, "wall_seconds": 510.1809141971171, "segments": [{"speaker": "user", "audio_id": "user-001", "title": "U01 · 用户主表达", "short_label": "U01", "kind": "deliver", "kind_label": "T01", "text": "我得在报到协调会前整理四个人的访问情况：销售运营高远、客户支持梁舒、财务分析何嘉宁，还有软件研发周启明。麻烦按人归类，优先找出会卡住今天安排的项目。", "unplayed_text": "", "start_seconds": 0.0, "duration_seconds": 16.637125, "outcome_note": "用户台词先通过原语义 Judge，再由真实 TTS 合成。", "files": [{"label": "用户音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user-speech/events/d6ea5451b7117f44a0280e5f/main.wav"}, {"label": "用户模型实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0001-generation/input.json"}, {"label": "用户候选的 Judge 结果", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0002-guard/raw_response.txt"}]}, {"speaker": "assistant", "audio_id": "A001", "title": "A001 · 助手", "short_label": "A001", "kind": "assistant", "kind_label": "助手已播前缀", "text": "可以。我会按高远、梁舒、何嘉宁、周启明分别整理，并优先标出会卡住今天安排的事项。\n\n目前只知道四人的姓名和岗位，还缺各自的访问状态、时间、地点或方式、接待人、待确认事项及依赖关系。你把现有记录发给我，我会归成“已确认、待确认、存在阻塞、未知”四类；没有依据的内容我会保留为待确认。", "unplayed_text": "", "start_seconds": 17.237125, "duration_seconds": 32.1784375, "outcome_note": "这条回复的音频已完整消费。", "files": [{"label": "已消费助手音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/played/A001.wav"}, {"label": "GPT 实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant/0002-response/input.json"}, {"label": "逐词字幕", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant-audio/A001/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-002", "title": "U02 · 用户主表达", "short_label": "U02", "kind": "deliver", "kind_label": "T01 / T02", "text": "先说高远。他十点有客户数据培训，工单上写的是，邮箱和单点登录已启用，客户关系管理系统账号已创建，角色是只读，但培训需要编辑客户记录；商业智能平台还没创建账号。", "unplayed_text": "", "start_seconds": 49.4155625, "duration_seconds": 18.2345625, "outcome_note": "用户台词先通过原语义 Judge，再由真实 TTS 合成。", "files": [{"label": "用户音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user-speech/events/479220359f9cf0a5fe6178db/main.wav"}, {"label": "用户模型实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0003-generation/input.json"}, {"label": "用户候选的 Judge 结果", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0004-guard/raw_response.txt"}]}, {"speaker": "assistant", "audio_id": "A002", "title": "A002 · 助手（中途停止）", "short_label": "A002", "kind": "assistant", "kind_label": "助手已播前缀", "text": "高远，销售运营：今天十点参加客户数据培训。邮箱和单点登录已启用；客户关系管理系统账号已创建，但目前只有只读权限，而培训需要编辑客户记录，这是会卡住十点培训的明确阻塞项。商业智能平台账号尚未创建，是否影响今天培训", "unplayed_text": "还要确认。可以继续说梁舒的情况。", "start_seconds": 68.250125, "duration_seconds": 23.16825, "outcome_note": "未播音频丢弃 58528 采样；未播文字 16 字符。后续上下文仅保留已播前缀。", "files": [{"label": "已消费助手音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/played/A002.wav"}, {"label": "GPT 实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant/0005-response/input.json"}, {"label": "逐词字幕", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant-audio/A002/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-003", "title": "U03 · 用户主表达", "short_label": "U03", "kind": "deliver", "kind_label": "T03", "text": "先别展开商业智能平台，直接说十点培训最可能卡在哪儿。", "unplayed_text": "", "start_seconds": 90.309, "duration_seconds": 5.5844375, "outcome_note": "用户台词先通过原语义 Judge，再由真实 TTS 合成。", "files": [{"label": "用户音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user-speech/events/75301788e165daaf4908f29b/main.wav"}, {"label": "用户模型实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0005-generation/input.json"}, {"label": "用户候选的 Judge 结果", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0006-guard/raw_response.txt"}]}, {"speaker": "assistant", "audio_id": "A003", "title": "A003 · 助手", "short_label": "A003", "kind": "assistant", "kind_label": "助手已播前缀", "text": "高远十点培训最可能卡在客户关系管理系统权限：账号已有，但目前是只读，而培训需要编辑客户记录。", "unplayed_text": "", "start_seconds": 96.4934375, "duration_seconds": 10.6231875, "outcome_note": "这条回复的音频已完整消费。", "files": [{"label": "已消费助手音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/played/A003.wav"}, {"label": "GPT 实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant/0018-response/input.json"}, {"label": "逐词字幕", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant-audio/A003/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-004", "title": "U04 · 用户主表达", "short_label": "U04", "kind": "deliver", "kind_label": "T01", "text": "商业智能平台这项再补上：经理说高远后续要查看、导出销售周报，但工作区、角色名称和导出权限的审批人都没写，需要标为待确认。", "unplayed_text": "", "start_seconds": 107.116625, "duration_seconds": 15.569, "outcome_note": "用户台词先通过原语义 Judge，再由真实 TTS 合成。", "files": [{"label": "用户音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user-speech/events/3e88a5b1d03a6af5aba34caf/main.wav"}, {"label": "用户模型实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0007-generation/input.json"}, {"label": "用户候选的 Judge 结果", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0008-guard/raw_response.txt"}]}, {"speaker": "assistant", "audio_id": "A004", "title": "A004 · 助手", "short_label": "A004", "kind": "assistant", "kind_label": "助手已播前缀", "text": "高远的商业智能平台补充为待确认：后续需要查看、导出销售周报，但工作区、角色名称，以及导出权限的审批人都未注明。目前没有信息表明这会卡住今天十点的培训。", "unplayed_text": "", "start_seconds": 123.285625, "duration_seconds": 15.870875, "outcome_note": "这条回复的音频已完整消费。", "files": [{"label": "已消费助手音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/played/A004.wav"}, {"label": "GPT 实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant/0020-response/input.json"}, {"label": "逐词字幕", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant-audio/A004/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-005", "title": "U05 · 用户主表达", "short_label": "U05", "kind": "deliver", "kind_label": "T01", "text": "接着是梁舒。她九点半开始跟岗，需要进客服工单系统看案例。她的邮箱和单点登录已启用，多因素认证还没登记；工单系统邀请已发送，但没有激活记录；知识库只读权限已经开通。", "unplayed_text": "", "start_seconds": 139.1565, "duration_seconds": 19.75575, "outcome_note": "用户台词先通过原语义 Judge，再由真实 TTS 合成。", "files": [{"label": "用户音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user-speech/events/2e40d287ffb6b13ec1066d6d/main.wav"}, {"label": "用户模型实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0009-generation/input.json"}, {"label": "用户候选的 Judge 结果", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0010-guard/raw_response.txt"}]}, {"speaker": "assistant", "audio_id": "A005", "title": "A005 · 助手（中途停止）", "short_label": "A005", "kind": "assistant", "kind_label": "助手已播前缀", "text": "梁舒，客户支持：九点半开始跟岗，需要进入客服工单系统查看案例。当前最可能的阻塞是工单系统尚无激活记录；另外，多因素认证还没登记，也可能影响登录，需确认。", "unplayed_text": "邮箱和单点登录已启用，知识库只读权限已开通。", "start_seconds": 159.51225, "duration_seconds": 15.5306875, "outcome_note": "未播音频丢弃 92007 采样；未播文字 22 字符。后续上下文仅保留已播前缀。", "files": [{"label": "已消费助手音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/played/A005.wav"}, {"label": "GPT 实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant/0022-response/input.json"}, {"label": "逐词字幕", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant-audio/A005/subtitle.json"}]}, {"speaker": "user", "audio_id": "input-f411462a608f", "title": "U05 · 旁语 · 对旁人说话", "short_label": "U05 · 旁语", "kind": "side_speech", "kind_label": "旁语 · 同一用户", "text": "小陈，麻烦把门带上，谢谢。", "unplayed_text": "", "start_seconds": 161.261625, "duration_seconds": 3.2391875, "outcome_note": "旁语的对象标签只供环境调度和报告展示，没有传给助手。", "files": [{"label": "用户音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user-speech/events/2e40d287ffb6b13ec1066d6d/side-00.wav"}, {"label": "用户模型实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0009-generation/input.json"}, {"label": "用户候选的 Judge 结果", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0010-guard/raw_response.txt"}]}, {"speaker": "user", "audio_id": "user-006", "title": "U06 · 用户主表达", "short_label": "U06", "kind": "deliver", "kind_label": "T03", "text": "这两项别直接串成因果。多因素认证只是未登记，先单列核实，不能据此断定就是它卡住了登录。", "unplayed_text": "", "start_seconds": 173.59225, "duration_seconds": 10.4954375, "outcome_note": "用户台词先通过原语义 Judge，再由真实 TTS 合成。", "files": [{"label": "用户音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user-speech/events/94b128f17aee1efa6a2b95c2/main.wav"}, {"label": "用户模型实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0011-generation/input.json"}, {"label": "用户候选的 Judge 结果", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0012-guard/raw_response.txt"}]}, {"speaker": "assistant", "audio_id": "A006", "title": "A006 · 助手", "short_label": "A006", "kind": "assistant", "kind_label": "助手已播前缀", "text": "梁舒九点半跟岗，需进入客服工单系统查看案例。优先核实工单系统邀请是否已激活，目前没有激活记录，可能卡住跟岗。多因素认证尚未登记，单列待核实，不据此断定会影响登录。邮箱和单点登录已启用，知识库只读权限已开通。", "unplayed_text": "", "start_seconds": 184.6876875, "duration_seconds": 21.880375, "outcome_note": "这条回复的音频已完整消费。", "files": [{"label": "已消费助手音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/played/A006.wav"}, {"label": "GPT 实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant/0033-response/input.json"}, {"label": "逐词字幕", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant-audio/A006/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-007", "title": "U07 · 用户主表达", "short_label": "U07", "kind": "deliver", "kind_label": "T01", "text": "何嘉宁下午两点参加对账演练，需要查看总账数据。她的邮箱、单点登录和费用报销系统都已启用；财务核算系统账号已经创建，申请的是总账只读权限，目前还在等财务平台主管审批。", "unplayed_text": "", "start_seconds": 206.5680625, "duration_seconds": 19.8021875, "outcome_note": "用户台词先通过原语义 Judge，再由真实 TTS 合成。", "files": [{"label": "用户音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user-speech/events/1ec0617e4716fae6791da064/main.wav"}, {"label": "用户模型实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0013-generation/input.json"}, {"label": "用户候选的 Judge 结果", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0014-guard/raw_response.txt"}]}, {"speaker": "assistant", "audio_id": "A007", "title": "A007 · 助手", "short_label": "A007", "kind": "assistant", "kind_label": "助手已播前缀", "text": "何嘉宁，财务分析：下午两点参加对账演练，需要查看总账数据。当前最可能的阻塞是财务核算系统的总账只读权限仍在等待财务平台主管审批。系统账号已创建；邮箱、单点登录和费用报销系统均已启用。", "unplayed_text": "", "start_seconds": 226.97025, "duration_seconds": 20.8238125, "outcome_note": "这条回复的音频已完整消费。", "files": [{"label": "已消费助手音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/played/A007.wav"}, {"label": "GPT 实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant/0035-response/input.json"}, {"label": "逐词字幕", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant-audio/A007/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-008", "title": "U08 · 用户主表达", "short_label": "U08", "kind": "deliver", "kind_label": "T01", "text": "按今天的时间看，何嘉宁这项是不是应该排在梁舒和高远后面？", "unplayed_text": "", "start_seconds": 247.7940625, "duration_seconds": 6.09525, "outcome_note": "用户台词先通过原语义 Judge，再由真实 TTS 合成。", "files": [{"label": "用户音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user-speech/events/e740f5e4a9bd14d6d31f5d16/main.wav"}, {"label": "用户模型实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0015-generation/input.json"}, {"label": "用户候选的 Judge 结果", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0016-guard/raw_response.txt"}]}, {"speaker": "assistant", "audio_id": "A008", "title": "A008 · 助手", "short_label": "A008", "kind": "assistant", "kind_label": "助手已播前缀", "text": "是。按今天的时间顺序，应先处理梁舒九点半跟岗，再处理高远十点培训，何嘉宁下午两点的审批排在后面；但仍需在演练前完成。", "unplayed_text": "", "start_seconds": 254.4893125, "duration_seconds": 13.0960625, "outcome_note": "这条回复的音频已完整消费。", "files": [{"label": "已消费助手音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/played/A008.wav"}, {"label": "GPT 实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant/0037-response/input.json"}, {"label": "逐词字幕", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant-audio/A008/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-009", "title": "U09 · 用户主表达", "short_label": "U09", "kind": "deliver", "kind_label": "T01 / T02", "text": "最后是周启明，十一点配置开发环境。我看一下记录，单点登录邀请已发，但没有激活记录；邮箱要等单点登录激活后自动启用；代码仓库账号还没创建；问题跟踪系统已有普通成员账号。经理还说需要后端服务仓库的读写权限和持续集成页面的查看权限，不过没有写具体仓库名，持续集成权限也没有工单。", "unplayed_text": "", "start_seconds": 267.585375, "duration_seconds": 32.5689375, "outcome_note": "用户台词先通过原语义 Judge，再由真实 TTS 合成。", "files": [{"label": "用户音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user-speech/events/e1223e16f80d8da6ca4c1d57/main.wav"}, {"label": "用户模型实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0017-generation/input.json"}, {"label": "用户候选的 Judge 结果", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0018-guard/raw_response.txt"}]}, {"speaker": "assistant", "audio_id": "A009", "title": "A009 · 助手（中途停止）", "short_label": "A009", "kind": "assistant", "kind_label": "助手已播前缀", "text": "周启明，软件研发：十一点配置开发环境。优先阻塞项有两项：单点登录邀请已发送但没有激活记录，而邮箱要等单点登录激活", "unplayed_text": "后自动启用；代码仓库账号尚未创建，且后端服务仓库的具体名称未注明，所需读写权限也无法据此落实。持续集成页面需要查看权限，但目前没有工单，列为待确认。问题跟踪系统已有普通成员账号。", "start_seconds": 300.7543125, "duration_seconds": 12.584125, "outcome_note": "未播音频丢弃 316668 采样；未播文字 89 字符。后续上下文仅保留已播前缀。", "files": [{"label": "已消费助手音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/played/A009.wav"}, {"label": "GPT 实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant/0040-response/input.json"}, {"label": "逐词字幕", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant-audio/A009/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-010", "title": "U10 · 用户主表达", "short_label": "U10", "kind": "deliver", "kind_label": "T03", "text": "这里说准确点：邀请已发送不等于已经激活，邮箱也只能写等待自动启用，对吧？", "unplayed_text": "", "start_seconds": 312.27175, "duration_seconds": 8.614625, "outcome_note": "用户台词先通过原语义 Judge，再由真实 TTS 合成。", "files": [{"label": "用户音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user-speech/events/ebd8fc652c44db0069507986/main.wav"}, {"label": "用户模型实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0019-generation/input.json"}, {"label": "用户候选的 Judge 结果", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0020-guard/raw_response.txt"}]}, {"speaker": "assistant", "audio_id": "A010", "title": "A010 · 助手", "short_label": "A010", "kind": "assistant", "kind_label": "助手已播前缀", "text": "对。准确表述是：周启明的单点登录邀请已发送，但没有激活记录，不能视为已激活；邮箱依赖单点登录激活后自动启用，目前只能标为等待自动启用。", "unplayed_text": "", "start_seconds": 321.486375, "duration_seconds": 15.569, "outcome_note": "这条回复的音频已完整消费。", "files": [{"label": "已消费助手音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/played/A010.wav"}, {"label": "GPT 实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant/0048-response/input.json"}, {"label": "逐词字幕", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant-audio/A010/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-011", "title": "U11 · 用户主表达", "short_label": "U11", "kind": "deliver", "kind_label": "T01", "text": "总体处理顺序再明确一下，别按部门排。先按当天安排的时间，再看是不是直接阻塞；登录和安全前置条件跟在对应人员下面，后续权限放最后。", "unplayed_text": "", "start_seconds": 337.055375, "duration_seconds": 15.48775, "outcome_note": "用户台词先通过原语义 Judge，再由真实 TTS 合成。", "files": [{"label": "用户音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user-speech/events/18b484bed273087e2a42fec4/main.wav"}, {"label": "用户模型实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0021-generation/input.json"}, {"label": "用户候选的 Judge 结果", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0022-guard/raw_response.txt"}]}, {"speaker": "assistant", "audio_id": "A011", "title": "A011 · 助手（中途停止）", "short_label": "A011", "kind": "assistant", "kind_label": "助手已播前缀", "text": "总体按当天时间处理，不按部门排：\n\n第一，梁舒，九点半跟岗。直接关注客服工单系统邀请没有激活记录，可能卡住查看案例。多因素认证未登记，单列核实，不直接认定会导致登录失败。\n\n第二，高远，", "unplayed_text": "十点培训。明确阻塞是客户关系管理系统只有只读权限，但培训需要编辑客户记录。\n\n第三，周启明，十一点配置开发环境。代码仓库账号尚未创建，是优先阻塞项。单点登录邀请已发送，但没有激活记录；邮箱依赖单点登录激活，目前只能标为等待自动启用。\n\n第四，何嘉宁，下午两点对账演练。总账只读权限仍在等待财务平台主管审批，可能卡住查看总账数据。\n\n后续权限放最后：高远的商业智能平台工作区、角色名称和导出权限审批人待确认；周启明所需的后端服务仓库读写权限缺少具体仓库名，持续集成查看权限也没有工单。", "start_seconds": 353.143125, "duration_seconds": 20.8085625, "outcome_note": "未播音频丢弃 873131 采样；未播文字 241 字符。后续上下文仅保留已播前缀。", "files": [{"label": "已消费助手音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/played/A011.wav"}, {"label": "GPT 实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant/0050-response/input.json"}, {"label": "逐词字幕", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant-audio/A011/url-delivery/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-012", "title": "U12 · 用户主表达", "short_label": "U12", "kind": "deliver", "kind_label": "T03", "text": "先停一下，会议上没时间念这么细。每个人只留一个最关键阻塞，再带上该找谁核实。", "unplayed_text": "", "start_seconds": 372.7996875, "duration_seconds": 9.1719375, "outcome_note": "用户台词先通过原语义 Judge，再由真实 TTS 合成。", "files": [{"label": "用户音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user-speech/events/72d9bbe8249e3a2a34d6d048/main.wav"}, {"label": "用户模型实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0023-generation/input.json"}, {"label": "用户候选的 Judge 结果", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0024-guard/raw_response.txt"}]}, {"speaker": "assistant", "audio_id": "A012", "title": "A012 · 助手", "short_label": "A012", "kind": "assistant", "kind_label": "助手已播前缀", "text": "按时间简报：\n\n梁舒，九点半：工单系统无激活记录；核实人待确认。\n\n高远，十点：客户关系管理系统只有只读权限，无法满足培训编辑需求；核实人待确认。\n\n周启明，十一点：单点登录无激活记录，邮箱仍等待自动启用；核实人待确认。\n\n何嘉宁，下午两点：总账只读权限待审批；找财务平台主管核实。", "unplayed_text": "", "start_seconds": 382.571625, "duration_seconds": 32.241, "outcome_note": "这条回复的音频已完整消费。", "files": [{"label": "已消费助手音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/played/A012.wav"}, {"label": "GPT 实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant/0062-response/input.json"}, {"label": "逐词字幕", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant-audio/A012/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-013", "title": "U13 · 用户主表达", "short_label": "U13", "kind": "deliver", "kind_label": "T01", "text": "好，最后按人回读一遍吧：现有状态、关键缺口、待确认项和核实方都保留，末尾再给我处理先后顺序。", "unplayed_text": "", "start_seconds": 414.812625, "duration_seconds": 13.258625, "outcome_note": "用户台词先通过原语义 Judge，再由真实 TTS 合成。", "files": [{"label": "用户音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user-speech/events/09727f9c4d585a31377c8913/main.wav"}, {"label": "用户模型实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0025-generation/input.json"}, {"label": "用户候选的 Judge 结果", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0026-guard/raw_response.txt"}]}, {"speaker": "assistant", "audio_id": "A013", "title": "A013 · 助手", "short_label": "A013", "kind": "assistant", "kind_label": "助手已播前缀", "text": "按人回读：\n\n高远，销售运营，十点参加客户数据培训。邮箱和单点登录已启用；客户关系管理系统账号已创建，但只有只读权限，不能满足培训中编辑客户记录的需要，这是关键阻塞。相关核实方尚未提供。商业智能平台账号还没创建；后续需要查看和导出销售周报，但工作区、角色名称和导出权限审批人都待确认，目前没有信息表明它会卡住十点培训。\n\n梁舒，客户支持，九点半开始跟岗，需要进入客服工单系统查看案例。邮箱和单点登录已启用，知识库只读权限已开通。工单系统邀请已发送，但没有激活记录，这是当前关键缺口，核实方尚未提供。多因素认证还没登记，需单列核实，不能据此认定它会导致登录失败；核实方也待确认。\n\n何嘉宁，财务分析，下午两点参加对账演练，需要查看总账数据。邮箱、单点登录和费用报销系统都已启用，财务核算系统账号已创建。关键缺口是申请的总账只读权限仍在等待财务平台主管审批；核实方是财务平台主管。\n\n周启明，软件研发，十一点配置开发环境。单点登录邀请已发送，但没有激活记录，不能视为已经激活；邮箱依赖单点登录激活后自动启用，目前只能标为等待自动启用。代码仓库账号还没创建；问题跟踪系统已有普通成员账号。后续还需要后端服务仓库读写权限和持续集成页面查看权限，但具体仓库名未提供，持续集成权限也没有工单，相关核实方均待确认。\n\n处理顺序按当天安排时间：先梁舒九点半，再高远十点，再周启明十一点，最后何嘉宁下午两点。每个人先处理直接阻塞，再核实登录和安全前置条件，后续权限需求放最后。", "unplayed_text": "", "start_seconds": 428.67125, "duration_seconds": 139.7200625, "outcome_note": "这条回复的音频已完整消费。", "files": [{"label": "已消费助手音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/played/A013.wav"}, {"label": "GPT 实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant/0064-response/input.json"}, {"label": "逐词字幕", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/assistant-audio/A013/url-delivery/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-014", "title": "U13 · 用户告别", "short_label": "U13", "kind": "end", "kind_label": "用户告别", "text": "好的，这样就可以了，谢谢。", "unplayed_text": "", "start_seconds": 568.3913125, "duration_seconds": 3.018625, "outcome_note": "用户台词先通过原语义 Judge，再由真实 TTS 合成。", "files": [{"label": "用户音频", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user-speech/events/e702957e638172526ced3ad1/main.wav"}, {"label": "用户模型实际输入", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0027-generation/input.json"}, {"label": "用户候选的 Judge 结果", "path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/user/calls/0028-guard/raw_response.txt"}]}], "audio_path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/dialogue-stereo.wav", "result_path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/result.json", "integrity_path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/integrity.json", "timeline_path": "runtime/synthetic-dialogue/20261029-part4-synthetic-R01-V01-attempt5/timeline.json", "archive_path": "https://github.com/Yuanhong-Zheng/duplex-synthetic-dialogue/releases/download/r4-20261029/synthetic-dialogue-records.zip", "event_summary": "[\n  {\n    \"sequence\": 8,\n    \"frame\": 880177,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"intra_user_pause_observed\",\n    \"focus_turn_id\": \"U02\",\n    \"pause_frames\": 9920,\n    \"listener_decision\": \"listen\",\n    \"premature_response\": false\n  },\n  {\n    \"sequence\": 21,\n    \"frame\": 1444944,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_trigger_checked\",\n    \"turn_id\": \"U03\",\n    \"decision\": \"ready\",\n    \"evidence\": \"客户关系管理系统账号已创建，但目前只有只读权限，而培训需要编辑客户记录，这是会卡住十点培训的明确阻塞项。商业智能平台账号尚未创建\",\n    \"reason\": \"已说明客户关系管理系统的权限角色缺口，并已开始说明商业智能平台的账号状态。\"\n  },\n  {\n    \"sequence\": 24,\n    \"frame\": 1462694,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_queue_discard\",\n    \"response_id\": \"A002\",\n    \"reason\": \"semantic listener requested stop on heard input\",\n    \"discarded_audio_frames\": 58528,\n    \"discarded_text_chars\": 16,\n    \"provider_request_cancelled\": false,\n    \"native_stop_latency_measured\": false\n  },\n  {\n    \"sequence\": 39,\n    \"frame\": 2580186,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_audio_started\",\n    \"audio_id\": \"input-f411462a608f\",\n    \"kind_detail\": \"side_speech\",\n    \"focus_turn_id\": \"U05\",\n    \"overlap_with_assistant\": true\n  },\n  {\n    \"sequence\": 48,\n    \"frame\": 2777476,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_trigger_checked\",\n    \"turn_id\": \"U06\",\n    \"decision\": \"ready\",\n    \"evidence\": \"当前最可能的阻塞是工单系统尚无激活记录；另外，多因素认证还没登记，也可能影响登\",\n    \"reason\": \"已说明工单系统尚未激活，并开始分析多因素认证对登录阻塞的影响。\"\n  },\n  {\n    \"sequence\": 51,\n    \"frame\": 2800687,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_queue_discard\",\n    \"response_id\": \"A005\",\n    \"reason\": \"semantic listener requested stop on heard input\",\n    \"discarded_audio_frames\": 92007,\n    \"discarded_text_chars\": 22,\n    \"provider_request_cancelled\": false,\n    \"native_stop_latency_measured\": false\n  },\n  {\n    \"sequence\": 69,\n    \"frame\": 4373472,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"intra_user_pause_observed\",\n    \"focus_turn_id\": \"U09\",\n    \"pause_frames\": 22080,\n    \"listener_decision\": \"listen\",\n    \"premature_response\": false\n  },\n  {\n    \"sequence\": 77,\n    \"frame\": 4996348,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_trigger_checked\",\n    \"turn_id\": \"U10\",\n    \"decision\": \"ready\",\n    \"evidence\": \"单点登录邀请已发送但没有激活记录，而邮箱要等\",\n    \"reason\": \"已说明单点登录邀请状态，并开始说明其与邮箱启用之间的等待依赖关系。\"\n  },\n  {\n    \"sequence\": 80,\n    \"frame\": 5013415,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_queue_discard\",\n    \"response_id\": \"A009\",\n    \"reason\": \"semantic listener requested stop on heard input\",\n    \"discarded_audio_frames\": 316668,\n    \"discarded_text_chars\": 89,\n    \"provider_request_cancelled\": false,\n    \"native_stop_latency_measured\": false\n  },\n  {\n    \"sequence\": 89,\n    \"frame\": 5650290,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"tts_audio_delivery_recovery\",\n    \"response_id\": \"A011\",\n    \"original_http_status\": 500,\n    \"changed_field\": \"input.output_format=url\",\n    \"synthesis_conditions_unchanged\": true\n  },\n  {\n    \"sequence\": 99,\n    \"frame\": 5964795,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_trigger_checked\",\n    \"turn_id\": \"U12\",\n    \"decision\": \"ready\",\n    \"evidence\": \"第一，梁舒，九点半跟岗。直接关注客服工单系统邀请没有激活记录，可能卡住查看案例。多因素认证未登记，单列核实，不直接认定会导致登录失败。\\n\\n第二，\",\n    \"reason\": \"已完成第一名员工梁舒的优先项，并以“第二”开始后续排序。\"\n  },\n  {\n    \"sequence\": 102,\n    \"frame\": 5983227,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_queue_discard\",\n    \"response_id\": \"A011\",\n    \"reason\": \"semantic listener requested stop on heard input\",\n    \"discarded_audio_frames\": 873131,\n    \"discarded_text_chars\": 241,\n    \"provider_request_cancelled\": false,\n    \"native_stop_latency_measured\": false\n  },\n  {\n    \"sequence\": 111,\n    \"frame\": 6858740,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"tts_audio_delivery_recovery\",\n    \"response_id\": \"A013\",\n    \"original_http_status\": 500,\n    \"changed_field\": \"input.output_format=url\",\n    \"synthesis_conditions_unchanged\": true\n  }\n]", "diagnostics": {"conclusion": "原 WAV＋hex 请求四次稳定返回 HTTP 500；相同全文改为 WAV URL 返回和 MP3 hex 返回均成功。证据指向较大 WAV 的内联返回链路，具体服务端内部异常和大小阈值尚不能确定。", "rows": [{"label": "原请求：WAV + hex", "status": "4 次 HTTP 500", "meaning": "334 字原文及全部参数逐项一致"}, {"label": "同接口、同音色的短请求", "status": "HTTP 200", "meaning": "服务及该音色当前可用"}, {"label": "原全文，关闭字幕", "status": "HTTP 500", "meaning": "仅关闭字幕未消除故障"}, {"label": "原全文，句级字幕", "status": "HTTP 500", "meaning": "仅改字幕粒度未消除故障"}, {"label": "原全文仅去换行，逐词字幕", "status": "HTTP 500", "meaning": "仅去换行未消除故障"}, {"label": "原全文，WAV + URL", "status": "HTTP 200", "meaning": "WAV 73.96 秒，完整逐词字幕验证通过"}, {"label": "原全文，MP3 + hex", "status": "HTTP 200", "meaning": "同音色、同全文成功返回压缩音频"}], "limit": "早期诊断请求原样保留。用户确认后，本次只在 HTTP500 InternalError 后使用同全文 WAV URL 下载恢复；已验证 2 处恢复的生成条件不变。诊断样本没有替换主流程音轨。", "audio_path": "runtime/synthetic-dialogue/diagnosis-20261029/transport-controls/wav_url/raw.wav", "summary_path": "runtime/synthetic-dialogue/diagnosis-20261029/summary.json", "support_path": "runtime/synthetic-dialogue/diagnosis-20261029/support-packet.json", "archive_path": "runtime/synthetic-dialogue/diagnosis-20261029/diagnostics.zip"}, "public_view": true}}</script><div class='rx-appendix-title' id='results-complete-case'><h2>完整案例与原始审查</h2><p>以下保留项目原有的完整案例结构，便于逐字段核对原始产物。</p></div><div class='results-canonical'>
+<div class='overview-wrap'><table class='overview-table'>
+<thead><tr>
+  <th>Case</th><th>Domain / Scenario</th><th>Turns</th><th>Act 覆盖</th><th>Status</th>
+</tr></thead><tbody>
+<tr><td><a href='#case-R01-V01'><code>R01-V01</code></a></td><td><b>软件、设备与信息技术支持</b><br><span>账户与访问问题</span></td><td>13</td><td>A01 × 6、A02 × 2、A03 × 3、A04、A05</td><td><span class='fail'>Stage 5 需要修复</span></td></tr></tbody></table></div>
+<article class='case' id='case-R01-V01'>
+  <header class='case-header'>
+    <div>
+      <p class='case-id'>R01-V01</p>
+      <h2>软件、设备与信息技术支持 / 账户与访问问题</h2>
+      <p class='case-meta'><code>D11</code> · <code>D11-S04</code> · 结构化整理 · 13 turns</p>
+    </div>
+    <span class='fail'>Stage 5 需要修复</span>
+  </header>
+
+  <section>
+    <h3>Domain / Scenario</h3>
+    <dl class='kv'>
+      <dt>Domain</dt><dd>软件、设备与信息技术支持</dd>
+      <dt>Domain ID</dt><dd>D11</dd>
+      <dt>Scenario</dt><dd>账户与访问问题</dd>
+      <dt>Scenario ID</dt><dd>D11-S04</dd>
+      <dt>Domain Definition</dt><dd>IHBench 的 SaaS、EVA-Bench 的企业 IT、DuplexOmni 的排障和 Talking Turns 的 Python 学习形成互补证据。</dd>
+      <dt>Coverage</dt><dd>evidence_aligned</dd>
+    </dl>
+    <details class='artifact'><summary>完整 Scene JSON</summary><pre>{
+  &quot;domain_id&quot;: &quot;D11&quot;,
+  &quot;domain&quot;: &quot;软件、设备与信息技术支持&quot;,
+  &quot;scenario_id&quot;: &quot;D11-S04&quot;,
+  &quot;scenario&quot;: &quot;账户与访问问题&quot;
+}</pre></details>
+    <details class='artifact'><summary>Taxonomy 对应记录</summary><pre>{
+  &quot;domain_id&quot;: &quot;D11&quot;,
+  &quot;domain&quot;: &quot;软件、设备与信息技术支持&quot;,
+  &quot;domain_definition&quot;: &quot;IHBench 的 SaaS、EVA-Bench 的企业 IT、DuplexOmni 的排障和 Talking Turns 的 Python 学习形成互补证据。&quot;,
+  &quot;domain_evidence_tags&quot;: [
+    &quot;AZ&quot;,
+    &quot;DO&quot;,
+    &quot;EVA&quot;,
+    &quot;GGL&quot;,
+    &quot;IHB&quot;,
+    &quot;TT&quot;,
+    &quot;VB&quot;
+  ],
+  &quot;scenario_id&quot;: &quot;D11-S04&quot;,
+  &quot;scenario&quot;: &quot;账户与访问问题&quot;,
+  &quot;scenario_coverage_status&quot;: &quot;evidence_aligned&quot;,
+  &quot;scenario_evidence_tags&quot;: [
+    &quot;IHB&quot;,
+    &quot;EVA&quot;
+  ]
+}</pre></details>
+  </section>
+
+  <section>
+    <h3>Task / Goal</h3>
+    <p style='font-size:14px'><b>Task Style：</b>结构化整理</p>
+    <p style='font-size:14px'><b>Goal：</b>把我随后口述的几名新员工、所需业务系统、现有账号状态和缺失权限，整理成按人员划分的访问核对表，并标出阻塞入职工作的项目、待确认信息及处理先后顺序。</p>
+    <details class='artifact' open><summary>完整 Task Instance JSON</summary><pre>{
+  &quot;goal&quot;: &quot;把我随后口述的几名新员工、所需业务系统、现有账号状态和缺失权限，整理成按人员划分的访问核对表，并标出阻塞入职工作的项目、待确认信息及处理先后顺序。&quot;
+}</pre></details>
+  </section>
+
+  <section>
+    <h3>Runtime Contract</h3>
+    <p class='empty'>当前 case 的能力边界和可用模态：</p>
+    <details class='artifact'><summary>Capability Contract</summary><pre>{
+  &quot;interaction_modalities&quot;: [
+    &quot;audio&quot;
+  ],
+  &quot;available_tools&quot;: [],
+  &quot;external_state_access&quot;: &quot;none&quot;,
+  &quot;external_side_effects&quot;: &quot;forbidden&quot;
+}</pre></details>
+    <details class='artifact'><summary>Available Modalities</summary><pre>[
+  &quot;audio&quot;
+]</pre></details>
+  </section>
+
+  <div class="two-col"><div><h4>User Seed</h4><dl class="kv"><dt>角色 / 关系</dt><dd>负责核对新员工系统开通情况的企业入职协调员</dd><dt>任务熟悉度</dt><dd>high</dd></dl></div><div><h4>Voice Profile</h4><dl class="kv"></dl><p class='voice-prompt'>男性声音，感知年龄四十多岁，音色沉稳偏低，吐字清楚，语速稍快但节奏有条理。</p></div></div><details class='artifact'><summary>完整 UserSeed JSON</summary><pre>{
+  &quot;role_relation&quot;: &quot;负责核对新员工系统开通情况的企业入职协调员&quot;,
+  &quot;task_familiarity&quot;: &quot;high&quot;
+}</pre></details><details class='artifact'><summary>完整 Voice Profile JSON</summary><pre>&quot;男性声音，感知年龄四十多岁，音色沉稳偏低，吐字清楚，语速稍快但节奏有条理。&quot;</pre></details>
+
+  <section>
+    <h3>Episode Situation &amp; Environment Audio</h3>
+    <div class='situation-block'><b>Episode Situation</b><p>周一上午八点四十分，用户坐在公司办公区的一间小会议室里，准备在九点的新员工报到协调会前核对四名当天入职员工的系统访问情况。用户负责汇总人力资源、直属经理和内部信息技术支持留下的零散记录，但不负责实际创建账号或授予权限。四名员工分别进入销售运营、客户支持、财务分析和软件研发岗位，各自在当天都有需要使用业务系统的安排。用户手边有一份人力资源入职表、两页内部支持工单摘录，以及直属经理发来的聊天记录，可以逐条口述其中内容。现有资料同时使用了“已创建”“已邀请”“待审批”和“未开通”等不同表述，尚未按人员归并。部分账号虽然已经存在，但登录前置条件、角色级别或具体数据范围仍不完整，不能仅凭账号名称判断是否可用。销售运营员工上午十点要参加客户数据培训，客户支持员工九点半开始跟岗，研发员工十一点进行代码环境配置，财务员工下午两点参与对账演练。用户希望优先识别会直接阻塞这些当日安排的问题，同时把不影响当天工作的缺口放到较后位置。直属经理的聊天记录中还有几项权限只写了用途，没有明确角色名称或审批人，因此需要单独标成待确认。会议室内无法访问管理后台，用户也不能现场验证登录结果，只能依据手边记录整理并指出后续应由谁核实。任何尚未得到记录支持的账号状态都不能推定为已经开通。当前未决问题包括多因素认证是否完成、邀请是否已被员工接受、个别高级权限是否确属岗位必需，以及相关审批目前由哪个负责人承接。</p></div><div class='audio-block'><b>Environment Audio</b><p>会议室右后方约六米处持续传来空调低沉的送风声。玻璃门外偶尔有人经过并短暂交谈，开门时声音会稍微变大。桌面附近不时响起纸张翻动和笔尖轻触桌面的声音。</p><small>入口：scene_start；音景叠加层 · SNR ≈ 28 dB，不是行为分支。</small></div>
+  </section>
+
+  <section>
+    <h3>Task Reference Data</h3>
+    <ul class='ref-list'><li>人力资源入职表列出四名当天入职员工及部门：高远—销售运营，梁舒—客户支持，何嘉宁—财务分析，周启明—软件研发；用户已经看过，可作为按人员归类的基础。</li><li>内部支持工单摘录记录高远的企业邮箱和单点登录账号均为“已启用”；客户关系管理系统账号为“已创建，当前角色：只读”，直属经理备注其上午十点的客户数据培训需要编辑客户记录；商业智能平台显示“未创建账号”。</li><li>直属经理聊天记录写明高远后续需要查看并导出销售周报，但没有说明商业智能平台应授予的工作区、角色名称或导出权限审批人；用户可现场读取，该需求尚未核实。</li><li>内部支持工单摘录记录梁舒的企业邮箱和单点登录账号均为“已启用”，但多因素认证状态为“未登记”；客服工单系统为“邀请已发送，尚无激活记录”，知识库为“已开通只读访问”。</li><li>直属经理聊天记录写明梁舒九点半开始跟岗，跟岗期间需要登录客服工单系统查看案例；另提到以后可能需要导出客户会话，但未说明是否属于入职首日职责，也没有对应审批记录。</li><li>内部支持工单摘录记录何嘉宁的企业邮箱、单点登录和费用报销系统均为“已启用”；财务核算系统账号为“已创建，等待财务平台主管审批”，申请角色写作“总账只读”，下午两点的对账演练需要查看总账数据。</li><li>内部支持工单摘录记录周启明的单点登录状态为“邀请已发送，尚无激活记录”，企业邮箱为“等待单点登录激活后自动启用”，代码仓库为“未创建账号”，问题跟踪系统为“已创建普通成员账号”。</li><li>研发经理聊天记录写明周启明十一点配置开发环境，需要后端服务代码仓库的读写权限和持续集成页面的查看权限；记录未注明具体仓库名称，持续集成权限也没有对应工单。</li></ul>
+  </section>
+
+  <section>
+    <h3>Constraints / Safety</h3>
+    <h4>Constraints</h4><ul class='cl-list'><li><code>C01</code><span class='badge badge-hard'>hard</span> 访问核对范围仅包括高远、梁舒、何嘉宁和周启明四名当天入职员工。</li><li><code>C02</code><span class='badge badge-hard'>hard</span> 没有明确记录支持的账号、角色、审批或激活状态必须标为待确认，不得推定为已完成。</li><li><code>C03</code><span class='badge badge-soft'>soft</span> 处理顺序优先考虑会阻塞当天已安排工作的项目，其次是登录与安全前置条件，再处理不影响当天工作的后续权限。</li><li><code>C04</code><span class='badge badge-hard'>hard</span> 核对内容需要按人员划分，并分别保留所需系统、现有状态、缺失权限、阻塞项和待确认信息。</li></ul><h4>Safety Limits</h4><ul class='cl-list'><li><code>L01</code><span class='badge badge-hard'>hard</span> 不得通过共享账号、借用他人凭据、代替员工完成身份验证或绕过审批来解决访问阻塞。</li><li><code>L02</code><span class='badge badge-hard'>hard</span> 角色和数据访问范围不得超出已有岗位需求与审批记录；高级权限不明确时只能列为待确认。</li></ul>
+  </section>
+
+  <section>
+    <h3>Offline Episode Script</h3>
+    <table class='script'><thead><tr><th>ID</th><th>Act</th><th>Timing</th><th>Interrupt Anchor</th><th>User Goal</th><th>User Utterance</th><th>Assistant Semantic Goal</th></tr></thead><tbody><tr><td>U01</td><td><b>A01</b></td><td>T01</td><td></td><td>建立四名新员工的按人员访问核对框架</td><td>我得在报到协调会前整理四个人的访问情况：销售运营高远、客户支持梁舒、财务分析何嘉宁，还有软件研发周启明。麻烦按人归类，优先找出会卡住今天安排的项目。</td><td>建立按四名员工划分的核对框架，保留所需系统、现有状态、缺失权限、阻塞项和待确认信息，并请用户先口述当天安排最早人员的记录</td></tr><tr><td>U02</td><td><b>A01</b></td><td>T01, T02</td><td></td><td>交付高远的系统状态和上午培训需求</td><td>先说高远。他十点有客户数据培训，工单上写的是，邮箱和单点登录已启用，客户关系管理系统账号已创建、角色是只读，但培训要编辑客户记录；商业智能平台还没创建账号。<br><small style='color:#8aa9b8'>⏸ after <i>工单上写的是</i> · 620 ms</small></td><td>按系统整理高远的现有状态与需求，标出客户关系管理系统缺少编辑权限会直接阻塞十点培训，并将商业智能平台未创建列为需结合使用时间判断的缺口</td></tr><tr><td>U03</td><td><b>A02</b></td><td>T03</td><td>Assistant 已说明客户关系管理系统的角色缺口并开始说明商业智能平台状态时</td><td>中断展开内容，只保留高远当前最直接的培训阻塞项</td><td>先别展开商业智能平台，直接说十点培训最可能卡在哪儿。</td><td>简短指出高远当前记录中直接阻塞十点培训的是客户关系管理系统仅有只读角色、无法满足编辑客户记录的需求</td></tr><tr><td>U04</td><td><b>A01</b></td><td>T01</td><td></td><td>补充高远对商业智能平台的后续需求及待确认字段</td><td>商业智能平台这项再补上：经理说他后续要查看、导出销售周报，但工作区、角色名称和导出权限的审批人都没写。</td><td>更新高远的核对项，将商业智能平台账号未创建以及工作区、角色名称、导出权限审批人不明列为待确认，并标注为未证实会阻塞十点培训的后续缺口</td></tr><tr><td>U05</td><td><b>A01</b></td><td>T01</td><td></td><td>交付梁舒的系统状态和九点半跟岗需求</td><td>接着是梁舒，九点半开始跟岗，要进客服工单系统看案例。她的邮箱和单点登录已启用，多因素认证未登记；工单系统是邀请已发送、没有激活记录，知识库只读已经开通。<div class='side-speech'><b>侧边音频</b> user → third_party：小陈，麻烦把门带上，谢谢。 <small>（during_assistant）</small></div></td><td>整理梁舒各系统状态，标出客服工单系统尚无激活记录会直接影响九点半查看案例，并将多因素认证未登记列为登录与安全前置条件待核实</td></tr><tr><td>U06</td><td><b>A05</b></td><td>T03</td><td>Assistant 已说明客服工单系统尚未激活，并开始分析多因素认证与登录阻塞的关系时</td><td>拒绝把多因素认证未登记直接推定为工单系统无法登录的既定原因</td><td>这两项别直接串成因果。多因素认证只是未登记，先单列核实，不能据此断定就是它卡住了登录。</td><td>将梁舒的客服工单系统未激活与多因素认证未登记分开记录：前者作为跟岗直接阻塞项，后者作为需由员工或内部支持核实的登录安全前置条件</td></tr><tr><td>U07</td><td><b>A01</b></td><td>T01</td><td></td><td>交付何嘉宁的系统状态和下午对账需求</td><td>何嘉宁下午两点参加对账演练，要查看总账数据。邮箱、单点登录和费用报销系统都已启用；财务核算系统账号已创建，申请的是总账只读，现在等财务平台主管审批。</td><td>整理何嘉宁的访问情况，确认财务核算系统的总账只读审批未完成是下午对账演练的直接阻塞项，并保留财务平台主管为当前记录中的审批承接方</td></tr><tr><td>U08</td><td><b>A03</b></td><td>T01</td><td></td><td>比较何嘉宁的审批阻塞与前两人的处理紧迫度</td><td>按今天的时间看，何嘉宁这项是不是应该排在梁舒和高远后面？</td><td>依据已披露的九点半、十点和下午两点安排，确认何嘉宁的审批阻塞应排在梁舒与高远之后，同时说明它仍属于当天必须处理的阻塞项</td></tr><tr><td>U09</td><td><b>A01</b></td><td>T01, T02</td><td></td><td>交付周启明的账号状态、十一点安排和缺失权限</td><td>最后是周启明，十一点配置开发环境。我看一下记录，单点登录邀请已发但没有激活记录，邮箱要等单点登录激活后自动启用，代码仓库账号未创建，问题跟踪系统已有普通成员账号。经理还说要后端服务仓库读写和持续集成页面查看权限，不过没写具体仓库名，持续集成也没有工单。<br><small style='color:#8aa9b8'>⏸ after <i>我看一下记录</i> · 1380 ms</small></td><td>按依赖关系整理周启明的单点登录、邮箱、代码仓库、问题跟踪系统和持续集成访问，标出十一点前的直接阻塞项，并将具体仓库名称及持续集成权限工单缺失列为待确认</td></tr><tr><td>U10</td><td><b>A03</b></td><td>T03</td><td>Assistant 已说明单点登录邀请状态，并开始梳理它与邮箱启用的依赖关系时</td><td>要求精确区分周启明的邀请、激活和邮箱状态</td><td>这里说准确点：邀请已发送不等于已经激活，邮箱也只能写等待自动启用，对吧？</td><td>确认单点登录目前只能记录为邀请已发送、无激活记录，邮箱只能记录为等待单点登录激活后自动启用，二者均不得标为已可用</td></tr><tr><td>U11</td><td><b>A04</b></td><td>T01</td><td></td><td>把总体处理顺序更新为按当日安排时间与直接阻塞程度排序</td><td>总体顺序再明确一下，别按部门排。先按当天安排的时间，再看是不是直接阻塞；登录和安全前置条件跟在对应人员下面，后续权限放最后。</td><td>按九点半、十点、十一点和下午两点的安排，对四人的直接阻塞项排序，并在各人项下依次附上登录或安全前置条件以及不影响当天工作的后续权限</td></tr><tr><td>U12</td><td><b>A02</b></td><td>T03</td><td>Assistant 已完成第一名员工的优先项并开始展开后续排序时</td><td>中断详细排序，压缩为会议可快速口述的重点版本</td><td>先停一下，会议上没时间念这么细。每个人只留一个最关键阻塞，再带上该找谁核实。</td><td>压缩为每人一个最关键的当天阻塞项，并分别标注应由员工、内部支持、直属经理或财务平台主管核实；审批人没有记录支持的项目明确标为待确认</td></tr><tr><td>U13</td><td><b>A03</b></td><td>T01</td><td></td><td>请求回读最终的按人员访问核对表和处理顺序</td><td>好，最后按人回读一遍吧：现有状态、关键缺口、待确认项和核实方都保留，末尾再给我处理先后顺序。</td><td>基于用户已口述的记录，按高远、梁舒、何嘉宁和周启明分别回读现有状态、关键缺口、阻塞项、待确认信息及核实方，并以当天安排时间和直接阻塞程度给出最终处理顺序</td></tr></tbody></table>
+  </section>
+
+  <section><h3>Stage 3.5 Duplex Enrichment</h3><p><b>状态：</b>已增强<br><span class='meta'>Stage 3.5 Judge passed</span></p><dl class='kv'><dt>T01</dt><dd>9</dd><dt>T02</dt><dd>2</dd><dt>T03</dt><dd>4</dd><dt>A02</dt><dd>2</dd><dt>侧边音频</dt><dd>1</dd><dt>使用的自然机会</dt><dd>1</dd></dl><details class='artifact'><summary>Stage 3.5 metadata</summary><pre>{
+  &quot;status&quot;: &quot;enriched&quot;,
+  &quot;reason&quot;: &quot;Stage 3.5 Judge passed&quot;,
+  &quot;stage3_status&quot;: &quot;passed&quot;,
+  &quot;warnings&quot;: [],
+  &quot;must_fix&quot;: [],
+  &quot;judge&quot;: {
+    &quot;decision&quot;: &quot;pass&quot;,
+    &quot;must_fix&quot;: [],
+    &quot;warnings&quot;: [],
+    &quot;duplex_summary&quot;: {
+      &quot;t01_count&quot;: 9,
+      &quot;t02_count&quot;: 2,
+      &quot;t03_count&quot;: 4,
+      &quot;a02_count&quot;: 2,
+      &quot;side_speech_count&quot;: 1,
+      &quot;natural_opportunities_used&quot;: 1
+    }
+  },
+  &quot;structural_normalizations&quot;: [],
+  &quot;original_script_hash&quot;: &quot;2e7693372ce651d87152d7082e2ed7d7bbb67df16d0a52a57712319dc1c54f98&quot;,
+  &quot;final_script_hash&quot;: &quot;1734564884c06277c56d290e18769b91b8dd44714621eec7116e89512b9b6587&quot;
+}</pre></details></section>
+  <section><h3>Reward Rubric · Turn-level Semantic + Behavior</h3><p>结构状态：<span class='rubric-status pass'>通过结构校验</span></p><div class='rubric-grid'><article class='rubric-turn'><h4>U01</h4><div><b>Semantic：</b><ul class='rubric-behavior'><li>建立仅包含高远、梁舒、何嘉宁和周启明的按人员访问核对框架，并以当天工作阻塞为优先项。</li></ul></div><div><b>Behavior：</b><span class='empty'>无 Behavior</span></div></article><article class='rubric-turn'><h4>U02</h4><div><b>Semantic：</b><ul class='rubric-behavior'><li>将高远的邮箱、单点登录、客户关系管理系统和商业智能平台状态归入其个人条目。</li><li>将客户关系管理系统仅有只读角色、但十点培训需要编辑客户记录标为直接阻塞。</li></ul></div><div><b>Behavior：</b><ul class='rubric-behavior'><li>用户在“工单上写的是”后停顿时保持等待，不在用户继续前作答。</li></ul></div></article><article class='rubric-turn'><h4>U03</h4><div><b>Semantic：</b><ul class='rubric-behavior'><li>只指出客户关系管理系统缺少编辑权限是高远十点培训最直接的阻塞项。</li></ul></div><div><b>Behavior：</b><ul class='rubric-behavior'><li>用户在播报中段起声时停止当前播报并让出话权。</li><li>处理插话后不再继续已被用户取消的商业智能平台展开。</li></ul></div></article><article class='rubric-turn'><h4>U04</h4><div><b>Semantic：</b><ul class='rubric-behavior'><li>补记高远后续需要查看和导出销售周报，并将工作区、角色名称及导出权限审批人标为待确认。</li></ul></div><div><b>Behavior：</b><span class='empty'>无 Behavior</span></div></article><article class='rubric-turn'><h4>U05</h4><div><b>Semantic：</b><ul class='rubric-behavior'><li>记录梁舒的邮箱、单点登录、多因素认证、客服工单系统和知识库的现有状态。</li><li>将客服工单系统只有已发送邀请而无激活记录标为九点半跟岗的直接访问阻塞，并将多因素认证未登记单列为待核实前置条件。</li></ul></div><div><b>Behavior：</b><span class='empty'>无 Behavior</span></div></article><article class='rubric-turn'><h4>U06</h4><div><b>Semantic：</b><ul class='rubric-behavior'><li>撤销多因素认证未登记导致客服工单系统无法登录的因果推定，将其作为独立待核实项。</li></ul></div><div><b>Behavior：</b><ul class='rubric-behavior'><li>用户在播报中段提出异议时停止当前分析并让出话权。</li><li>继续时从纠正后的状态关系恢复，不重复被否定的因果推断。</li></ul></div></article><article class='rubric-turn'><h4>U07</h4><div><b>Semantic：</b><ul class='rubric-behavior'><li>记录何嘉宁的邮箱、单点登录、费用报销系统及财务核算系统现有状态。</li><li>将财务核算系统的总账只读申请仍待财务平台主管审批标为下午两点对账演练的阻塞项。</li></ul></div><div><b>Behavior：</b><span class='empty'>无 Behavior</span></div></article><article class='rubric-turn'><h4>U08</h4><div><b>Semantic：</b><ul class='rubric-behavior'><li>依据当天安排时间，将何嘉宁下午两点的审批阻塞排在梁舒九点半和高远十点的直接阻塞之后。</li></ul></div><div><b>Behavior：</b><span class='empty'>无 Behavior</span></div></article><article class='rubric-turn'><h4>U09</h4><div><b>Semantic：</b><ul class='rubric-behavior'><li>准确记录周启明的单点登录仅已发送邀请、邮箱等待自动启用、代码仓库未创建及问题跟踪系统已有普通成员账号。</li><li>将代码仓库读写和持续集成页面查看权限列为十一点环境配置的缺口，并将具体仓库名称及持续集成工单状态标为待确认。</li></ul></div><div><b>Behavior：</b><ul class='rubric-behavior'><li>用户在“我看一下记录”后停顿时保持等待，不在用户继续前作答。</li></ul></div></article><article class='rubric-turn'><h4>U10</h4><div><b>Semantic：</b><ul class='rubric-behavior'><li>明确区分单点登录邀请已发送、尚无激活记录和邮箱等待自动启用三种状态，不把任何一项写成已经完成。</li></ul></div><div><b>Behavior：</b><ul class='rubric-behavior'><li>用户在播报中段要求纠正时停止当前播报并让出话权。</li><li>继续时从已播放边界按纠正后的状态表述恢复。</li></ul></div></article><article class='rubric-turn'><h4>U11</h4><div><b>Semantic：</b><ul class='rubric-behavior'><li>将总体顺序更新为梁舒九点半、高远十点、周启明十一点、何嘉宁下午两点，并在各人条目下先列直接阻塞、再列登录与安全前置条件，最后列后续权限。</li></ul></div><div><b>Behavior：</b><span class='empty'>无 Behavior</span></div></article><article class='rubric-turn'><h4>U12</h4><div><b>Semantic：</b><ul class='rubric-behavior'><li>把每名员工压缩为一个最关键的当日阻塞项。</li><li>为每名员工的关键阻塞项注明应负责确认需求、激活、审批或开通的核实方。</li></ul></div><div><b>Behavior：</b><ul class='rubric-behavior'><li>用户在详细排序播报中段起声时停止当前播报并让出话权。</li><li>改为重点版本后不再恢复被取消的详细展开。</li></ul></div></article><article class='rubric-turn'><h4>U13</h4><div><b>Semantic：</b><ul class='rubric-behavior'><li>按人员回读四人的现有状态，保持邀请、激活、创建、启用、待审批和未创建等状态之间的准确区别。</li><li>为每人保留关键缺口、待确认信息及对应核实方，不把缺少记录支持的权限或状态推定为已完成。</li><li>在末尾给出梁舒、高远、周启明、何嘉宁的处理先后顺序，并将登录与安全前置条件归在对应人员下、后续权限置后。</li></ul></div><div><b>Behavior：</b><span class='empty'>无 Behavior</span></div></article></div><details class='artifact'><summary>完整 Actor Rubric JSON</summary><pre>{
+  &quot;turn_rubrics&quot;: [
+    {
+      &quot;turn_id&quot;: &quot;U01&quot;,
+      &quot;semantic&quot;: [
+        &quot;建立仅包含高远、梁舒、何嘉宁和周启明的按人员访问核对框架，并以当天工作阻塞为优先项。&quot;
+      ],
+      &quot;behavior&quot;: []
+    },
+    {
+      &quot;turn_id&quot;: &quot;U02&quot;,
+      &quot;semantic&quot;: [
+        &quot;将高远的邮箱、单点登录、客户关系管理系统和商业智能平台状态归入其个人条目。&quot;,
+        &quot;将客户关系管理系统仅有只读角色、但十点培训需要编辑客户记录标为直接阻塞。&quot;
+      ],
+      &quot;behavior&quot;: [
+        &quot;用户在“工单上写的是”后停顿时保持等待，不在用户继续前作答。&quot;
+      ]
+    },
+    {
+      &quot;turn_id&quot;: &quot;U03&quot;,
+      &quot;semantic&quot;: [
+        &quot;只指出客户关系管理系统缺少编辑权限是高远十点培训最直接的阻塞项。&quot;
+      ],
+      &quot;behavior&quot;: [
+        &quot;用户在播报中段起声时停止当前播报并让出话权。&quot;,
+        &quot;处理插话后不再继续已被用户取消的商业智能平台展开。&quot;
+      ]
+    },
+    {
+      &quot;turn_id&quot;: &quot;U04&quot;,
+      &quot;semantic&quot;: [
+        &quot;补记高远后续需要查看和导出销售周报，并将工作区、角色名称及导出权限审批人标为待确认。&quot;
+      ],
+      &quot;behavior&quot;: []
+    },
+    {
+      &quot;turn_id&quot;: &quot;U05&quot;,
+      &quot;semantic&quot;: [
+        &quot;记录梁舒的邮箱、单点登录、多因素认证、客服工单系统和知识库的现有状态。&quot;,
+        &quot;将客服工单系统只有已发送邀请而无激活记录标为九点半跟岗的直接访问阻塞，并将多因素认证未登记单列为待核实前置条件。&quot;
+      ],
+      &quot;behavior&quot;: []
+    },
+    {
+      &quot;turn_id&quot;: &quot;U06&quot;,
+      &quot;semantic&quot;: [
+        &quot;撤销多因素认证未登记导致客服工单系统无法登录的因果推定，将其作为独立待核实项。&quot;
+      ],
+      &quot;behavior&quot;: [
+        &quot;用户在播报中段提出异议时停止当前分析并让出话权。&quot;,
+        &quot;继续时从纠正后的状态关系恢复，不重复被否定的因果推断。&quot;
+      ]
+    },
+    {
+      &quot;turn_id&quot;: &quot;U07&quot;,
+      &quot;semantic&quot;: [
+        &quot;记录何嘉宁的邮箱、单点登录、费用报销系统及财务核算系统现有状态。&quot;,
+        &quot;将财务核算系统的总账只读申请仍待财务平台主管审批标为下午两点对账演练的阻塞项。&quot;
+      ],
+      &quot;behavior&quot;: []
+    },
+    {
+      &quot;turn_id&quot;: &quot;U08&quot;,
+      &quot;semantic&quot;: [
+        &quot;依据当天安排时间，将何嘉宁下午两点的审批阻塞排在梁舒九点半和高远十点的直接阻塞之后。&quot;
+      ],
+      &quot;behavior&quot;: []
+    },
+    {
+      &quot;turn_id&quot;: &quot;U09&quot;,
+      &quot;semantic&quot;: [
+        &quot;准确记录周启明的单点登录仅已发送邀请、邮箱等待自动启用、代码仓库未创建及问题跟踪系统已有普通成员账号。&quot;,
+        &quot;将代码仓库读写和持续集成页面查看权限列为十一点环境配置的缺口，并将具体仓库名称及持续集成工单状态标为待确认。&quot;
+      ],
+      &quot;behavior&quot;: [
+        &quot;用户在“我看一下记录”后停顿时保持等待，不在用户继续前作答。&quot;
+      ]
+    },
+    {
+      &quot;turn_id&quot;: &quot;U10&quot;,
+      &quot;semantic&quot;: [
+        &quot;明确区分单点登录邀请已发送、尚无激活记录和邮箱等待自动启用三种状态，不把任何一项写成已经完成。&quot;
+      ],
+      &quot;behavior&quot;: [
+        &quot;用户在播报中段要求纠正时停止当前播报并让出话权。&quot;,
+        &quot;继续时从已播放边界按纠正后的状态表述恢复。&quot;
+      ]
+    },
+    {
+      &quot;turn_id&quot;: &quot;U11&quot;,
+      &quot;semantic&quot;: [
+        &quot;将总体顺序更新为梁舒九点半、高远十点、周启明十一点、何嘉宁下午两点，并在各人条目下先列直接阻塞、再列登录与安全前置条件，最后列后续权限。&quot;
+      ],
+      &quot;behavior&quot;: []
+    },
+    {
+      &quot;turn_id&quot;: &quot;U12&quot;,
+      &quot;semantic&quot;: [
+        &quot;把每名员工压缩为一个最关键的当日阻塞项。&quot;,
+        &quot;为每名员工的关键阻塞项注明应负责确认需求、激活、审批或开通的核实方。&quot;
+      ],
+      &quot;behavior&quot;: [
+        &quot;用户在详细排序播报中段起声时停止当前播报并让出话权。&quot;,
+        &quot;改为重点版本后不再恢复被取消的详细展开。&quot;
+      ]
+    },
+    {
+      &quot;turn_id&quot;: &quot;U13&quot;,
+      &quot;semantic&quot;: [
+        &quot;按人员回读四人的现有状态，保持邀请、激活、创建、启用、待审批和未创建等状态之间的准确区别。&quot;,
+        &quot;为每人保留关键缺口、待确认信息及对应核实方，不把缺少记录支持的权限或状态推定为已完成。&quot;,
+        &quot;在末尾给出梁舒、高远、周启明、何嘉宁的处理先后顺序，并将登录与安全前置条件归在对应人员下、后续权限置后。&quot;
+      ],
+      &quot;behavior&quot;: []
+    }
+  ]
+}</pre></details></section>
+  <section><h3>Environment Audit · Final Evaluator</h3><p>结构状态：<span class='rubric-status pass'>通过结构校验</span></p><div class='audit-summary'><div><b>Total Score</b><span>99/100</span></div><div><b>Release Decision</b><span>repair</span></div><div><b>Findings</b><span>1</span></div></div><h4>Findings · 具体问题</h4><ul class='audit-findings'><li class='audit-finding'><h4>EV01 · minor · actor_rubric</h4><p><b>定位：</b><code>actor_rubric/turn_rubrics/4/behavior</code></p><p><b>Evidence：</b>[]</p><p><b>Reason：</b>U05 含有 during_assistant 的 user -&gt; third_party 旁语“小陈，麻烦把门带上，谢谢。”，但该轮 Behavior 为空，因而无法独立评分 actor 是否正确忽略这句对第三方的请求、未将其误收为访问核对任务。旁语不要求 actor 暂停，但需要对应的可观察行为标准。</p><p><b>Suggested Fix：</b>在 U05 的 behavior 中增加一条最小可观察标准：不把用户对小陈的关门请求当作面向 Assistant 的任务请求，并继续当前访问核对播报。</p></li></ul><h4>12-Dimension Scores</h4><table class='audit-dimensions'><thead><tr><th>Dimension</th><th>Score</th><th>Minimum</th><th>Status</th><th>Evidence</th></tr></thead><tbody><tr><td>场景与任务一致性</td><td>8/8</td><td>7</td><td class=''>pass</td><td>/scene_task/task_instance/goal 要求口头整理按人员划分的访问核对表，与 D11-S04 账户与访问问题及“结构化整理”一致。；/capability_contract 声明仅有 audio、无工具且禁止外部副作用；任务只要求整理、比较和回读，没有要求实际开通账号。</td></tr><tr><td>UserSeed 合理性</td><td>7/7</td><td>6</td><td class=''>pass</td><td>/user_voice/user_seed/role_relation 为负责核对开通情况的入职协调员，与 EpisodeSituation 中汇总记录但不实际授予权限的职责一致。；/user_voice/user_seed/task_familiarity 为 high，与用户能够区分邀请、激活、角色和审批状态的剧本表现相容。</td></tr><tr><td>VoiceProfile 场景相容性</td><td>5/5</td><td>4</td><td class=''>pass</td><td>/user_voice/voice_profile 的沉稳、清楚、稍快且有条理的声音特征，与会前限时核对工作的专业场景相容。；/user_voice/voice_profile 只描述可听声音特征，没有夹带任务事实、角色责任或双工行为要求。</td></tr><tr><td>EpisodeSituation 具体性</td><td>10/10</td><td>8</td><td class=''>pass</td><td>/situation_knowledge/episode_situation 明确给出周一八点四十分、九点会议、小会议室、四名员工、资料来源及无法访问后台等条件。；/situation_knowledge/episode_situation 还明确列出四项当日安排及多因素认证、邀请接受、高级权限和审批承接方等未决状态。</td></tr><tr><td>Situation / Constraint 边界</td><td>12/12</td><td>10</td><td class=''>pass</td><td>C01–C04 完整限定人员范围、未知状态处理、优先级和按人员输出字段，且与 /scene_task/task_instance/goal 一致。；L01–L02 禁止共享凭据、代验和绕过审批，并限制角色与数据范围；剧本没有要求违反这些边界。</td></tr><tr><td>Episode Script 任务推进</td><td>12/12</td><td>10</td><td class=''>pass</td><td>/episode_script/episode_turns/0 从四人框架与当日阻塞优先级建立任务，U02–U10 依次交付并校正四人的具体记录。；/episode_script/episode_turns/10 至 /episode_turns/12 完成排序规则更新、会议版压缩和最终核对表回读请求，形成可交付闭环。</td></tr><tr><td>用户表达自然度</td><td>12/12</td><td>10</td><td class=''>pass</td><td>/episode_script/episode_turns/1/user_utterance 和 /episode_turns/8/user_utterance 以自然的查阅记录口吻逐项口述具体状态，没有占位符。；/episode_script/episode_turns/11/user_utterance 以“会议上没时间念这么细”自然触发压缩需求，符合会前工作语境。</td></tr><tr><td>轮次条件与 Timing 合理性</td><td>10/10</td><td>8</td><td class=''>pass</td><td>U03、U06、U10、U12 的 T03 锚点分别对应上一轮预期播报中的商业智能平台、MFA 关系、邮箱依赖和详细排序展开阶段。；U02 与 U09 的 T02 pause_cue 均唯一落在用户自己的句内停顿处，且不被设计成抢话。</td></tr><tr><td>模态与可观察性</td><td>6/6</td><td>5</td><td class=''>pass</td><td>/capability_contract/interaction_modalities 仅为 audio，而停止播报、等待停顿、口头整理和回读均可由音频、VAD 与已播放边界观察。；/episode_script/episode_turns/11 要求压缩口头版本，没有声称写入后台、创建账号、发消息或执行其他外部副作用。</td></tr><tr><td>信息泄漏</td><td>8/8</td><td>7</td><td class=''>pass</td><td>U02、U04、U05、U07、U09 使用的人员、系统、时间和状态均能在 /situation_knowledge/task_reference_data 中找到来源。；/episode_script/episode_turns/4/side_speech 只是用户对第三方的关门请求，没有暴露被标记为未读、未查看或未确认的任务材料。</td></tr><tr><td>Anti-hack</td><td>5/5</td><td>4</td><td class=''>pass</td><td>C02 与 U10 明确禁止把邀请已发送、无激活记录或等待自动启用改写成已经完成，避免通过乐观推定达成任务。；L01–L02 排除了共享账号、借用凭据、代验、绕过审批及无依据扩权等取巧路径。</td></tr><tr><td>Actor Rubric 可测量性</td><td>4/5</td><td>4</td><td class=''>pass</td><td>/actor_rubric/turn_rubrics 按 U01–U13 完整映射，Semantic 标准能够依据已交付记录和当前用户目标独立评分。；/actor_rubric/turn_rubrics/4/behavior 在 U05 存在 side_speech 时仍为空，缺少“不误收第三方话语”的行为评分项。</td></tr></tbody></table><details class='artifact'><summary>完整 Environment Audit JSON</summary><pre>{
+  &quot;reviewed_refs&quot;: {
+    &quot;artifacts&quot;: [
+      &quot;scene_task&quot;,
+      &quot;user_voice&quot;,
+      &quot;situation_knowledge&quot;,
+      &quot;episode_script&quot;,
+      &quot;actor_rubric&quot;
+    ],
+    &quot;C&quot;: [
+      &quot;C01&quot;,
+      &quot;C02&quot;,
+      &quot;C03&quot;,
+      &quot;C04&quot;
+    ],
+    &quot;L&quot;: [
+      &quot;L01&quot;,
+      &quot;L02&quot;
+    ],
+    &quot;U&quot;: [
+      &quot;U01&quot;,
+      &quot;U02&quot;,
+      &quot;U03&quot;,
+      &quot;U04&quot;,
+      &quot;U05&quot;,
+      &quot;U06&quot;,
+      &quot;U07&quot;,
+      &quot;U08&quot;,
+      &quot;U09&quot;,
+      &quot;U10&quot;,
+      &quot;U11&quot;,
+      &quot;U12&quot;,
+      &quot;U13&quot;
+    ]
+  },
+  &quot;findings&quot;: [
+    {
+      &quot;finding_id&quot;: &quot;EV01&quot;,
+      &quot;category&quot;: &quot;actor_rubric&quot;,
+      &quot;severity&quot;: &quot;minor&quot;,
+      &quot;stage&quot;: &quot;actor_rubric&quot;,
+      &quot;path&quot;: &quot;/turn_rubrics/4/behavior&quot;,
+      &quot;evidence&quot;: &quot;[]&quot;,
+      &quot;reason&quot;: &quot;U05 含有 during_assistant 的 user -&gt; third_party 旁语“小陈，麻烦把门带上，谢谢。”，但该轮 Behavior 为空，因而无法独立评分 actor 是否正确忽略这句对第三方的请求、未将其误收为访问核对任务。旁语不要求 actor 暂停，但需要对应的可观察行为标准。&quot;,
+      &quot;suggested_fix&quot;: &quot;在 U05 的 behavior 中增加一条最小可观察标准：不把用户对小陈的关门请求当作面向 Assistant 的任务请求，并继续当前访问核对播报。&quot;
+    }
+  ],
+  &quot;dimension_scores&quot;: [
+    {
+      &quot;dimension&quot;: &quot;场景与任务一致性&quot;,
+      &quot;score&quot;: 8,
+      &quot;max&quot;: 8,
+      &quot;minimum&quot;: 7,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;/scene_task/task_instance/goal 要求口头整理按人员划分的访问核对表，与 D11-S04 账户与访问问题及“结构化整理”一致。&quot;,
+        &quot;/capability_contract 声明仅有 audio、无工具且禁止外部副作用；任务只要求整理、比较和回读，没有要求实际开通账号。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;UserSeed 合理性&quot;,
+      &quot;score&quot;: 7,
+      &quot;max&quot;: 7,
+      &quot;minimum&quot;: 6,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;/user_voice/user_seed/role_relation 为负责核对开通情况的入职协调员，与 EpisodeSituation 中汇总记录但不实际授予权限的职责一致。&quot;,
+        &quot;/user_voice/user_seed/task_familiarity 为 high，与用户能够区分邀请、激活、角色和审批状态的剧本表现相容。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;VoiceProfile 场景相容性&quot;,
+      &quot;score&quot;: 5,
+      &quot;max&quot;: 5,
+      &quot;minimum&quot;: 4,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;/user_voice/voice_profile 的沉稳、清楚、稍快且有条理的声音特征，与会前限时核对工作的专业场景相容。&quot;,
+        &quot;/user_voice/voice_profile 只描述可听声音特征，没有夹带任务事实、角色责任或双工行为要求。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;EpisodeSituation 具体性&quot;,
+      &quot;score&quot;: 10,
+      &quot;max&quot;: 10,
+      &quot;minimum&quot;: 8,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;/situation_knowledge/episode_situation 明确给出周一八点四十分、九点会议、小会议室、四名员工、资料来源及无法访问后台等条件。&quot;,
+        &quot;/situation_knowledge/episode_situation 还明确列出四项当日安排及多因素认证、邀请接受、高级权限和审批承接方等未决状态。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;Situation / Constraint 边界&quot;,
+      &quot;score&quot;: 12,
+      &quot;max&quot;: 12,
+      &quot;minimum&quot;: 10,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;C01–C04 完整限定人员范围、未知状态处理、优先级和按人员输出字段，且与 /scene_task/task_instance/goal 一致。&quot;,
+        &quot;L01–L02 禁止共享凭据、代验和绕过审批，并限制角色与数据范围；剧本没有要求违反这些边界。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;Episode Script 任务推进&quot;,
+      &quot;score&quot;: 12,
+      &quot;max&quot;: 12,
+      &quot;minimum&quot;: 10,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;/episode_script/episode_turns/0 从四人框架与当日阻塞优先级建立任务，U02–U10 依次交付并校正四人的具体记录。&quot;,
+        &quot;/episode_script/episode_turns/10 至 /episode_turns/12 完成排序规则更新、会议版压缩和最终核对表回读请求，形成可交付闭环。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;用户表达自然度&quot;,
+      &quot;score&quot;: 12,
+      &quot;max&quot;: 12,
+      &quot;minimum&quot;: 10,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;/episode_script/episode_turns/1/user_utterance 和 /episode_turns/8/user_utterance 以自然的查阅记录口吻逐项口述具体状态，没有占位符。&quot;,
+        &quot;/episode_script/episode_turns/11/user_utterance 以“会议上没时间念这么细”自然触发压缩需求，符合会前工作语境。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;轮次条件与 Timing 合理性&quot;,
+      &quot;score&quot;: 10,
+      &quot;max&quot;: 10,
+      &quot;minimum&quot;: 8,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;U03、U06、U10、U12 的 T03 锚点分别对应上一轮预期播报中的商业智能平台、MFA 关系、邮箱依赖和详细排序展开阶段。&quot;,
+        &quot;U02 与 U09 的 T02 pause_cue 均唯一落在用户自己的句内停顿处，且不被设计成抢话。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;模态与可观察性&quot;,
+      &quot;score&quot;: 6,
+      &quot;max&quot;: 6,
+      &quot;minimum&quot;: 5,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;/capability_contract/interaction_modalities 仅为 audio，而停止播报、等待停顿、口头整理和回读均可由音频、VAD 与已播放边界观察。&quot;,
+        &quot;/episode_script/episode_turns/11 要求压缩口头版本，没有声称写入后台、创建账号、发消息或执行其他外部副作用。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;信息泄漏&quot;,
+      &quot;score&quot;: 8,
+      &quot;max&quot;: 8,
+      &quot;minimum&quot;: 7,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;U02、U04、U05、U07、U09 使用的人员、系统、时间和状态均能在 /situation_knowledge/task_reference_data 中找到来源。&quot;,
+        &quot;/episode_script/episode_turns/4/side_speech 只是用户对第三方的关门请求，没有暴露被标记为未读、未查看或未确认的任务材料。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;Anti-hack&quot;,
+      &quot;score&quot;: 5,
+      &quot;max&quot;: 5,
+      &quot;minimum&quot;: 4,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;C02 与 U10 明确禁止把邀请已发送、无激活记录或等待自动启用改写成已经完成，避免通过乐观推定达成任务。&quot;,
+        &quot;L01–L02 排除了共享账号、借用凭据、代验、绕过审批及无依据扩权等取巧路径。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;Actor Rubric 可测量性&quot;,
+      &quot;score&quot;: 4,
+      &quot;max&quot;: 5,
+      &quot;minimum&quot;: 4,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;/actor_rubric/turn_rubrics 按 U01–U13 完整映射，Semantic 标准能够依据已交付记录和当前用户目标独立评分。&quot;,
+        &quot;/actor_rubric/turn_rubrics/4/behavior 在 U05 存在 side_speech 时仍为空，缺少“不误收第三方话语”的行为评分项。&quot;
+      ]
+    }
+  ],
+  &quot;total_score&quot;: 99,
+  &quot;frequency_calibration&quot;: &quot;N-A&quot;,
+  &quot;release_decision&quot;: &quot;repair&quot;
+}</pre></details><details class='artifact'><summary>Evaluator 原始响应</summary><pre>{
+  &quot;reviewed_refs&quot;: {
+    &quot;artifacts&quot;: [
+      &quot;scene_task&quot;,
+      &quot;user_voice&quot;,
+      &quot;situation_knowledge&quot;,
+      &quot;episode_script&quot;,
+      &quot;actor_rubric&quot;
+    ],
+    &quot;C&quot;: [
+      &quot;C01&quot;,
+      &quot;C02&quot;,
+      &quot;C03&quot;,
+      &quot;C04&quot;
+    ],
+    &quot;L&quot;: [
+      &quot;L01&quot;,
+      &quot;L02&quot;
+    ],
+    &quot;U&quot;: [
+      &quot;U01&quot;,
+      &quot;U02&quot;,
+      &quot;U03&quot;,
+      &quot;U04&quot;,
+      &quot;U05&quot;,
+      &quot;U06&quot;,
+      &quot;U07&quot;,
+      &quot;U08&quot;,
+      &quot;U09&quot;,
+      &quot;U10&quot;,
+      &quot;U11&quot;,
+      &quot;U12&quot;,
+      &quot;U13&quot;
+    ]
+  },
+  &quot;findings&quot;: [
+    {
+      &quot;finding_id&quot;: &quot;EV01&quot;,
+      &quot;category&quot;: &quot;actor_rubric&quot;,
+      &quot;severity&quot;: &quot;minor&quot;,
+      &quot;stage&quot;: &quot;actor_rubric&quot;,
+      &quot;path&quot;: &quot;/turn_rubrics/4/behavior&quot;,
+      &quot;evidence&quot;: &quot;[]&quot;,
+      &quot;reason&quot;: &quot;U05 含有 during_assistant 的 user -&gt; third_party 旁语“小陈，麻烦把门带上，谢谢。”，但该轮 Behavior 为空，因而无法独立评分 actor 是否正确忽略这句对第三方的请求、未将其误收为访问核对任务。旁语不要求 actor 暂停，但需要对应的可观察行为标准。&quot;,
+      &quot;suggested_fix&quot;: &quot;在 U05 的 behavior 中增加一条最小可观察标准：不把用户对小陈的关门请求当作面向 Assistant 的任务请求，并继续当前访问核对播报。&quot;
+    }
+  ],
+  &quot;dimension_scores&quot;: [
+    {
+      &quot;dimension&quot;: &quot;场景与任务一致性&quot;,
+      &quot;score&quot;: 8,
+      &quot;max&quot;: 8,
+      &quot;minimum&quot;: 7,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;/scene_task/task_instance/goal 要求口头整理按人员划分的访问核对表，与 D11-S04 账户与访问问题及“结构化整理”一致。&quot;,
+        &quot;/capability_contract 声明仅有 audio、无工具且禁止外部副作用；任务只要求整理、比较和回读，没有要求实际开通账号。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;UserSeed 合理性&quot;,
+      &quot;score&quot;: 7,
+      &quot;max&quot;: 7,
+      &quot;minimum&quot;: 6,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;/user_voice/user_seed/role_relation 为负责核对开通情况的入职协调员，与 EpisodeSituation 中汇总记录但不实际授予权限的职责一致。&quot;,
+        &quot;/user_voice/user_seed/task_familiarity 为 high，与用户能够区分邀请、激活、角色和审批状态的剧本表现相容。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;VoiceProfile 场景相容性&quot;,
+      &quot;score&quot;: 5,
+      &quot;max&quot;: 5,
+      &quot;minimum&quot;: 4,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;/user_voice/voice_profile 的沉稳、清楚、稍快且有条理的声音特征，与会前限时核对工作的专业场景相容。&quot;,
+        &quot;/user_voice/voice_profile 只描述可听声音特征，没有夹带任务事实、角色责任或双工行为要求。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;EpisodeSituation 具体性&quot;,
+      &quot;score&quot;: 10,
+      &quot;max&quot;: 10,
+      &quot;minimum&quot;: 8,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;/situation_knowledge/episode_situation 明确给出周一八点四十分、九点会议、小会议室、四名员工、资料来源及无法访问后台等条件。&quot;,
+        &quot;/situation_knowledge/episode_situation 还明确列出四项当日安排及多因素认证、邀请接受、高级权限和审批承接方等未决状态。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;Situation / Constraint 边界&quot;,
+      &quot;score&quot;: 12,
+      &quot;max&quot;: 12,
+      &quot;minimum&quot;: 10,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;C01–C04 完整限定人员范围、未知状态处理、优先级和按人员输出字段，且与 /scene_task/task_instance/goal 一致。&quot;,
+        &quot;L01–L02 禁止共享凭据、代验和绕过审批，并限制角色与数据范围；剧本没有要求违反这些边界。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;Episode Script 任务推进&quot;,
+      &quot;score&quot;: 12,
+      &quot;max&quot;: 12,
+      &quot;minimum&quot;: 10,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;/episode_script/episode_turns/0 从四人框架与当日阻塞优先级建立任务，U02–U10 依次交付并校正四人的具体记录。&quot;,
+        &quot;/episode_script/episode_turns/10 至 /episode_turns/12 完成排序规则更新、会议版压缩和最终核对表回读请求，形成可交付闭环。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;用户表达自然度&quot;,
+      &quot;score&quot;: 12,
+      &quot;max&quot;: 12,
+      &quot;minimum&quot;: 10,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;/episode_script/episode_turns/1/user_utterance 和 /episode_turns/8/user_utterance 以自然的查阅记录口吻逐项口述具体状态，没有占位符。&quot;,
+        &quot;/episode_script/episode_turns/11/user_utterance 以“会议上没时间念这么细”自然触发压缩需求，符合会前工作语境。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;轮次条件与 Timing 合理性&quot;,
+      &quot;score&quot;: 10,
+      &quot;max&quot;: 10,
+      &quot;minimum&quot;: 8,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;U03、U06、U10、U12 的 T03 锚点分别对应上一轮预期播报中的商业智能平台、MFA 关系、邮箱依赖和详细排序展开阶段。&quot;,
+        &quot;U02 与 U09 的 T02 pause_cue 均唯一落在用户自己的句内停顿处，且不被设计成抢话。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;模态与可观察性&quot;,
+      &quot;score&quot;: 6,
+      &quot;max&quot;: 6,
+      &quot;minimum&quot;: 5,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;/capability_contract/interaction_modalities 仅为 audio，而停止播报、等待停顿、口头整理和回读均可由音频、VAD 与已播放边界观察。&quot;,
+        &quot;/episode_script/episode_turns/11 要求压缩口头版本，没有声称写入后台、创建账号、发消息或执行其他外部副作用。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;信息泄漏&quot;,
+      &quot;score&quot;: 8,
+      &quot;max&quot;: 8,
+      &quot;minimum&quot;: 7,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;U02、U04、U05、U07、U09 使用的人员、系统、时间和状态均能在 /situation_knowledge/task_reference_data 中找到来源。&quot;,
+        &quot;/episode_script/episode_turns/4/side_speech 只是用户对第三方的关门请求，没有暴露被标记为未读、未查看或未确认的任务材料。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;Anti-hack&quot;,
+      &quot;score&quot;: 5,
+      &quot;max&quot;: 5,
+      &quot;minimum&quot;: 4,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;C02 与 U10 明确禁止把邀请已发送、无激活记录或等待自动启用改写成已经完成，避免通过乐观推定达成任务。&quot;,
+        &quot;L01–L02 排除了共享账号、借用凭据、代验、绕过审批及无依据扩权等取巧路径。&quot;
+      ]
+    },
+    {
+      &quot;dimension&quot;: &quot;Actor Rubric 可测量性&quot;,
+      &quot;score&quot;: 4,
+      &quot;max&quot;: 5,
+      &quot;minimum&quot;: 4,
+      &quot;status&quot;: &quot;pass&quot;,
+      &quot;evidence&quot;: [
+        &quot;/actor_rubric/turn_rubrics 按 U01–U13 完整映射，Semantic 标准能够依据已交付记录和当前用户目标独立评分。&quot;,
+        &quot;/actor_rubric/turn_rubrics/4/behavior 在 U05 存在 side_speech 时仍为空，缺少“不误收第三方话语”的行为评分项。&quot;
+      ]
+    }
+  ],
+  &quot;total_score&quot;: 99,
+  &quot;frequency_calibration&quot;: &quot;N-A&quot;,
+  &quot;release_decision&quot;: &quot;repair&quot;
+}</pre></details></section>
+  
+
+  
+
+  <section>
+    <details class='artifact'>
+      <summary>Judge / validation log</summary>
+      <pre>{
+  &quot;errors&quot;: [],
+  &quot;model&quot;: &quot;openai/gpt-5.6-sol&quot;
+}</pre>
+    </details>
+  </section>
+</article></div><script>
+(() => {
+  'use strict';
+  const root = document.querySelector('[data-results-explorer]');
+  const payload = document.getElementById('results-explorer-data');
+  if (!root || !payload) return;
+  const data = JSON.parse(payload.textContent);
+  const focusedRollout = data.view === 'synthetic_rollout';
+  const turns = focusedRollout ? [] : data.episode_script.episode_turns;
+  const enhanced = focusedRollout ? [] : data.enhanced_episode_script.episode_turns;
+  const rubrics = focusedRollout ? [] : data.actor_rubric.turn_rubrics;
+  const byID = new Map(turns.map(turn => [turn.turn_id, turn]));
+  const byEnhancedID = new Map(enhanced.map(turn => [turn.turn_id, turn]));
+  const byRubricID = new Map(rubrics.map(item => [item.turn_id, item]));
+  const state = {turn: byID.has('U03') ? 'U03' : turns[0]?.turn_id, filter: 'all'};
+  const actLabels = {A01:'建立 / 补充信息', A02:'控制播报', A03:'追问 / 核对', A04:'修改条件', A05:'异议 / 拒绝', A06:'支线 / 返回'};
+  const timingLabels = {T01:'自然接话', T02:'句内停顿', T03:'播报中途起声'};
+  const get = id => document.getElementById(id);
+  const setText = (id, text) => { get(id).textContent = text; };
+  const node = (tag, text, className) => { const item = document.createElement(tag); item.textContent = text; if (className) item.className = className; return item; };
+  const visibleTurns = () => turns.filter(turn => state.filter === 'all' || (turn.timing_refs || []).includes(state.filter === 't03' ? 'T03' : 'T02'));
+  const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const scrollTo = id => { const target = get(id); if (target) target.scrollIntoView({behavior:smooth ? 'smooth' : 'auto', block:'start'}); };
+
+  function renderTurn() {
+    const turn = byID.get(state.turn);
+    setText('rx-turn-title', `${turn.turn_id} · ${actLabels[turn.act_ref] || turn.act_ref}`);
+    setText('rx-turn-utterance', turn.user_utterance);
+    setText('rx-turn-goal', turn.semantic_goal);
+    setText('rx-turn-expected', turn.assistant_semantic_goal);
+    const badges = get('rx-turn-tags');
+    badges.replaceChildren(...turn.timing_refs.map(timing => node('span', `${timing} · ${timingLabels[timing] || timing}`, `rx-chip ${timing === 'T03' ? 'amber' : 'blue'}`)));
+    get('rx-interrupt').hidden = !turn.interrupt_anchor;
+    setText('rx-interrupt-text', turn.interrupt_anchor || '');
+    get('rx-pause').hidden = !turn.pause_cue;
+    setText('rx-pause-text', turn.pause_cue ? `在“${turn.pause_cue.after_text}”后停 ${turn.pause_cue.duration_ms} 毫秒，再继续表达。` : '');
+    setText('rx-turn-reading', (data.turn_annotations || {})[turn.turn_id] || '本轮原文与目标直接取自 Stage 3 的冻结剧本。');
+    const visible = new Set(visibleTurns().map(item => item.turn_id));
+    root.querySelectorAll('[data-turn-option]').forEach(button => {
+      button.hidden = !visible.has(button.dataset.turnOption);
+      button.setAttribute('aria-pressed', String(button.dataset.turnOption === state.turn));
+    });
+    root.querySelectorAll('[data-turn-filter]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.turnFilter === state.filter)));
+    setText('rx-turn-count', `当前显示 ${visible.size} / ${turns.length} 轮；点击轮次查看原文`);
+  }
+
+  function fillCriteria(id, criteria, emptyText) {
+    const container = get(id);
+    container.replaceChildren();
+    if (criteria.length) {
+      const list = document.createElement('ol'); list.className = 'rx-criteria';
+      criteria.forEach(text => list.append(node('li', text)));
+      container.append(list);
+    } else container.append(node('p', emptyText, 'rx-small'));
+  }
+
+  function renderRubric() {
+    const turn = byEnhancedID.get(state.turn);
+    const rubric = byRubricID.get(state.turn);
+    setText('rx-rubric-title', `${turn.turn_id} 的评分标准`);
+    setText('rx-rubric-utterance', turn.user_utterance);
+    setText('rx-semantic-count', `${rubric.semantic.length} 条`);
+    setText('rx-behavior-count', `${rubric.behavior.length} 条`);
+    fillCriteria('rx-semantic-items', rubric.semantic, '本轮没有语义标准。');
+    fillCriteria('rx-behavior-items', rubric.behavior, '本轮按现有规则不单列行为标准，保存的 behavior 为 []。');
+    root.querySelectorAll('[data-rubric-option]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.rubricOption === state.turn)));
+    const isAside = turn.turn_id === data.side_event.turn_id;
+    get('rx-rubric-aside').hidden = !isAside;
+    get('rx-rubric-review').hidden = !['U06','U09'].includes(turn.turn_id);
+    get('rx-rubric-voice').hidden = !turn.side_speech;
+    setText('rx-rubric-voice-text', turn.side_speech ? turn.side_speech.map(event => event.text).join('；') : '');
+  }
+
+  function selectTurn(id) {
+    if (!byID.has(id)) return;
+    state.turn = id;
+    if (!visibleTurns().some(turn => turn.turn_id === id)) state.filter = 'all';
+    renderTurn(); renderRubric();
+  }
+
+  const simulator = data.user_simulator;
+  const simState = {caseID:simulator ? simulator.cases[0].id : null, index:0};
+  const actionLabels = {deliver:'交付主轮', correct:'同轮纠错', clarify:'同轮澄清', unknown:'未知信息不编造', wait:'等待 · 不发言', end:'告别'};
+  const speech = data.user_speech;
+  const speechState = {caseID:speech ? speech.cases[0].id : null, index:0};
+
+  function renderSpeech() {
+    if (!speech) return;
+    const scenario=speech.cases.find(item=>item.id===speechState.caseID);
+    const item=scenario.events[speechState.index];
+    const event=item.event, rendered=item.render;
+    root.querySelectorAll('button[data-speech-case]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.speechCase===scenario.id)));
+    const list=get('rx-speech-events');list.replaceChildren();
+    scenario.events.forEach((entry,index)=>{
+      const button=node('button','', 'rx-turn-button');button.type='button';button.dataset.speechIndex=String(index);button.setAttribute('aria-pressed',String(index===speechState.index));
+      button.append(node('b',entry.event.focus_turn_id||'结束'),node('span',entry.label),node('small',actionLabels[entry.event.action]||entry.event.action));list.append(button);
+    });
+    setText('rx-speech-title',`${event.focus_turn_id||'结束'} · ${item.label}`);
+    setText('rx-speech-action',actionLabels[event.action]||event.action);
+    setText('rx-speech-text',event.action==='wait'?'（等待，不发言，不生成音频）':event.utterance);
+    setText('rx-speech-timing',(rendered.timing_refs||[]).map(value=>`${value} · ${timingLabels[value]||value}`).join(' / ')+'；这里展示用户音频资产，实际起声时机尚未执行。');
+    const main=get('rx-speech-audio'),side=get('rx-speech-side-audio');
+    setText('rx-speech-playback-note','');
+    [main,side].forEach(player=>{player.pause();player.removeAttribute('src');});
+    get('rx-speech-main').hidden=!rendered.main;
+    if(rendered.main) {
+      main.src=rendered.main.audio_path;main.setAttribute('aria-label',`${event.focus_turn_id} ${item.label}`);
+      get('rx-speech-download').href=rendered.main.audio_path;
+      setText('rx-speech-duration',`WAV · ${rendered.main.duration_seconds.toFixed(2)} 秒 · 16kHz · 单声道`);
+    }
+    const aside=rendered.side_speech[0];get('rx-speech-side').hidden=!aside;
+    if(aside) {side.src=aside.audio_path;get('rx-speech-side-download').href=aside.audio_path;setText('rx-speech-side-text',aside.text);}
+    [main,side].forEach(player=>player.load());
+    const pause=rendered.main?.pause;get('rx-speech-pause').hidden=!pause;
+    setText('rx-speech-pause-text',pause?`在“${pause.after_text}”后插入 ${pause.requested_ms} 毫秒静音（${pause.frames} 个采样）；当前音频中的停顿从 ${pause.start_seconds.toFixed(3)} 秒开始。`:'');
+    setText('rx-speech-pause-proof',pause?JSON.stringify({pause,segments:rendered.main.segments},null,2):'');
+    const files=get('rx-speech-files');files.replaceChildren(node('b','这条发言的来源'));
+    item.files.forEach(entry=>{const link=node('a',entry.label);link.href=entry.path;link.target='_blank';link.rel='noopener';files.append(link);});
+    get('rx-speech-back-script').dataset.selectTurn=event.focus_turn_id||'';
+    root.querySelector('[data-speech-prev]').disabled=speechState.index===0;
+    root.querySelector('[data-speech-next]').disabled=speechState.index===scenario.events.length-1;
+  }
+
+  function renderSimulator(sync=false) {
+    if (!simulator) return;
+    const scenario = simulator.cases.find(item=>item.id===simState.caseID);
+    const record = scenario.events[simState.index];
+    const event = record.event;
+    root.querySelectorAll('[data-sim-case]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.simCase===scenario.id)));
+    setText('rx-sim-case-description',scenario.description);
+    const timeline=get('rx-sim-events'); timeline.replaceChildren();
+    scenario.events.forEach((item,index)=>{
+      const button=document.createElement('button'); button.type='button'; button.className='rx-turn-button'; button.dataset.simIndex=String(index); button.setAttribute('aria-pressed',String(index===simState.index));
+      button.append(node('b',item.event.focus_turn_id||'结束'),node('span',item.label),node('small',actionLabels[item.event.action]||item.event.action));
+      timeline.append(button);
+    });
+    setText('rx-sim-title',`${event.focus_turn_id||'结束'} · ${record.label}`);
+    setText('rx-sim-action',actionLabels[event.action]||event.action);
+    setText('rx-sim-cursor',`待交付主轮：${event.pending_before||'全部已交付'} → ${event.pending_after||'全部已交付'}；本次处理 ${event.focus_turn_id||'结束'}。`);
+    setText('rx-sim-heard',event.observation.heard_text||'开场：尚无助手观测。');
+    setText('rx-sim-utterance',event.action==='wait'?'（等待，不向助手发送用户话语）':event.utterance);
+    setText('rx-sim-guard',record.rejudge?'同一候选复审通过：原 Judge 拒绝，修正规则说明后通过；用户输出和审查输入均未改动。':`独立语义检查：${event.semantic_guard.decision==='pass'?'通过':'未通过'}；${event.semantic_guard.findings.length} 条 finding。`);
+    get('rx-sim-rejudge').hidden=!record.rejudge;
+    setText('rx-sim-old-guard',record.rejudge?JSON.stringify(record.rejudge.old_guard,null,2):'');
+    setText('rx-sim-new-guard',record.rejudge?JSON.stringify(record.rejudge.new_guard,null,2):'');
+    setText('rx-sim-evidence',event.evidence||'本次不需要引用助手前缀；主表达依据当前冻结用户轮。');
+    const raw=record.raw_observation;
+    const unplayed=raw ? raw.text.slice(raw.played_chars) : '';
+    get('rx-sim-unplayed').hidden=!unplayed;
+    setText('rx-sim-unplayed-text',unplayed);
+    setText('rx-sim-model-input',JSON.stringify(record.model_input,null,2));
+    const dispatch=event.dispatch;
+    const notes=[];
+    if(dispatch?.pause_cue) notes.push(`保留的语音计划：在“${dispatch.pause_cue.after_text}”后暂停 ${dispatch.pause_cue.duration_ms} ms。`);
+    if(dispatch?.side_speech?.length) notes.push(`旁语单独保留：${dispatch.side_speech.map(item=>item.text).join('；')}。`);
+    if(notes.length) notes.push(data.tts_api_check ? '该模拟器事件仅记录计划；独立音频样本见“音频测试”试听区，尚未执行真实交互调度。' : '这些计划尚未合成或播放音频。');
+    get('rx-sim-dispatch').hidden=!notes.length; setText('rx-sim-dispatch',notes.join(' '));
+    const files=get('rx-sim-files'); files.replaceChildren(node('b','本次原始记录'));
+    record.files.forEach(item=>{const link=node('a',item.label);link.href=item.path;link.target='_blank';link.rel='noopener';files.append(link);});
+    ['rx-sim-back-script','rx-sim-back-rubric'].forEach(id=>{get(id).dataset.selectTurn=event.focus_turn_id||'';});
+    if(get('rx-sim-back-speech')) {get('rx-sim-back-speech').dataset.speechCase=scenario.id;get('rx-sim-back-speech').dataset.speechIndex=String(simState.index);}
+    if(sync && byID.has(event.focus_turn_id)) selectTurn(event.focus_turn_id);
+  }
+
+  const scoring=data.actual_scoring;
+  let scoreIndex=0;
+  const scoreLabels={pass:'通过',fail:'失败',not_triggered:'未触发',insufficient_evidence:'证据不足'};
+  function renderScoring() {
+    if(!scoring)return;
+    const list=get('rx-score-turns');list.replaceChildren();
+    scoring.turns.forEach((turn,index)=>{
+      const counts={};turn.criteria.forEach(c=>{counts[c.status]=(counts[c.status]||0)+1;});
+      const button=node('button','', 'rx-score-turn');button.type='button';button.dataset.scoreTurn=String(index);
+      button.setAttribute('aria-pressed',String(index===scoreIndex));
+      button.append(node('b',turn.turn_id),node('span',Object.entries(counts).map(([status,count])=>`${scoreLabels[status]} ${count}`).join(' · ')));
+      if(counts.fail)button.classList.add('has-failure');else if(counts.insufficient_evidence)button.classList.add('has-insufficient');
+      list.append(button);
+    });
+    const turn=scoring.turns[scoreIndex];
+    setText('rx-score-title',`${turn.turn_id} · 实际评分`);
+    setText('rx-score-time',`${(turn.clip_start_frame/16000).toFixed(3)} → ${(turn.clip_end_frame/16000).toFixed(3)} 秒`);
+    get('rx-score-turn-play').dataset.scoreSeek=String(turn.clip_start_frame);
+    get('rx-score-clip-download').href=turn.audio_path;
+    const criteria=get('rx-score-criteria');criteria.replaceChildren();
+    turn.criteria.forEach(c=>{
+      const card=node('div','','rx-score-criterion');card.dataset.criterionId=c.criterion_id;
+      const title=node('div','','rx-score-criterion-title');
+      title.append(node('b',`${c.criterion_id} · ${c.kind==='semantic'?'语义':'行为'}`),node('span',scoreLabels[c.status],`rx-score-status ${c.status}`));
+      card.append(title,node('p',c.text,'rx-score-original'),node('p',c.reason,'rx-small'));
+      c.evidence.forEach(e=>{
+        const quote=node('blockquote',e.quote,'rx-score-quote');
+        const button=node('button',`${e.response_id} · ${(e.start_frame/16000).toFixed(2)} 秒 · 试听引用`,'rx-button');
+        button.type='button';button.dataset.scoreSeek=String(e.start_frame);card.append(quote,button);
+      });
+      if(c.measurement){
+        const m=c.measurement;
+        const text=m.type==='T02'?`停顿 ${m.requested_ms} ms；用户继续到说完前，助手非零采样 ${m.assistant_samples_before_user_end} 个。`:
+          `用户起声至停止旧播报 ${m.onset_to_stop_ms?.toFixed(1)??'无记录'} ms；停止至用户说完，助手非零采样 ${m.assistant_samples_after_stop_before_user_end??'无记录'} 个。`;
+        card.append(node('p',text,'rx-small'));
+        const button=node('button',m.type==='T02'?'试听句内停顿':'试听起声、停播与恢复','rx-button');button.type='button';
+        button.dataset.scoreSeek=String(m.type==='T02'?m.pause_start_frame:m.user_start_frame);card.append(button);
+      }
+      criteria.append(card);
+    });
+    setText('rx-score-responses',turn.responses.map(r=>`${r.response_id} · ${r.interrupted?'中途停止':'完整播出'}\n${r.heard_text}`).join('\n\n'));
+    setText('rx-score-measurement',JSON.stringify(turn.measurement,null,2));
+    const files=get('rx-score-files');files.replaceChildren(node('b','本轮评分来源'));
+    [['Judge 实际输入',`calls/${turn.turn_id}/input.json`],['Judge 原始响应',`calls/${turn.turn_id}/raw_response.txt`],['本轮评分 JSON',`score-${turn.turn_id}.json`]].forEach(([label,path])=>{
+      const link=node('a',label);link.href=scoring.record_prefix+path;link.target='_blank';link.rel='noopener';files.append(link);
+    });
+  }
+
+  const rollout=data.synthetic_rollout;
+  let rolloutIndex=0;
+  function renderRollout() {
+    if(!rollout || !get('rx-rollout-segments'))return;
+    const list=get('rx-rollout-segments'),bars=get('rx-rollout-bars');list.replaceChildren();bars.replaceChildren();
+    rollout.segments.forEach((segment,index)=>{
+      const button=node('button','', 'rx-turn-button');button.type='button';button.dataset.rolloutSegment=String(index);button.setAttribute('aria-pressed',String(index===rolloutIndex));
+      button.append(node('b',segment.speaker==='user'?'用户':'助手'),node('span',segment.title));list.append(button);
+      const bar=node('button',segment.short_label,'rx-rollout-bar'+(segment.speaker==='assistant'?' assistant':'')+(segment.kind==='side_speech'?' aside':''));
+      bar.type='button';bar.dataset.rolloutSegment=String(index);bar.style.left=(100*segment.start_seconds/rollout.duration_seconds)+'%';bar.style.width=(100*segment.duration_seconds/rollout.duration_seconds)+'%';
+      bar.title=segment.title+' · '+segment.start_seconds.toFixed(2)+' 秒';bar.setAttribute('aria-label',bar.title);bar.setAttribute('aria-pressed',String(index===rolloutIndex));bars.append(bar);
+    });
+    if(!rollout.segments.length)return;
+    const segment=rollout.segments[rolloutIndex];
+    setText('rx-rollout-title',segment.title);setText('rx-rollout-kind',segment.kind_label);
+    setText('rx-rollout-time',`${segment.start_seconds.toFixed(3)} → ${(segment.start_seconds+segment.duration_seconds).toFixed(3)} 秒 · 已消费 ${segment.duration_seconds.toFixed(3)} 秒音频`);
+    setText('rx-rollout-text',segment.text||'（本段在任何文字对应的音频消费前已被取消）');
+    setText('rx-rollout-outcome',segment.outcome_note||'原始输入与已消费音频可由下方记录核对。');
+    get('rx-rollout-tail').hidden=!segment.unplayed_text;setText('rx-rollout-unplayed',segment.unplayed_text||'');
+    const files=get('rx-rollout-files');files.replaceChildren();
+    segment.files.forEach(file=>{const link=node('a',file.label);link.href=file.path;link.target='_blank';link.rel='noopener';files.append(link);});
+  }
+
+  root.addEventListener('play', event => {
+    if (!event.target.matches('audio[data-tts-audio]')) return;
+    root.querySelectorAll('audio[data-tts-audio]').forEach(player => {
+      if (player !== event.target) player.pause();
+    });
+  }, true);
+
+  root.addEventListener('click', event => {
+    const target = event.target.closest('button, a');
+    if (target && target.dataset.batchFilter) {
+      const panel = target.closest('.rx-details');
+      panel.querySelectorAll('[data-batch-criterion]').forEach(row => { row.hidden = target.dataset.batchFilter === 'issues' && row.dataset.batchCriterion === 'pass'; });
+      panel.querySelectorAll('[data-batch-filter]').forEach(button => button.setAttribute('aria-pressed', String(button === target)));
+    }
+    if (target && target.dataset.batchAudio) {
+      const player = get(target.dataset.batchAudio);
+      const seek = () => { player.currentTime = Number(target.dataset.batchFrame) / 16000; player.play().then(() => setText(player.id+'-status', '正在试听原交互引用。')).catch(() => setText(player.id+'-status', '已定位，请点击播放器继续。')); };
+      if (player.readyState >= 1) seek(); else { player.addEventListener('loadedmetadata', seek, {once:true}); player.load(); }
+    }
+    if (!target) return;
+    if(target.dataset.scoreTurn!==undefined && scoring){scoreIndex=Number(target.dataset.scoreTurn);renderScoring();}
+    if(target.dataset.scoreSeek!==undefined && scoring){
+      const player=get('rx-score-audio'),frame=Number(target.dataset.scoreSeek);
+      const seek=()=>{player.currentTime=Math.max(0,frame/16000-1);player.play().catch(()=>setText('rx-score-player-status','请点击播放器播放，或下载对应片段。'));};
+      setText('rx-score-player-status',`从 ${Math.max(0,frame/16000-1).toFixed(2)} 秒试听评分证据。`);
+      if(player.readyState>=1)seek();else{player.addEventListener('loadedmetadata',seek,{once:true});player.load();}
+    }
+    if(target.dataset.rolloutSegment!==undefined && rollout){rolloutIndex=Number(target.dataset.rolloutSegment);renderRollout();}
+    if(target.hasAttribute('data-rollout-seek') && rollout){
+      const player=get('rx-rollout-audio'),index=rolloutIndex;
+      const seek=()=>{if(index!==rolloutIndex)return;player.currentTime=Math.max(0,rollout.segments[index].start_seconds-1);player.play().catch(()=>setText('rx-rollout-player-status','播放未开始，请点击播放器上的播放按钮，或下载音频。'));};
+      if(player.readyState>=1)seek();else{player.addEventListener('loadedmetadata',seek,{once:true});player.load();}
+    }
+    if (target.dataset.turnOption) selectTurn(target.dataset.turnOption);
+    if (target.dataset.rubricOption) selectTurn(target.dataset.rubricOption);
+    if (target.dataset.simCase) {simState.caseID=target.dataset.simCase;simState.index=0;renderSimulator(true);}
+    if (target.dataset.simIndex!==undefined) {simState.index=Number(target.dataset.simIndex);renderSimulator(true);}
+    if (target.dataset.speechCase && speech) {speechState.caseID=target.dataset.speechCase;speechState.index=0;renderSpeech();}
+    if (target.dataset.speechIndex!==undefined && speech) {speechState.index=Number(target.dataset.speechIndex);renderSpeech();}
+    if (target.hasAttribute('data-speech-prev') && speechState.index>0) {speechState.index--;renderSpeech();}
+    if (target.hasAttribute('data-speech-next') && speech) {const scenario=speech.cases.find(item=>item.id===speechState.caseID);if(speechState.index<scenario.events.length-1){speechState.index++;renderSpeech();}}
+    if (target.hasAttribute('data-speech-seek') && speech) {
+      const entry=speech.cases.find(item=>item.id===speechState.caseID).events[speechState.index];
+      const player=get('rx-speech-audio'),pause=entry.render.main?.pause;
+      if(pause) {
+        const source=player.src;
+        const seek=()=>{if(player.src!==source)return;player.currentTime=Math.max(0,pause.start_seconds-1);player.play().catch(()=>{setText('rx-speech-playback-note','播放未开始，请点击播放器上的播放按钮，或下载音频。');});};
+        if(player.readyState>=1)seek();else {player.addEventListener('loadedmetadata',seek,{once:true});player.load();}
+      }
+    }
+    if (target.dataset.turnFilter) {
+      state.filter = target.dataset.turnFilter;
+      const visible = visibleTurns();
+      if (visible.length && !visible.some(turn => turn.turn_id === state.turn)) state.turn = visible[0].turn_id;
+      renderTurn(); renderRubric();
+    }
+    if (target.dataset.personFilter) {
+      const filter = target.dataset.personFilter;
+      let count = 0;
+      root.querySelectorAll('[data-person-card]').forEach(card => { card.hidden = filter !== 'all' && card.dataset.personCard !== filter; if (!card.hidden) count += 1; });
+      root.querySelectorAll('[data-person-filter]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.personFilter === filter)));
+      setText('rx-person-count', `当前显示 ${count} 名员工的材料说明`);
+    }
+    if (target.dataset.openReference) {
+      event.preventDefault(); const detail = get(target.dataset.openReference); if (detail) { detail.open = true; scrollTo(detail.id); }
+    }
+    if (target.dataset.sideMode) {
+      const withAside = target.dataset.sideMode === 'with';
+      get('rx-side-event').hidden = !withAside;
+      root.querySelectorAll('[data-side-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.sideMode === target.dataset.sideMode)));
+      setText('rx-side-view-label', withAside ? 'Stage 3.5：原主表达 + 新增旁语' : 'Stage 3：仅原主表达，尚未附加旁语');
+    }
+    if (target.dataset.jump) { event.preventDefault(); if (target.dataset.selectTurn) selectTurn(target.dataset.selectTurn); scrollTo(target.dataset.jump); }
+  });
+
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver(entries => {
+      const current = entries.filter(entry => entry.isIntersecting).sort((a,b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!current) return;
+      root.querySelectorAll('[data-stage-nav]').forEach(link => {
+        if (link.dataset.stageNav === current.target.id) link.setAttribute('aria-current','step');
+        else link.removeAttribute('aria-current');
+      });
+    }, {rootMargin:'-105px 0px -45% 0px', threshold:[0,.1,.3,.6]});
+    root.querySelectorAll('[data-rx-stage]').forEach(stage => observer.observe(stage));
+  }
+  root.querySelectorAll('[data-batch-criterion="pass"]').forEach(row => { row.hidden = true; });
+  if (focusedRollout) renderRollout();
+  else {renderTurn(); renderRubric(); renderSimulator(); renderSpeech(); renderRollout(); renderScoring();}
+  root.dataset.ready = 'true';
+})();
+
+</script>
+</main></body></html>
