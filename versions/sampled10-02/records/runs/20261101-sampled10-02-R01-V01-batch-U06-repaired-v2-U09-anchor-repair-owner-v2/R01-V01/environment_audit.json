@@ -1,0 +1,165 @@
+{
+  "reviewed_refs": {
+    "artifacts": [
+      "scene_task",
+      "user_voice",
+      "situation_knowledge",
+      "episode_script",
+      "actor_rubric"
+    ],
+    "C": [],
+    "L": [
+      "L01",
+      "L02"
+    ],
+    "U": [
+      "U01",
+      "U02",
+      "U03",
+      "U04",
+      "U05",
+      "U06",
+      "U07",
+      "U08",
+      "U09"
+    ]
+  },
+  "findings": [],
+  "dimension_scores": [
+    {
+      "dimension": "场景与任务一致性",
+      "score": 8,
+      "max": 8,
+      "minimum": 7,
+      "status": "pass",
+      "evidence": [
+        "scene_task/task_instance/goal 聚焦停电恢复后的逐台开启与避免再次跳闸，和 D23-S05“公用事业中断”直接一致。",
+        "scene_task/task_style 为“常识问答”，九轮始终围绕同一恢复用电主题逐步追问。"
+      ]
+    },
+    {
+      "dimension": "UserSeed 合理性",
+      "score": 7,
+      "max": 7,
+      "minimum": 6,
+      "status": "pass",
+      "evidence": [
+        "user_voice/user_seed 将用户设定为刚独自租住老旧公寓、任务熟悉度低的年轻上班族，与首次处理恢复供电的情境相容。",
+        "situation_knowledge/episode_situation 明确用户以前没有独自处理过恢复供电情况，支持 low 熟悉度。"
+      ]
+    },
+    {
+      "dimension": "VoiceProfile 场景相容性",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "user_voice/voice_profile 的二十多岁女性听感、略快语速和轻微紧张感，与年轻独居者面对刚恢复供电的场景相容。",
+        "voice_profile 只描述可听声音特征，未夹带任务事实、角色责任或双工行为要求。"
+      ]
+    },
+    {
+      "dimension": "EpisodeSituation 具体性",
+      "score": 10,
+      "max": 10,
+      "minimum": 8,
+      "status": "pass",
+      "evidence": [
+        "situation_knowledge/episode_situation 具体交代周二晚八点、老旧公寓、恢复照明、各设备状态、用户经验和未决问题。",
+        "episode_situation 同时明确当前没有火花、焦糊味或异常发热，形成清楚且不冲突的起始安全状态。"
+      ]
+    },
+    {
+      "dimension": "Situation / Constraint 边界",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "situation_knowledge/safety_limits/L01 明确火花、焦糊味、冒烟、异常发热或裸线时的停止操作和专业处置边界。",
+        "situation_knowledge/safety_limits/L02 明确反复跳闸时不得强行合闸或绕过保护装置，且与 U07、U08 的处置方向一致。"
+      ]
+    },
+    {
+      "dimension": "Episode Script 任务推进",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "episode_script/episode_turns/U01-U05 从能否全部开启推进到设备状态更新、移除水壶并确定电脑与空调顺序。",
+        "episode_script/episode_turns/U06-U09 继续处理间隔、再次跳闸、焦糊味及最终一句话行动方案，具有连续因果增量。"
+      ]
+    },
+    {
+      "dimension": "用户表达自然度",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "episode_script/episode_turns/0-8/user_utterance 均为具体口语表达，没有占位符、并行查询或假想工具结果。",
+        "U03 的“我看了一下”后 520ms 停顿是自然句内停顿；U02、U06、U09 的打断措辞也符合实时语音交流。"
+      ]
+    },
+    {
+      "dimension": "轮次条件与 Timing 合理性",
+      "score": 10,
+      "max": 10,
+      "minimum": 8,
+      "status": "pass",
+      "evidence": [
+        "timing_view/U02、U06、U09 的 T03 锚点分别对应上一轮预期播报中的原理、顺序解释和危险处置阶段。",
+        "episode_script/U03 的 T02 仅描述用户自己的句内停顿，并提供唯一 pause_cue；三个 user_backchannels 也都有具体播报触发锚点。"
+      ]
+    },
+    {
+      "dimension": "模态与可观察性",
+      "score": 6,
+      "max": 6,
+      "minimum": 5,
+      "status": "pass",
+      "evidence": [
+        "available_modalities 与 capability_contract/interaction_modalities 均仅为 audio，停顿、抢话、附和及旁语均可由音频和说话人边界观察。",
+        "任务只要求口头解释、排序和总结，没有要求读取外部状态、控制设备或产生外部副作用。"
+      ]
+    },
+    {
+      "dimension": "信息泄漏",
+      "score": 8,
+      "max": 8,
+      "minimum": 7,
+      "status": "pass",
+      "evidence": [
+        "U03 的设备状态来自 episode_situation，并由用户在该轮明确交付；U04 后仅按用户更新移除水壶。",
+        "U04 的第三方旁语只询问是否停电，没有披露隐藏材料，也未被写成用户确认的任务事实。"
+      ]
+    },
+    {
+      "dimension": "Anti-hack",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "episode_script/episode_turns 不包含评分提示、模板占位符、伪造 actor 回复或诱导使用未声明工具的内容。",
+        "actor_rubric 各项责任均绑定具体当前轮语义或可观察双工事件，没有用行为频率或用户事件本身充当语义正奖励。"
+      ]
+    },
+    {
+      "dimension": "Actor Rubric 可测量性",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "actor_rubric/turn_rubrics 完整覆盖 U01-U09，每轮均保留 semantic 与 behavior，且无事件轮使用空 behavior 数组。",
+        "U02、U06、U09 的抢话，U03 的句内停顿，U04 的第三方旁语及 U02、U06、U07 的附和均有对应、可从音频评估的 Behavior 标准。"
+      ]
+    }
+  ],
+  "total_score": 100,
+  "frequency_calibration": "N-A",
+  "release_decision": "pass"
+}

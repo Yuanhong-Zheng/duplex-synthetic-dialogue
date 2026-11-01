@@ -1,0 +1,174 @@
+{
+  "reviewed_refs": {
+    "artifacts": [
+      "scene_task",
+      "user_voice",
+      "situation_knowledge",
+      "episode_script",
+      "actor_rubric"
+    ],
+    "C": [
+      "C01",
+      "C02",
+      "C03",
+      "C04"
+    ],
+    "L": [
+      "L01",
+      "L02",
+      "L03"
+    ],
+    "U": [
+      "U01",
+      "U02",
+      "U03",
+      "U04",
+      "U05",
+      "U06",
+      "U07",
+      "U08",
+      "U09",
+      "U10",
+      "U11",
+      "U12"
+    ]
+  },
+  "findings": [],
+  "dimension_scores": [
+    {
+      "dimension": "场景与任务一致性",
+      "score": 8,
+      "max": 8,
+      "minimum": 7,
+      "status": "pass",
+      "evidence": [
+        "/task_instance/goal 将红薯愈伤、防冻、通风储藏、销售和腐烂调整统一为可通过音频完成的判断与安排任务。",
+        "/task_style 为混合型，剧本先处理一般判断标准，再结合四批记录、天气、地窖和订单形成具体决策。"
+      ]
+    },
+    {
+      "dimension": "UserSeed 合理性",
+      "score": 7,
+      "max": 7,
+      "minimum": 6,
+      "status": "pass",
+      "evidence": [
+        "/user_seed/role_relation 是负责自家红薯采收和地窖管理的返乡种植户，与分拣棚现场任务直接相容。",
+        "/user_seed/task_familiarity 为 high，与用户熟悉基本流程但需要比较有限愈伤空间的情境一致。"
+      ]
+    },
+    {
+      "dimension": "VoiceProfile 场景相容性",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "/voice_profile 描述四十多岁男性、略粗厚音色、轻微乡音及劳作后的疲惫，符合返乡种植户傍晚结束采挖后的场景。",
+        "/voice_profile 只包含可听声音特征，没有夹带任务事实、角色责任或双工行为指令。"
+      ]
+    },
+    {
+      "dimension": "EpisodeSituation 具体性",
+      "score": 10,
+      "max": 10,
+      "minimum": 8,
+      "status": "pass",
+      "evidence": [
+        "/episode_situation 明确了10月26日18时30分、河南开封祥符区分拣棚、四批红薯、两笔订单及临近降温等背景。",
+        "/episode_situation 同时交代愈伤区容量不足、地窖余量、温度计偏差和丙批疑似腐烂等未决状态。"
+      ]
+    },
+    {
+      "dimension": "Situation / Constraint 边界",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "C01–C04 的800公斤订单、2600公斤地窖上限、2200公斤愈伤区上限和减损目标均有对应情境或参考记录。",
+        "L01–L03 分别覆盖腐烂薯隔离、进入无强排地窖的人员安全和电暖风机用电防火边界，且与任务材料无冲突。"
+      ]
+    },
+    {
+      "dimension": "Episode Script 任务推进",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "/episode_turns/0 至 /episode_turns/11 从建立判断框架、逐批交付状态、核对容量天气，推进到公斤级分配和腐烂扩散后的调整。",
+        "U10 将丙批整体移出可用量后，U11 和 U12 均保留该更新，并继续用甲乙丁完成主任务。"
+      ]
+    },
+    {
+      "dimension": "用户表达自然度",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "U03、U05、U07、U09 的 T02 停顿均位于自然找词或查阅位置，且各自只有一个明确 pause_cue。",
+        "各轮 user_utterance 使用自然口语和具体数值，没有占位符、假想助手回复或未来工具结果。"
+      ]
+    },
+    {
+      "dimension": "轮次条件与 Timing 合理性",
+      "score": 10,
+      "max": 10,
+      "minimum": 8,
+      "status": "pass",
+      "evidence": [
+        "U02、U04、U06、U08、U10、U11 均以 T03 进入，并提供可对应上一轮 assistant_semantic_goal 展开阶段的 interrupt_anchor。",
+        "U03、U05、U07、U09 的 T02 仅表示用户持有话权时的句内停顿；U07 的用户旁语按 during_assistant 放置。"
+      ]
+    },
+    {
+      "dimension": "模态与可观察性",
+      "score": 6,
+      "max": 6,
+      "minimum": 5,
+      "status": "pass",
+      "evidence": [
+        "/available_modalities 仅为 audio，所有任务产出都是解释、比较、口头分配和安全提醒，可由语音交付并观察。",
+        "/capability_contract 禁止外部状态访问和副作用，剧本未要求发送订单、写入系统、控制设备或读取账户。"
+      ]
+    },
+    {
+      "dimension": "信息泄漏",
+      "score": 8,
+      "max": 8,
+      "minimum": 7,
+      "status": "pass",
+      "evidence": [
+        "U03、U05、U07、U09 依次口头交付批次、容量、温湿度、天气和第二笔订单信息，后续使用均发生在相应披露之后。",
+        "U05 明确说明丙批筐底尚未翻检，U10 和 U12 始终把未核实部分作为待检状态而非已确认事实。"
+      ]
+    },
+    {
+      "dimension": "Anti-hack",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "剧本没有把隐藏参考材料、假想 actor 回复、未声明工具结果或未来在线行为写成既成事实。",
+        "U07 的“老李”旁语仅是对第三方的现场指令，Actor Rubric 明确要求继续原播报且不将其转化为 Assistant 任务。"
+      ]
+    },
+    {
+      "dimension": "Actor Rubric 可测量性",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "/turn_rubrics 完整覆盖 U01–U12，每轮 semantic 均对应当轮用户目标、已交付数据和适用安全边界。",
+        "T02、T03、side_speech 和 user_backchannels 均有相应可观察 behavior；无这些事件的 U01 使用空 behavior 数组。"
+      ]
+    }
+  ],
+  "total_score": 100,
+  "frequency_calibration": "N-A",
+  "release_decision": "pass"
+}

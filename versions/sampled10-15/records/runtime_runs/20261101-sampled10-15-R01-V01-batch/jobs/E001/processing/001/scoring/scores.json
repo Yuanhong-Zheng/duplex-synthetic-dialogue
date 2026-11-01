@@ -1,0 +1,1089 @@
+{
+  "schema": "duplex-runtime.actual-scoring.v1",
+  "status": "completed",
+  "case_id": "R01-V01",
+  "summary": {
+    "semantic": {
+      "pass": 7,
+      "fail": 0,
+      "not_triggered": 0,
+      "insufficient_evidence": 1,
+      "total": 8,
+      "scored": 7,
+      "pass_rate": 1.0,
+      "observed_coverage": 0.875
+    },
+    "behavior": {
+      "pass": 6,
+      "fail": 0,
+      "not_triggered": 0,
+      "insufficient_evidence": 0,
+      "total": 6,
+      "scored": 6,
+      "pass_rate": 1.0,
+      "observed_coverage": 1.0
+    }
+  },
+  "turns": [
+    {
+      "turn_id": "U01",
+      "criteria": [
+        {
+          "criterion_id": "U01-S01",
+          "kind": "semantic",
+          "text": "说明“世界遗产”通常指被联合国教科文组织认定具有突出普遍价值、应为全人类保护和传承的文化或自然遗产。",
+          "status": "insufficient_evidence",
+          "reason": "被打断的回复已说明世界遗产由联合国教科文组织列入名录，涵盖文化、自然及混合遗产，并提到“突出的普遍价值”；但在截断前尚未完整说明其应为全人类保护和传承，因此无法判断后续是否会满足完整标准。",
+          "evidence": [
+            {
+              "response_id": "A001",
+              "quote": "“世界遗产”一般指被联合国教科文组织列入《世界遗产名录》的文化遗产、自然遗产，或同时兼具两者价值的混合遗产。\n\n这个称号主要代表三点：\n\n第一，它被认为具有“突出的普遍价值”，重要性不只属于当地",
+              "start_frame": 118084,
+              "end_frame": 412281,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": null
+        }
+      ],
+      "responses": [
+        {
+          "response_id": "A001",
+          "heard_text": "“世界遗产”一般指被联合国教科文组织列入《世界遗产名录》的文化遗产、自然遗产，或同时兼具两者价值的混合遗产。\n\n这个称号主要代表三点：\n\n第一，它被认为具有“突出的普遍价值”，重要性不只属于当地",
+          "start_frame": 118084,
+          "end_frame": 412964,
+          "outcome": "queue_discarded",
+          "interrupted": true
+        }
+      ],
+      "audio_path": "audio/U01.wav",
+      "clip_start_frame": 0,
+      "clip_end_frame": 412964,
+      "measurement": {
+        "triggered": true,
+        "user_start_frame": 0,
+        "user_end_frame": 108484,
+        "type": "T01",
+        "execution_status": "not_scored"
+      }
+    },
+    {
+      "turn_id": "U02",
+      "criteria": [
+        {
+          "criterion_id": "U02-S01",
+          "kind": "semantic",
+          "text": "说明“普遍”指其价值超越单一国家或地区的范围，对全人类具有重要意义。",
+          "status": "pass",
+          "reason": "明确说明其重要性超越国界，并对全人类具有意义。",
+          "evidence": [
+            {
+              "response_id": "A002",
+              "quote": "“突出的普遍价值”是指它的重要性超越国界，对全人类的现在和未来都具有非凡意义",
+              "start_frame": 533663,
+              "end_frame": 655860,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": 1
+        },
+        {
+          "criterion_id": "U02-B01",
+          "kind": "behavior",
+          "text": "用户在播报中段起声时，停止当前播报并让出话权。",
+          "status": "pass",
+          "method": "deterministic_consumed_pcm",
+          "reason": "依据用户发声、停顿、助手停止边界及已消费 PCM 核对原行为标准。",
+          "evidence": [],
+          "measurement": {
+            "triggered": true,
+            "user_start_frame": 393849,
+            "user_end_frame": 471497,
+            "type": "T03",
+            "interrupted_response_id": "A001",
+            "stop_frame": 412964,
+            "onset_to_stop_ms": 1194.6875,
+            "assistant_samples_after_stop_before_user_end": 0,
+            "discarded_audio_frames": 747348,
+            "new_response_ids": [
+              "A002"
+            ],
+            "resume_after_user_finished": true,
+            "provider_request_cancelled": false,
+            "native_realtime_latency_measured": false,
+            "execution_status": "pass",
+            "recovery_execution_status": "pass"
+          },
+          "reward": 1
+        },
+        {
+          "criterion_id": "U02-B02",
+          "kind": "behavior",
+          "text": "回应插话后如需继续原解释，从实际已播放的内容边界衔接，不重复已播内容。",
+          "status": "pass",
+          "reason": "插话后直接承接用户对“普遍价值”的追问进行澄清，没有重新铺陈此前的一般介绍。",
+          "evidence": [
+            {
+              "response_id": "A002",
+              "quote": "对，基本是这个意思。更准确地说，“突出的普遍价值”是指它的重要性超越国界",
+              "start_frame": 481097,
+              "end_frame": 596468,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "pcm_execution_and_independent_semantic_judge",
+          "measurement": {
+            "triggered": true,
+            "user_start_frame": 393849,
+            "user_end_frame": 471497,
+            "type": "T03",
+            "interrupted_response_id": "A001",
+            "stop_frame": 412964,
+            "onset_to_stop_ms": 1194.6875,
+            "assistant_samples_after_stop_before_user_end": 0,
+            "discarded_audio_frames": 747348,
+            "new_response_ids": [
+              "A002"
+            ],
+            "resume_after_user_finished": true,
+            "provider_request_cancelled": false,
+            "native_realtime_latency_measured": false,
+            "execution_status": "pass",
+            "recovery_execution_status": "pass"
+          },
+          "reward": 1
+        }
+      ],
+      "responses": [
+        {
+          "response_id": "A002",
+          "heard_text": "对，基本是这个意思。更准确地说，“突出的普遍价值”是指它的重要性超越国界，对全人类的现在和未来都具有非凡意义，并不只是当地觉得珍贵。不过，这需要按照联合国教科文组织的标准评估和认定。",
+          "start_frame": 481097,
+          "end_frame": 779541,
+          "outcome": "drained",
+          "interrupted": false
+        }
+      ],
+      "audio_path": "audio/U02.wav",
+      "clip_start_frame": 393849,
+      "clip_end_frame": 779541,
+      "measurement": {
+        "triggered": true,
+        "user_start_frame": 393849,
+        "user_end_frame": 471497,
+        "type": "T03",
+        "interrupted_response_id": "A001",
+        "stop_frame": 412964,
+        "onset_to_stop_ms": 1194.6875,
+        "assistant_samples_after_stop_before_user_end": 0,
+        "discarded_audio_frames": 747348,
+        "new_response_ids": [
+          "A002"
+        ],
+        "resume_after_user_finished": true,
+        "provider_request_cancelled": false,
+        "native_realtime_latency_measured": false,
+        "execution_status": "pass",
+        "recovery_execution_status": "pass"
+      }
+    },
+    {
+      "turn_id": "U03",
+      "criteria": [
+        {
+          "criterion_id": "U03-S01",
+          "kind": "semantic",
+          "text": "明确世界遗产与国家5A级旅游景区不属于同一评价体系，前者侧重遗产价值与保护，后者属于中国的旅游景区质量等级。",
+          "status": "pass",
+          "reason": "回复明确指出二者不是同一套评价体系，并分别说明世界遗产侧重遗产价值及保护管理，国家5A级旅游景区是中国国内的旅游景区质量等级。",
+          "evidence": [
+            {
+              "response_id": "A003",
+              "quote": "不是同一套评价体系。\n\n“世界遗产”是联合国教科文组织框架下的国际认定，核心看遗产是否具有突出的普遍价值，以及真实性、完整性和保护管理状况。\n\n“国家5A级旅游景区”则是中国国内的旅游景区质量等级，主要评价旅游服务、设施、环境、管理和吸引力等。",
+              "start_frame": 862145,
+              "end_frame": 1257256,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": 1
+        },
+        {
+          "criterion_id": "U03-B01",
+          "kind": "behavior",
+          "text": "用户附和时保持同一条播报，不因附和停声、重启、重复或另起回应。",
+          "status": "pass",
+          "method": "deterministic_consumed_pcm",
+          "reason": "核对附和期间同一条播报、真实收听决定和消费边界；自然语音停顿不算停声。",
+          "evidence": [],
+          "measurement": {
+            "type": "backchannel",
+            "execution_status": "pass",
+            "planned": 1,
+            "observed": 1,
+            "events": [
+              {
+                "text": "嗯嗯。",
+                "start_frame": 1167144,
+                "end_frame": 1184792,
+                "response_id": "A003",
+                "reaction_end_frame": 1400033,
+                "same_response_continued": true,
+                "stops": [],
+                "new_response_ids": [],
+                "listener_decisions": [
+                  {
+                    "sequence": 27,
+                    "frame": 1182846,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "嗯嗯。",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 29,
+                    "frame": 1184792,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "嗯嗯。",
+                    "incoming_state": "silence",
+                    "silence_ms": 0
+                  }
+                ],
+                "execution_status": "pass"
+              }
+            ],
+            "listener_decisions": [
+              {
+                "sequence": 27,
+                "frame": 1182846,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "嗯嗯。",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 29,
+                "frame": 1184792,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "嗯嗯。",
+                "incoming_state": "silence",
+                "silence_ms": 0
+              }
+            ]
+          },
+          "reward": 1
+        }
+      ],
+      "responses": [
+        {
+          "response_id": "A003",
+          "heard_text": "不是同一套评价体系。\n\n“世界遗产”是联合国教科文组织框架下的国际认定，核心看遗产是否具有突出的普遍价值，以及真实性、完整性和保护管理状况。\n\n“国家5A级旅游景区”则是中国国内的旅游景区质量等级，主要评价旅游服务、设施、环境、管理和吸引力等。\n\n同一个地方可以同时拥有这两个称号，但两者互不等同，也不是获得其中一个就自动获得另一个。",
+          "start_frame": 862145,
+          "end_frame": 1400034,
+          "outcome": "drained",
+          "interrupted": false
+        }
+      ],
+      "audio_path": "audio/U03.wav",
+      "clip_start_frame": 779541,
+      "clip_end_frame": 1400034,
+      "measurement": {
+        "triggered": true,
+        "user_start_frame": 779541,
+        "user_end_frame": 852545,
+        "type": "T01",
+        "execution_status": "not_scored",
+        "continuation_bindings": {
+          "U03-B01": {
+            "type": "backchannel",
+            "execution_status": "pass",
+            "planned": 1,
+            "observed": 1,
+            "events": [
+              {
+                "text": "嗯嗯。",
+                "start_frame": 1167144,
+                "end_frame": 1184792,
+                "response_id": "A003",
+                "reaction_end_frame": 1400033,
+                "same_response_continued": true,
+                "stops": [],
+                "new_response_ids": [],
+                "listener_decisions": [
+                  {
+                    "sequence": 27,
+                    "frame": 1182846,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "嗯嗯。",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 29,
+                    "frame": 1184792,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "嗯嗯。",
+                    "incoming_state": "silence",
+                    "silence_ms": 0
+                  }
+                ],
+                "execution_status": "pass"
+              }
+            ],
+            "listener_decisions": [
+              {
+                "sequence": 27,
+                "frame": 1182846,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "嗯嗯。",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 29,
+                "frame": 1184792,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "嗯嗯。",
+                "incoming_state": "silence",
+                "silence_ms": 0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "turn_id": "U04",
+      "criteria": [
+        {
+          "criterion_id": "U04-S01",
+          "kind": "semantic",
+          "text": "确认世界遗产称号不能保证景点对特定游客一定更值得参观。",
+          "status": "pass",
+          "reason": "回复明确确认世界遗产称号只代表重要价值及保护意义，不能保证特定游客的旅游体验更好或更适合其父母。",
+          "evidence": [
+            {
+              "response_id": "A004",
+              "quote": "但不能保证旅游体验一定更好，也不等于更适合你父母。",
+              "start_frame": 1606076,
+              "end_frame": 1692092,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": 1
+        },
+        {
+          "criterion_id": "U04-B01",
+          "kind": "behavior",
+          "text": "机器电量提示音出现时继续当前播报，不将其当作用户请求另起回应。",
+          "status": "pass",
+          "method": "deterministic_consumed_pcm",
+          "reason": "核对附和期间同一条播报、真实收听决定和消费边界；自然语音停顿不算停声。",
+          "evidence": [],
+          "measurement": {
+            "type": "side_speech",
+            "execution_status": "pass",
+            "planned": 1,
+            "observed": 1,
+            "events": [
+              {
+                "text": "电量不足，请连接充电器。",
+                "start_frame": 1545318,
+                "end_frame": 1585443,
+                "response_id": "A004",
+                "reaction_end_frame": 1959483,
+                "same_response_continued": true,
+                "stops": [],
+                "new_response_ids": [],
+                "listener_decisions": [
+                  {
+                    "sequence": 37,
+                    "frame": 1563750,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "电量不足，请",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 38,
+                    "frame": 1582182,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "电量不足，请连接充电器。",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 40,
+                    "frame": 1595043,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "电量不足，请连接充电器。",
+                    "incoming_state": "silence",
+                    "silence_ms": 600
+                  }
+                ],
+                "execution_status": "pass"
+              }
+            ],
+            "listener_decisions": [
+              {
+                "sequence": 37,
+                "frame": 1563750,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "电量不足，请",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 38,
+                "frame": 1582182,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "电量不足，请连接充电器。",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 40,
+                "frame": 1595043,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "电量不足，请连接充电器。",
+                "incoming_state": "silence",
+                "silence_ms": 600
+              }
+            ]
+          },
+          "reward": 1
+        }
+      ],
+      "responses": [
+        {
+          "response_id": "A004",
+          "heard_text": "对。世界遗产称号说明它具有重要的文化或自然价值，值得保护，但不能保证旅游体验一定更好，也不等于更适合你父母。\n\n是否值得去，还要结合他们的兴趣、体力、交通便利程度、无障碍设施、游览强度、季节和拥挤情况来判断。可以把“世界遗产”当作了解其价值的参考，而不是单独的推荐理由。",
+          "start_frame": 1510502,
+          "end_frame": 1959484,
+          "outcome": "drained",
+          "interrupted": false
+        }
+      ],
+      "audio_path": "audio/U04.wav",
+      "clip_start_frame": 1400034,
+      "clip_end_frame": 1959484,
+      "measurement": {
+        "triggered": true,
+        "user_start_frame": 1400034,
+        "user_end_frame": 1500902,
+        "type": "T01",
+        "execution_status": "not_scored",
+        "continuation_bindings": {
+          "U04-B01": {
+            "type": "side_speech",
+            "execution_status": "pass",
+            "planned": 1,
+            "observed": 1,
+            "events": [
+              {
+                "text": "电量不足，请连接充电器。",
+                "start_frame": 1545318,
+                "end_frame": 1585443,
+                "response_id": "A004",
+                "reaction_end_frame": 1959483,
+                "same_response_continued": true,
+                "stops": [],
+                "new_response_ids": [],
+                "listener_decisions": [
+                  {
+                    "sequence": 37,
+                    "frame": 1563750,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "电量不足，请",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 38,
+                    "frame": 1582182,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "电量不足，请连接充电器。",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 40,
+                    "frame": 1595043,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "电量不足，请连接充电器。",
+                    "incoming_state": "silence",
+                    "silence_ms": 600
+                  }
+                ],
+                "execution_status": "pass"
+              }
+            ],
+            "listener_decisions": [
+              {
+                "sequence": 37,
+                "frame": 1563750,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "电量不足，请",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 38,
+                "frame": 1582182,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "电量不足，请连接充电器。",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 40,
+                "frame": 1595043,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "电量不足，请连接充电器。",
+                "incoming_state": "silence",
+                "silence_ms": 600
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "turn_id": "U05",
+      "criteria": [
+        {
+          "criterion_id": "U05-S01",
+          "kind": "semantic",
+          "text": "说明是否列入《世界遗产名录》最终由联合国教科文组织世界遗产委员会决定。",
+          "status": "pass",
+          "reason": "明确说明列入《世界遗产名录》的最终决定方是联合国教科文组织世界遗产委员会。",
+          "evidence": [
+            {
+              "response_id": "A005",
+              "quote": "最终由联合国教科文组织的世界遗产委员会决定。",
+              "start_frame": 2027042,
+              "end_frame": 2097357,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": 1
+        }
+      ],
+      "responses": [
+        {
+          "response_id": "A005",
+          "heard_text": "最终由联合国教科文组织的世界遗产委员会决定。通常是相关国家先申报，再由专业咨询机构评估，委员会随后审议，决定列入、暂缓、退回补充材料，或不列入。",
+          "start_frame": 2027042,
+          "end_frame": 2278933,
+          "outcome": "drained",
+          "interrupted": false
+        }
+      ],
+      "audio_path": "audio/U05.wav",
+      "clip_start_frame": 1959484,
+      "clip_end_frame": 2278933,
+      "measurement": {
+        "triggered": true,
+        "user_start_frame": 1959484,
+        "user_end_frame": 2017442,
+        "type": "T01",
+        "execution_status": "not_scored"
+      }
+    },
+    {
+      "turn_id": "U06",
+      "criteria": [
+        {
+          "criterion_id": "U06-S01",
+          "kind": "semantic",
+          "text": "概述最终审议前通常由缔约国申报、提交材料，并由相关咨询机构开展专业评估的基本过程。",
+          "status": "pass",
+          "reason": "回复完整概述了最终审议前的基本流程：遗产所在国先列入预备名单、准备并正式提交申报材料，随后由相关咨询机构进行专业评估并提出建议，最后交世界遗产委员会审议。",
+          "evidence": [
+            {
+              "response_id": "A006",
+              "quote": "先由遗产所在国把项目列入本国的“预备名单”，再准备申报文本和保护管理方案，正式提交。世界遗产中心会先检查材料是否完整。\n\n之后进入专业评估：文化遗产通常由国际古迹遗址理事会评估，自然遗产通常由世界自然保护联盟评估；混合遗产则会涉及两方面。",
+              "start_frame": 2375089,
+              "end_frame": 2773762,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": 1
+        },
+        {
+          "criterion_id": "U06-B01",
+          "kind": "behavior",
+          "text": "用户附和时保持同一条播报，不因附和停声、重启、重复或另起回应。",
+          "status": "pass",
+          "method": "deterministic_consumed_pcm",
+          "reason": "核对附和期间同一条播报、真实收听决定和消费边界；自然语音停顿不算停声。",
+          "evidence": [],
+          "measurement": {
+            "type": "backchannel",
+            "execution_status": "pass",
+            "planned": 1,
+            "observed": 1,
+            "events": [
+              {
+                "text": "明白。",
+                "start_frame": 2683650,
+                "end_frame": 2697211,
+                "response_id": "A006",
+                "reaction_end_frame": 3258200,
+                "same_response_continued": true,
+                "stops": [],
+                "new_response_ids": [],
+                "listener_decisions": [
+                  {
+                    "sequence": 52,
+                    "frame": 2693890,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "明白。",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 54,
+                    "frame": 2697211,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "明白。",
+                    "incoming_state": "silence",
+                    "silence_ms": 0
+                  }
+                ],
+                "execution_status": "pass"
+              }
+            ],
+            "listener_decisions": [
+              {
+                "sequence": 52,
+                "frame": 2693890,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "明白。",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 54,
+                "frame": 2697211,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "明白。",
+                "incoming_state": "silence",
+                "silence_ms": 0
+              }
+            ]
+          },
+          "reward": 1
+        }
+      ],
+      "responses": [
+        {
+          "response_id": "A006",
+          "heard_text": "一般要经过几步。\n\n先由遗产所在国把项目列入本国的“预备名单”，再准备申报文本和保护管理方案，正式提交。世界遗产中心会先检查材料是否完整。\n\n之后进入专业评估：文化遗产通常由国际古迹遗址理事会评估，自然遗产通常由世界自然保护联盟评估；混合遗产则会涉及两方面。评估会看它是否符合世界遗产标准，能否证明“突出的普遍价值”，以及真实性、完整性和保护管理是否到位，通常也可能包括现场考察。\n\n专业机构提出建议后，世界遗产委员会再开会审议，最终可能决定列入、暂缓决定、退回补充材料，或者不予列入。也就是说，专业机构负责评估和建议，最后拍板的是委员会。",
+          "start_frame": 2351878,
+          "end_frame": 3258201,
+          "outcome": "drained",
+          "interrupted": false
+        }
+      ],
+      "audio_path": "audio/U06.wav",
+      "clip_start_frame": 2278933,
+      "clip_end_frame": 3258201,
+      "measurement": {
+        "triggered": true,
+        "user_start_frame": 2278933,
+        "user_end_frame": 2342278,
+        "type": "T01",
+        "execution_status": "not_scored",
+        "continuation_bindings": {
+          "U06-B01": {
+            "type": "backchannel",
+            "execution_status": "pass",
+            "planned": 1,
+            "observed": 1,
+            "events": [
+              {
+                "text": "明白。",
+                "start_frame": 2683650,
+                "end_frame": 2697211,
+                "response_id": "A006",
+                "reaction_end_frame": 3258200,
+                "same_response_continued": true,
+                "stops": [],
+                "new_response_ids": [],
+                "listener_decisions": [
+                  {
+                    "sequence": 52,
+                    "frame": 2693890,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "明白。",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 54,
+                    "frame": 2697211,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "明白。",
+                    "incoming_state": "silence",
+                    "silence_ms": 0
+                  }
+                ],
+                "execution_status": "pass"
+              }
+            ],
+            "listener_decisions": [
+              {
+                "sequence": 52,
+                "frame": 2693890,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "明白。",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 54,
+                "frame": 2697211,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "明白。",
+                "incoming_state": "silence",
+                "silence_ms": 0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "turn_id": "U07",
+      "criteria": [
+        {
+          "criterion_id": "U07-S01",
+          "kind": "semantic",
+          "text": "说明列入名录后的保护主要由遗产所在地的缔约国及其国内主管机构承担。",
+          "status": "pass",
+          "reason": "回复明确说明列入名录后的主要保护责任由遗产所在国承担，并由其中央和地方主管部门、遗产管理机构等具体负责。",
+          "evidence": [
+            {
+              "response_id": "A007",
+              "quote": "列入以后，主要责任仍在遗产所在国，而不是由联合国教科文组织直接接管。所在国通常会依据本国法律，由中央和地方主管部门、遗产管理机构等负责日常保护、监测、维修和游客管理。",
+              "start_frame": 3356409,
+              "end_frame": 3649499,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": 1
+        }
+      ],
+      "responses": [
+        {
+          "response_id": "A007",
+          "heard_text": "列入以后，主要责任仍在遗产所在国，而不是由联合国教科文组织直接接管。所在国通常会依据本国法律，由中央和地方主管部门、遗产管理机构等负责日常保护、监测、维修和游客管理。\n\n所在国还要定期向世界遗产委员会报告保护状况；如果遗产受到重大工程、灾害或管理问题等威胁，委员会可以要求说明、提出整改建议，必要时将其列入《濒危世界遗产名录》。联合国教科文组织及相关专业机构主要发挥监督、协调、技术建议和国际援助作用。",
+          "start_frame": 3356409,
+          "end_frame": 4061482,
+          "outcome": "drained",
+          "interrupted": false
+        }
+      ],
+      "audio_path": "audio/U07.wav",
+      "clip_start_frame": 3258201,
+      "clip_end_frame": 4061482,
+      "measurement": {
+        "triggered": true,
+        "user_start_frame": 3258201,
+        "user_end_frame": 3346809,
+        "type": "T01",
+        "execution_status": "not_scored"
+      }
+    },
+    {
+      "turn_id": "U08",
+      "criteria": [
+        {
+          "criterion_id": "U08-S01",
+          "kind": "semantic",
+          "text": "说明列入名录不一定限制游客参观，是否限流或限制活动取决于具体遗产的保护需求和管理措施。",
+          "status": "pass",
+          "reason": "回复明确说明列入名录不必然限制游客，并指出限流、禁入或关闭等措施取决于遗产承载能力、脆弱程度、保护状况及当地管理规定。",
+          "evidence": [
+            {
+              "response_id": "A008",
+              "quote": "不一定。列入名录并不意味着必须限制游客，而是要求在开放参观和遗产保护之间取得平衡。\n\n是否限流、预约、划定禁入区或季节性关闭，要看遗产的承载能力、脆弱程度、保护状况和当地管理规定。",
+              "start_frame": 4132383,
+              "end_frame": 4450035,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": 1
+        },
+        {
+          "criterion_id": "U08-B01",
+          "kind": "behavior",
+          "text": "用户附和时保持同一条播报，不因附和停声、重启、重复或另起回应。",
+          "status": "pass",
+          "method": "deterministic_consumed_pcm",
+          "reason": "核对附和期间同一条播报、真实收听决定和消费边界；自然语音停顿不算停声。",
+          "evidence": [],
+          "measurement": {
+            "type": "backchannel",
+            "execution_status": "pass",
+            "planned": 1,
+            "observed": 1,
+            "events": [
+              {
+                "text": "嗯。",
+                "start_frame": 4306675,
+                "end_frame": 4318193,
+                "response_id": "A008",
+                "reaction_end_frame": 4625317,
+                "same_response_continued": true,
+                "stops": [],
+                "new_response_ids": [],
+                "listener_decisions": [
+                  {
+                    "sequence": 67,
+                    "frame": 4315550,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "嗯。",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 69,
+                    "frame": 4318193,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "嗯。",
+                    "incoming_state": "silence",
+                    "silence_ms": 0
+                  }
+                ],
+                "execution_status": "pass"
+              }
+            ],
+            "listener_decisions": [
+              {
+                "sequence": 67,
+                "frame": 4315550,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "嗯。",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 69,
+                "frame": 4318193,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "嗯。",
+                "incoming_state": "silence",
+                "silence_ms": 0
+              }
+            ]
+          },
+          "reward": 1
+        }
+      ],
+      "responses": [
+        {
+          "response_id": "A008",
+          "heard_text": "不一定。列入名录并不意味着必须限制游客，而是要求在开放参观和遗产保护之间取得平衡。\n\n是否限流、预约、划定禁入区或季节性关闭，要看遗产的承载能力、脆弱程度、保护状况和当地管理规定。有些遗产可以正常开放；有些则会限制人数、路线或开放时间。具体安排由所在国及当地管理机构制定。",
+          "start_frame": 4132383,
+          "end_frame": 4625318,
+          "outcome": "drained",
+          "interrupted": false
+        }
+      ],
+      "audio_path": "audio/U08.wav",
+      "clip_start_frame": 4061482,
+      "clip_end_frame": 4625318,
+      "measurement": {
+        "triggered": true,
+        "user_start_frame": 4061482,
+        "user_end_frame": 4122783,
+        "type": "T01",
+        "execution_status": "not_scored",
+        "continuation_bindings": {
+          "U08-B01": {
+            "type": "backchannel",
+            "execution_status": "pass",
+            "planned": 1,
+            "observed": 1,
+            "events": [
+              {
+                "text": "嗯。",
+                "start_frame": 4306675,
+                "end_frame": 4318193,
+                "response_id": "A008",
+                "reaction_end_frame": 4625317,
+                "same_response_continued": true,
+                "stops": [],
+                "new_response_ids": [],
+                "listener_decisions": [
+                  {
+                    "sequence": 67,
+                    "frame": 4315550,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "嗯。",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 69,
+                    "frame": 4318193,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "嗯。",
+                    "incoming_state": "silence",
+                    "silence_ms": 0
+                  }
+                ],
+                "execution_status": "pass"
+              }
+            ],
+            "listener_decisions": [
+              {
+                "sequence": 67,
+                "frame": 4315550,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "嗯。",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 69,
+                "frame": 4318193,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "嗯。",
+                "incoming_state": "silence",
+                "silence_ms": 0
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "side_speech_diagnostics": [
+    {
+      "turn_id": "U04",
+      "text": "电量不足，请连接充电器。",
+      "start_frame": 1545318,
+      "end_frame": 1585443,
+      "both_channels_active_frames": 22787,
+      "listener_decisions": [
+        {
+          "sequence": 37,
+          "frame": 1563750,
+          "clock": "synthetic_pcm_16000",
+          "kind": "assistant_listener_decision",
+          "decision": "continue_speaking",
+          "evidence": "电量不足，请",
+          "incoming_state": "speaking",
+          "silence_ms": 0
+        },
+        {
+          "sequence": 38,
+          "frame": 1582182,
+          "clock": "synthetic_pcm_16000",
+          "kind": "assistant_listener_decision",
+          "decision": "continue_speaking",
+          "evidence": "电量不足，请连接充电器。",
+          "incoming_state": "speaking",
+          "silence_ms": 0
+        },
+        {
+          "sequence": 40,
+          "frame": 1595043,
+          "clock": "synthetic_pcm_16000",
+          "kind": "assistant_listener_decision",
+          "decision": "continue_speaking",
+          "evidence": "电量不足，请连接充电器。",
+          "incoming_state": "silence",
+          "silence_ms": 600
+        }
+      ],
+      "scored": true,
+      "reason": "Explicit continuation Behavior in the new version."
+    }
+  ],
+  "source_inputs_unchanged": true,
+  "judge_calls": 8,
+  "native_realtime_latency_measured": false
+}

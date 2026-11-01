@@ -1,0 +1,332 @@
+{
+  "schema": "duplex-runtime.batch.v1",
+  "model": "openai/gpt-5.6-sol",
+  "workers": 1,
+  "seed": 857764427,
+  "sampling": "reviewed_owner_branch_with_original_causal_prefix",
+  "jobs": [
+    {
+      "episode_id": "E001",
+      "directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runtime_runs/20261101-sampled10-14-R01-V01-batch-owner-recovery-prepared",
+      "session_sha256": "79693eed1c022e32e9f5b5de0af76e52ab853da32f1e6e4eebf38ed7f5ca27c0",
+      "case_id": "R01-V01",
+      "validation_crash_after_main_turns": 0,
+      "ambient_gain_seed": 2637034281451725902,
+      "user_voice_plan": {
+        "schema": "duplex-runtime.user-voice-plan.v1",
+        "identity_sha256": "38b2de557c503810c0ce5a480bd175bc93b60d97c0074013ece52ba8dd878859",
+        "voice_profile": "男性声音，感知年龄四十多岁，音色略显粗厚，带轻微乡音，语速沉稳但透着连续劳作后的疲惫，呼吸偶尔偏重。",
+        "voice_profile_sha256": "85b2ea3bf472732c445a1072339bbfa863591e55e07716b60a940a8ff785f7e2",
+        "catalog_sha256": "ded08e78715f11aba5a96014bea3f785c221592b5797c5387a65fb48ad818b88",
+        "mapping": {
+          "voice_id": "Chinese (Mandarin)_Reliable_Executive",
+          "speed": 0.94,
+          "pitch": -1,
+          "emotion": null,
+          "voice_modify": {
+            "intensity": 10,
+            "timbre": -18
+          },
+          "reason": "候选中该音色明确为中年男性，标准普通话且沉稳可靠，最符合四十多岁男性与沉稳语速；小幅降低音高、增强浑厚感并略微柔化力度，用于近似粗厚和劳作后的收敛状态。疲惫不等同于悲伤或惊恐，因此 emotion 设为 null。",
+          "unmatched": [
+            "轻微乡音：所选中年男性音色为标准普通话，候选中带乡音或地方口音的男性音色年龄不匹配",
+            "连续劳作后的真实疲惫质感无法精确控制",
+            "偶尔偏重的呼吸无法通过这些参数可靠实现",
+            "自然粗粝或沙哑质感只能以浑厚调整近似，不能保证"
+          ]
+        },
+        "settings": {
+          "endpoint": "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
+          "model": "MiniMax/speech-2.8-hd",
+          "voice_id": "Chinese (Mandarin)_Reliable_Executive",
+          "speed": 0.94,
+          "volume": 1.0,
+          "pitch": -1,
+          "sample_rate": 16000,
+          "subtitle_type": "word",
+          "audio_delivery": "hex",
+          "emotion": null,
+          "voice_modify": {
+            "intensity": 10,
+            "timbre": -18
+          }
+        },
+        "attempts": 1,
+        "source": "frozen_stage1_voice_profile",
+        "fixed_for_whole_episode": true
+      },
+      "side_voices": {
+        "third_party": "male-qn-jingying",
+        "machine": "female-tianmei"
+      },
+      "prefix_script_replays": [
+        {
+          "until_accepted_user_events": 1,
+          "episode_script": {
+            "episode_turns": [
+              {
+                "turn_id": "U01",
+                "semantic_goal": "启动四批红薯的分流安排，并先强调临近降温和第一笔订单的硬期限",
+                "act_ref": "A01",
+                "timing_refs": [
+                  "T01"
+                ],
+                "user_utterance": "我这儿有甲乙丙丁四批红薯，得分开安排。两天内夜里要到零下，第一单八百公斤又得在十月二十八号中午前交，你先帮我理个判断路子。",
+                "assistant_semantic_goal": "说明按腐烂迹象、受伤程度、愈伤条件、订单时限和储藏容量进行分流的判断框架，并询问各批的数量、受伤比例及是否存在发软、渗液或异味"
+              },
+              {
+                "turn_id": "U02",
+                "semantic_goal": "追问受伤批次值得占用有限愈伤空间的判断标准",
+                "act_ref": "A03",
+                "timing_refs": [
+                  "T03"
+                ],
+                "interrupt_anchor": "Assistant 开始说明受伤批次在愈伤、尽快销售和隔离之间的判断依据时",
+                "user_utterance": "先等等，伤得重的到底是更该优先愈伤，还是干脆先周转？这个界线你给我说准点。",
+                "assistant_semantic_goal": "区分可通过愈伤改善的机械伤与必须隔离的软腐、渗液、霉层或异味，并说明受伤重但仍坚实干爽的红薯需先分拣后再决定是否占用愈伤空间",
+                "user_backchannels": [
+                  {
+                    "text": "明白。",
+                    "trigger_anchor": "助手已说明机械伤与腐烂征象的实质区别时"
+                  }
+                ]
+              },
+              {
+                "turn_id": "U03",
+                "semantic_goal": "交付甲批和乙批的数量及受伤状态，先比较两批的处理优先级",
+                "act_ref": "A01",
+                "timing_refs": [
+                  "T01",
+                  "T02"
+                ],
+                "pause_cue": {
+                  "after_text": "乙批呢",
+                  "duration_ms": 520
+                },
+                "user_utterance": "甲批是一千八百公斤，干地今天挖的，抽看大概百分之三是浅擦伤，没见软的、渗水的，也没异味。乙批呢，九百公斤，伤的大概百分之十二，靠装车口还有两筐挤得明显，合起来约七十公斤。先看这两批咋放。",
+                "assistant_semantic_goal": "比较甲乙两批：把甲批作为较适合长期储藏的候选，把乙批分成明显挤压部分与其余部分评估，并给出两批占用愈伤空间的初步优先级"
+              },
+              {
+                "turn_id": "U04",
+                "semantic_goal": "缩短甲乙两批的比较，只保留直接处理顺序",
+                "act_ref": "A02",
+                "timing_refs": [
+                  "T03"
+                ],
+                "interrupt_anchor": "Assistant 开始展开比较甲乙两批的愈伤价值和长期储藏适合度时",
+                "user_utterance": "别展开那么多，直接说甲和乙谁先进愈伤区，挤压那七十公斤咋单放。",
+                "assistant_semantic_goal": "简短给出甲乙两批的愈伤先后，并说明乙批明显挤压的约七十公斤应单独复检，出现腐烂征象的不得混入"
+              },
+              {
+                "turn_id": "U05",
+                "semantic_goal": "补充丙批和丁批的状态，将四批纳入同一分流判断",
+                "act_ref": "A01",
+                "timing_refs": [
+                  "T01",
+                  "T02"
+                ],
+                "pause_cue": {
+                  "after_text": "丙批麻烦些",
+                  "duration_ms": 680
+                },
+                "user_utterance": "丙批麻烦些，昨天下雨后挖的，六百五十公斤、四十三筐，有六筐内壁凝水，已经挑出八个发软的，其中三个带水渍还有点酸味，筐底还没翻。丁批一千二百公斤，棚下通风放了约三十六小时，表面干了，轻擦伤约百分之五。你把四批一块儿排排。",
+                "assistant_semantic_goal": "将丙批列为隔离并逐筐翻检的高风险批次，将丁批列为较适合近期交付或储藏的候选，并结合甲乙两批给出四批的初步处理层级"
+              },
+              {
+                "turn_id": "U06",
+                "semantic_goal": "对乙批其余约八百三十公斤的统一愈伤优先级提出异议，要求按受伤程度进一步分级",
+                "act_ref": "A05",
+                "timing_refs": [
+                  "T03"
+                ],
+                "interrupt_anchor": "Assistant 开始说明乙批其余约八百三十公斤可作为优先愈伤候选时",
+                "user_utterance": "那七十公斤按刚才说的单独复检。可剩下这八百三十公斤也不能一股脑都按优先愈伤吧？断头、铲伤和碰伤轻重不一样，还得再分级。",
+                "assistant_semantic_goal": "说明乙批其余约八百三十公斤应按断头、铲伤和碰伤的严重程度进一步分拣，仅将坚实干爽且适合愈合的部分列为愈伤候选，并询问愈伤区可用容量和当前温湿度控制能力",
+                "user_backchannels": [
+                  {
+                    "text": "嗯嗯。",
+                    "trigger_anchor": "助手已说明乙批其余部分应如何进一步分级时"
+                  }
+                ]
+              },
+              {
+                "turn_id": "U07",
+                "semantic_goal": "交付愈伤区、地窖容量及当前温湿度条件，用于检验初步分流是否可行",
+                "act_ref": "A01",
+                "timing_refs": [
+                  "T01",
+                  "T02"
+                ],
+                "pause_cue": {
+                  "after_text": "地窖这边",
+                  "duration_ms": 440
+                },
+                "user_utterance": "愈伤区最多放两千二百公斤，纸上写二十九到三十二度、湿度百分之八十五到九十五，做四到七天。可我这儿暖风机加风扇试过只在二十六到三十一度波动，也没专门加湿。地窖这边，还能进两千六百公斤，现在两支温度计一个十三度、一个十五度，湿度八十八。",
+                "assistant_semantic_goal": "评估愈伤区容量与温湿度波动对批次选择的影响，确认地窖容量和湿度基本可用，并说明两支温度计存在偏差时需要先交叉核对、暂按较低读数防范低温风险",
+                "side_speech": [
+                  {
+                    "speaker": "user",
+                    "target": "third_party",
+                    "text": "老李，你先把空筐摞到棚门右边。",
+                    "placement": "during_assistant"
+                  }
+                ]
+              },
+              {
+                "turn_id": "U08",
+                "semantic_goal": "追问两支地窖温度计读数不一致时应如何采用和核对",
+                "act_ref": "A03",
+                "timing_refs": [
+                  "T03"
+                ],
+                "interrupt_anchor": "Assistant 开始说明十三度和十五度两支温度计的偏差处理时",
+                "user_utterance": "这俩表差两度，我今晚安排通风到底按哪个数？别让我一开风口，薯温反倒掉到十度以下。",
+                "assistant_semantic_goal": "建议先在同一安全位置并排放置两支温度计进行交叉比较，核实前按较低读数采取保守通风策略，并提醒进入地窖前充分通风、出现异味或不适立即离开",
+                "user_backchannels": [
+                  {
+                    "text": "明白。",
+                    "trigger_anchor": "助手已说明温度计核实前应采用的保守判断时"
+                  }
+                ]
+              },
+              {
+                "turn_id": "U09",
+                "semantic_goal": "补充未来数夜的最低气温和第二笔订单期限，要求形成时间安排",
+                "act_ref": "A01",
+                "timing_refs": [
+                  "T01",
+                  "T02"
+                ],
+                "pause_cue": {
+                  "after_text": "我看一下天气页",
+                  "duration_ms": 1650
+                },
+                "user_utterance": "我看一下天气页，今晚最低四度，明晚零下一度，后面两晚是零下三度和零下二度。还有第二单一千公斤，十一月三号早上九点前交，两家都不要软腐、渗液和异味的。按这个时间往下排。",
+                "assistant_semantic_goal": "结合两笔订单期限和连续降温预报，提出订单备货、愈伤、防冻暂存和入窖的分阶段安排，并将丙批仅作为待隔离翻检库存而非已合格货源"
+              },
+              {
+                "turn_id": "U10",
+                "semantic_goal": "把丙批整批暂时移出可用数量，要求不依赖其完成订单和入窖安排",
+                "act_ref": "A04",
+                "timing_refs": [
+                  "T03"
+                ],
+                "interrupt_anchor": "Assistant 开始把各批分配到两笔订单、愈伤区和地窖时",
+                "user_utterance": "先改一下，丙批整批都别算进可用量，翻到底之前既不顶订单，也不安排入窖。你用甲乙丁重新排。",
+                "assistant_semantic_goal": "按丙批暂不计入可用库存的新条件，重新分配甲乙丁共三千九百公斤，预留两笔订单合计一千八百公斤，并把余下约两千一百公斤纳入愈伤与入窖容量约束，同时单列乙批明显挤压部分复检"
+              },
+              {
+                "turn_id": "U11",
+                "semantic_goal": "中断详细理由，要求用最短格式给出今晚、两笔订单和入窖的公斤级安排",
+                "act_ref": "A02",
+                "timing_refs": [
+                  "T03"
+                ],
+                "interrupt_anchor": "Assistant 开始解释重新分配甲乙丁的批次选择理由时",
+                "user_utterance": "理由先省了，就按今晚、第一单、第二单、最后入窖这四项，给我报公斤数和用哪一批；需要复检的单独注明。",
+                "assistant_semantic_goal": "用四项简明安排给出甲乙丁的暂定公斤分配，明确第一单八百公斤、第二单一千公斤和剩余约两千一百公斤的来源与去向，并注明所有数量以分拣后坚实、干爽、无腐烂征象的合格重量为准",
+                "user_backchannels": [
+                  {
+                    "text": "嗯。",
+                    "trigger_anchor": "助手已给出订单与入窖安排中的一项实质分配时"
+                  }
+                ]
+              },
+              {
+                "turn_id": "U12",
+                "semantic_goal": "确认丙批翻检中发现腐烂扩散时应如何调整既定安排",
+                "act_ref": "A03",
+                "timing_refs": [
+                  "T01"
+                ],
+                "user_utterance": "最后一个，明早翻丙批时，要是筐底也有发软、渗液或者酸味变重，我这套安排该怎么收紧？",
+                "assistant_semantic_goal": "说明若丙批异常深入筐底或范围扩大，应继续整批暂停销售、愈伤和入窖，按筐隔离并移除异常薯块；不得用其补两笔订单，同时维持甲乙丁方案并加强相邻区域检查和通风安全",
+                "user_backchannels": [
+                  {
+                    "text": "嗯嗯。",
+                    "trigger_anchor": "助手已说明丙批异常扩大后的隔离处置时"
+                  }
+                ]
+              }
+            ]
+          },
+          "prefix_anchor_replays": []
+        }
+      ]
+    }
+  ],
+  "code_sha256": {
+    "duplex_runtime/batch.py": "46359c9a736282bfc6774733da8bd420b92f38503cfd6b43a452a4ca0a492d6c",
+    "duplex_runtime/call_journal.py": "bee19ad6af289c2edf5dd8b172b6b95559f039cc89094e0ee00d41513fa2ba9c",
+    "duplex_runtime/synthetic_rollout.py": "07a3bf1f1f416b5aa858bf80dd591d07a549f655e57ce180094d5065caef71e2",
+    "duplex_runtime/assistant.py": "a929b65fc99011a1c528e9700168e2a060cdc221feaea77e2d85b57428bf1a6a",
+    "duplex_runtime/user_simulator.py": "f43a477f63e2fa498852ccafbc69f6cbca368b9f472c4aafa1ceb3ed13cf4850",
+    "duplex_runtime/speech.py": "ec9532a18541e93e92343b8127fbb0e123a42db3d24029aaa146b9509b694735",
+    "duplex_runtime/alignment.py": "985075583d1900bbb28d43aee19b84e990175e784540c0839272420bfe400053",
+    "duplex_runtime/playback.py": "4299a1aa184786e6a2eb0f7cdf2796e2b4ce5f235595bea0c750ab5a4edac920",
+    "duplex_runtime/prepare.py": "55b5d6ce7e475922d53d588a6bee665e389cd8189a970ee8624350254c043510",
+    "duplex_runtime/environment.py": "68a2c73a091e7139654bd4ddb3314cc6e27a3234a9924fa8179843eef40baee7",
+    "duplex_runtime/verify_simulator.py": "5bcf3b751dda00eb3dcfbe5e69e956db03612e4847b6d95b213cda3668931460",
+    "duplex_runtime/backchannel_policy.py": "7a18691a20db4e2301d63fa39949c41168c49e63685af4a6e30304c6782afd19",
+    "duplex_runtime/backchannel_metrics.py": "6448915f444f1d6dd90dd5ee2a5b07a2b6d97887fcb725f41907181c8923132a",
+    "minimax_client.py": "73470372ad7526a3313764e0e66fc16c2ddb3cb8af36900ff1eab16eb5c0551d",
+    "run_with_api_profile.py": "c82aa25999ff7ac3f8e57e396434c723281f0fa1c91755b688a4e9f2063f30df",
+    "duplex_runtime/fork_episode.py": "7243d9aaec3eb4ba45a6e75cc81cf90a7b9d4be0c4980e7e98eaba4438885023",
+    "duplex_runtime/audio_gain.py": "01b20a2f8eccf3821b489197f9f69bd2a5a21b6946f88fad7022108b1f65d875",
+    "duplex_runtime/audio_validation.py": "d02dfa39ed85ce6bcf5a437ba6eaccfb4adbf60cc00021042d192fe5b5f15682",
+    "revise_episode_anchor.py": "3793d465afae9e73c954831d84acd00899c0fe8c6f91ed78d494947827e589b2",
+    "duplex_runtime/side_speech.py": "505430dc880188663f8ffde368b0297229f038058afd71b833eeebc31ece4cfd",
+    "duplex_runtime/prompts/user_policy.md": "7a158574798ccf9999ff792126bc92a59faa63ddab59d4e1a0f4c683eaab2490",
+    "duplex_runtime/prompts/user_guard.md": "4bd539a6e12839c78f3ba1bf60d0c9e46a1cb578ad1e03f797866b44a27d27f4",
+    "duplex_runtime/prompts/assistant_policy.md": "86f414f9432101b46ad54d74c1cf19aa4d05efcc2e3ff5203adeef6feb52e898",
+    "duplex_runtime/prompts/assistant_listener.md": "d7f6e33525635da5caae48ed7de3f079d627840b80feee077f03517cc282eeaa",
+    "duplex_runtime/prompts/trigger_observer.md": "a2027c2ddb8be7d6ab9215e4bbad0c0b32691ee2e4103f17dba38c201508227f",
+    "duplex_runtime/prompts/backchannel_observer.md": "3a1c1a5d0ab2785119a577475e197bbb44b18b200eeadae8066efdb5730226fa",
+    "duplex_runtime/prompts/user_repair.md": "6eaafff9a1296cdeb5b75c7a8538ab258de19b6b028bb29e269015b476d417bf",
+    "duplex_runtime/voice_profile.py": "c350b9477459d372a3a242c03c97676ce9c1fda9e988a49a1aeb082e4346ad4e",
+    "duplex_runtime/prompts/voice_profile.md": "3f9e7fc146093ad73ca56ca19b68e6a0066ccdd53c1d7b88ef0965b29f38ab5c",
+    "duplex_runtime/request_retry.py": "4a440c4562accbaae1f9b3720cf7e23fe42c61d7979f107a4fd645f7e89596d1",
+    "duplex_runtime/reviewed_branch.py": "3fc83eab1b58abe47a7b811ccc69460454582d6991752f66e1422a05334d2917",
+    "duplex_runtime/fork_runtime.py": "c351072a9a860995aa2de43e701162987250885dfc74c51c79aba3445bd5157c",
+    "duplex_runtime/revalidate_runtime.py": "b1753b693165dbe2e45e13ee8bce2b1a76f8a1b83fca724aba3e84e4b67132c4",
+    "repair_runtime_environment.py": "fc68ec5a34661b484ddd92cfda4462daee3ded297c951733da39e3eb48ddd19b",
+    "record_model_call.py": "3ed22b03157e138dd27723f4179fede58e33376c68d63ac69dcd87ad13b165e9"
+  },
+  "git_baseline": "26256fa8e81f7284f0b79065afb9e390e6f07c91",
+  "independent_episode_journals": true,
+  "assistant_wav_url_recovery_authorized": true,
+  "audio_mode": "offline_synthetic_PCM;16kHz_WAV;approved_case_voices",
+  "validation_process_crash_is_service_failure": false,
+  "pricing_configured": false,
+  "backchannel_spoken_target": null,
+  "voices": {
+    "user": null,
+    "assistant": "female-chengshu"
+  },
+  "user_voice_selection": "stage1_profile",
+  "side_speech_execution": "provider_word_boundary_asides_v1",
+  "model_repair_policy": {
+    "user_candidate_repairs": 2,
+    "semantic_decision_repairs": 2
+  },
+  "request_retry_policy": {
+    "max_retries": 5,
+    "owner": "request_client",
+    "same_parameters": true
+  },
+  "autonomous_user_policy": {
+    "enabled": true,
+    "silence_ms": 3000,
+    "max_stalled_actions": 2
+  },
+  "runtime_owner_repair_counts": {
+    "episode_script/U02/interrupt_anchor": 1,
+    "actor_rubric/U02": 1
+  },
+  "runtime_owner_repair_rounds": 1,
+  "runtime_anchor_repair_counts": {},
+  "reviewed_owner_branch": {
+    "episode_id": "E001",
+    "proof": "jobs/E001/owner-branch-reuse.json"
+  }
+}

@@ -1,0 +1,167 @@
+{
+  "turn_id": "U12",
+  "triggered": true,
+  "sample_rate": 16000,
+  "clock": "offline_synthetic_pcm",
+  "disclosed_user_history": [
+    {
+      "turn_id": "U01",
+      "text": "我得在报到协调会前整理四个人的访问情况：销售运营高远、客户支持梁舒、财务分析何嘉宁，还有软件研发周启明。麻烦按人归类，优先找出会卡住今天安排的项目。"
+    },
+    {
+      "turn_id": "U02",
+      "text": "先说高远。他十点有客户数据培训，工单上写的是，邮箱和单点登录已启用，客户关系管理系统账号已创建、角色是只读，但培训要编辑客户记录；商业智能平台还没创建账号。"
+    },
+    {
+      "turn_id": "U03",
+      "text": "先别展开商业智能平台，直接说十点培训最可能卡在哪儿。"
+    },
+    {
+      "turn_id": "U04",
+      "text": "商业智能平台这项再补上：经理说高远后续要查看、导出销售周报，但工作区、角色名称和导出权限的审批人都没写，需要标为待确认。"
+    },
+    {
+      "turn_id": "U05",
+      "text": "接着是梁舒，她九点半开始跟岗，需要进客服工单系统看案例。她的邮箱和单点登录已经启用，但多因素认证还没登记；工单系统的邀请已发送，不过没有激活记录；知识库只读权限已经开通。"
+    },
+    {
+      "turn_id": "U06",
+      "text": "这两项别直接串成因果。多因素认证只是未登记，先单列核实，不能据此断定就是它卡住了登录。"
+    },
+    {
+      "turn_id": "U07",
+      "text": "何嘉宁下午两点要参加对账演练，需要查看总账数据。她的邮箱、单点登录和费用报销系统都已启用；财务核算系统账号已经创建，申请的是总账只读权限，目前还在等财务平台主管审批。"
+    },
+    {
+      "turn_id": "U08",
+      "text": "按今天的时间看，何嘉宁这项是不是应该排在梁舒和高远后面？"
+    },
+    {
+      "turn_id": "U09",
+      "text": "最后是周启明，十一点配置开发环境。我看一下记录，单点登录邀请已发，但没有激活记录；邮箱要等单点登录激活后自动启用；代码仓库账号还没创建；问题跟踪系统已有普通成员账号。经理还说他需要后端服务仓库读写权限和持续集成页面查看权限，不过具体仓库名没写，持续集成权限也没有工单。"
+    },
+    {
+      "turn_id": "U10",
+      "text": "这里说准确点：邀请已发送不等于已经激活，邮箱也只能写等待自动启用，对吧？"
+    },
+    {
+      "turn_id": "U11",
+      "text": "总体处理顺序再明确一下，不要按部门排。先按当天安排的时间排序，再看是不是直接阻塞；登录和安全前置条件放在对应人员下面，后续权限统一放最后。"
+    },
+    {
+      "turn_id": "U12",
+      "text": "先停一下，会议上没时间念这么细。每个人只留一个最关键阻塞，再带上该找谁核实。"
+    }
+  ],
+  "responses": [
+    {
+      "response_id": "A012",
+      "heard_text": "按时间简化成四项：\n\n梁舒，九点半：工单系统是否已激活、能否进入待核实；核实方未提供。\n\n高远，十点：客户关系管理系统只有只读权限，无法满足培训编辑需求；权限核实方未提供。\n\n周启明，十一点：代码仓库账号尚未创建；账号创建负责人待确认。\n\n何嘉宁，下午两点：总账只读权限仍待审批；找财务平台主管核实。",
+      "start_frame": 6559693,
+      "end_frame": 7129719,
+      "outcome": "drained",
+      "interrupted": false
+    }
+  ],
+  "judge_criteria": [
+    {
+      "criterion_id": "U12-S01",
+      "kind": "semantic",
+      "text": "把每名员工压缩为一个最关键的当日阻塞项。"
+    },
+    {
+      "criterion_id": "U12-S02",
+      "kind": "semantic",
+      "text": "为每名员工的关键阻塞项注明应负责确认需求、激活、审批或开通的核实方。"
+    },
+    {
+      "criterion_id": "U12-B02",
+      "kind": "behavior",
+      "text": "改为重点版本后不再恢复被取消的详细展开。"
+    }
+  ],
+  "behavior_measurement": {
+    "triggered": true,
+    "user_start_frame": 6406129,
+    "user_end_frame": 6550093,
+    "type": "T03",
+    "interrupted_response_id": "A011",
+    "stop_frame": 6423196,
+    "onset_to_stop_ms": 1066.6875,
+    "assistant_samples_after_stop_before_user_end": 0,
+    "discarded_audio_frames": 871611,
+    "new_response_ids": [
+      "A012"
+    ],
+    "resume_after_user_finished": true,
+    "provider_request_cancelled": false,
+    "native_realtime_latency_measured": false,
+    "execution_status": "pass",
+    "recovery_execution_status": "pass",
+    "continuation_bindings": {
+      "U12-B03": {
+        "type": "backchannel",
+        "execution_status": "pass",
+        "planned": 1,
+        "observed": 1,
+        "events": [
+          {
+            "text": "嗯。",
+            "start_frame": 6936598,
+            "end_frame": 6951459,
+            "response_id": "A012",
+            "reaction_end_frame": 7129718,
+            "same_response_continued": true,
+            "stops": [],
+            "new_response_ids": [],
+            "listener_decisions": [
+              {
+                "sequence": 136,
+                "frame": 6947521,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "嗯。",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 138,
+                "frame": 6951459,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "嗯。",
+                "incoming_state": "silence",
+                "silence_ms": 0
+              }
+            ],
+            "execution_status": "pass"
+          }
+        ],
+        "listener_decisions": [
+          {
+            "sequence": 136,
+            "frame": 6947521,
+            "clock": "synthetic_pcm_16000",
+            "kind": "assistant_listener_decision",
+            "decision": "continue_speaking",
+            "evidence": "嗯。",
+            "incoming_state": "speaking",
+            "silence_ms": 0
+          },
+          {
+            "sequence": 138,
+            "frame": 6951459,
+            "clock": "synthetic_pcm_16000",
+            "kind": "assistant_listener_decision",
+            "decision": "continue_speaking",
+            "evidence": "嗯。",
+            "incoming_state": "silence",
+            "silence_ms": 0
+          }
+        ]
+      }
+    }
+  }
+}

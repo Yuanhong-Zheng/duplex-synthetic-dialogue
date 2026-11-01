@@ -1,0 +1,86 @@
+{
+  "turn_id": "U06",
+  "triggered": true,
+  "sample_rate": 16000,
+  "clock": "offline_synthetic_pcm",
+  "disclosed_user_history": [
+    {
+      "turn_id": "U01",
+      "text": "刚才整屋停电，现在灯已经亮了。我能马上把关掉的电器都重新打开吗？"
+    },
+    {
+      "turn_id": "U02",
+      "text": "先别讲原理，直接告诉我第一步做什么。"
+    },
+    {
+      "turn_id": "U03",
+      "text": "我看了一下，空调、电热水壶和台式电脑都关着，冰箱跟路由器还插着。"
+    },
+    {
+      "turn_id": "U04",
+      "text": "改一下，水壶今晚先不用，把它排除吧，只考虑空调和电脑。"
+    },
+    {
+      "turn_id": "U05",
+      "text": "那电脑和空调哪个先开比较稳妥？"
+    },
+    {
+      "turn_id": "U06",
+      "text": "原理先跳过，两个之间大概要隔多久？"
+    }
+  ],
+  "responses": [
+    {
+      "response_id": "A007",
+      "heard_text": "间隔两三分钟就行。先开电脑，运行正常后再开空调；如果灯闪、跳闸或有异味，就先别开。",
+      "start_frame": 1062965,
+      "end_frame": 1218446,
+      "outcome": "drained",
+      "interrupted": false
+    }
+  ],
+  "judge_criteria": [
+    {
+      "criterion_id": "U06-S01",
+      "kind": "semantic",
+      "text": "说明两台设备之间不以固定秒数为准，应等前一台运行稳定后再开启下一台。"
+    },
+    {
+      "criterion_id": "U06-B01",
+      "kind": "behavior",
+      "text": "用户中段要求跳过原理时，停止当前原理说明并让出话权，不再续讲被取消的部分。"
+    }
+  ],
+  "behavior_measurement": {
+    "triggered": true,
+    "user_start_frame": 1001352,
+    "user_end_frame": 1053365,
+    "type": "T03",
+    "interrupted_response_id": "A006",
+    "stop_frame": 1015006,
+    "onset_to_stop_ms": 853.375,
+    "assistant_samples_after_stop_before_user_end": 0,
+    "discarded_audio_frames": 23879,
+    "new_response_ids": [
+      "A007"
+    ],
+    "resume_after_user_finished": true,
+    "provider_request_cancelled": false,
+    "native_realtime_latency_measured": false,
+    "execution_status": "pass",
+    "recovery_execution_status": "pass",
+    "continuation_bindings": {
+      "U06-B02": {
+        "type": "backchannel",
+        "execution_status": "not_triggered",
+        "planned": 1,
+        "observed": 0,
+        "events": [],
+        "listener_decisions": []
+      }
+    },
+    "combined_t03_bindings": [
+      "U06-B01"
+    ]
+  }
+}

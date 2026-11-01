@@ -1,0 +1,161 @@
+{
+  "reviewed_refs": {
+    "artifacts": [
+      "scene_task",
+      "user_voice",
+      "situation_knowledge",
+      "episode_script",
+      "actor_rubric"
+    ],
+    "C": [],
+    "L": [],
+    "U": [
+      "U01",
+      "U02",
+      "U03",
+      "U04",
+      "U05",
+      "U06",
+      "U07",
+      "U08"
+    ]
+  },
+  "findings": [],
+  "dimension_scores": [
+    {
+      "dimension": "场景与任务一致性",
+      "score": 8,
+      "max": 8,
+      "minimum": 7,
+      "status": "pass",
+      "evidence": [
+        "/scene_task/task_instance/goal 围绕世界遗产含义、评价体系、评定与保护基础常识展开，与景点观光场景一致",
+        "/scene_task/task_style 为常识问答，U01–U08 始终围绕同一世界遗产主题逐轮提出简单信息请求"
+      ]
+    },
+    {
+      "dimension": "UserSeed 合理性",
+      "score": 7,
+      "max": 7,
+      "minimum": 6,
+      "status": "pass",
+      "evidence": [
+        "/user_voice/user_seed/role_relation 所述为父母规划首次文化观光行程，与任务背景直接相容",
+        "/user_voice/user_seed/task_familiarity 为 low，与用户逐步询问称号含义、评定和保护的表现一致"
+      ]
+    },
+    {
+      "dimension": "VoiceProfile 场景相容性",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "/user_voice/voice_profile 明确给出二十多岁女性、清亮温和、语速适中、吐字清楚和自然好奇感",
+        "声音画像与低风险的家庭旅行规划场景相容，且未夹带任务事实、角色责任或双工行为指令"
+      ]
+    },
+    {
+      "dimension": "EpisodeSituation 具体性",
+      "score": 10,
+      "max": 10,
+      "minimum": 8,
+      "status": "pass",
+      "evidence": [
+        "/situation_knowledge/episode_situation 交代周日晚上、在家、为父母规划文化观光行程及宣传册中的称号疑问",
+        "/situation_knowledge/episode_situation 明确尚未决定景点、不愿仅凭称号判断，并列出评定、保护和旅游限制等未决问题"
+      ]
+    },
+    {
+      "dimension": "Situation / Constraint 边界",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "/situation_knowledge/constraints 与 /situation_knowledge/safety_limits 均为空，未与任务内容形成冲突",
+        "/situation_knowledge/episode_situation 提供了世界遗产与5A级称号并列出现这一疑问来源，后续内容保持在通用常识边界内"
+      ]
+    },
+    {
+      "dimension": "Episode Script 任务推进",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "U01–U04 从基本含义推进到“普遍价值”、评价体系差异及称号与参观价值的关系",
+        "U05–U08 继续推进至最终决定者、评定流程、保护责任和旅游活动限制，轮次间具有清楚的因果递进"
+      ]
+    },
+    {
+      "dimension": "用户表达自然度",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "/episode_script/episode_turns/1/user_utterance 使用“等一下”自然发起澄清式插话，问题具体且无占位符",
+        "/episode_script/episode_turns/6/user_utterance 以“评定这块我大概懂了。换到保护这边”自然完成话题过渡"
+      ]
+    },
+    {
+      "dimension": "轮次条件与 Timing 合理性",
+      "score": 10,
+      "max": 10,
+      "minimum": 8,
+      "status": "pass",
+      "evidence": [
+        "U02 使用 A03+T03，/episode_script/episode_turns/1/interrupt_anchor 对应 U01 预期解释“突出普遍价值”的自然展开阶段",
+        "U03、U06、U08 的 user_backchannels 均有实质内容完成后的 trigger_anchor，并在对应 Rubric 中要求继续同一播报"
+      ]
+    },
+    {
+      "dimension": "模态与可观察性",
+      "score": 6,
+      "max": 6,
+      "minimum": 5,
+      "status": "pass",
+      "evidence": [
+        "/capability_contract/interaction_modalities 仅为 audio，所有问答、插话、附和与机器提示音均可通过音频或说话人边界观察",
+        "/capability_contract/available_tools 为空且 external_side_effects 为 forbidden，任务仅要求口头解释，不依赖工具或外部状态"
+      ]
+    },
+    {
+      "dimension": "信息泄漏",
+      "score": 8,
+      "max": 8,
+      "minimum": 7,
+      "status": "pass",
+      "evidence": [
+        "/situation_knowledge/task_reference_data 为空，剧本未把隐藏、未读或未确认材料写成用户已知事实",
+        "/episode_script/episode_turns/3/side_speech 仅为可听见的机器低电量提示，没有被纳入世界遗产任务状态"
+      ]
+    },
+    {
+      "dimension": "Anti-hack",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "U01–U08 的 semantic_goal 均为实际用户信息目标，没有要求复述评分标准或制造不可观察的未来结果",
+        "/actor_rubric/turn_rubrics 的责任均绑定当前用户请求及可听事件，没有以事件出现频率或用户附和本身作为语义正奖励"
+      ]
+    },
+    {
+      "dimension": "Actor Rubric 可测量性",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "/actor_rubric/turn_rubrics 对 U01–U08 逐轮完整映射，Semantic 均为可从回答内容直接判断的单项责任",
+        "U02 的中断让权、U03/U06/U08 的附和继续播报及 U04 的机器提示忽略均有对应且可观察的 Behavior 标准"
+      ]
+    }
+  ],
+  "total_score": 100,
+  "frequency_calibration": "N-A",
+  "release_decision": "pass"
+}

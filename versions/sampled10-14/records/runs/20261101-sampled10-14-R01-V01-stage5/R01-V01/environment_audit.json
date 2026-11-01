@@ -1,0 +1,185 @@
+{
+  "reviewed_refs": {
+    "artifacts": [
+      "scene_task",
+      "user_voice",
+      "situation_knowledge",
+      "episode_script",
+      "actor_rubric"
+    ],
+    "C": [
+      "C01",
+      "C02",
+      "C03",
+      "C04"
+    ],
+    "L": [
+      "L01",
+      "L02",
+      "L03"
+    ],
+    "U": [
+      "U01",
+      "U02",
+      "U03",
+      "U04",
+      "U05",
+      "U06",
+      "U07",
+      "U08",
+      "U09",
+      "U10",
+      "U11",
+      "U12"
+    ]
+  },
+  "findings": [
+    {
+      "finding_id": "EV01",
+      "category": "act_timing",
+      "severity": "major",
+      "stage": "episode_script",
+      "path": "/episode_turns/5/semantic_goal",
+      "evidence": "反对把乙批整批视为优先愈伤对象，要求拆分明显挤压部分与其余部分",
+      "reason": "U04 已要求并预期把乙批明显挤压的约70公斤单独复检，U05 的四批分流又应保留这一既有状态；因此 U06 再以“乙批整批”尚未拆分为异议前提，依赖了前序 Assistant 丢失已建立状态或违反预期语义。该前提不能稳定绑定到合规的上一轮播报，削弱了 A05+T03 的真实进入条件。",
+      "suggested_fix": "将本轮异议改为针对乙批其余约830公斤中尚未解决的进一步分级或愈伤优先级，不再否定已经建立的70公斤单独复检状态。"
+    }
+  ],
+  "dimension_scores": [
+    {
+      "dimension": "场景与任务一致性",
+      "score": 8,
+      "max": 8,
+      "minimum": 7,
+      "status": "pass",
+      "evidence": [
+        "/task_instance/goal: 同时要求一般储藏知识判断与甲乙丙丁四批具体分流，符合混合型任务",
+        "/scene: 农产品收获、储存与销售场景与红薯愈伤、订单和入窖安排一致"
+      ]
+    },
+    {
+      "dimension": "UserSeed 合理性",
+      "score": 7,
+      "max": 7,
+      "minimum": 6,
+      "status": "pass",
+      "evidence": [
+        "/user_seed: 自家红薯种植、采收和地窖管理者与高任务熟悉度相容",
+        "/episode_situation: 用户长期负责采收、分级和地窖管理，支持其熟悉基本流程"
+      ]
+    },
+    {
+      "dimension": "VoiceProfile 场景相容性",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "/voice_profile: 四十多岁男性、轻微乡音和劳作后疲惫与傍晚分拣棚中的返乡种植户相容",
+        "/voice_profile: 仅描述可听声音特征，未夹带任务事实或双工行为要求"
+      ]
+    },
+    {
+      "dimension": "EpisodeSituation 具体性",
+      "score": 10,
+      "max": 10,
+      "minimum": 8,
+      "status": "pass",
+      "evidence": [
+        "/episode_situation: 明确了10月26日18时30分、河南开封祥符区分拣棚、四批红薯、两笔订单及降温障碍",
+        "/episode_situation: 具体列出愈伤区、地窖余量、温度计偏差、丙批异常和待解决事项"
+      ]
+    },
+    {
+      "dimension": "Situation / Constraint 边界",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "/constraints: C01至C04分别约束首单、地窖容量、愈伤区容量和损失控制，均有参考数据支持",
+        "/safety_limits: L01至L03覆盖腐烂薯隔离、入窖通风人身安全及暖风机用电防火边界"
+      ]
+    },
+    {
+      "dimension": "Episode Script 任务推进",
+      "score": 9,
+      "max": 12,
+      "minimum": 10,
+      "status": "fail",
+      "evidence": [
+        "/episode_turns/0至/episode_turns/11: 依次推进判断标准、四批状态、容量天气、订单重排和腐烂扩散调整",
+        "/episode_turns/5/semantic_goal: U06 再次反对乙批整批处理，但U04已经建立70公斤单独复检状态"
+      ]
+    },
+    {
+      "dimension": "用户表达自然度",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "/episode_turns/2/user_utterance: 以自然口语连续交付甲乙两批重量、伤情和比较请求",
+        "/episode_turns/8/user_utterance: 查看天气页后的停顿及订单补充符合现场说话方式，无占位符"
+      ]
+    },
+    {
+      "dimension": "轮次条件与 Timing 合理性",
+      "score": 7,
+      "max": 10,
+      "minimum": 8,
+      "status": "fail",
+      "evidence": [
+        "/episode_turns/1/interrupt_anchor、/episode_turns/3/interrupt_anchor及后续多数T03锚点均能对应上一轮预期语义的自然展开阶段",
+        "/episode_turns/5/semantic_goal: U06 的异议要求上一轮把乙批重新当作整体，与已经建立的拆分状态不兼容"
+      ]
+    },
+    {
+      "dimension": "模态与可观察性",
+      "score": 6,
+      "max": 6,
+      "minimum": 5,
+      "status": "pass",
+      "evidence": [
+        "/episode_turns: 停顿、抢话锚点、用户旁语和附和均可由音频、播放边界及说话人标记观察",
+        "/capability_contract: 任务仅要求口头比较、计算、重排和安全说明，不要求工具或外部副作用"
+      ]
+    },
+    {
+      "dimension": "信息泄漏",
+      "score": 8,
+      "max": 8,
+      "minimum": 7,
+      "status": "pass",
+      "evidence": [
+        "/episode_turns/2、/episode_turns/4、/episode_turns/6及/episode_turns/8: 批次、设施、天气和第二笔订单数据按轮次由用户逐步交付",
+        "/episode_turns/4/user_utterance: 丙批筐底明确标为尚未翻检，后续始终作为未确认风险处理"
+      ]
+    },
+    {
+      "dimension": "Anti-hack",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "/episode_turns: 用户台词均为现场任务表达，没有评分暗示、模板占位符或假想工具结果",
+        "/episode_turns/6/side_speech: 对第三方搬空筐的短指令被明确建模为可忽略旁语，而非对Assistant的新请求"
+      ]
+    },
+    {
+      "dimension": "Actor Rubric 可测量性",
+      "score": 4,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "/turn_rubrics: U01至U12均逐轮映射，Semantic责任包含可核对的批次、公斤数、期限和安全条件",
+        "/turn_rubrics/5: U06的停止播报、接受异议和附和续播行为可观察，但其异议前提继承了剧本中的既有状态冲突"
+      ]
+    }
+  ],
+  "total_score": 93,
+  "frequency_calibration": "N-A",
+  "release_decision": "repair"
+}

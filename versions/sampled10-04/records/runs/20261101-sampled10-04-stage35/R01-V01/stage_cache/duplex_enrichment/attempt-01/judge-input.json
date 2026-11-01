@@ -1,0 +1,437 @@
+{
+  "case_id": "R01-V01",
+  "scene": {
+    "domain_id": "D01",
+    "domain": "通用知识与日常助理",
+    "scenario_id": "D01-S02",
+    "scenario": "概念解释"
+  },
+  "task_style": "开放式互动",
+  "task_instance": {
+    "goal": "弄清“确认偏误”如何影响日常判断，并结合自己挑选商品评价时的思路辨认这种偏误，练习用更客观的方式权衡正反信息。"
+  },
+  "user_seed": {
+    "role_relation": "经常为家里选购数码产品的大学生",
+    "task_familiarity": "low"
+  },
+  "voice_profile": "女性声音，听感二十多岁，音色清亮，语速适中，表达时带着自然的好奇感。",
+  "episode_situation": "周日晚上，用户坐在大学宿舍楼的公共自习区，正在替每天乘地铁通勤的父亲挑选一副无线耳机。她平时经常为家里选购数码产品，但没有系统了解过判断偏误。她把预算定在500元以内，目前较偏向售价469元的“声澜 Air 3”，因为外形合意，商品页也突出宣传了降噪和通话功能。初步浏览评价时，她先连续阅读了几条高分内容，并觉得这些评价印证了自己的选择。随后她看到有关佩戴不适、地铁通话效果不稳和续航缩水的评论，却下意识认为差评可能只是个别情况。她已经保存了商品页信息和几条正反评价，准备把这次选购当成理解“确认偏误”的具体例子。现有评价来自不同使用情境，有些描述具体，有些只有笼统结论，其真实性和代表性都无法现场核实。她希望先弄明白确认偏误与普通偏好之间的区别，再辨认自己在哪些环节可能只接受支持原判断的信息。实际权衡时，父亲在意通勤通话和长时间佩戴舒适度，而外观并非主要需求。当前未决的问题是应如何评价正反信息的证据质量，以及怎样建立一套不因先入为主而失衡的比较方法。",
+  "task_reference_data": [
+    "用户已读的商品页写明：“声澜 Air 3 售价469元，标称单次续航8小时，支持主动降噪和双麦通话降噪。”这些是商家页面声明，尚未经过用户实际验证。",
+    "用户保存的一条五星评价写着：“地铁里降噪很明显，听音乐不用开太大声；连续用了约三小时，耳朵没有明显不舒服。”评价提到了具体环境和时长，但没有描述通话表现。",
+    "用户保存的另一条五星评价只有：“颜值高，音质绝了，闭眼入。”评价态度明确，但没有提供使用场景、时间或可比较的细节。",
+    "用户看到的一条两星评价写着：“早高峰站台打电话时，对方说风声和广播声很重；换到安静办公室后通话正常。”评价区分了两种环境，但用户尚不清楚佩戴方式和设备设置。",
+    "用户看到的一条三星评价写着：“使用两周后，单次从满电到提示低电约六小时；开启降噪较多，音量通常在六成左右。”评价给出了使用周期和条件，但与商品页标称续航的测试条件未必相同。",
+    "用户保存的一条两星评价写着：“戴四十分钟耳廓发胀，退了。”评价涉及舒适度，但没有说明耳形、耳塞尺寸或是否尝试更换配件。"
+  ],
+  "environment_audio": "自习区左后方约六米处偶尔传来翻书和拉动椅子的轻响。走廊尽头的门每隔几分钟开合一次，短暂带入脚步声和低声交谈。近处空调保持均匀的低频送风声。",
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "用于这次选购练习的耳机预算不超过500元。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "权衡评价时优先考虑地铁通话表现和长时间佩戴舒适度，外观只作为次要因素。",
+      "kind": "soft"
+    }
+  ],
+  "safety_limits": [],
+  "available_modalities": [
+    "audio"
+  ],
+  "capability_contract": {
+    "interaction_modalities": [
+      "audio"
+    ],
+    "available_tools": [],
+    "external_state_access": "none",
+    "external_side_effects": "forbidden"
+  },
+  "original_episode_script": {
+    "episode_turns": [
+      {
+        "turn_id": "U01",
+        "semantic_goal": "先弄清确认偏误与普通偏好的区别，并用自己偏向某款耳机的思路初步对照",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "我在给我爸挑耳机，现在挺偏向469元的声澜 Air 3，主要是外形顺眼，又先看了几条高分评价。后来看到差评，我第一反应还是觉得可能只是个例。你能先讲讲，这算普通偏好还是确认偏误吗？",
+        "assistant_semantic_goal": "区分个人偏好与确认偏误，并结合用户先形成倾向、重视支持信息而下意识弱化反面信息的过程说明可能出现偏误的环节"
+      },
+      {
+        "turn_id": "U02",
+        "semantic_goal": "追问形成初步倾向是否必然构成确认偏误",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T03"
+        ],
+        "interrupt_anchor": "Assistant 开始说明既有倾向如何影响后续信息筛选时",
+        "user_utterance": "等一下，所以先喜欢上一款并不一定有问题，关键是后面怎么处理不合心意的信息，对吗？",
+        "assistant_semantic_goal": "确认初步偏好本身不等于确认偏误，说明是否公平检视反面证据才是主要区别"
+      },
+      {
+        "turn_id": "U03",
+        "semantic_goal": "把选购标准从自己的外观偏好调整为父亲的实际使用需求",
+        "act_ref": "A04",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "那我得改一下判断重点。我爸更在意地铁里打电话稳不稳，还有戴久了舒不舒服，外观其实只能算次要。预算还是不超过500元。",
+        "assistant_semantic_goal": "按地铁通话、长时间舒适度、外观的优先级重排判断标准，并说明469元符合预算但预算内不等于需求匹配"
+      },
+      {
+        "turn_id": "U04",
+        "semantic_goal": "比较两条正面评价的证据质量",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01",
+          "T02"
+        ],
+        "pause_cue": {
+          "after_text": "我翻一下保存的内容",
+          "duration_ms": 1850
+        },
+        "user_utterance": "我翻一下保存的内容，一条五星说地铁里降噪明显，连续用约三小时也没明显不舒服；另一条就说颜值高、音质绝了、闭眼入。这两条该怎么看轻重？",
+        "assistant_semantic_goal": "比较两条五星评价的证据质量，指出有环境和时长描述的一条对降噪及舒适度更有参考性，笼统评价证据较弱，并明确两者都没有提供地铁通话表现"
+      },
+      {
+        "turn_id": "U05",
+        "semantic_goal": "要求把评价证据质量的判断方法压缩成简短标准",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "interrupt_anchor": "Assistant 开始逐条比较两条五星评价的具体信息时",
+        "user_utterance": "先别逐句展开，直接给我几个最关键的判断标准就行。",
+        "assistant_semantic_goal": "简短给出相关性、描述具体程度、使用条件是否清楚这几个评价证据质量标准"
+      },
+      {
+        "turn_id": "U06",
+        "semantic_goal": "用简短标准判断一条地铁通话差评的参考价值",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "有条两星评价说，早高峰站台打电话时，对方听到的风声和广播声很重，到了安静办公室又正常。按刚才的标准，这条参考价值高吗？",
+        "assistant_semantic_goal": "判断该评价与地铁通话需求直接相关且场景对照具体，因此值得重视，同时指出佩戴方式和设备设置未知，不能据此直接推断所有用户都会遇到同样问题"
+      },
+      {
+        "turn_id": "U07",
+        "semantic_goal": "确认不能用正负评价的数量简单取代证据权重",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "那是不是不能因为前面有几条好评，就把这一条两星评价压过去？",
+        "assistant_semantic_goal": "说明评价权重不应只按星级或数量决定，应结合与核心需求的相关性、描述具体程度及缺失条件来判断"
+      },
+      {
+        "turn_id": "U08",
+        "semantic_goal": "补充舒适度差评并判断其对长时间佩戴需求的意义",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "舒适度这边还有一条两星，说戴四十分钟耳廓发胀就退了，不过没写耳形、耳塞尺寸，也没说换没换配件。这个是不是只能算提醒，不能直接下结论？",
+        "assistant_semantic_goal": "确认该评价对舒适度风险有提示作用，但因个体适配信息缺失而代表性有限，适合保留为待验证风险而非直接结论"
+      },
+      {
+        "turn_id": "U09",
+        "semantic_goal": "避免把描述具体误当成内容必然真实或具有普遍代表性",
+        "act_ref": "A05",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "不过我也不想走到另一个极端，不能因为差评写得具体，就自动觉得它一定更真实、更普遍吧？",
+        "assistant_semantic_goal": "说明具体细节能提高可评估性但不能保证真实性或代表性，并区分证据可检查程度与结论可推广程度"
+      },
+      {
+        "turn_id": "U10",
+        "semantic_goal": "临时转到续航信息，练习比较商家标称与不同条件下的用户评价",
+        "act_ref": "A06",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "先岔开一下，续航也有个类似问题。商品页标称单次8小时，但一条三星说用了两周后大约6小时就提示低电，而且降噪开得多、音量大概六成，这俩怎么比？",
+        "assistant_semantic_goal": "解释标称8小时与用户约6小时可能基于不同测试条件，当前只能记录差异并核对使用条件，不能直接断定商家声明或评价哪一方错误"
+      },
+      {
+        "turn_id": "U11",
+        "semantic_goal": "确认面对测试条件不同的信息时应保留不确定性",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "也就是说，这里先记成“条件不同下出现续航差异”，别急着认定虚标，是这样吧？",
+        "assistant_semantic_goal": "确认应先保留条件差异这一不确定性，并说明只有测试条件更可比时才适合进一步判断续航差距"
+      },
+      {
+        "turn_id": "U12",
+        "semantic_goal": "返回通话与舒适度主线，建立避免先入为主的比较方法",
+        "act_ref": "A06",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "好，回到主要需求吧。你帮我按通话、舒适度和证据质量，整理一套不容易被先入为主带偏的比较方法。",
+        "assistant_semantic_goal": "基于已披露信息整理一套比较方法：先按需求设权重，再分别记录支持与反对证据，按相关性和信息完整度评估，最后标出仍需验证的不确定项"
+      },
+      {
+        "turn_id": "U13",
+        "semantic_goal": "进一步降低外观因素的权重，避免其影响核心需求判断",
+        "act_ref": "A04",
+        "timing_refs": [
+          "T03"
+        ],
+        "interrupt_anchor": "Assistant 开始说明如何按需求设置比较权重时",
+        "user_utterance": "等下，外观再降一点吧，只在核心表现差不多的时候拿来作比较，别让它参与前面的判断。",
+        "assistant_semantic_goal": "把外观调整为核心表现接近时才使用的次级比较项，并保持地铁通话与长时间舒适度为主要权重"
+      },
+      {
+        "turn_id": "U14",
+        "semantic_goal": "用调整后的方法对现有正反信息形成暂时性判断",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "那就按这个方法，帮我把现在这些评价压成一个暂时结论吧。别替我定买不买，重点说哪些证据更值得看、哪些还不能确定。",
+        "assistant_semantic_goal": "综合现有评价形成暂时性判断：优先重视场景具体且贴合需求的通话与舒适度信息，降低笼统好评和外观评价的权重，同时标明通话设置、个体佩戴适配及续航测试条件仍无法确定"
+      }
+    ]
+  },
+  "stage3_validation": {
+    "status": "passed",
+    "structural_status": "passed",
+    "semantic_status": "passed",
+    "errors": [],
+    "judge_attempts": [
+      {
+        "attempt": 1,
+        "decision": "pass",
+        "finding_count": 0,
+        "findings": [],
+        "judge_model": "gpt-5.6-sol",
+        "response_sha256": "40c4964529014b8a1a6a2f497933dfd94fb7e7cfbe890b510bbf6ad64678f0d0"
+      }
+    ],
+    "max_attempts": 3,
+    "structural_normalizations": []
+  },
+  "backchannel_policy": {
+    "enabled": true,
+    "min_events": 6,
+    "max_events": 8,
+    "max_events_per_turn": 2
+  },
+  "side_speech_policy": {
+    "mode": "all",
+    "enabled": true,
+    "case_probability": 1.0,
+    "min_events": 1,
+    "max_events": 2
+  },
+  "enriched_episode_script": {
+    "episode_turns": [
+      {
+        "turn_id": "U01",
+        "semantic_goal": "先弄清确认偏误与普通偏好的区别，并用自己偏向某款耳机的思路初步对照",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "我在给我爸挑耳机，现在挺偏向469元的声澜 Air 3，主要是外形顺眼，又先看了几条高分评价。后来看到差评，我第一反应还是觉得可能只是个例。你能先讲讲，这算普通偏好还是确认偏误吗？",
+        "assistant_semantic_goal": "区分个人偏好与确认偏误，并结合用户先形成倾向、重视支持信息而下意识弱化反面信息的过程说明可能出现偏误的环节"
+      },
+      {
+        "turn_id": "U02",
+        "semantic_goal": "追问形成初步倾向是否必然构成确认偏误",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T03"
+        ],
+        "interrupt_anchor": "Assistant 开始说明既有倾向如何影响后续信息筛选时",
+        "user_utterance": "等一下，所以先喜欢上一款并不一定有问题，关键是后面怎么处理不合心意的信息，对吗？",
+        "assistant_semantic_goal": "确认初步偏好本身不等于确认偏误，说明是否公平检视反面证据才是主要区别"
+      },
+      {
+        "turn_id": "U03",
+        "semantic_goal": "把选购标准从自己的外观偏好调整为父亲的实际使用需求",
+        "act_ref": "A04",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "那我得改一下判断重点。我爸更在意地铁里打电话稳不稳，还有戴久了舒不舒服，外观其实只能算次要。预算还是不超过500元。",
+        "assistant_semantic_goal": "按地铁通话、长时间舒适度、外观的优先级重排判断标准，并说明469元符合预算但预算内不等于需求匹配",
+        "user_backchannels": [
+          {
+            "text": "嗯嗯。",
+            "trigger_anchor": "助手已对核心使用需求的优先级给出实质说明时"
+          }
+        ]
+      },
+      {
+        "turn_id": "U04",
+        "semantic_goal": "比较两条正面评价的证据质量",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01",
+          "T02"
+        ],
+        "pause_cue": {
+          "after_text": "我翻一下保存的内容",
+          "duration_ms": 1850
+        },
+        "user_utterance": "我翻一下保存的内容，一条五星说地铁里降噪明显，连续用约三小时也没明显不舒服；另一条就说颜值高、音质绝了、闭眼入。这两条该怎么看轻重？",
+        "assistant_semantic_goal": "比较两条五星评价的证据质量，指出有环境和时长描述的一条对降噪及舒适度更有参考性，笼统评价证据较弱，并明确两者都没有提供地铁通话表现"
+      },
+      {
+        "turn_id": "U05",
+        "semantic_goal": "要求把评价证据质量的判断方法压缩成简短标准",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "interrupt_anchor": "Assistant 开始逐条比较两条五星评价的具体信息时",
+        "user_utterance": "先别逐句展开，直接给我几个最关键的判断标准就行。",
+        "assistant_semantic_goal": "简短给出相关性、描述具体程度、使用条件是否清楚这几个评价证据质量标准"
+      },
+      {
+        "turn_id": "U06",
+        "semantic_goal": "用简短标准判断一条地铁通话差评的参考价值",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "有条两星评价说，早高峰站台打电话时，对方听到的风声和广播声很重，到了安静办公室又正常。按刚才的标准，这条参考价值高吗？",
+        "assistant_semantic_goal": "判断该评价与地铁通话需求直接相关且场景对照具体，因此值得重视，同时指出佩戴方式和设备设置未知，不能据此直接推断所有用户都会遇到同样问题",
+        "user_backchannels": [
+          {
+            "text": "明白。",
+            "trigger_anchor": "助手已说明这条评价与地铁通话需求的相关性时"
+          }
+        ]
+      },
+      {
+        "turn_id": "U07",
+        "semantic_goal": "确认不能用正负评价的数量简单取代证据权重",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "那是不是不能因为前面有几条好评，就把这一条两星评价压过去？",
+        "assistant_semantic_goal": "说明评价权重不应只按星级或数量决定，应结合与核心需求的相关性、描述具体程度及缺失条件来判断"
+      },
+      {
+        "turn_id": "U08",
+        "semantic_goal": "补充舒适度差评并判断其对长时间佩戴需求的意义",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "舒适度这边还有一条两星，说戴四十分钟耳廓发胀就退了，不过没写耳形、耳塞尺寸，也没说换没换配件。这个是不是只能算提醒，不能直接下结论？",
+        "assistant_semantic_goal": "确认该评价对舒适度风险有提示作用，但因个体适配信息缺失而代表性有限，适合保留为待验证风险而非直接结论",
+        "side_speech": [
+          {
+            "speaker": "user",
+            "target": "third_party",
+            "text": "同学，麻烦把椅子往里挪一点，谢谢。",
+            "placement": "during_assistant"
+          }
+        ],
+        "user_backchannels": [
+          {
+            "text": "嗯。",
+            "trigger_anchor": "助手已说明这条评价对舒适度风险的提示意义时"
+          }
+        ]
+      },
+      {
+        "turn_id": "U09",
+        "semantic_goal": "避免把描述具体误当成内容必然真实或具有普遍代表性",
+        "act_ref": "A05",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "不过我也不想走到另一个极端，不能因为差评写得具体，就自动觉得它一定更真实、更普遍吧？",
+        "assistant_semantic_goal": "说明具体细节能提高可评估性但不能保证真实性或代表性，并区分证据可检查程度与结论可推广程度",
+        "user_backchannels": [
+          {
+            "text": "嗯嗯。",
+            "trigger_anchor": "助手已区分信息的可检查程度与结论的可推广程度时"
+          }
+        ]
+      },
+      {
+        "turn_id": "U10",
+        "semantic_goal": "临时转到续航信息，练习比较商家标称与不同条件下的用户评价",
+        "act_ref": "A06",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "先岔开一下，续航也有个类似问题。商品页标称单次8小时，但一条三星说用了两周后大约6小时就提示低电，而且降噪开得多、音量大概六成，这俩怎么比？",
+        "assistant_semantic_goal": "解释标称8小时与用户约6小时可能基于不同测试条件，当前只能记录差异并核对使用条件，不能直接断定商家声明或评价哪一方错误",
+        "user_backchannels": [
+          {
+            "text": "明白。",
+            "trigger_anchor": "助手已说明标称续航与用户体验可能存在测试条件差异时"
+          }
+        ]
+      },
+      {
+        "turn_id": "U11",
+        "semantic_goal": "确认面对测试条件不同的信息时应保留不确定性",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "也就是说，这里先记成“条件不同下出现续航差异”，别急着认定虚标，是这样吧？",
+        "assistant_semantic_goal": "确认应先保留条件差异这一不确定性，并说明只有测试条件更可比时才适合进一步判断续航差距"
+      },
+      {
+        "turn_id": "U12",
+        "semantic_goal": "返回通话与舒适度主线，建立避免先入为主的比较方法",
+        "act_ref": "A06",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "好，回到主要需求吧。你帮我按通话、舒适度和证据质量，整理一套不容易被先入为主带偏的比较方法。",
+        "assistant_semantic_goal": "基于已披露信息整理一套比较方法：先按需求设权重，再分别记录支持与反对证据，按相关性和信息完整度评估，最后标出仍需验证的不确定项",
+        "user_backchannels": [
+          {
+            "text": "嗯。",
+            "trigger_anchor": "助手已对按需求设置权重给出实质说明时"
+          }
+        ]
+      },
+      {
+        "turn_id": "U13",
+        "semantic_goal": "进一步降低外观因素的权重，避免其影响核心需求判断",
+        "act_ref": "A04",
+        "timing_refs": [
+          "T03"
+        ],
+        "interrupt_anchor": "Assistant 开始说明如何按需求设置比较权重时",
+        "user_utterance": "等下，外观再降一点吧，只在核心表现差不多的时候拿来作比较，别让它参与前面的判断。",
+        "assistant_semantic_goal": "把外观调整为核心表现接近时才使用的次级比较项，并保持地铁通话与长时间舒适度为主要权重"
+      },
+      {
+        "turn_id": "U14",
+        "semantic_goal": "用调整后的方法对现有正反信息形成暂时性判断",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "那就按这个方法，帮我把现在这些评价压成一个暂时结论吧。别替我定买不买，重点说哪些证据更值得看、哪些还不能确定。",
+        "assistant_semantic_goal": "综合现有评价形成暂时性判断：优先重视场景具体且贴合需求的通话与舒适度信息，降低笼统好评和外观评价的权重，同时标明通话设置、个体佩戴适配及续航测试条件仍无法确定",
+        "user_backchannels": [
+          {
+            "text": "嗯嗯。",
+            "trigger_anchor": "助手已归纳哪些评价更贴合核心需求时"
+          }
+        ]
+      }
+    ]
+  }
+}

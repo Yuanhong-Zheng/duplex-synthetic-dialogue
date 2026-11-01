@@ -1,0 +1,183 @@
+{
+  "reviewed_refs": {
+    "artifacts": [
+      "scene_task",
+      "user_voice",
+      "situation_knowledge",
+      "episode_script",
+      "actor_rubric"
+    ],
+    "C": [
+      "C01",
+      "C02",
+      "C03",
+      "C04"
+    ],
+    "L": [
+      "L01",
+      "L02",
+      "L03"
+    ],
+    "U": [
+      "U01",
+      "U02",
+      "U03",
+      "U04",
+      "U05",
+      "U06",
+      "U07",
+      "U08",
+      "U09",
+      "U10",
+      "U11",
+      "U12"
+    ]
+  },
+  "findings": [
+    {
+      "finding_id": "EV01",
+      "category": "actor_rubric",
+      "severity": "major",
+      "stage": "actor_rubric",
+      "path": "/turn_rubrics/10/semantic",
+      "evidence": "[\"按顺序列出延期整面翻新的主要阶段，包括准备合适材料与防护、彻底去除旧涂层、逐级打磨、除尘、试色、薄涂木蜡油以及按标签等待和固化。\"]",
+      "reason": "U11要求给出包含木蜡油涂装的完整施工顺序，但该轮评分责任只要求薄涂和等待固化，没有要求在产生沾油布后执行L01规定的摊平固化或浸水后置于带盖金属容器。虽然U09和U10已讨论该风险，L01是持续适用的critical安全边界；当前Rubric仍可能把遗漏关键收尾处置的施工顺序评为满足要求。",
+      "suggested_fix": "在U11延期翻新的顺序标准中补入木蜡油施工后的油布安全处置步骤，并保持其与L01及前序已确认的标签要求一致。"
+    }
+  ],
+  "dimension_scores": [
+    {
+      "dimension": "场景与任务一致性",
+      "score": 8,
+      "max": 8,
+      "minimum": 7,
+      "status": "pass",
+      "evidence": [
+        "/task_instance/goal与家庭DIY场景一致，要求通过口头判断、比较和排序完成桌面翻新决策",
+        "/task_style为混合型，剧本同时包含损伤判断知识和基于现有材料、期限的具体施工决策"
+      ]
+    },
+    {
+      "dimension": "UserSeed 合理性",
+      "score": 7,
+      "max": 7,
+      "minimum": 6,
+      "status": "pass",
+      "evidence": [
+        "/user_seed将用户设为准备独立翻新自家餐桌且熟悉度低的住户，与逐步追问材料相容性和施工顺序相符"
+      ]
+    },
+    {
+      "dimension": "VoiceProfile 场景相容性",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "/voice_profile描述温和、平稳、清楚并在不确定处稍作停顿，与低熟悉度的常规家庭DIY咨询相容"
+      ]
+    },
+    {
+      "dimension": "EpisodeSituation 具体性",
+      "score": 10,
+      "max": 10,
+      "minimum": 8,
+      "status": "pass",
+      "evidence": [
+        "/episode_situation具体交代时间、地点、桌面材质与涂层、损伤状态、已有准备、材料限制和未决选择",
+        "/task_reference_data提供水印、划痕、掉漆尺寸、砂纸目数、木蜡油时限及使用期限等可核对数据"
+      ]
+    },
+    {
+      "dimension": "Situation / Constraint 边界",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "C01–C04分别覆盖恢复使用期限、涂层相容性、现有材料优先级和外观偏好，且与情境资料一致",
+        "L01–L03明确覆盖油布自热、通风与火源、粉尘防护和涂层使用时限"
+      ]
+    },
+    {
+      "dimension": "Episode Script 任务推进",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "/episode_turns/0至/episode_turns/11从水印判断、划痕分类和材料评估递进到期限决策、安全支线、两阶段顺序及最终方向",
+        "U09进入安全支线，U11明确返回桌面主线并保留既有材料、期限和处理状态"
+      ]
+    },
+    {
+      "dimension": "用户表达自然度",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "U01–U12台词均为具体口语表达，没有占位符或假想工具结果",
+        "/episode_turns/6/pause_cue唯一绑定“我看一下罐身”，自然表现用户查读标签时的句内停顿"
+      ]
+    },
+    {
+      "dimension": "轮次条件与 Timing 合理性",
+      "score": 10,
+      "max": 10,
+      "minimum": 8,
+      "status": "pass",
+      "evidence": [
+        "U02、U06、U08均使用T03，interrupt_anchor分别对应前一轮预期播报中的水印判断、磨法比较和延期理由阶段",
+        "U03、U05、U09、U11、U12的user_backchannels均有与当轮播报语义一致的trigger_anchor及继续同一播报的Behavior"
+      ]
+    },
+    {
+      "dimension": "模态与可观察性",
+      "score": 6,
+      "max": 6,
+      "minimum": 5,
+      "status": "pass",
+      "evidence": [
+        "/available_modalities仅为audio，任务通过口头解释、比较、确认和顺序回读即可交付",
+        "T02、T03、旁语和短附和均可由音频、说话边界及已播放位置观察，不依赖外部系统状态"
+      ]
+    },
+    {
+      "dimension": "信息泄漏",
+      "score": 8,
+      "max": 8,
+      "minimum": 7,
+      "status": "pass",
+      "evidence": [
+        "U01只交付水印颜色、干燥时间和无发黑状态，后续观察、涂层标签、砂纸及期限均按轮次逐步披露",
+        "/episode_turns/8/side_speech仅为洗衣机提示音，未被剧本写成桌面任务事实或用户确认信息"
+      ]
+    },
+    {
+      "dimension": "Anti-hack",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "剧本没有并行query、伪造actor回复、工具结果或外部状态变更",
+        "Rubric以损伤判断、状态更新、打断处理和安全步骤等可观察责任评分，未奖励事件频率本身"
+      ]
+    },
+    {
+      "dimension": "Actor Rubric 可测量性",
+      "score": 3,
+      "max": 5,
+      "minimum": 4,
+      "status": "fail",
+      "evidence": [
+        "/turn_rubrics逐轮映射U01–U12，并为T02、T03、side_speech和user_backchannels提供相应Behavior标准",
+        "/turn_rubrics/10/semantic要求列出含木蜡油的延期施工顺序，却未把L01的沾油布安全处置纳入该轮可评分责任"
+      ]
+    }
+  ],
+  "total_score": 98,
+  "frequency_calibration": "N-A",
+  "release_decision": "repair"
+}

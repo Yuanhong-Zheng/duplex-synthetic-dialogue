@@ -1,0 +1,1501 @@
+{
+  "schema": "duplex-runtime.actual-scoring.v1",
+  "status": "completed",
+  "case_id": "R01-V01",
+  "summary": {
+    "semantic": {
+      "pass": 8,
+      "fail": 3,
+      "not_triggered": 0,
+      "insufficient_evidence": 1,
+      "total": 12,
+      "scored": 11,
+      "pass_rate": 0.7272727272727273,
+      "observed_coverage": 0.9166666666666666
+    },
+    "behavior": {
+      "pass": 9,
+      "fail": 0,
+      "not_triggered": 1,
+      "insufficient_evidence": 0,
+      "total": 10,
+      "scored": 9,
+      "pass_rate": 1.0,
+      "observed_coverage": 0.9
+    }
+  },
+  "turns": [
+    {
+      "turn_id": "U01",
+      "criteria": [
+        {
+          "criterion_id": "U01-S01",
+          "kind": "semantic",
+          "text": "区分应立即报告的信息与可在交战结束后补充的信息，并以是否影响当前决策或行动为判断依据。",
+          "status": "pass",
+          "reason": "回复明确以是否影响队友接下来几秒的决策为判断依据，并分别列出了必须马上报告和可等交战结束后补充的信息。",
+          "evidence": [
+            {
+              "response_id": "A001",
+              "quote": "可以按“会不会影响队友接下来几秒的决策”来分。\n\n必须马上说的：",
+              "start_frame": 149106,
+              "end_frame": 228296,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            },
+            {
+              "response_id": "A001",
+              "quote": "可以等打完再补的：\n\n操作失误、谁该背锅、完整复盘",
+              "start_frame": 1066209,
+              "end_frame": 1158996,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": 1
+        },
+        {
+          "criterion_id": "U01-B01",
+          "kind": "behavior",
+          "text": "用户短附和时保持同一条播报，不因附和停声、重启、重复或另起回应。",
+          "status": "not_triggered",
+          "method": "deterministic_consumed_pcm",
+          "reason": "核对附和期间同一条播报、真实收听决定和消费边界；自然语音停顿不算停声。",
+          "evidence": [],
+          "measurement": {
+            "type": "backchannel",
+            "execution_status": "not_triggered",
+            "planned": 1,
+            "observed": 0,
+            "events": [],
+            "listener_decisions": []
+          },
+          "reward": null
+        }
+      ],
+      "responses": [
+        {
+          "response_id": "A001",
+          "heard_text": "可以按“会不会影响队友接下来几秒的决策”来分。\n\n必须马上说的：\n\n第一，直接威胁。比如“右侧绕后一个”“我被切”“对面刺客没露头”。\n\n第二，关键技能和资源。比如“对面大招交了”“他没闪”“我治疗还有五秒”。只报会改变集火、撤退或开团判断的。\n\n第三，你自己的状态变化。比如“我跟不上”“我没技能，保不了”“我能接控制”。别只说“没了”，要说清什么没了。\n\n第四，视野和人数。比如“左边看到两个”“正面少一人”“后点丢视野”。位置、人数、动向尽量一句说完。\n\n第五，指挥要求的信息。指挥问你技能、位置或能不能跟，要优先立刻回答。\n\n可以等打完再补的：\n\n操作失误、谁该背锅、完整复盘、刚",
+          "start_frame": 149106,
+          "end_frame": 1173891,
+          "outcome": "queue_discarded",
+          "interrupted": true
+        }
+      ],
+      "audio_path": "audio/U01.wav",
+      "clip_start_frame": 0,
+      "clip_end_frame": 1173891,
+      "measurement": {
+        "triggered": true,
+        "user_start_frame": 0,
+        "user_end_frame": 139506,
+        "type": "T01",
+        "execution_status": "not_scored",
+        "continuation_bindings": {
+          "U01-B01": {
+            "type": "backchannel",
+            "execution_status": "not_triggered",
+            "planned": 1,
+            "observed": 0,
+            "events": [],
+            "listener_decisions": []
+          }
+        }
+      }
+    },
+    {
+      "turn_id": "U02",
+      "criteria": [
+        {
+          "criterion_id": "U02-S01",
+          "kind": "semantic",
+          "text": "给出一个判断是否需要立即插话的核心标准，不再铺陈多个示例。",
+          "status": "pass",
+          "reason": "回复只给出一个核心判断标准：信息是否会改变队友接下来三秒的操作，并简洁说明立即说或稍后补，没有铺陈多个示例。",
+          "evidence": [
+            {
+              "response_id": "A002",
+              "quote": "标准就一个：这条信息如果会改变队友接下来三秒的操作，就立刻说；不会，就等指挥空档或打完再补。",
+              "start_frame": 1254789,
+              "end_frame": 1425456,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": 1
+        },
+        {
+          "criterion_id": "U02-B01",
+          "kind": "behavior",
+          "text": "用户中段要求停止举例时，停止当前播报并让出话权，随后不再恢复已被取消的示例。",
+          "status": "pass",
+          "reason": "用户要求停止举例后，新的回复直接给出单一标准，未恢复已取消的示例；行为测量也显示停止后到用户说完前没有继续播报。",
+          "evidence": [
+            {
+              "response_id": "A002",
+              "quote": "标准就一个：这条信息如果会改变队友接下来三秒的操作，就立刻说；不会，就等指挥空档或打完再补。",
+              "start_frame": 1254789,
+              "end_frame": 1425456,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "pcm_and_semantic_combined_behavior",
+          "measurement": {
+            "triggered": true,
+            "user_start_frame": 1158996,
+            "user_end_frame": 1245189,
+            "type": "T03",
+            "interrupted_response_id": "A001",
+            "stop_frame": 1173891,
+            "onset_to_stop_ms": 930.9375,
+            "assistant_samples_after_stop_before_user_end": 0,
+            "discarded_audio_frames": 636809,
+            "new_response_ids": [
+              "A002"
+            ],
+            "resume_after_user_finished": true,
+            "provider_request_cancelled": false,
+            "native_realtime_latency_measured": false,
+            "execution_status": "pass",
+            "recovery_execution_status": "pass",
+            "combined_t03_bindings": [
+              "U02-B01"
+            ]
+          },
+          "reward": 1
+        }
+      ],
+      "responses": [
+        {
+          "response_id": "A002",
+          "heard_text": "标准就一个：这条信息如果会改变队友接下来三秒的操作，就立刻说；不会，就等指挥空档或打完再补。",
+          "start_frame": 1254789,
+          "end_frame": 1428846,
+          "outcome": "drained",
+          "interrupted": false
+        }
+      ],
+      "audio_path": "audio/U02.wav",
+      "clip_start_frame": 1158996,
+      "clip_end_frame": 1428846,
+      "measurement": {
+        "triggered": true,
+        "user_start_frame": 1158996,
+        "user_end_frame": 1245189,
+        "type": "T03",
+        "interrupted_response_id": "A001",
+        "stop_frame": 1173891,
+        "onset_to_stop_ms": 930.9375,
+        "assistant_samples_after_stop_before_user_end": 0,
+        "discarded_audio_frames": 636809,
+        "new_response_ids": [
+          "A002"
+        ],
+        "resume_after_user_finished": true,
+        "provider_request_cancelled": false,
+        "native_realtime_latency_measured": false,
+        "execution_status": "pass",
+        "recovery_execution_status": "pass",
+        "combined_t03_bindings": [
+          "U02-B01"
+        ]
+      }
+    },
+    {
+      "turn_id": "U03",
+      "criteria": [
+        {
+          "criterion_id": "U03-S01",
+          "kind": "semantic",
+          "text": "确认视野变化会影响眼前行动时可以在连续指挥中插入一句对象和状态，否则应等待。",
+          "status": "fail",
+          "reason": "回复确认了视野变化影响眼前行动时可插入一句“对象加状态”，但未说明不影响眼前行动时应等待。",
+          "evidence": [
+            {
+              "response_id": "A003",
+              "quote": "会影响眼前这波就立刻插一句，只报“对象加状态”，必要时再带位置，比如“对面打野右侧消失”。说完就停，把频道还给队长。",
+              "start_frame": 1556167,
+              "end_frame": 1756871,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": 0
+        },
+        {
+          "criterion_id": "U03-B01",
+          "kind": "behavior",
+          "text": "机器播报电量不足时，不把机器声当作用户请求，并继续当前任务播报。",
+          "status": "pass",
+          "method": "deterministic_consumed_pcm",
+          "reason": "核对附和期间同一条播报、真实收听决定和消费边界；自然语音停顿不算停声。",
+          "evidence": [],
+          "measurement": {
+            "type": "side_speech",
+            "execution_status": "pass",
+            "planned": 1,
+            "observed": 1,
+            "events": [
+              {
+                "text": "电量不足，请及时充电。",
+                "start_frame": 1583474,
+                "end_frame": 1618955,
+                "response_id": "A003",
+                "reaction_end_frame": 1760924,
+                "same_response_continued": true,
+                "stops": [],
+                "new_response_ids": [],
+                "listener_decisions": [
+                  {
+                    "sequence": 50,
+                    "frame": 1601224,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "电量不足，请",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 52,
+                    "frame": 1628555,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "电量不足，请及时充电。",
+                    "incoming_state": "silence",
+                    "silence_ms": 600
+                  }
+                ],
+                "execution_status": "pass"
+              }
+            ],
+            "listener_decisions": [
+              {
+                "sequence": 50,
+                "frame": 1601224,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "电量不足，请",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 52,
+                "frame": 1628555,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "电量不足，请及时充电。",
+                "incoming_state": "silence",
+                "silence_ms": 600
+              }
+            ]
+          },
+          "reward": 1
+        }
+      ],
+      "responses": [
+        {
+          "response_id": "A003",
+          "heard_text": "对。会影响眼前这波就立刻插一句，只报“对象加状态”，必要时再带位置，比如“对面打野右侧消失”。说完就停，把频道还给队长。",
+          "start_frame": 1551388,
+          "end_frame": 1760925,
+          "outcome": "drained",
+          "interrupted": false
+        }
+      ],
+      "audio_path": "audio/U03.wav",
+      "clip_start_frame": 1428846,
+      "clip_end_frame": 1760925,
+      "measurement": {
+        "triggered": true,
+        "user_start_frame": 1428846,
+        "user_end_frame": 1541788,
+        "type": "T01",
+        "execution_status": "not_scored",
+        "continuation_bindings": {
+          "U03-B01": {
+            "type": "side_speech",
+            "execution_status": "pass",
+            "planned": 1,
+            "observed": 1,
+            "events": [
+              {
+                "text": "电量不足，请及时充电。",
+                "start_frame": 1583474,
+                "end_frame": 1618955,
+                "response_id": "A003",
+                "reaction_end_frame": 1760924,
+                "same_response_continued": true,
+                "stops": [],
+                "new_response_ids": [],
+                "listener_decisions": [
+                  {
+                    "sequence": 50,
+                    "frame": 1601224,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "电量不足，请",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 52,
+                    "frame": 1628555,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "电量不足，请及时充电。",
+                    "incoming_state": "silence",
+                    "silence_ms": 600
+                  }
+                ],
+                "execution_status": "pass"
+              }
+            ],
+            "listener_decisions": [
+              {
+                "sequence": 50,
+                "frame": 1601224,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "电量不足，请",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 52,
+                "frame": 1628555,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "电量不足，请及时充电。",
+                "incoming_state": "silence",
+                "silence_ms": 600
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "turn_id": "U04",
+      "criteria": [
+        {
+          "criterion_id": "U04-S01",
+          "kind": "semantic",
+          "text": "说明报告自身关键保护技能时先报技能状态，再按需补充能否保护。",
+          "status": "fail",
+          "reason": "回复明确要求先报能否保护、再补技能状态，与标准要求的先报技能状态、再按需补充能否保护相反。",
+          "evidence": [
+            {
+              "response_id": "A004",
+              "quote": "先说结论，也就是能不能保，再补关键状态。",
+              "start_frame": 1859133,
+              "end_frame": 1917160,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": 0
+        },
+        {
+          "criterion_id": "U04-B01",
+          "kind": "behavior",
+          "text": "用户短附和时保持同一条播报，不因附和停声、重启、重复或另起回应。",
+          "status": "pass",
+          "method": "deterministic_consumed_pcm",
+          "reason": "核对附和期间同一条播报、真实收听决定和消费边界；自然语音停顿不算停声。",
+          "evidence": [],
+          "measurement": {
+            "type": "backchannel",
+            "execution_status": "pass",
+            "planned": 1,
+            "observed": 1,
+            "events": [
+              {
+                "text": "明白。",
+                "start_frame": 1992253,
+                "end_frame": 2004514,
+                "response_id": "A004",
+                "reaction_end_frame": 2087803,
+                "same_response_continued": true,
+                "stops": [],
+                "new_response_ids": [],
+                "listener_decisions": [
+                  {
+                    "sequence": 59,
+                    "frame": 2002183,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "明白。",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 61,
+                    "frame": 2004514,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "明白。",
+                    "incoming_state": "silence",
+                    "silence_ms": 0
+                  }
+                ],
+                "execution_status": "pass"
+              }
+            ],
+            "listener_decisions": [
+              {
+                "sequence": 59,
+                "frame": 2002183,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "明白。",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 61,
+                "frame": 2004514,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "明白。",
+                "incoming_state": "silence",
+                "silence_ms": 0
+              }
+            ]
+          },
+          "reward": 1
+        }
+      ],
+      "responses": [
+        {
+          "response_id": "A004",
+          "heard_text": "先说结论，也就是能不能保，再补关键状态。比如：“保不了，治疗还有五秒”或者“能保，有大”。队友先听到可执行信息，指挥更容易马上决策。",
+          "start_frame": 1859133,
+          "end_frame": 2087804,
+          "outcome": "drained",
+          "interrupted": false
+        }
+      ],
+      "audio_path": "audio/U04.wav",
+      "clip_start_frame": 1760925,
+      "clip_end_frame": 2087804,
+      "measurement": {
+        "triggered": true,
+        "user_start_frame": 1760925,
+        "user_end_frame": 1849533,
+        "type": "T01",
+        "execution_status": "not_scored",
+        "continuation_bindings": {
+          "U04-B01": {
+            "type": "backchannel",
+            "execution_status": "pass",
+            "planned": 1,
+            "observed": 1,
+            "events": [
+              {
+                "text": "明白。",
+                "start_frame": 1992253,
+                "end_frame": 2004514,
+                "response_id": "A004",
+                "reaction_end_frame": 2087803,
+                "same_response_continued": true,
+                "stops": [],
+                "new_response_ids": [],
+                "listener_decisions": [
+                  {
+                    "sequence": 59,
+                    "frame": 2002183,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "明白。",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 61,
+                    "frame": 2004514,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "明白。",
+                    "incoming_state": "silence",
+                    "silence_ms": 0
+                  }
+                ],
+                "execution_status": "pass"
+              }
+            ],
+            "listener_decisions": [
+              {
+                "sequence": 59,
+                "frame": 2002183,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "明白。",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 61,
+                "frame": 2004514,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "明白。",
+                "incoming_state": "silence",
+                "silence_ms": 0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "turn_id": "U05",
+      "criteria": [
+        {
+          "criterion_id": "U05-S01",
+          "kind": "semantic",
+          "text": "提供能明确撤销“辅助没闪”误报并改为“AD交闪、辅助没交闪”的即时更正方式。",
+          "status": "insufficient_evidence",
+          "reason": "回复被打断，仅开头提出立即更正并承认报错，尚未实际说出撤销“辅助没闪”以及改为“AD交闪、辅助没交闪”的完整内容，无法判断后半段是否满足标准。",
+          "evidence": [
+            {
+              "response_id": "A005",
+              "quote": "立刻说：“更正，刚才报错了，",
+              "start_frame": 2258475,
+              "end_frame": 2306945,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": null
+        },
+        {
+          "criterion_id": "U05-B01",
+          "kind": "behavior",
+          "text": "用户在“我捋一下”后停顿时保持等待，不在用户继续说完前作答。",
+          "status": "pass",
+          "method": "deterministic_consumed_pcm",
+          "reason": "依据用户发声、停顿、助手停止边界及已消费 PCM 核对原行为标准。",
+          "evidence": [],
+          "measurement": {
+            "triggered": true,
+            "user_start_frame": 2087804,
+            "user_end_frame": 2248875,
+            "type": "T02",
+            "pause_start_frame": 2121998,
+            "pause_end_frame": 2132398,
+            "pause_frames": 10400,
+            "requested_ms": 650,
+            "user_pause_nonzero_samples": 0,
+            "assistant_samples_before_user_end": 0,
+            "premature_response_ids": [],
+            "listener_decisions": [
+              {
+                "sequence": 65,
+                "frame": 2128398,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "listen",
+                "evidence": "我上次有个真误报，我捋一下",
+                "incoming_state": "silence",
+                "silence_ms": 400
+              }
+            ],
+            "execution_status": "pass"
+          },
+          "reward": 1
+        }
+      ],
+      "responses": [
+        {
+          "response_id": "A005",
+          "heard_text": "立刻说：“更正，刚才报错了，",
+          "start_frame": 2258475,
+          "end_frame": 2311724,
+          "outcome": "queue_discarded",
+          "interrupted": true
+        }
+      ],
+      "audio_path": "audio/U05.wav",
+      "clip_start_frame": 2087804,
+      "clip_end_frame": 2311724,
+      "measurement": {
+        "triggered": true,
+        "user_start_frame": 2087804,
+        "user_end_frame": 2248875,
+        "type": "T02",
+        "pause_start_frame": 2121998,
+        "pause_end_frame": 2132398,
+        "pause_frames": 10400,
+        "requested_ms": 650,
+        "user_pause_nonzero_samples": 0,
+        "assistant_samples_before_user_end": 0,
+        "premature_response_ids": [],
+        "listener_decisions": [
+          {
+            "sequence": 65,
+            "frame": 2128398,
+            "clock": "synthetic_pcm_16000",
+            "kind": "assistant_listener_decision",
+            "decision": "listen",
+            "evidence": "我上次有个真误报，我捋一下",
+            "incoming_state": "silence",
+            "silence_ms": 400
+          }
+        ],
+        "execution_status": "pass"
+      }
+    },
+    {
+      "turn_id": "U06",
+      "criteria": [
+        {
+          "criterion_id": "U06-S01",
+          "kind": "semantic",
+          "text": "采用用户更正后的状态，不再沿用“辅助没闪”的误报。",
+          "status": "pass",
+          "reason": "回复采用了更正后的状态“AD没闪，辅助有闪”，未沿用“辅助没闪”的误报。",
+          "evidence": [
+            {
+              "response_id": "A006",
+              "quote": "更正，AD没闪，辅助有闪。",
+              "start_frame": 2475718,
+              "end_frame": 2526236,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": 1
+        },
+        {
+          "criterion_id": "U06-S02",
+          "kind": "semantic",
+          "text": "确认该表达已足够短且明确包含正确对象和状态。",
+          "status": "pass",
+          "reason": "明确确认用户的表达足够短且清楚，并给出了包含正确对象和状态的更精简版本。",
+          "evidence": [
+            {
+              "response_id": "A006",
+              "quote": "够短，也很清楚。还能再压成：“更正，AD没闪，辅助有闪。”",
+              "start_frame": 2422470,
+              "end_frame": 2530332,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": 1
+        },
+        {
+          "criterion_id": "U06-B01",
+          "kind": "behavior",
+          "text": "用户在播报中段开始试说更正时，停止当前播报并让出话权，听完后再回应。",
+          "status": "pass",
+          "reason": "行为测量显示用户开始试说后，助手停止了先前播报，用户结束前没有继续输出音频，并在用户说完后以新回复回应。",
+          "evidence": [
+            {
+              "response_id": "A006",
+              "quote": "够短，也很清楚。还能再压成：“更正，AD没闪，辅助有闪。”",
+              "start_frame": 2422470,
+              "end_frame": 2530332,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "pcm_and_semantic_combined_behavior",
+          "measurement": {
+            "triggered": true,
+            "user_start_frame": 2298070,
+            "user_end_frame": 2412870,
+            "type": "T03",
+            "interrupted_response_id": "A005",
+            "stop_frame": 2311724,
+            "onset_to_stop_ms": 853.375,
+            "assistant_samples_after_stop_before_user_end": 0,
+            "discarded_audio_frames": 181552,
+            "new_response_ids": [
+              "A006"
+            ],
+            "resume_after_user_finished": true,
+            "provider_request_cancelled": false,
+            "native_realtime_latency_measured": false,
+            "execution_status": "pass",
+            "recovery_execution_status": "pass",
+            "combined_t03_bindings": [
+              "U06-B01"
+            ]
+          },
+          "reward": 1
+        }
+      ],
+      "responses": [
+        {
+          "response_id": "A006",
+          "heard_text": "够短，也很清楚。还能再压成：“更正，AD没闪，辅助有闪。”",
+          "start_frame": 2422470,
+          "end_frame": 2532997,
+          "outcome": "drained",
+          "interrupted": false
+        }
+      ],
+      "audio_path": "audio/U06.wav",
+      "clip_start_frame": 2298070,
+      "clip_end_frame": 2532997,
+      "measurement": {
+        "triggered": true,
+        "user_start_frame": 2298070,
+        "user_end_frame": 2412870,
+        "type": "T03",
+        "interrupted_response_id": "A005",
+        "stop_frame": 2311724,
+        "onset_to_stop_ms": 853.375,
+        "assistant_samples_after_stop_before_user_end": 0,
+        "discarded_audio_frames": 181552,
+        "new_response_ids": [
+          "A006"
+        ],
+        "resume_after_user_finished": true,
+        "provider_request_cancelled": false,
+        "native_realtime_latency_measured": false,
+        "execution_status": "pass",
+        "recovery_execution_status": "pass",
+        "combined_t03_bindings": [
+          "U06-B01"
+        ]
+      }
+    },
+    {
+      "turn_id": "U07",
+      "criteria": [
+        {
+          "criterion_id": "U07-S01",
+          "kind": "semantic",
+          "text": "给出不使用命令口吻、明确把最终决定留给当前指挥的关键建议表达方式。",
+          "status": "pass",
+          "reason": "明确建议使用“建议”而非命令口吻，并通过“把决定权还给他”和“你定”将最终决定留给当前指挥。",
+          "evidence": [
+            {
+              "response_id": "A007",
+              "quote": "用“建议＋一句依据＋把决定权还给他”。\n\n比如：“建议先撤，对面绕后没露，你定",
+              "start_frame": 2654239,
+              "end_frame": 2779850,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": 1
+        },
+        {
+          "criterion_id": "U07-B01",
+          "kind": "behavior",
+          "text": "用户短附和时保持同一条播报，不因附和停声、重启、重复或另起回应。",
+          "status": "pass",
+          "method": "deterministic_consumed_pcm",
+          "reason": "核对附和期间同一条播报、真实收听决定和消费边界；自然语音停顿不算停声。",
+          "evidence": [],
+          "measurement": {
+            "type": "backchannel",
+            "execution_status": "pass",
+            "planned": 1,
+            "observed": 1,
+            "events": [
+              {
+                "text": "嗯。",
+                "start_frame": 2720458,
+                "end_frame": 2730304,
+                "response_id": "A007",
+                "reaction_end_frame": 2768244,
+                "same_response_continued": true,
+                "stops": [],
+                "new_response_ids": [],
+                "listener_decisions": [
+                  {
+                    "sequence": 86,
+                    "frame": 2728526,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "嗯。",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 88,
+                    "frame": 2730304,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "嗯。",
+                    "incoming_state": "silence",
+                    "silence_ms": 0
+                  }
+                ],
+                "execution_status": "pass"
+              }
+            ],
+            "listener_decisions": [
+              {
+                "sequence": 86,
+                "frame": 2728526,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "嗯。",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 88,
+                "frame": 2730304,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "嗯。",
+                "incoming_state": "silence",
+                "silence_ms": 0
+              }
+            ]
+          },
+          "reward": 1
+        }
+      ],
+      "responses": [
+        {
+          "response_id": "A007",
+          "heard_text": "用“建议＋一句依据＋把决定权还给他”。\n\n比如：“建议先撤，对面绕后没露，你定",
+          "start_frame": 2654239,
+          "end_frame": 2780037,
+          "outcome": "queue_discarded",
+          "interrupted": true
+        }
+      ],
+      "audio_path": "audio/U07.wav",
+      "clip_start_frame": 2532997,
+      "clip_end_frame": 2780037,
+      "measurement": {
+        "triggered": true,
+        "user_start_frame": 2532997,
+        "user_end_frame": 2644639,
+        "type": "T01",
+        "execution_status": "not_scored",
+        "continuation_bindings": {
+          "U07-B01": {
+            "type": "backchannel",
+            "execution_status": "pass",
+            "planned": 1,
+            "observed": 1,
+            "events": [
+              {
+                "text": "嗯。",
+                "start_frame": 2720458,
+                "end_frame": 2730304,
+                "response_id": "A007",
+                "reaction_end_frame": 2768244,
+                "same_response_continued": true,
+                "stops": [],
+                "new_response_ids": [],
+                "listener_decisions": [
+                  {
+                    "sequence": 86,
+                    "frame": 2728526,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "嗯。",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 88,
+                    "frame": 2730304,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "嗯。",
+                    "incoming_state": "silence",
+                    "silence_ms": 0
+                  }
+                ],
+                "execution_status": "pass"
+              }
+            ],
+            "listener_decisions": [
+              {
+                "sequence": 86,
+                "frame": 2728526,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "嗯。",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 88,
+                "frame": 2730304,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "嗯。",
+                "incoming_state": "silence",
+                "silence_ms": 0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "turn_id": "U08",
+      "criteria": [
+        {
+          "criterion_id": "U08-S01",
+          "kind": "semantic",
+          "text": "把建议表达压缩成实战中可迅速说完的一句话，不展开成理由链。",
+          "status": "pass",
+          "reason": "回复将建议压缩为实战中可迅速说完的一句话，没有展开理由链。",
+          "evidence": [
+            {
+              "response_id": "A008",
+              "quote": "一句就说：“建议先撤，你定。”",
+              "start_frame": 2862180,
+              "end_frame": 2914746,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": 1
+        },
+        {
+          "criterion_id": "U08-B01",
+          "kind": "behavior",
+          "text": "用户中段要求压缩时，停止当前展开并让出话权，随后不再恢复被取消的长结构。",
+          "status": "pass",
+          "reason": "用户要求压缩后，助手停止先前展开并在用户说完后改用一句短建议，未恢复被取消的长结构。",
+          "evidence": [
+            {
+              "response_id": "A008",
+              "quote": "一句就说：“建议先撤，你定。”",
+              "start_frame": 2862180,
+              "end_frame": 2914746,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "pcm_and_semantic_combined_behavior",
+          "measurement": {
+            "triggered": true,
+            "user_start_frame": 2768245,
+            "user_end_frame": 2852580,
+            "type": "T03",
+            "interrupted_response_id": "A007",
+            "stop_frame": 2780037,
+            "onset_to_stop_ms": 737.0,
+            "assistant_samples_after_stop_before_user_end": 0,
+            "discarded_audio_frames": 107517,
+            "new_response_ids": [
+              "A008"
+            ],
+            "resume_after_user_finished": true,
+            "provider_request_cancelled": false,
+            "native_realtime_latency_measured": false,
+            "execution_status": "pass",
+            "recovery_execution_status": "pass",
+            "combined_t03_bindings": [
+              "U08-B01"
+            ]
+          },
+          "reward": 1
+        }
+      ],
+      "responses": [
+        {
+          "response_id": "A008",
+          "heard_text": "一句就说：“建议先撤，你定。”",
+          "start_frame": 2862180,
+          "end_frame": 2918837,
+          "outcome": "drained",
+          "interrupted": false
+        }
+      ],
+      "audio_path": "audio/U08.wav",
+      "clip_start_frame": 2768245,
+      "clip_end_frame": 2918837,
+      "measurement": {
+        "triggered": true,
+        "user_start_frame": 2768245,
+        "user_end_frame": 2852580,
+        "type": "T03",
+        "interrupted_response_id": "A007",
+        "stop_frame": 2780037,
+        "onset_to_stop_ms": 737.0,
+        "assistant_samples_after_stop_before_user_end": 0,
+        "discarded_audio_frames": 107517,
+        "new_response_ids": [
+          "A008"
+        ],
+        "resume_after_user_finished": true,
+        "provider_request_cancelled": false,
+        "native_realtime_latency_measured": false,
+        "execution_status": "pass",
+        "recovery_execution_status": "pass",
+        "combined_t03_bindings": [
+          "U08-B01"
+        ]
+      }
+    },
+    {
+      "turn_id": "U09",
+      "criteria": [
+        {
+          "criterion_id": "U09-S01",
+          "kind": "semantic",
+          "text": "说明建议被明确否决后应简短确认并停止争辩，转而执行当前指挥。",
+          "status": "pass",
+          "reason": "明确建议被否决后只做简短确认，停止补充理由，并立即按当前指挥执行。",
+          "evidence": [
+            {
+              "response_id": "A009",
+              "quote": "就回一句：“收到，按你的来。”然后立刻执行，不再补理由。",
+              "start_frame": 3001627,
+              "end_frame": 3096518,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": 1
+        }
+      ],
+      "responses": [
+        {
+          "response_id": "A009",
+          "heard_text": "就回一句：“收到，按你的来。”然后立刻执行，不再补理由。",
+          "start_frame": 3001627,
+          "end_frame": 3100452,
+          "outcome": "drained",
+          "interrupted": false
+        }
+      ],
+      "audio_path": "audio/U09.wav",
+      "clip_start_frame": 2918837,
+      "clip_end_frame": 3100452,
+      "measurement": {
+        "triggered": true,
+        "user_start_frame": 2918837,
+        "user_end_frame": 2992027,
+        "type": "T01",
+        "execution_status": "not_scored"
+      }
+    },
+    {
+      "turn_id": "U10",
+      "criteria": [
+        {
+          "criterion_id": "U10-S01",
+          "kind": "semantic",
+          "text": "说明只有信息仍然关键且时效未过，并有理由认为首次报告未被听见或局势已发生关键变化时才值得重报。",
+          "status": "fail",
+          "reason": "回复说明了信息仍有效、紧迫且不处理会出事时才重报，但遗漏了另一必要条件：有理由认为首次报告未被听见，或局势已发生关键变化。仅以“没人回应”为前提，不足以完整满足标准。",
+          "evidence": [
+            {
+              "response_id": "A010",
+              "quote": "没人回应不等于否决。只有信息仍然有效、会影响接下来三秒，而且不处理会出事，才再报一次。",
+              "start_frame": 3194387,
+              "end_frame": 3343209,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": 0
+        },
+        {
+          "criterion_id": "U10-B01",
+          "kind": "behavior",
+          "text": "用户短附和时保持同一条播报，不因附和停声、重启、重复或另起回应。",
+          "status": "pass",
+          "method": "deterministic_consumed_pcm",
+          "reason": "核对附和期间同一条播报、真实收听决定和消费边界；自然语音停顿不算停声。",
+          "evidence": [],
+          "measurement": {
+            "type": "backchannel",
+            "execution_status": "pass",
+            "planned": 1,
+            "observed": 1,
+            "events": [
+              {
+                "text": "嗯嗯。",
+                "start_frame": 3226473,
+                "end_frame": 3240591,
+                "response_id": "A010",
+                "reaction_end_frame": 3533140,
+                "same_response_continued": true,
+                "stops": [],
+                "new_response_ids": [],
+                "listener_decisions": [
+                  {
+                    "sequence": 110,
+                    "frame": 3238265,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "嗯嗯。",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 112,
+                    "frame": 3240591,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "嗯嗯。",
+                    "incoming_state": "silence",
+                    "silence_ms": 0
+                  }
+                ],
+                "execution_status": "pass"
+              }
+            ],
+            "listener_decisions": [
+              {
+                "sequence": 110,
+                "frame": 3238265,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "嗯嗯。",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 112,
+                "frame": 3240591,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "嗯嗯。",
+                "incoming_state": "silence",
+                "silence_ms": 0
+              }
+            ]
+          },
+          "reward": 1
+        }
+      ],
+      "responses": [
+        {
+          "response_id": "A010",
+          "heard_text": "没人回应不等于否决。只有信息仍然有效、会影响接下来三秒，而且不处理会出事，才再报一次。第二次只说结论并加急迫性，比如“再报一次，必须撤”。说完就停；还没回应，就按现有指挥执行。",
+          "start_frame": 3194387,
+          "end_frame": 3533141,
+          "outcome": "drained",
+          "interrupted": false
+        }
+      ],
+      "audio_path": "audio/U10.wav",
+      "clip_start_frame": 3100452,
+      "clip_end_frame": 3533141,
+      "measurement": {
+        "triggered": true,
+        "user_start_frame": 3100452,
+        "user_end_frame": 3184787,
+        "type": "T01",
+        "execution_status": "not_scored",
+        "continuation_bindings": {
+          "U10-B01": {
+            "type": "backchannel",
+            "execution_status": "pass",
+            "planned": 1,
+            "observed": 1,
+            "events": [
+              {
+                "text": "嗯嗯。",
+                "start_frame": 3226473,
+                "end_frame": 3240591,
+                "response_id": "A010",
+                "reaction_end_frame": 3533140,
+                "same_response_continued": true,
+                "stops": [],
+                "new_response_ids": [],
+                "listener_decisions": [
+                  {
+                    "sequence": 110,
+                    "frame": 3238265,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "嗯嗯。",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 112,
+                    "frame": 3240591,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "嗯嗯。",
+                    "incoming_state": "silence",
+                    "silence_ms": 0
+                  }
+                ],
+                "execution_status": "pass"
+              }
+            ],
+            "listener_decisions": [
+              {
+                "sequence": 110,
+                "frame": 3238265,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "嗯嗯。",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 112,
+                "frame": 3240591,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "嗯嗯。",
+                "incoming_state": "silence",
+                "silence_ms": 0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "turn_id": "U11",
+      "criteria": [
+        {
+          "criterion_id": "U11-S01",
+          "kind": "semantic",
+          "text": "整理一套依次检查开口时机、表达内容和说完让位的简短赛前语音顺序。",
+          "status": "pass",
+          "reason": "回复以“三步”简短顺序依次覆盖了开口时机、表达内容和说完后的让位方式，符合赛前检查顺序要求。",
+          "evidence": [
+            {
+              "response_id": "A011",
+              "quote": "上场前记三步：\n\n第一，判时机：会不会影响队友接下来三秒？会就报，不会就等。\n\n第二，报结论：对象加状态，先说能不能做；提建议就说“建议这样，你定”。\n\n第三，让频道：说完就停。被否就“收到，按你的来”；只有危险仍紧迫，才再报一次。",
+              "start_frame": 3682247,
+              "end_frame": 4100646,
+              "alignment_source": "provider_word_timestamps;earliest_exact_quote_occurrence"
+            }
+          ],
+          "method": "independent_model_judge",
+          "reward": 1
+        },
+        {
+          "criterion_id": "U11-B01",
+          "kind": "behavior",
+          "text": "用户短附和时保持同一条播报，不因附和停声、重启、重复或另起回应。",
+          "status": "pass",
+          "method": "deterministic_consumed_pcm",
+          "reason": "核对附和期间同一条播报、真实收听决定和消费边界；自然语音停顿不算停声。",
+          "evidence": [],
+          "measurement": {
+            "type": "backchannel",
+            "execution_status": "pass",
+            "planned": 1,
+            "observed": 1,
+            "events": [
+              {
+                "text": "明白。",
+                "start_frame": 3792839,
+                "end_frame": 3805100,
+                "response_id": "A011",
+                "reaction_end_frame": 4103292,
+                "same_response_continued": true,
+                "stops": [],
+                "new_response_ids": [],
+                "listener_decisions": [
+                  {
+                    "sequence": 120,
+                    "frame": 3802769,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "明白。",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 122,
+                    "frame": 3805100,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "明白。",
+                    "incoming_state": "silence",
+                    "silence_ms": 0
+                  }
+                ],
+                "execution_status": "pass"
+              }
+            ],
+            "listener_decisions": [
+              {
+                "sequence": 120,
+                "frame": 3802769,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "明白。",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 122,
+                "frame": 3805100,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "明白。",
+                "incoming_state": "silence",
+                "silence_ms": 0
+              }
+            ]
+          },
+          "reward": 1
+        }
+      ],
+      "responses": [
+        {
+          "response_id": "A011",
+          "heard_text": "上场前记三步：\n\n第一，判时机：会不会影响队友接下来三秒？会就报，不会就等。\n\n第二，报结论：对象加状态，先说能不能做；提建议就说“建议这样，你定”。\n\n第三，让频道：说完就停。被否就“收到，按你的来”；只有危险仍紧迫，才再报一次。",
+          "start_frame": 3682247,
+          "end_frame": 4103293,
+          "outcome": "drained",
+          "interrupted": false
+        }
+      ],
+      "audio_path": "audio/U11.wav",
+      "clip_start_frame": 3533141,
+      "clip_end_frame": 4103293,
+      "measurement": {
+        "triggered": true,
+        "user_start_frame": 3533141,
+        "user_end_frame": 3672647,
+        "type": "T01",
+        "execution_status": "not_scored",
+        "continuation_bindings": {
+          "U11-B01": {
+            "type": "backchannel",
+            "execution_status": "pass",
+            "planned": 1,
+            "observed": 1,
+            "events": [
+              {
+                "text": "明白。",
+                "start_frame": 3792839,
+                "end_frame": 3805100,
+                "response_id": "A011",
+                "reaction_end_frame": 4103292,
+                "same_response_continued": true,
+                "stops": [],
+                "new_response_ids": [],
+                "listener_decisions": [
+                  {
+                    "sequence": 120,
+                    "frame": 3802769,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "明白。",
+                    "incoming_state": "speaking",
+                    "silence_ms": 0
+                  },
+                  {
+                    "sequence": 122,
+                    "frame": 3805100,
+                    "clock": "synthetic_pcm_16000",
+                    "kind": "assistant_listener_decision",
+                    "decision": "continue_speaking",
+                    "evidence": "明白。",
+                    "incoming_state": "silence",
+                    "silence_ms": 0
+                  }
+                ],
+                "execution_status": "pass"
+              }
+            ],
+            "listener_decisions": [
+              {
+                "sequence": 120,
+                "frame": 3802769,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "明白。",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 122,
+                "frame": 3805100,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "continue_speaking",
+                "evidence": "明白。",
+                "incoming_state": "silence",
+                "silence_ms": 0
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "side_speech_diagnostics": [
+    {
+      "turn_id": "U03",
+      "text": "电量不足，请及时充电。",
+      "start_frame": 1583474,
+      "end_frame": 1618955,
+      "both_channels_active_frames": 12371,
+      "listener_decisions": [
+        {
+          "sequence": 50,
+          "frame": 1601224,
+          "clock": "synthetic_pcm_16000",
+          "kind": "assistant_listener_decision",
+          "decision": "continue_speaking",
+          "evidence": "电量不足，请",
+          "incoming_state": "speaking",
+          "silence_ms": 0
+        },
+        {
+          "sequence": 52,
+          "frame": 1628555,
+          "clock": "synthetic_pcm_16000",
+          "kind": "assistant_listener_decision",
+          "decision": "continue_speaking",
+          "evidence": "电量不足，请及时充电。",
+          "incoming_state": "silence",
+          "silence_ms": 600
+        }
+      ],
+      "scored": true,
+      "reason": "Explicit continuation Behavior in the new version."
+    }
+  ],
+  "source_inputs_unchanged": true,
+  "judge_calls": 11,
+  "native_realtime_latency_measured": false
+}

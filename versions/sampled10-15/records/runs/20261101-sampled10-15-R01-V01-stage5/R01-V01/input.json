@@ -1,0 +1,304 @@
+{
+  "case_id": "R01-V01",
+  "scene_task": {
+    "scene": {
+      "domain_id": "D08",
+      "domain": "旅行、住宿与本地探索",
+      "scenario_id": "D08-S02",
+      "scenario": "景点与观光"
+    },
+    "task_style": "常识问答",
+    "task_instance": {
+      "goal": "弄清“世界遗产”称号通常代表什么，以及它是否等同于景点等级或意味着一定更值得参观，并可继续追问评定与保护方面的基础常识。"
+    }
+  },
+  "user_voice": {
+    "user_seed": {
+      "role_relation": "正在为父母规划首次文化观光行程的女儿",
+      "task_familiarity": "low"
+    },
+    "voice_profile": "听起来是二十多岁的女性，音色清亮温和，语速适中，吐字清楚，语气带着自然的好奇感。"
+  },
+  "situation_knowledge": {
+    "episode_situation": "周日晚上，用户在家为父母规划第一次以历史文化为主的观光行程。她浏览手边的旅行宣传册时，发现“世界遗产”和“国家5A级旅游景区”等称号常被并列展示，但不清楚它们是否属于同一套评价体系。她尚未决定具体景点，也不想仅凭称号判断参观价值，因此现在希望先弄懂世界遗产的基本含义。她还可能继续了解遗产如何评定、由谁负责保护，以及列入名录后是否会限制旅游活动。",
+    "task_reference_data": [],
+    "environment_audio": "房间内整体安静，左侧约两米处偶尔传来纸页轻轻翻动的声音。远处窗外有稀疏车辆驶过，声音低而短暂。",
+    "estimated_snr_db": 32,
+    "constraints": [],
+    "safety_limits": []
+  },
+  "episode_script": {
+    "episode_turns": [
+      {
+        "turn_id": "U01",
+        "semantic_goal": "了解“世界遗产”称号通常代表的基本含义",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "我在给父母看文化观光的资料，想先弄明白，“世界遗产”这个称号一般代表什么？",
+        "assistant_semantic_goal": "解释世界遗产通常指因具有突出普遍价值而被列入联合国教科文组织世界遗产名录的文化或自然遗产"
+      },
+      {
+        "turn_id": "U02",
+        "semantic_goal": "澄清“突出普遍价值”中的“普遍”所指范围",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T03"
+        ],
+        "interrupt_anchor": "Assistant 已说明世界遗产具有突出普遍价值，并开始解释这一概念时",
+        "user_utterance": "等一下，你说的“普遍价值”，是指对全世界都有意义吗？",
+        "assistant_semantic_goal": "说明“普遍”强调其价值超越单一地区或国家，对全人类具有重要意义"
+      },
+      {
+        "turn_id": "U03",
+        "semantic_goal": "确认世界遗产与国家5A级旅游景区是否属于同一评价体系",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "那它跟国家5A级旅游景区，是同一套评价体系吗？",
+        "assistant_semantic_goal": "明确两者不是同一评价体系，并简要区分世界遗产关注遗产价值与保护、5A级景区侧重旅游服务和综合管理",
+        "user_backchannels": [
+          {
+            "text": "嗯嗯。",
+            "trigger_anchor": "助手已对两种称号的评价侧重点给出实质区分时"
+          }
+        ]
+      },
+      {
+        "turn_id": "U04",
+        "semantic_goal": "质疑仅凭世界遗产称号判断景点一定更值得参观",
+        "act_ref": "A05",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "那我就不太想把这个称号直接当推荐理由了，它不能保证一定更值得去，对吧？",
+        "assistant_semantic_goal": "确认世界遗产称号不等同于主观游览价值保证，参观是否合适还取决于兴趣、体力和行程需求",
+        "side_speech": [
+          {
+            "speaker": "machine",
+            "target": "user",
+            "text": "电量不足，请连接充电器。",
+            "placement": "during_assistant"
+          }
+        ]
+      },
+      {
+        "turn_id": "U05",
+        "semantic_goal": "了解世界遗产列入名录由谁作最终决定",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "那世界遗产最后是谁决定列入名录的？",
+        "assistant_semantic_goal": "说明列入世界遗产名录的最终决定由世界遗产委员会作出"
+      },
+      {
+        "turn_id": "U06",
+        "semantic_goal": "继续了解世界遗产在最终决定前的基本评定过程",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "委员会决定之前，一般是怎么评到那一步的？",
+        "assistant_semantic_goal": "简要说明通常由相关国家申报、专业咨询机构评估，再由世界遗产委员会审议决定",
+        "user_backchannels": [
+          {
+            "text": "明白。",
+            "trigger_anchor": "助手已对最终审议前的基本评定环节给出实质说明时"
+          }
+        ]
+      },
+      {
+        "turn_id": "U07",
+        "semantic_goal": "从评定话题转到列入名录后的保护责任",
+        "act_ref": "A06",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "评定这块我大概懂了。换到保护这边，列入以后主要是谁负责？",
+        "assistant_semantic_goal": "说明遗产所在地国家承担主要保护责任，并由当地管理机构落实日常保护和管理"
+      },
+      {
+        "turn_id": "U08",
+        "semantic_goal": "了解列入世界遗产名录后是否一定会限制旅游活动",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "那列入名录以后，是不是一定会限制游客参观？",
+        "assistant_semantic_goal": "说明列入名录不等于一律限制参观，但为保护遗产可能采取预约、限流或区域管控等管理措施",
+        "user_backchannels": [
+          {
+            "text": "嗯。",
+            "trigger_anchor": "助手已说明遗产保护可能涉及具体参观管理措施时"
+          }
+        ]
+      }
+    ]
+  },
+  "timing_view": {
+    "episode_turns": [
+      {
+        "turn_id": "U01",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "interrupt_anchor": null,
+        "assistant_semantic_goal": "解释世界遗产通常指因具有突出普遍价值而被列入联合国教科文组织世界遗产名录的文化或自然遗产",
+        "previous_assistant_semantic_goal": null
+      },
+      {
+        "turn_id": "U02",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T03"
+        ],
+        "interrupt_anchor": "Assistant 已说明世界遗产具有突出普遍价值，并开始解释这一概念时",
+        "assistant_semantic_goal": "说明“普遍”强调其价值超越单一地区或国家，对全人类具有重要意义",
+        "previous_assistant_semantic_goal": "解释世界遗产通常指因具有突出普遍价值而被列入联合国教科文组织世界遗产名录的文化或自然遗产"
+      },
+      {
+        "turn_id": "U03",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "interrupt_anchor": null,
+        "assistant_semantic_goal": "明确两者不是同一评价体系，并简要区分世界遗产关注遗产价值与保护、5A级景区侧重旅游服务和综合管理",
+        "previous_assistant_semantic_goal": "说明“普遍”强调其价值超越单一地区或国家，对全人类具有重要意义"
+      },
+      {
+        "turn_id": "U04",
+        "act_ref": "A05",
+        "timing_refs": [
+          "T01"
+        ],
+        "interrupt_anchor": null,
+        "assistant_semantic_goal": "确认世界遗产称号不等同于主观游览价值保证，参观是否合适还取决于兴趣、体力和行程需求",
+        "previous_assistant_semantic_goal": "明确两者不是同一评价体系，并简要区分世界遗产关注遗产价值与保护、5A级景区侧重旅游服务和综合管理"
+      },
+      {
+        "turn_id": "U05",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "interrupt_anchor": null,
+        "assistant_semantic_goal": "说明列入世界遗产名录的最终决定由世界遗产委员会作出",
+        "previous_assistant_semantic_goal": "确认世界遗产称号不等同于主观游览价值保证，参观是否合适还取决于兴趣、体力和行程需求"
+      },
+      {
+        "turn_id": "U06",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "interrupt_anchor": null,
+        "assistant_semantic_goal": "简要说明通常由相关国家申报、专业咨询机构评估，再由世界遗产委员会审议决定",
+        "previous_assistant_semantic_goal": "说明列入世界遗产名录的最终决定由世界遗产委员会作出"
+      },
+      {
+        "turn_id": "U07",
+        "act_ref": "A06",
+        "timing_refs": [
+          "T01"
+        ],
+        "interrupt_anchor": null,
+        "assistant_semantic_goal": "说明遗产所在地国家承担主要保护责任，并由当地管理机构落实日常保护和管理",
+        "previous_assistant_semantic_goal": "简要说明通常由相关国家申报、专业咨询机构评估，再由世界遗产委员会审议决定"
+      },
+      {
+        "turn_id": "U08",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "interrupt_anchor": null,
+        "assistant_semantic_goal": "说明列入名录不等于一律限制参观，但为保护遗产可能采取预约、限流或区域管控等管理措施",
+        "previous_assistant_semantic_goal": "说明遗产所在地国家承担主要保护责任，并由当地管理机构落实日常保护和管理"
+      }
+    ]
+  },
+  "actor_rubric": {
+    "turn_rubrics": [
+      {
+        "turn_id": "U01",
+        "semantic": [
+          "说明“世界遗产”通常指被联合国教科文组织认定具有突出普遍价值、应为全人类保护和传承的文化或自然遗产。"
+        ],
+        "behavior": []
+      },
+      {
+        "turn_id": "U02",
+        "semantic": [
+          "说明“普遍”指其价值超越单一国家或地区的范围，对全人类具有重要意义。"
+        ],
+        "behavior": [
+          "用户在播报中段起声时，停止当前播报并让出话权。",
+          "回应插话后如需继续原解释，从实际已播放的内容边界衔接，不重复已播内容。"
+        ]
+      },
+      {
+        "turn_id": "U03",
+        "semantic": [
+          "明确世界遗产与国家5A级旅游景区不属于同一评价体系，前者侧重遗产价值与保护，后者属于中国的旅游景区质量等级。"
+        ],
+        "behavior": [
+          "用户附和时保持同一条播报，不因附和停声、重启、重复或另起回应。"
+        ]
+      },
+      {
+        "turn_id": "U04",
+        "semantic": [
+          "确认世界遗产称号不能保证景点对特定游客一定更值得参观。"
+        ],
+        "behavior": [
+          "机器电量提示音出现时继续当前播报，不将其当作用户请求另起回应。"
+        ]
+      },
+      {
+        "turn_id": "U05",
+        "semantic": [
+          "说明是否列入《世界遗产名录》最终由联合国教科文组织世界遗产委员会决定。"
+        ],
+        "behavior": []
+      },
+      {
+        "turn_id": "U06",
+        "semantic": [
+          "概述最终审议前通常由缔约国申报、提交材料，并由相关咨询机构开展专业评估的基本过程。"
+        ],
+        "behavior": [
+          "用户附和时保持同一条播报，不因附和停声、重启、重复或另起回应。"
+        ]
+      },
+      {
+        "turn_id": "U07",
+        "semantic": [
+          "说明列入名录后的保护主要由遗产所在地的缔约国及其国内主管机构承担。"
+        ],
+        "behavior": []
+      },
+      {
+        "turn_id": "U08",
+        "semantic": [
+          "说明列入名录不一定限制游客参观，是否限流或限制活动取决于具体遗产的保护需求和管理措施。"
+        ],
+        "behavior": [
+          "用户附和时保持同一条播报，不因附和停声、重启、重复或另起回应。"
+        ]
+      }
+    ]
+  },
+  "capability_contract": {
+    "interaction_modalities": [
+      "audio"
+    ],
+    "available_tools": [],
+    "external_state_access": "none",
+    "external_side_effects": "forbidden"
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "case_id": "R01-V01",
+  "scene": {
+    "domain_id": "D05",
+    "domain": "个人组织、计划与决策",
+    "scenario_id": "D05-S02",
+    "scenario": "待办事项整理"
+  },
+  "task_style": "常识问答",
+  "task_instance": {
+    "goal": "弄清给待办事项预估耗时有什么用、估不准时该怎样处理，并通过简单例子掌握一个不过度纠结的估时方法。"
+  },
+  "user_seed": {
+    "role_relation": "刚开始独立安排学习与生活事务的大一学生",
+    "task_familiarity": "low"
+  },
+  "voice_profile": "男性声音，听感约二十岁，音色清亮，语速稍快，吐字自然，带一点年轻人的随意感。",
+  "episode_situation": "周三晚上，用户在大学宿舍整理第二天的学习和生活安排，发现自己虽然会列待办，却不知道为什么还要给每项任务估时。他过去不是把任务想得太快，就是因怕估错而迟迟不写时间，结果计划经常排得过满。现在他手边只有纸笔和一份普通待办清单，希望先理解估时的实际作用，再用一个简单例子学会不必追求精确的做法。尚未解决的是估时应细到什么程度，以及实际用时偏离预估后该怎样调整。",
+  "task_reference_data": [],
+  "environment_audio": "宿舍内整体安静，右后方约三米处偶尔传来翻书和轻放水杯的声音。走廊外有零散脚步声，经过门口时短暂变清晰，随后减弱。",
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "讲解应适合刚开始独立安排事务的新手，方法保持简单，避免要求精确记录每一分钟。",
+      "kind": "soft"
+    }
+  ],
+  "safety_limits": [],
+  "available_modalities": [
+    "audio"
+  ],
+  "capability_contract": {
+    "interaction_modalities": [
+      "audio"
+    ],
+    "available_tools": [],
+    "external_state_access": "none",
+    "external_side_effects": "forbidden"
+  },
+  "episode_script": {
+    "episode_turns": [
+      {
+        "turn_id": "U01",
+        "semantic_goal": "了解给待办事项预估耗时的核心作用",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "我会列待办，但一直不太懂，为什么还要给每件事估个时间？",
+        "assistant_semantic_goal": "解释估时的核心作用是把待办清单转成能判断是否排得下的计划，减少安排过满"
+      },
+      {
+        "turn_id": "U02",
+        "semantic_goal": "打断展开说明，只确认估时最直接的实际用途",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "interrupt_anchor": "Assistant 已说明估时能帮助判断待办是否排得下，并开始展开这一作用时",
+        "user_utterance": "先别展开，简单说，它最直接就是防止我排太满，对吧？",
+        "assistant_semantic_goal": "简短确认估时能暴露计划是否过满，并指出它不是为了精确预测每一分钟"
+      },
+      {
+        "turn_id": "U03",
+        "semantic_goal": "质疑估时不准确时是否仍有意义",
+        "act_ref": "A05",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "可我经常估不准啊，那写这个时间是不是就没啥意义了？",
+        "assistant_semantic_goal": "说明不准确的初始估时仍可作为安排和后续校准的基准，不需要一次估准"
+      },
+      {
+        "turn_id": "U04",
+        "semantic_goal": "了解一开始估不准时应采用的简单写法",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "那刚开始拿不准的时候，我该怎么写才不会一直纠结？",
+        "assistant_semantic_goal": "建议先写一个宽松的粗略区间或时间块，而不是反复追求单一精确数字"
+      },
+      {
+        "turn_id": "U05",
+        "semantic_goal": "用复习一章的简单例子学习粗略估时",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01",
+          "T02"
+        ],
+        "pause_cue": {
+          "after_text": "就拿复习一章来说吧",
+          "duration_ms": 420
+        },
+        "user_utterance": "就拿复习一章来说吧，我老觉得很快就能弄完，你给我示范一下怎么粗估。",
+        "assistant_semantic_goal": "以复习一章为例，示范如何按阅读和练习等主要部分形成一个留有余量的粗略耗时范围"
+      },
+      {
+        "turn_id": "U06",
+        "semantic_goal": "中止过细拆分，只获取可以直接写在纸上的估时形式",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "interrupt_anchor": "Assistant 已开始把复习一章分成主要部分，并说明如何合成粗略耗时范围时",
+        "user_utterance": "不用拆这么细，直接告诉我最后在纸上怎么写就行。",
+        "assistant_semantic_goal": "给出简短的纸面记录形式，用一个粗略时间块或范围表示复习一章并保留少量余量"
+      },
+      {
+        "turn_id": "U07",
+        "semantic_goal": "把估时粒度改为短、中、长三档并确认是否可行",
+        "act_ref": "A04",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "那我先改成短、中、长三档，不具体记分钟，这样可以吧？",
+        "assistant_semantic_goal": "确认短中长三档适合新手使用，并说明同一档位在自己的计划里应保持大致一致"
+      },
+      {
+        "turn_id": "U08",
+        "semantic_goal": "了解实际用时偏离预估后应怎样调整",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "user_utterance": "要是做完发现比我写的档位长很多，下次该怎么改？",
+        "assistant_semantic_goal": "说明应把同类任务下一次上调一个粗略档位，并根据多次实际体验逐步校准，而不必重算每一分钟"
+      }
+    ]
+  }
+}

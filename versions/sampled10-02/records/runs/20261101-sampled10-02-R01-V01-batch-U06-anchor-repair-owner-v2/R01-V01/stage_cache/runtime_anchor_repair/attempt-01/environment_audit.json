@@ -1,0 +1,163 @@
+{
+  "reviewed_refs": {
+    "artifacts": [
+      "scene_task",
+      "user_voice",
+      "situation_knowledge",
+      "episode_script",
+      "actor_rubric"
+    ],
+    "C": [],
+    "L": [
+      "L01",
+      "L02"
+    ],
+    "U": [
+      "U01",
+      "U02",
+      "U03",
+      "U04",
+      "U05",
+      "U06",
+      "U07",
+      "U08",
+      "U09"
+    ]
+  },
+  "findings": [],
+  "dimension_scores": [
+    {
+      "dimension": "场景与任务一致性",
+      "score": 8,
+      "max": 8,
+      "minimum": 7,
+      "status": "pass",
+      "evidence": [
+        "/task_instance/goal: 目标聚焦停电恢复后的逐台开启和避免再次跳闸，可完全通过音频解释交付",
+        "/scene: 公用事业中断场景与停电恢复常识问答直接一致"
+      ]
+    },
+    {
+      "dimension": "UserSeed 合理性",
+      "score": 7,
+      "max": 7,
+      "minimum": 6,
+      "status": "pass",
+      "evidence": [
+        "/user_seed: 刚开始独自租住老旧公寓且任务熟悉度为 low，与首次处理恢复供电的情境相容"
+      ]
+    },
+    {
+      "dimension": "VoiceProfile 场景相容性",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "/voice_profile: 二十多岁、语速略快且轻微紧张的可听特征与年轻独居者面对停电恢复的场景相容"
+      ]
+    },
+    {
+      "dimension": "EpisodeSituation 具体性",
+      "score": 10,
+      "max": 10,
+      "minimum": 8,
+      "status": "pass",
+      "evidence": [
+        "/episode_situation: 明确了周二晚八点、老旧公寓、供电已恢复、各设备状态和用户未决问题",
+        "/environment_audio: 给出邻居、车流和冰箱低鸣等可听环境，且不与任务事实冲突"
+      ]
+    },
+    {
+      "dimension": "Situation / Constraint 边界",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "L01: 对火花、焦糊味、冒烟、异常发热和裸露电线规定了停止操作及联系专业人员的边界",
+        "L02: 对断路器反复跳闸规定不得强行合闸或绕过保护装置"
+      ]
+    },
+    {
+      "dimension": "Episode Script 任务推进",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "/episode_turns/0 至 /episode_turns/8: 从能否集中开启，递进到设备状态、计划更新、开启顺序、间隔、跳闸和危险迹象处置，最后形成简短方案",
+        "U04: 通过 A04 移除电热水壶，后续 U05、U06 和 U09 均保留更新后的设备范围"
+      ]
+    },
+    {
+      "dimension": "用户表达自然度",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "/episode_turns/0/user_utterance 至 /episode_turns/8/user_utterance: 台词口语化、具体且无占位符",
+        "/episode_turns/2/pause_cue: “我看了一下”后的 520 毫秒停顿自然对应用户查看设备后的继续列举"
+      ]
+    },
+    {
+      "dimension": "轮次条件与 Timing 合理性",
+      "score": 10,
+      "max": 10,
+      "minimum": 8,
+      "status": "pass",
+      "evidence": [
+        "U02、U06、U09: T03 锚点分别对应上一轮预期播报中的原理、顺序解释和危险处置说明阶段",
+        "U03: T02 只描述同一句用户表达中的短暂停顿，并配置唯一 pause_cue"
+      ]
+    },
+    {
+      "dimension": "模态与可观察性",
+      "score": 6,
+      "max": 6,
+      "minimum": 5,
+      "status": "pass",
+      "evidence": [
+        "/available_modalities: 仅使用 audio，所有任务交付均为可口头解释、确认或总结的内容",
+        "/capability_contract: 无工具、无外部状态访问且禁止外部副作用，剧本未要求设备控制或外部写入"
+      ]
+    },
+    {
+      "dimension": "信息泄漏",
+      "score": 8,
+      "max": 8,
+      "minimum": 7,
+      "status": "pass",
+      "evidence": [
+        "/episode_situation: 剧本使用的停电恢复状态和设备清单均有明确来源",
+        "/episode_turns/3/side_speech: 第三方仅询问是否停电，没有暴露被标记为未读、未查看或未确认的任务材料"
+      ]
+    },
+    {
+      "dimension": "Anti-hack",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "/episode_turns: 仅包含有序用户侧节点，没有伪造 actor 回复、工具结果或未来外部状态",
+        "/episode_turns/1/user_backchannels 与 /episode_turns/5/user_backchannels: 附和绑定具体播报锚点，未被写成新请求或额外语义责任"
+      ]
+    },
+    {
+      "dimension": "Actor Rubric 可测量性",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "/turn_rubrics: U01 至 U09 均有独立、可观察的 semantic 标准，并按事件配置 behavior 或空数组",
+        "U02、U06、U07 的附和 Behavior 明确要求继续同一播报，不因附和停声、重启或另起回应"
+      ]
+    }
+  ],
+  "total_score": 100,
+  "frequency_calibration": "N-A",
+  "release_decision": "pass"
+}

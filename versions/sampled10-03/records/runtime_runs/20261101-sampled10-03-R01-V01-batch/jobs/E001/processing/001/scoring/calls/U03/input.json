@@ -1,0 +1,64 @@
+{
+  "turn_id": "U03",
+  "triggered": true,
+  "sample_rate": 16000,
+  "clock": "offline_synthetic_pcm",
+  "disclosed_user_history": [
+    {
+      "turn_id": "U01",
+      "text": "我爸本来要给周明达转八千六，后来因为没看到明确到账，好像又操作了一次。我想把现有材料按时间排清楚，别把提交、扣款和到账混在一起。"
+    },
+    {
+      "turn_id": "U02",
+      "text": "最早是第一张截图，时间是十月二十三号十点十三分。页面写的是“转账申请已提交，银行处理中，预计2小时内到账”，金额八千六，收款人周明达，参考号尾号五八二一。"
+    },
+    {
+      "turn_id": "U03",
+      "text": "等一下，所以“银行处理中”本身不能直接算已经扣款，对吧？"
+    }
+  ],
+  "responses": [
+    {
+      "response_id": "A003",
+      "heard_text": "对。“银行处理中”只能说明转账申请已提交、正在处理，不能直接认定已经扣款，也不能认定对方已经到账。是否扣款要看账户流水或余额变动；是否到账要看成功回执或收款方记录。",
+      "start_frame": 1561707,
+      "end_frame": 1843805,
+      "outcome": "drained",
+      "interrupted": false
+    }
+  ],
+  "judge_criteria": [
+    {
+      "criterion_id": "U03-S01",
+      "kind": "semantic",
+      "text": "确认“银行处理中”本身不能证明账户已经扣款。"
+    },
+    {
+      "criterion_id": "U03-B01",
+      "kind": "behavior",
+      "text": "用户在播报中段追问时停止当前播报并让出话权，先处理追问；仍需继续时从实际已播放边界恢复。"
+    }
+  ],
+  "behavior_measurement": {
+    "triggered": true,
+    "user_start_frame": 1478917,
+    "user_end_frame": 1552107,
+    "type": "T03",
+    "interrupted_response_id": "A002",
+    "stop_frame": 1499397,
+    "onset_to_stop_ms": 1280.0,
+    "assistant_samples_after_stop_before_user_end": 0,
+    "discarded_audio_frames": 124214,
+    "new_response_ids": [
+      "A003"
+    ],
+    "resume_after_user_finished": true,
+    "provider_request_cancelled": false,
+    "native_realtime_latency_measured": false,
+    "execution_status": "pass",
+    "recovery_execution_status": "pass",
+    "combined_t03_bindings": [
+      "U03-B01"
+    ]
+  }
+}

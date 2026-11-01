@@ -1,0 +1,136 @@
+{
+  "turn_id": "U04",
+  "triggered": true,
+  "sample_rate": 16000,
+  "clock": "offline_synthetic_pcm",
+  "disclosed_user_history": [
+    {
+      "turn_id": "U01",
+      "text": "刚才整屋停电，现在灯已经亮了。我能马上把关掉的电器都重新打开吗？"
+    },
+    {
+      "turn_id": "U02",
+      "text": "先别讲原理，直接告诉我第一步做什么。"
+    },
+    {
+      "turn_id": "U03",
+      "text": "我看了一下，空调、电热水壶和台式电脑都关着，冰箱跟路由器还插着。"
+    },
+    {
+      "turn_id": "U04",
+      "text": "改一下，水壶今晚先不用，把它排除吧，只考虑空调和电脑。"
+    }
+  ],
+  "responses": [
+    {
+      "response_id": "A004",
+      "heard_text": "好，水壶今晚保持关闭。",
+      "start_frame": 677254,
+      "end_frame": 723676,
+      "outcome": "queue_discarded",
+      "interrupted": true
+    },
+    {
+      "response_id": "A005",
+      "heard_text": "接下来只考虑电脑和空调：等满五分钟后先开电脑，确认正常，再开空调。",
+      "start_frame": 744143,
+      "end_frame": 859500,
+      "outcome": "drained",
+      "interrupted": false
+    }
+  ],
+  "judge_criteria": [
+    {
+      "criterion_id": "U04-S01",
+      "kind": "semantic",
+      "text": "从今晚的恢复计划中移除电热水壶，后续只安排空调和台式电脑。"
+    }
+  ],
+  "behavior_measurement": {
+    "triggered": true,
+    "user_start_frame": 577189,
+    "user_end_frame": 667654,
+    "type": "T01",
+    "execution_status": "not_scored",
+    "continuation_bindings": {
+      "U04-B01": {
+        "type": "side_speech",
+        "execution_status": "fail",
+        "planned": 1,
+        "observed": 1,
+        "events": [
+          {
+            "text": "你家刚才也停电了吗？",
+            "start_frame": 710022,
+            "end_frame": 734543,
+            "response_id": "A004",
+            "reaction_end_frame": 859499,
+            "same_response_continued": false,
+            "stops": [
+              {
+                "sequence": 33,
+                "frame": 723676,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_queue_discard",
+                "response_id": "A004",
+                "reason": "semantic listener requested stop on heard input",
+                "discarded_audio_frames": 78409,
+                "discarded_text_chars": 22,
+                "provider_request_cancelled": false,
+                "native_stop_latency_measured": false
+              }
+            ],
+            "new_response_ids": [
+              "A005"
+            ],
+            "listener_decisions": [
+              {
+                "sequence": 32,
+                "frame": 723676,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "stop_and_listen",
+                "evidence": "你家刚才也停",
+                "incoming_state": "speaking",
+                "silence_ms": 0
+              },
+              {
+                "sequence": 36,
+                "frame": 744143,
+                "clock": "synthetic_pcm_16000",
+                "kind": "assistant_listener_decision",
+                "decision": "respond",
+                "evidence": "你家刚才也停电了吗？",
+                "incoming_state": "silence",
+                "silence_ms": 600
+              }
+            ],
+            "execution_status": "fail"
+          }
+        ],
+        "listener_decisions": [
+          {
+            "sequence": 32,
+            "frame": 723676,
+            "clock": "synthetic_pcm_16000",
+            "kind": "assistant_listener_decision",
+            "decision": "stop_and_listen",
+            "evidence": "你家刚才也停",
+            "incoming_state": "speaking",
+            "silence_ms": 0
+          },
+          {
+            "sequence": 36,
+            "frame": 744143,
+            "clock": "synthetic_pcm_16000",
+            "kind": "assistant_listener_decision",
+            "decision": "respond",
+            "evidence": "你家刚才也停电了吗？",
+            "incoming_state": "silence",
+            "silence_ms": 600
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,174 @@
+{
+  "reviewed_refs": {
+    "artifacts": [
+      "scene_task",
+      "user_voice",
+      "situation_knowledge",
+      "episode_script",
+      "actor_rubric"
+    ],
+    "C": [
+      "C01",
+      "C02",
+      "C03",
+      "C04"
+    ],
+    "L": [
+      "L01",
+      "L02"
+    ],
+    "U": [
+      "U01",
+      "U02",
+      "U03",
+      "U04",
+      "U05",
+      "U06",
+      "U07",
+      "U08",
+      "U09",
+      "U10",
+      "U11",
+      "U12",
+      "U13"
+    ]
+  },
+  "findings": [],
+  "dimension_scores": [
+    {
+      "dimension": "场景与任务一致性",
+      "score": 8,
+      "max": 8,
+      "minimum": 7,
+      "status": "pass",
+      "evidence": [
+        "scene_task/task_instance/goal 要求按人员整理访问核对表，与 D11-S04 账户与访问问题及结构化整理风格一致。",
+        "episode_script U01 至 U13 均围绕四名新员工的状态、阻塞、待确认项和处理顺序推进，可通过纯音频完成。"
+      ]
+    },
+    {
+      "dimension": "UserSeed 合理性",
+      "score": 7,
+      "max": 7,
+      "minimum": 6,
+      "status": "pass",
+      "evidence": [
+        "user_voice/user_seed 将用户设为负责核对开通情况的企业入职协调员，与整理而非实际授权的场景职责一致。",
+        "task_familiarity 为 high，与用户能纠正因果推定、区分邀请和激活状态以及调整排序规则相容。"
+      ]
+    },
+    {
+      "dimension": "VoiceProfile 场景相容性",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "user_voice/voice_profile 的沉稳、清楚、稍快且有条理与会前核对任务和高熟悉度协调员角色相容。",
+        "声音画像仅描述可听特征，未混入任务事实、角色责任或双工行为要求。"
+      ]
+    },
+    {
+      "dimension": "EpisodeSituation 具体性",
+      "score": 10,
+      "max": 10,
+      "minimum": 8,
+      "status": "pass",
+      "evidence": [
+        "situation_knowledge/episode_situation 明确给出周一八点四十分、九点会议前、小会议室、四名员工、资料来源及无法访问后台等条件。",
+        "episode_situation 同时交代四项当日安排、记录术语差异、未决状态和用户不负责实际开通权限的边界。"
+      ]
+    },
+    {
+      "dimension": "Situation / Constraint 边界",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "C01-C04 完整限定人员范围、证据不足时的待确认处理、优先顺序和按人员保留字段，且与参考资料一致。",
+        "L01-L02 禁止借用凭据、绕过身份验证或审批及授予超范围权限，剧本和 Rubric 均未要求违反这些边界。"
+      ]
+    },
+    {
+      "dimension": "Episode Script 任务推进",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "U01 建立框架，U02-U10 依次交付四人的记录并纠正状态边界，U11-U13 完成排序、压缩和最终回读。",
+        "U03、U06、U10、U12 的中断均基于此前已交付状态产生真实增量，返回主任务后未丢失既有人员信息。"
+      ]
+    },
+    {
+      "dimension": "用户表达自然度",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "U02 和 U09 的 pause_cue 分别绑定“工单上写的是”和“我看一下记录”，均为自然的用户句内停顿。",
+        "U03、U06、U10、U12 的插话措辞具体且符合会前整理语境，全部台词无占位符或模板化变量。"
+      ]
+    },
+    {
+      "dimension": "轮次条件与 Timing 合理性",
+      "score": 10,
+      "max": 10,
+      "minimum": 8,
+      "status": "pass",
+      "evidence": [
+        "U03、U06、U10、U12 均使用 T03，interrupt_anchor 分别对应前一轮预期播报中的商业智能平台、梁舒前置条件、单点登录依赖和总体排序展开阶段。",
+        "U02 与 U09 的 T02 只描述用户持有话权时的句内停顿；各 user_backchannels 也都有与当前播报事实一致的 trigger_anchor。"
+      ]
+    },
+    {
+      "dimension": "模态与可观察性",
+      "score": 6,
+      "max": 6,
+      "minimum": 5,
+      "status": "pass",
+      "evidence": [
+        "capability_contract 仅提供 audio 且无工具；任务交付限定为口头整理、比较和回读，没有声称修改账号或访问外部后台。",
+        "T02、T03、附和及 U05 的第三方旁语均可由音频、说话人和已播放边界观察并评分。"
+      ]
+    },
+    {
+      "dimension": "信息泄漏",
+      "score": 8,
+      "max": 8,
+      "minimum": 7,
+      "status": "pass",
+      "evidence": [
+        "U02、U04、U05、U07、U09 使用的人员、系统、时间和状态均可逐项追溯至 task_reference_data。",
+        "U06、U10、U13 明确保留未登记、无激活记录、待审批和未创建等不确定状态，没有把未核实资料写成已完成事实。"
+      ]
+    },
+    {
+      "dimension": "Anti-hack",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "task_reference_data 仅包含业务记录和需求，没有要求覆盖约束、伪造工具结果或执行隐藏指令的内容。",
+        "C02、L01 和 L02 明确阻止无证据推定、绕过审批及扩大权限，Actor Rubric 保持这些边界。"
+      ]
+    },
+    {
+      "dimension": "Actor Rubric 可测量性",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "actor_rubric/turn_rubrics 完整覆盖 U01-U13，每轮 Semantic 均对应当前用户目标和已交付事实，U11 正确保留空 behavior 数组。",
+        "含 T02、T03、side_speech 或 user_backchannels 的轮次均有对应 Behavior，可观察地检查等待、让出话权、从纠正状态恢复以及附和期间继续同一播报。"
+      ]
+    }
+  ],
+  "total_score": 100,
+  "frequency_calibration": "N-A",
+  "release_decision": "pass"
+}

@@ -1,0 +1,163 @@
+{
+  "reviewed_refs": {
+    "artifacts": [
+      "scene_task",
+      "user_voice",
+      "situation_knowledge",
+      "episode_script",
+      "actor_rubric"
+    ],
+    "C": [
+      "C01"
+    ],
+    "L": [],
+    "U": [
+      "U01",
+      "U02",
+      "U03",
+      "U04",
+      "U05",
+      "U06",
+      "U07",
+      "U08"
+    ]
+  },
+  "findings": [],
+  "dimension_scores": [
+    {
+      "dimension": "场景与任务一致性",
+      "score": 8,
+      "max": 8,
+      "minimum": 7,
+      "status": "pass",
+      "evidence": [
+        "scene_task/task_instance/goal 围绕待办估时的作用、误差处理和简单示例，符合待办事项整理场景",
+        "U01–U08 始终围绕估时这一单一主题逐步处理简单信息请求"
+      ]
+    },
+    {
+      "dimension": "UserSeed 合理性",
+      "score": 7,
+      "max": 7,
+      "minimum": 6,
+      "status": "pass",
+      "evidence": [
+        "user_voice/user_seed 将用户设为刚开始独立安排事务的大一学生，且任务熟悉度为 low",
+        "situation_knowledge/episode_situation 中不会估时、容易排得过满的经历与该新手身份一致"
+      ]
+    },
+    {
+      "dimension": "VoiceProfile 场景相容性",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "user_voice/voice_profile 的约二十岁男性声音、稍快语速和年轻随意感与大一学生角色相容",
+        "声音画像仅描述可听特征，未夹带任务事实、角色责任或双工行为"
+      ]
+    },
+    {
+      "dimension": "EpisodeSituation 具体性",
+      "score": 10,
+      "max": 10,
+      "minimum": 8,
+      "status": "pass",
+      "evidence": [
+        "situation_knowledge/episode_situation 明确给出周三晚上、大学宿舍、纸笔、普通待办清单及既往困难",
+        "situation_knowledge/episode_situation 明确尚未解决估时粒度及偏离预估后的调整方式"
+      ]
+    },
+    {
+      "dimension": "Situation / Constraint 边界",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "C01 要求面向新手、保持方法简单且不精确记录每一分钟，与整个任务目标一致",
+        "U04、U07、U08 分别采用粗略区间、短中长档位及逐步校准，均遵守 C01"
+      ]
+    },
+    {
+      "dimension": "Episode Script 任务推进",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "U01–U04 从估时作用推进到估不准是否有意义及如何避免纠结，轮次间具有明确因果增量",
+        "U05–U08 通过复习一章示例、简化纸面写法、三档更新和事后校准完成目标"
+      ]
+    },
+    {
+      "dimension": "用户表达自然度",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "U01–U08 的用户话语均为具体、口语化的新手提问，没有占位符或不自然的规则复述",
+        "U05 的 420ms 句内停顿、U03/U04/U07 的简短附和及 U06 的宿舍旁语均符合自然语音场景"
+      ]
+    },
+    {
+      "dimension": "轮次条件与 Timing 合理性",
+      "score": 10,
+      "max": 10,
+      "minimum": 8,
+      "status": "pass",
+      "evidence": [
+        "U02 的 T03 锚定 U01 播报中已说明排得下并开始展开的阶段，支持 A02 中止展开",
+        "U06 的 T03 锚定 U05 对复习一章进行拆分并合成范围的阶段，支持中止过细拆分；U05 的 T02 具有唯一 pause_cue"
+      ]
+    },
+    {
+      "dimension": "模态与可观察性",
+      "score": 6,
+      "max": 6,
+      "minimum": 5,
+      "status": "pass",
+      "evidence": [
+        "capability_contract 仅提供 audio 且无工具或外部状态访问，任务可通过口头解释、示范与确认完整交付",
+        "T02、T03、附和及 U06 旁语的预期行为均可由音频、说话人、VAD 和已播放边界观察"
+      ]
+    },
+    {
+      "dimension": "信息泄漏",
+      "score": 8,
+      "max": 8,
+      "minimum": 7,
+      "status": "pass",
+      "evidence": [
+        "task_reference_data 为空，剧本所用背景与需求均来自 episode_situation 或用户在对话中的明确更新",
+        "U06 的接水和锁门内容被保留为第三方环境旁语，未被写成用户确认的任务事实"
+      ]
+    },
+    {
+      "dimension": "Anti-hack",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "episode_script 的用户话语没有评分指令、隐藏答案、假想工具结果或要求绕过能力边界的内容",
+        "actor_rubric 仅评价当前任务语义与可观察双工行为，未把事件频率或环境音本身作为正奖励"
+      ]
+    },
+    {
+      "dimension": "Actor Rubric 可测量性",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "actor_rubric/turn_rubrics 完整覆盖 U01–U08，每轮 semantic 均直接对应当轮用户目标",
+        "U02、U06 的打断，U05 的句内停顿，U03/U04/U07 的附和以及 U06 的第三方旁语均有对应且可观察的 behavior"
+      ]
+    }
+  ],
+  "total_score": 100,
+  "frequency_calibration": "N-A",
+  "release_decision": "pass"
+}

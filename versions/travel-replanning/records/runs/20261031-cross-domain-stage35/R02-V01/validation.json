@@ -1,0 +1,63 @@
+{
+  "status": "passed",
+  "structural_status": "passed",
+  "semantic_status": "passed",
+  "stage35_status": "enriched",
+  "stage35_reason": "Stage 3.5 Judge passed",
+  "warnings": [],
+  "must_fix": [],
+  "source_validation": {
+    "status": "passed",
+    "structural_status": "passed",
+    "semantic_status": "passed",
+    "errors": [],
+    "judge_attempts": [
+      {
+        "attempt": 1,
+        "decision": "repair",
+        "finding_count": 2,
+        "findings": [
+          {
+            "severity": "must_fix",
+            "path": "/episode_turns/4/act_ref",
+            "problem": "本轮是在首次补充疲劳和晕车事实，并未替换此前已经建立的条件，因此主要动作不应标为 A04。",
+            "evidence": "“还有个情况得加进去，我连续开下来已经开始疲劳了，林悦也有点晕车。”",
+            "repair": "将 act_ref 改为 A01；其余语义可保持不变。"
+          },
+          {
+            "severity": "must_fix",
+            "path": "/episode_turns/10/assistant_semantic_goal",
+            "problem": "目标要求回读此前用户台词未明确交付的本案过夜限制，actor 不能直接使用这一隐藏条件。",
+            "evidence": "“且不安排车中过夜”只出现在冻结情境和约束中，U01-U11 的更早用户台词均未说明四人不接受车中过夜。",
+            "repair": "从本轮 Assistant 目标中删除“且不安排车中过夜”；如确需纳入，应先由用户明确披露该限制。"
+          }
+        ],
+        "judge_model": "gpt-5.6-sol",
+        "response_sha256": "a597070e4d7933b1cea1af08d86633daed1236e6e03c884b0478ca72abbe1d35"
+      },
+      {
+        "attempt": 2,
+        "decision": "pass",
+        "finding_count": 0,
+        "findings": [],
+        "judge_model": "gpt-5.6-sol",
+        "response_sha256": "40c4964529014b8a1a6a2f497933dfd94fb7e7cfbe890b510bbf6ad64678f0d0"
+      }
+    ],
+    "max_attempts": 3,
+    "structural_normalizations": []
+  },
+  "judge": {
+    "decision": "pass",
+    "must_fix": [],
+    "warnings": [],
+    "duplex_summary": {
+      "t01_count": 7,
+      "t02_count": 2,
+      "t03_count": 4,
+      "a02_count": 1,
+      "side_speech_count": 2,
+      "natural_opportunities_used": 5
+    }
+  }
+}

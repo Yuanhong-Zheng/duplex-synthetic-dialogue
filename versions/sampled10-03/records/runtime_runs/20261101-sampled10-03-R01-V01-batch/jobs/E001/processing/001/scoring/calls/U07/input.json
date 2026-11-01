@@ -1,0 +1,85 @@
+{
+  "turn_id": "U07",
+  "triggered": true,
+  "sample_rate": 16000,
+  "clock": "offline_synthetic_pcm",
+  "disclosed_user_history": [
+    {
+      "turn_id": "U01",
+      "text": "我爸本来要给周明达转八千六，后来因为没看到明确到账，好像又操作了一次。我想把现有材料按时间排清楚，别把提交、扣款和到账混在一起。"
+    },
+    {
+      "turn_id": "U02",
+      "text": "最早是第一张截图，时间是十月二十三号十点十三分。页面写的是“转账申请已提交，银行处理中，预计2小时内到账”，金额八千六，收款人周明达，参考号尾号五八二一。"
+    },
+    {
+      "turn_id": "U03",
+      "text": "等一下，所以“银行处理中”本身不能直接算已经扣款，对吧？"
+    },
+    {
+      "turn_id": "U04",
+      "text": "接着有条十点十五分收到的短信，原文是“您尾号4317账户于10:14支出人民币8600.00元，余额人民币23746.28元”。"
+    },
+    {
+      "turn_id": "U05",
+      "text": "先别把这条支出短信跟十点十三分的页面合成一个节点，时间和来源都分开留着，我怕一合并就把对应关系说死了。"
+    },
+    {
+      "turn_id": "U06",
+      "text": "后面这段有点乱，我看一下第二张，截图时间是十点十九分，写着“请勿重复提交；如账户已扣款，请通过交易明细核实”，金额还是八千六，但没有收款人、参考号，也没有“提交成功”。我爸事后写的是十点十四分左右第一次确认，看到处理中；十点十八分左右又点了一次，之后记不清有没有再输验证码。"
+    },
+    {
+      "turn_id": "U07",
+      "text": "先停一下，别展开太多，就说第二次操作现在能证明什么、不能证明什么。"
+    }
+  ],
+  "responses": [
+    {
+      "response_id": "A008",
+      "heard_text": "现在只能确认：你爸事后回忆十点十八分左右又点了一次，十点十九分截图显示八千六百元和“请勿重复提交”的提示。\n\n不能证明第二次提交成功，也不能证明输入过验证码、再次扣款或再次到账。",
+      "start_frame": 4624278,
+      "end_frame": 4903589,
+      "outcome": "drained",
+      "interrupted": false
+    }
+  ],
+  "judge_criteria": [
+    {
+      "criterion_id": "U07-S01",
+      "kind": "semantic",
+      "text": "说明现有材料只能证明10:19出现过带8600元金额和核实提示的页面，并存在父亲再次点击的事后回忆。"
+    },
+    {
+      "criterion_id": "U07-S02",
+      "kind": "semantic",
+      "text": "说明现有材料不能证明第二次操作已完整提交、形成独立交易或造成第二次扣款。"
+    },
+    {
+      "criterion_id": "U07-B01",
+      "kind": "behavior",
+      "text": "用户中段要求停止展开时立即停止当前详细分析并让出话权，不再恢复被取消的逐项展开。"
+    }
+  ],
+  "behavior_measurement": {
+    "triggered": true,
+    "user_start_frame": 4522355,
+    "user_end_frame": 4614678,
+    "type": "T03",
+    "interrupted_response_id": "A007",
+    "stop_frame": 4537250,
+    "onset_to_stop_ms": 930.9375,
+    "assistant_samples_after_stop_before_user_end": 0,
+    "discarded_audio_frames": 344262,
+    "new_response_ids": [
+      "A008"
+    ],
+    "resume_after_user_finished": true,
+    "provider_request_cancelled": false,
+    "native_realtime_latency_measured": false,
+    "execution_status": "pass",
+    "recovery_execution_status": "pass",
+    "combined_t03_bindings": [
+      "U07-B01"
+    ]
+  }
+}

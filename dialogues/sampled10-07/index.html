@@ -1,0 +1,947 @@
+<!doctype html><html lang='zh-CN'><head>
+<meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>用户与助手，第一次放进同一条音频 · 餐桌白色水印的处理判断 · 1 个案例 · 1 个案例</title>
+<style>
+:root{--ink:#18232b;--muted:#586875;--line:#ccd6dc;--paper:#f6f8f9;--white:#fff;--green:#146c43;--blue:#1d5875;--orange:#c2410c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+main{max-width:1360px;margin:0 auto;padding:28px 20px 72px}
+h1{font-size:30px;line-height:1.2;margin:0 0 10px}
+h2{font-size:22px;line-height:1.3;margin:0}
+h3{font-size:16px;margin:0 0 10px}
+h4{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:16px 0 6px}
+.intro{color:var(--muted);max-width:980px;margin:0 0 6px}
+.case{margin-top:28px;background:var(--white);border:1px solid var(--line);border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(24,35,43,.05)}
+.case-header{padding:18px 22px;background:#edf3f5;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+.case-id{margin:0 0 2px;color:var(--blue);font-weight:700;font-size:13px;letter-spacing:.05em}
+.case-meta{margin:6px 0 0;color:var(--muted);font-size:13px}
+.pass{color:var(--green);font-weight:700;white-space:nowrap}
+.fail{color:#b91c1c;font-weight:700;white-space:nowrap}
+.info{color:var(--blue);font-weight:700}
+section{padding:18px 22px;border-bottom:1px solid #e2e8eb}
+section:last-child{border-bottom:0}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid #e2e8eb}
+.two-col > div{padding:18px 22px}
+.two-col > div:first-child{border-right:1px solid #e2e8eb}
+dl.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0}
+dl.kv dt{color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap;padding-top:2px}
+dl.kv dd{margin:0;font-size:14px}
+.voice-prompt{margin:10px 0 0;padding:10px 12px;background:#f4f8f9;border-left:3px solid #8aa9b8;font-size:13px;color:#2e4a5a;font-style:italic}
+.situation-block{padding:12px 14px;border-left:3px solid #8aa9b8;background:#f4f8f9;margin:0 0 12px;font-size:14px}
+.situation-block p{margin:4px 0 0}
+.audio-block{padding:12px 14px;border-left:3px solid #4d8b72;background:#f1f8f4;margin:0 0 12px;font-size:14px}
+.audio-block p{margin:4px 0 0}
+.audio-block small{color:var(--muted);font-size:12px}
+.side-speech{margin-top:8px;padding:7px 9px;border-left:3px solid #c58b38;background:#fff8ea;color:#6b4a16;font-size:12px;line-height:1.5}
+.side-speech b{font-weight:700}
+.ref-list{margin:6px 0 0;padding-left:20px}
+.ref-list li{padding:3px 0;font-size:14px;line-height:1.55}
+.cl-list{margin:6px 0 0;padding-left:0;list-style:none}
+.cl-list li{padding:4px 0;font-size:14px;border-bottom:1px solid #edf1f3}
+.cl-list li:last-child{border-bottom:0}
+.badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:11px;font-weight:700;vertical-align:middle;margin-left:4px}
+.badge-hard{background:#fee2e2;color:#991b1b}
+.badge-advisory{background:#fef9c3;color:#854d0e}
+.badge-critical{background:#fce7f3;color:#9d174d}
+.badge-info{background:#dbeafe;color:#1e40af}
+.empty{color:var(--muted);font-style:italic;font-size:14px}
+table.script{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+table.script th,table.script td{border-top:1px solid #e5e7eb;padding:10px 9px;vertical-align:top;text-align:left;overflow-wrap:anywhere;word-break:break-word;line-height:1.55}
+table.script th{background:#f8fafc;font-size:12px;color:var(--muted)}
+table.script th:nth-child(1){width:5%}
+table.script th:nth-child(2){width:5%}
+table.script th:nth-child(3){width:7%}
+table.script th:nth-child(4){width:14%}
+table.script th:nth-child(5){width:18%}
+table.script th:nth-child(6){width:24%}
+table.script th:nth-child(7){width:18%}
+code{background:#e9eff2;border-radius:3px;padding:1px 5px;font:12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.artifact{margin:12px 0 0;border:1px solid var(--line);border-radius:6px;background:#fbfcfc}
+.artifact summary{cursor:pointer;display:flex;justify-content:space-between;gap:16px;align-items:center;padding:9px 12px;font-size:13px;font-weight:700;color:var(--muted)}
+.artifact pre{margin:0;padding:14px;overflow:auto;max-height:500px;border-top:1px solid var(--line);background:#f8fafb;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.overview-wrap{margin:20px 0 28px;overflow-x:auto;border:1px solid var(--line);background:var(--white);border-radius:6px}
+.overview-table{width:100%;border-collapse:collapse;min-width:860px}
+.overview-table th,.overview-table td{padding:9px 12px;border-bottom:1px solid #e2e8eb;text-align:left;vertical-align:top}
+.overview-table th{background:#edf3f5;font-size:12px;color:var(--muted)}
+.overview-table tbody tr:last-child td{border-bottom:0}
+.overview-table span{font-size:12px;color:var(--muted)}
+.rubric-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:8px}
+.rubric-turn{padding:10px 12px;border:1px solid #e2e8eb;border-radius:5px;background:#fbfcfc}
+.rubric-turn h4{margin:0 0 5px;color:var(--blue);text-transform:none;letter-spacing:0}
+.rubric-turn p{margin:4px 0;font-size:14px}
+.rubric-behavior{margin:5px 0 0;padding-left:22px}
+.rubric-behavior li{padding:2px 0;font-size:14px}
+.rubric-status{font-weight:700}
+.audit-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0 14px}
+.audit-summary div{padding:8px 10px;border:1px solid #e2e8eb;border-radius:5px;background:#fbfcfc}
+.audit-summary b{display:block;color:var(--muted);font-size:12px}
+.audit-summary span{font-size:18px;font-weight:700}
+.audit-findings{margin:8px 0 0;padding:0;list-style:none}
+.audit-finding{padding:10px 12px;border:1px solid #f0caca;border-left:4px solid #b91c1c;border-radius:5px;background:#fffafa;margin:8px 0}
+.audit-finding h4{margin:0 0 5px;color:#991b1b;text-transform:none;letter-spacing:0}
+.audit-finding p{margin:3px 0;font-size:13px}
+.audit-dimensions{width:100%;border-collapse:collapse;font-size:13px}
+.audit-dimensions th,.audit-dimensions td{border-top:1px solid #e5e7eb;padding:7px 8px;text-align:left;vertical-align:top}
+.audit-dimensions th{background:#f8fafc;color:var(--muted);font-size:12px}
+.audit-dimensions .audit-fail{color:#b91c1c;font-weight:700}
+.guide-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+.guide-flow a{display:block;padding:14px;background:#f4f8f9;border:1px solid var(--line);border-top:3px solid var(--blue);border-radius:6px;text-decoration:none;color:var(--ink)}
+.guide-flow b{display:block;color:var(--blue);margin-bottom:5px}
+.guide-flow small{display:block;color:var(--muted);line-height:1.5}
+.guide-toc{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0 0}
+.guide-toc a{padding:4px 9px;border:1px solid var(--line);border-radius:4px;color:var(--blue);text-decoration:none;font-size:13px}
+.guide-prose p{max-width:1120px;margin:8px 0;line-height:1.85}
+.guide-prose blockquote{margin:12px 0;padding:12px 16px;border-left:3px solid var(--blue);background:#f4f8f9}
+.guide-table-wrap{overflow-x:auto;margin-top:12px}
+.guide-table-wrap table{min-width:650px;table-layout:auto}
+.guide-table-wrap td{line-height:1.75;overflow-wrap:anywhere}
+section[id]{scroll-margin-top:16px}
+@media(max-width:800px){
+  .two-col{grid-template-columns:1fr}
+  .audit-summary{grid-template-columns:1fr}
+  .two-col > div:first-child{border-right:0;border-bottom:1px solid #e2e8eb}
+  table.script{font-size:12px;display:block;overflow-x:auto;white-space:normal}
+  body{padding:10px}
+  .overview-wrap{font-size:13px}
+  .guide-flow{grid-template-columns:1fr 1fr}
+}
+
+.rx{--rx-blue:#245b78;--rx-blue-soft:#eef5f8;--rx-amber:#925b16;--rx-amber-soft:#fff6e7;--rx-border:#d8e2e8;color:var(--ink);margin-top:26px}
+.rx [hidden]{display:none!important}
+.rx a{color:var(--rx-blue)}
+.rx button,.rx a{touch-action:manipulation}
+.rx button{font:inherit;cursor:pointer}
+.rx button:focus-visible,.rx a:focus-visible,.rx summary:focus-visible{outline:3px solid #e1a33b;outline-offset:3px}
+.rx-hero{position:relative;padding:34px;border:1px solid #bdd0dc;border-radius:14px;background:linear-gradient(120deg,#edf4f7,#fff 80%);overflow:hidden}
+.rx-hero:after{content:"";position:absolute;right:-70px;top:-110px;width:270px;height:270px;border:1px solid #b6ced9;border-radius:50%;opacity:.45;pointer-events:none}
+.rx-eyebrow{font-size:11px;font-weight:800;letter-spacing:.12em;color:var(--rx-blue);margin:0 0 10px}
+.rx-hero h2{font-size:clamp(25px,3vw,37px);line-height:1.35;max-width:850px;letter-spacing:-.02em}
+.rx-lead{max-width:890px;color:var(--muted);font-size:15px;line-height:1.85;margin:14px 0}
+.rx-meta{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 22px}
+.rx-chip{display:inline-flex;gap:5px;align-items:center;padding:4px 10px;border-radius:20px;background:#edf2f5;color:#465c6b;font-size:12px;font-weight:650;max-width:100%;overflow-wrap:anywhere}
+.rx-chip.blue{background:#e6f0f6;color:#245b78}.rx-chip.amber{background:#fff0d9;color:#82510f}.rx-chip.green{background:#e9f5ee;color:#226343}
+.rx-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.rx-metric{padding:16px;border:1px solid #d6e2e9;border-radius:9px;background:#ffffffd9}
+.rx-metric span{display:block;font-size:12px;color:var(--muted)}
+.rx-metric strong{display:block;font-size:27px;line-height:1.3;margin:6px 0;color:#203e50;letter-spacing:-.02em}
+.rx-metric small{color:var(--muted);font-size:12px}.rx-metric.warn{border-color:#dfbc86;background:#fff9ef}.rx-metric.warn strong{color:#8c5514}
+.rx-alert{padding:15px 18px;border:1px solid #e6c695;border-left:4px solid #bc812c;background:var(--rx-amber-soft);border-radius:8px;margin:18px 0 0;color:#6c4817;font-size:14px;line-height:1.8}
+.rx-alert p{margin:4px 0}.rx-alert a{font-weight:700;color:#765019}
+.rx-nav{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;padding:12px 0;margin:14px 0;background:#f6f8f9f2;backdrop-filter:blur(10px)}
+.rx-nav a{display:flex;flex-direction:column;padding:10px 12px;border:1px solid var(--rx-border);border-radius:8px;text-decoration:none;background:#fff;min-width:0;color:var(--muted);font-size:12px}
+.rx-nav b{font-size:14px;color:#29495c;margin-bottom:3px}
+.rx-nav a:hover,.rx-nav a[aria-current=step]{background:#eaf2f7;border-color:#638fa9;color:#29495c;box-shadow:inset 0 -3px #417695}
+.rx-nav.with-runtime{grid-template-columns:repeat(7,minmax(0,1fr))}
+.rx-nav.with-tts{grid-template-columns:repeat(8,minmax(0,1fr))}
+.rx-nav.with-speech{display:flex;overflow-x:auto}.rx-nav.with-speech a{flex:0 0 142px}
+.rx-speech .rx-metrics{margin:18px 0}.rx-speech #rx-speech-pause p{margin:0 0 10px}.rx-speech .rx-button:disabled{opacity:.5;cursor:default}.rx-speech .rx-turn-list{max-height:650px}
+.rx-rollout .rx-metrics{margin:18px 0}.rx-rollout-scroll{overflow-x:auto;max-width:100%;margin:20px 0}.rx-rollout-chart{position:relative;min-width:680px;height:126px;border:1px solid var(--rx-border);border-radius:8px;background:repeating-linear-gradient(to right,#f4f6fa 0,#f4f6fa 1px,transparent 1px,transparent 10%)}.rx-rollout-lane{position:absolute;left:12px;font-size:12px;color:var(--muted)}.rx-rollout-lane.user{top:23px}.rx-rollout-lane.assistant{top:76px}.rx-rollout-bars{position:absolute;left:62px;right:12px;top:0;bottom:0}.rx-rollout-bar{position:absolute;height:30px;top:15px;min-width:3px;padding:0;border:1px solid #4a84a2;border-radius:4px;background:#c9e1ed;cursor:pointer;font-size:10px;overflow:hidden;color:#193d50}.rx-rollout-bar.assistant{top:68px;background:#ded7ef;border-color:#8673af}.rx-rollout-bar.aside{background:#f4d7b6;border-color:#ae722e}.rx-rollout-bar[aria-pressed=true]{outline:3px solid #234c66;outline-offset:1px}.rx-rollout #rx-rollout-segments{max-height:550px}.rx-rollout #rx-rollout-outcome{overflow-wrap:anywhere}
+.rx-stage{border:1px solid var(--rx-border);border-radius:12px;background:#fff;margin:18px 0 26px;overflow:hidden;scroll-margin-top:100px;box-shadow:0 3px 14px #203b4e05}
+.rx-stage-head{padding:23px 26px;display:grid;grid-template-columns:46px minmax(0,1fr) auto;align-items:start;gap:17px;border-bottom:1px solid #e2e9ed;background:#fbfcfd}
+.rx-number{flex:0 0 46px;width:46px;height:46px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#2d5a73;background:#e7f0f5;border-radius:10px}
+.rx-stage-title{flex:1;min-width:0}.rx-stage-title h2{font-size:24px}.rx-stage-title p{margin:7px 0 0;color:var(--muted);line-height:1.75;max-width:820px;font-size:14px}
+.rx-state{padding:5px 10px;font-size:12px;border-radius:6px;background:#eaf5ed;color:#276342;white-space:nowrap;font-weight:700}.rx-state.note{background:#eaf0f8;color:#355e7c}.rx-state.warn{background:#fff0d9;color:#8a5414}
+.rx-stage-body{padding:25px 26px}
+.rx-stage-body h3{font-size:16px;margin:0 0 10px}.rx-stage-body p{line-height:1.8}
+.rx-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.rx-card{padding:20px;border:1px solid var(--rx-border);border-radius:9px;background:#fff;min-width:0}
+.rx-card.soft{background:#f5f8fa}.rx-card.blue{background:#f0f6f9;border-color:#c9dce7}.rx-card.amber{background:#fff8ed;border-color:#ead0a7}
+.rx-card h3{margin:0 0 12px}.rx-card p:last-child{margin-bottom:0}
+.rx-label{font-size:11px;color:#637b89;font-weight:750;letter-spacing:.05em;margin:0 0 7px}
+.rx-goal{font-size:19px;line-height:1.85;margin:10px 0 0;letter-spacing:.01em}
+.rx-meaning{font-size:14px;padding:12px 14px;background:var(--rx-blue-soft);border-left:3px solid #7ea0b6;color:#38586d;line-height:1.85;margin:14px 0}
+.rx-meaning p{margin:0}.rx-meaning strong{color:#244d67}
+.rx-small{font-size:13px;color:var(--muted);line-height:1.8}
+.rx-facts{display:grid;grid-template-columns:110px minmax(0,1fr);gap:10px 16px;margin:0}
+.rx-facts dt{font-size:12px;color:var(--muted)}.rx-facts dd{margin:0;font-size:14px;overflow-wrap:anywhere}
+.rx-source{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:22px;padding-top:16px;border-top:1px solid #e6ecef;font-size:12px;color:var(--muted)}
+.rx-source a,.rx-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #c9d9e2;border-radius:6px;padding:7px 11px;color:#2d5f7c;background:#f5f9fb;text-decoration:none;font-size:12px;font-weight:650}
+.rx-source a:hover,.rx-button:hover{background:#e6f1f7}.rx-button.primary{background:#2f617c;color:#fff;border-color:#2f617c}
+.rx-actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}
+.rx-filter{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 18px}
+.rx-filter button{border:1px solid #d2dfe6;background:#fff;border-radius:20px;padding:7px 13px;font-size:12px;color:#4f6573}
+.rx-filter button[aria-pressed=true]{background:#2f617c;border-color:#2f617c;color:#fff}
+.rx-count{font-size:12px;color:var(--muted);margin-left:auto}
+.rx-people{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.rx-person{border:1px solid #d7e2e8;border-radius:9px;min-width:0;overflow:hidden;background:#fff}
+.rx-person-top{padding:15px 18px;background:#f2f6f8;border-bottom:1px solid #e2e9ed;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rx-person-top h3{font-size:18px;margin:0}.rx-person-top .rx-chip{margin-left:auto}
+.rx-person-body{padding:17px 18px}.rx-person-body p{margin:0 0 12px;font-size:14px}
+.rx-status-list{list-style:none;padding:0;margin:0 0 13px}.rx-status-list li{display:flex;justify-content:space-between;gap:15px;border-top:1px solid #edf1f3;padding:7px 0;font-size:13px}.rx-status-list span{color:var(--muted);flex-shrink:0}.rx-status-list strong{font-weight:550;text-align:right;overflow-wrap:anywhere}
+.rx-pending{padding:10px 12px;background:#fff7e9;border-radius:5px;font-size:13px;line-height:1.8;color:#78531b}
+.rx-person-links{font-size:12px;color:var(--muted);margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
+.rx-details{border:1px solid #dbe5eb;border-radius:7px;margin-top:14px;background:#fcfdfe;overflow:hidden;scroll-margin-top:110px}
+.rx-details>summary{padding:12px 15px;cursor:pointer;font-size:13px;font-weight:650;color:#456275;line-height:1.65}
+.rx-details>div,.rx-details>p{padding:14px 16px;margin:0;border-top:1px solid #e1e9ee;font-size:14px;line-height:1.9}
+.rx-details pre{margin:0;padding:15px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:430px;overflow:auto;border-top:1px solid #e1e9ee;font-size:12px;background:#f4f8fa}
+.rx-details-list{display:grid;gap:8px;margin-top:14px}.rx-details-list .rx-details{margin:0}
+.rx-boundaries{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}.rx-boundaries ul{padding-left:20px;margin:0}.rx-boundaries li{padding:5px 0;font-size:13px;line-height:1.75}
+.rx-turn-layout{display:grid;grid-template-columns:270px minmax(0,1fr);gap:18px;align-items:start}
+.rx-turn-list{display:flex;flex-direction:column;gap:7px;max-height:610px;overflow:auto;padding:2px 5px 3px 2px}
+.rx-turn-button{display:grid;grid-template-columns:36px minmax(0,1fr);gap:4px 8px;align-items:center;text-align:left;padding:10px 12px;border:1px solid #d9e4eb;border-radius:7px;color:#405d70;background:#fafcfd;min-width:0}
+.rx-turn-button b{font-size:12px;align-self:start;margin-top:1px}.rx-turn-button span{font-size:12px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.6}.rx-turn-button small{grid-column:2;font-size:10px;color:#698292}
+.rx-turn-button[aria-pressed=true]{background:#eaf3f8;border-color:#507f9c;box-shadow:inset 3px 0 #386f8d;color:#224e68}
+.rx-turn-button.is-overlap small{color:#9d6013}
+.rx-turn-detail{padding:22px;border:1px solid #ccdfe9;background:#f9fcfe;border-radius:10px;min-width:0;min-height:420px}
+.rx-turn-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}.rx-turn-head h3{font-size:21px;margin:0}
+.rx-utterance{padding:17px 19px;background:#fff;border:1px solid #d8e6ef;border-left:4px solid #417a9a;border-radius:7px;font-size:19px;line-height:1.85;overflow-wrap:anywhere;margin:8px 0 18px}
+.rx-turn-goal{font-size:14px;color:#38596e;margin:0 0 15px}.rx-expected{background:#eff3f6;border-radius:6px;padding:14px;margin-top:13px;line-height:1.8;font-size:14px}.rx-expected p{margin:4px 0 0}
+.rx-cue{padding:11px 13px;border-radius:6px;background:#fff3df;color:#84591e;font-size:13px;line-height:1.8;margin-top:12px}
+.rx-turn-detail .rx-actions{margin-bottom:0}
+.rx-route{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 0 15px;font-size:13px;color:#5d7280}
+.rx-route span{border:1px solid #d4e2e9;border-radius:6px;background:#fff;padding:6px 11px;color:#365c72;font-weight:650}
+.rx-side-box{border:1px solid #e5c28a;background:#fff7e8;border-radius:9px;padding:20px;margin-top:16px}.rx-side-box blockquote{border:0;margin:10px 0;font-size:23px;font-weight:650;line-height:1.8;color:#795016}
+.rx-comparison-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}.rx-comparison-metrics div{padding:12px;background:#f2f6f8;border-radius:7px;text-align:center}.rx-comparison-metrics b{display:block;font-size:20px;color:#2d566c}.rx-comparison-metrics span{font-size:11px;color:var(--muted)}
+.rx-rubric-pills{display:flex;flex-wrap:wrap;gap:7px;margin:15px 0 20px}
+.rx-rubric-pill{padding:8px 10px;border:1px solid #d2e0e8;border-radius:5px;background:#f7fafc;color:#416278;font-size:12px}.rx-rubric-pill[aria-pressed=true]{background:#2f617c;color:#fff;border-color:#2f617c}
+.rx-criteria{list-style:none;padding:0;margin:0;counter-reset:criterion}.rx-criteria li{position:relative;padding:12px 0 12px 32px;border-top:1px solid #e2e9ef;font-size:14px;line-height:1.9;counter-increment:criterion}.rx-criteria li:before{content:counter(criterion);position:absolute;left:0;top:15px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;background:#e7eff5;border-radius:50%;font-size:11px;font-weight:700;color:#365e77}.rx-criteria li:first-child{border-top:0}
+.rx-score-turns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:20px 0}.rx-score-turn{padding:12px;border:1px solid #ccdcd3;background:#f3faf5;border-radius:7px;text-align:left;color:#365c48}.rx-score-turn b,.rx-score-turn span{display:block}.rx-score-turn span{font-size:11px;margin-top:6px;line-height:1.7}.rx-score-turn.has-failure{background:#fff2f1;border-color:#e6b5b0;color:#8c3831}.rx-score-turn.has-insufficient{background:#fff8eb;border-color:#e1c98e;color:#826018}.rx-score-turn[aria-pressed=true]{outline:2px solid #245b78;outline-offset:1px}.rx-score-detail{min-width:0}.rx-score-criterion{border-top:1px solid var(--rx-border);padding:18px 0}.rx-score-criterion-title{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px}.rx-score-status{padding:4px 10px;border-radius:15px;font-size:12px;background:#eef2f5;color:#526571}.rx-score-status.pass{background:#e3f3e9;color:#286142}.rx-score-status.fail{background:#fbe7e5;color:#8c3831}.rx-score-status.insufficient_evidence{background:#fff1d3;color:#826018}.rx-score-original{font-size:15px;line-height:1.9;margin:12px 0 8px}.rx-score-quote{font-size:14px;line-height:1.9;border-left:3px solid #b5ccd8;padding:10px 15px;margin:13px 0;background:#f5f9fb;white-space:pre-wrap;overflow-wrap:anywhere}.rx-score-criterion .rx-button{font-size:12px;margin:5px 8px 5px 0}.rx-scoring-notes{margin-top:20px}.rx-score-detail .rx-details pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.rx-rubric-caption{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.rx-rubric-caption h3{font-size:20px;margin:0}
+.rx-sim-case-filter{margin-top:23px}.rx-sim-detail{min-width:0}.rx-sim-heard{font-size:15px;line-height:1.9;margin:0;overflow-wrap:anywhere}.rx-sim-utterance{font-size:18px;line-height:1.9;overflow-wrap:anywhere}.rx-sim-notes{margin-top:22px}.rx-simulator .rx-metrics{margin:16px 0}.rx-simulator .rx-source{margin-top:17px}.rx-simulator .rx-details pre{max-height:430px}.rx-sim-detail>.rx-grid{align-items:start}.rx-sim-detail .rx-meaning span{overflow-wrap:anywhere}
+.rx-tts-samples{align-items:start}.rx-tts-card{scroll-margin-top:105px}.rx-tts-card h3{line-height:1.6}.rx-tts-card>.rx-small{margin-bottom:12px}.rx-tts-player{display:block;width:100%;max-width:100%;min-width:0;height:54px;margin:16px 0 10px;border-radius:9px;background:#f1f3f4}.rx-tts-player:focus-visible{outline:3px solid #e1a33b;outline-offset:3px}
+.rx-tts-file{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted);line-height:1.8}.rx-tts-file a{font-weight:650}.rx-tts-transcript{font-size:14px;line-height:1.9;overflow-wrap:anywhere}
+.rx-tts-heading{margin:30px 0 18px}.rx-tts-heading h3{font-size:20px}.rx-tts-heading p:last-child{margin-bottom:0}.rx-tts-pauses{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.rx-tts-table{overflow-x:auto;margin:20px 0 0;border:1px solid var(--rx-border);border-radius:8px}.rx-tts-table table{width:100%;border-collapse:collapse;font-size:13px;margin:0}.rx-tts-table caption{text-align:left;padding:13px 15px;font-weight:700;background:#f4f8fa;color:#3f5e71}.rx-tts-table th,.rx-tts-table td{padding:12px 15px;text-align:left;line-height:1.7;border-top:1px solid #dfe8ed;font-variant-numeric:tabular-nums}.rx-tts-table thead th{background:#f8fafb;font-weight:650}
+.rx-tts-figure{margin:0}.rx-tts-figure img{display:block;width:100%;height:auto;border:1px solid #e2e9ee;border-radius:5px}.rx-tts-figure figcaption{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.8}.rx-tts-notes{margin-top:22px}.rx-tts-notes ul{padding-left:20px;font-size:13px;line-height:1.9}
+.rx-score-layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:25px;margin:8px 0 22px}
+.rx-score-total{padding:22px;border:1px solid #e3c795;border-radius:10px;background:#fff8ec;display:flex;flex-direction:column;justify-content:center;align-items:flex-start}
+.rx-score-total strong{font-size:67px;line-height:1;color:#875718;letter-spacing:-.05em;margin:14px 0 7px}.rx-score-total strong small{font-size:20px;letter-spacing:0;color:#9a805c;font-weight:500}
+.rx-score-total p{font-size:13px;line-height:1.8;color:#795b35;margin:8px 0}.rx-score-bars{display:grid;gap:11px;align-content:center;padding:5px 0}
+.rx-score-row{display:grid;grid-template-columns:185px minmax(65px,1fr) 55px;gap:10px;align-items:center;font-size:12px}
+.rx-score-name{line-height:1.5}.rx-score-track{height:9px;border-radius:6px;background:#e9eff2;position:relative;min-width:0}.rx-score-fill{height:100%;display:block;background:#78a38d;border-radius:6px}.rx-score-min{position:absolute;top:-3px;height:15px;width:2px;background:#425b68}.rx-score-value{text-align:right;font-variant-numeric:tabular-nums;color:#3c5b6b;font-weight:650}
+.rx-score-legend{font-size:11px;color:var(--muted);margin-top:12px}.rx-score-legend b{color:#445c68}
+.rx-conflict-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}.rx-conflict-grid pre{white-space:pre-wrap;font-size:15px;line-height:1.8;background:transparent;margin:10px 0 0;overflow-wrap:anywhere}
+.rx-finding{border:1px solid #e6c591;border-left:4px solid #b68031;border-radius:8px;padding:19px;background:#fffaf2;margin-top:19px}.rx-finding h3{color:#80531b}.rx-finding p{font-size:14px;line-height:1.85;margin:9px 0}
+.rx-review-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}.rx-review-grid strong{font-size:13px}.rx-review-grid p{font-size:13px;margin:7px 0 0}
+.rx-footer{padding:24px;border:1px solid #d6e3eb;background:#eef4f7;border-radius:10px;margin:28px 0 36px}.rx-footer h2{font-size:20px}.rx-footer p{font-size:14px;color:#526d7d;line-height:1.8}
+.rx-artifact-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:15px}.rx-artifact-list a{padding:10px 13px;border:1px solid #d3e0e8;border-radius:5px;background:#fff;text-decoration:none;font-size:12px;overflow-wrap:anywhere}.rx-artifact-list small{display:block;color:var(--muted);margin-top:3px}
+.rx-appendix-title{margin:42px 0 14px;scroll-margin-top:22px}.rx-appendix-title h2{font-size:23px}.rx-appendix-title p{font-size:14px;color:var(--muted)}
+.results-canonical .case-header{flex-wrap:wrap}.results-canonical .case>section{overflow-x:auto}.results-canonical table.script{min-width:1050px}
+@media(max-width:1000px){.rx-stage-head{grid-template-columns:46px minmax(0,1fr)}.rx-state{grid-column:2;justify-self:start;margin-left:0}.rx-score-layout{grid-template-columns:200px minmax(0,1fr)}.rx-score-row{grid-template-columns:155px minmax(65px,1fr) 50px}.rx-turn-layout{grid-template-columns:225px minmax(0,1fr)}.rx-stage-body{padding:22px}}
+@media(max-width:700px){.rx-hero{padding:23px 20px}.rx-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.rx-metric{padding:13px}.rx-metric strong{font-size:24px}.rx-nav{display:flex;overflow-x:auto;padding:9px 0;gap:7px;margin:12px 0}.rx-nav a{flex:0 0 136px;padding:9px 10px}.rx-stage{scroll-margin-top:92px}.rx-stage-head{padding:20px;gap:12px;grid-template-columns:37px minmax(0,1fr)}.rx-number{flex-basis:37px;width:37px;height:37px;font-size:15px}.rx-stage-title h2{font-size:21px}.rx-state{margin-left:0}.rx-stage-body{padding:19px 17px}.rx-grid,.rx-people,.rx-boundaries,.rx-conflict-grid,.rx-review-grid{grid-template-columns:1fr}.rx-card{padding:17px}.rx-goal{font-size:17px}.rx-facts{grid-template-columns:85px minmax(0,1fr);gap:10px}.rx-filter{gap:7px}.rx-filter button{padding:7px 11px}.rx-count{width:100%;margin-left:0}.rx-turn-layout{grid-template-columns:1fr;gap:13px}.rx-turn-list{flex-direction:row;max-height:none;overflow-x:auto;padding:2px 2px 8px}.rx-turn-button{flex:0 0 170px;grid-template-columns:31px minmax(0,1fr)}.rx-turn-detail{padding:18px;min-height:0}.rx-utterance{padding:14px;font-size:17px}.rx-comparison-metrics{grid-template-columns:repeat(2,1fr)}.rx-side-box{padding:17px}.rx-side-box blockquote{font-size:19px}.rx-score-layout{grid-template-columns:1fr;gap:19px}.rx-score-total{padding:20px}.rx-score-total strong{font-size:60px}.rx-score-row{grid-template-columns:130px minmax(45px,1fr) 43px;gap:7px;font-size:11px}.rx-artifact-list{grid-template-columns:1fr}.rx-footer{padding:20px}.rx-goal,.rx-card,.rx-stage-title,.rx-lead{overflow-wrap:anywhere}.rx-source a{max-width:100%;overflow-wrap:anywhere}.results-canonical dl.kv{grid-template-columns:1fr}.results-canonical dl.kv dd{margin-bottom:8px}.results-canonical .audit-summary{grid-template-columns:1fr}.results-canonical .case-header h2{font-size:20px}}
+@media(max-width:1100px){.rx-nav.with-tts{display:flex;overflow-x:auto}.rx-nav.with-tts a{flex:0 0 144px}}
+@media(max-width:700px){.rx-tts-pauses{grid-template-columns:1fr}.rx-tts-table th,.rx-tts-table td{padding:10px 9px;font-size:12px}.rx-tts-heading{margin-top:25px}.rx-nav.with-tts a{flex-basis:136px}}
+@media(max-width:700px){.rx-score-turns{grid-template-columns:repeat(2,minmax(0,1fr))}.rx-score-detail{padding:17px}.rx-score-original{font-size:14px}}
+@media(prefers-reduced-motion:reduce){.rx{scroll-behavior:auto}}
+.rx-batch-table{overflow-x:auto}.rx-batch-table table{min-width:600px}.rx-batch-criteria{display:grid;gap:10px;margin-top:16px}.rx-batch-criteria [hidden]{display:none}.rx-batch-criteria p{overflow-wrap:anywhere}
+
+.rx-rollout-bar.backchannel{background:#14614f!important;color:white;border-color:#14614f!important}
+.rx-rollout-playback{position:absolute;left:62px;right:12px;top:0;bottom:0;pointer-events:none;z-index:3}
+.rx-rollout-playhead{position:absolute;left:0;top:7px;bottom:7px;width:3px;background:#c43d2e;box-shadow:0 0 0 1px #fff}
+.rx-rollout-playhead span{position:absolute;bottom:0;left:1px;transform:translateX(-50%);padding:1px 5px;border-radius:3px;background:#c43d2e;color:#fff;font-size:11px;line-height:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rx-rollout-playhead.at-start span{transform:none}.rx-rollout-playhead.at-end span{transform:translateX(-100%)}
+.rx-rollout-now{margin:-10px 0 18px;color:#8f3027;font-variant-numeric:tabular-nums}
+.rx-rollout-bar.is-playing{box-shadow:inset 0 0 0 2px #c43d2e}
+.rx-rollout .rx-turn-button.is-playing{border-color:#c43d2e;box-shadow:inset 3px 0 #c43d2e}
+</style>
+</head><body><main>
+<h1>用户与助手，第一次放进同一条音频 · 餐桌白色水印的处理判断 · 1 个案例 · 1 个案例</h1>
+<p class='intro'>仅离线用户侧环境与剧本，未生成 actor 回复、工具结果或 rollout。</p>
+<div class="rx" data-results-explorer><article class="rx-stage rx-rollout" id="result-rollout" data-rx-stage>
+<header class="rx-stage-head"><span class="rx-number">R4</span><div class="rx-stage-title"><p class="rx-eyebrow">SYNTHETIC DIALOGUE · 在线部分 4</p><h2>用户与助手，第一次放进同一条音频</h2><p>用户模拟器与独立 GPT 助手真实生成发言，双方使用 MiniMax TTS；按 PCM 采样构造离线合成时间轴。</p></div><span class="rx-state note">合成交互已完成</span></header>
+<div class="rx-stage-body"><div class="rx-meta"><span class="rx-chip blue">GPT-5.6 · 双方独立上下文</span><span class="rx-chip ">MiniMax speech-2.8-hd</span><span class="rx-chip ">左：用户 / 右：助手</span><span class="rx-chip amber">离线合成 · 非原生实时测量</span></div>
+<div class="rx-meaning"><strong>本版用户声音 · Chinese (Mandarin)_News_Anchor</strong><p>女性声音，感知年龄四十多岁，音色温和略低，语速平稳，吐字清楚，谈到不确定之处时会稍作停顿。</p><p>语速 1.0 倍 · 主句、附和与用户旁语使用同一声音。</p><a href="../../runtime/sampled10-07/user-voice-plan.json" target="_blank" rel="noopener">查看声音映射与能力限制 ↗</a></div><p class="rx-small">MP3 压缩试听 · 时间轴沿用原始录音。<a href="https://github.com/Yuanhong-Zheng/duplex-synthetic-dialogue/releases/download/workflow-20261101/original-sampled10-07.wav" download>下载原始 WAV</a></p><div class="rx-metrics"><div class="rx-metric"><span>已交付主轮</span><strong>12 / 12</strong><small>只统计实际生成并播放的主表达</small></div><div class="rx-metric"><span>采样时间轴</span><strong>752.4 秒</strong><small>由实际 PCM 音频长度与明确静音构成</small></div><div class="rx-metric"><span>采样中途起声</span><strong>3 次</strong><small>依据已播前缀的语义证据触发</small></div><div class="rx-metric"><span>本次运行的墙钟时间</span><strong>783.4 秒</strong><small>含 API 等待；不计入上面的音频时间轴</small></div></div>
+<div class="rx-meaning"><strong>这一步在做什么：</strong>将原来的用户策略、用户语音和一个独立助手连接起来，保存双方说了什么、何时起声、助手哪里被截断，以及截断后如何回应。助手看不到未来剧本；用户只能看到已消耗音频对应的字幕前缀。</div>
+<div class="rx-alert"><strong>本轨迹实际发生 2 次用户附和，2 次保持原播报。</strong><p>计划 5 次，实际 2 次，静默 2 次，未触发 1 次。</p><div class="rx-actions"><button type="button" class="rx-button" data-rollout-segment="6">定位用户附和</button><a href="../../sampled10-07-interaction-proof.json" target="_blank" rel="noopener">查看附和核验</a></div></div><h3>先听本次生成的对话</h3><audio id="rx-rollout-audio" class="rx-tts-player" controls preload="none" data-tts-audio="synthetic-dialogue" src="../../runtime/sampled10-07/dialogue-stereo.mp3" aria-label="用户与助手的合成双声道对话"></audio><p class="rx-small" id="rx-rollout-player-status" role="status">左声道包含用户主表达、附和（如有）与旁语，右声道为助手。可选择下方片段并跳到该处试听。</p>
+<div class="rx-rollout-scroll"><div class="rx-rollout-chart" id="rx-rollout-chart" aria-label="合成音频时间轴"><span class="rx-rollout-lane user">用户</span><span class="rx-rollout-lane assistant">助手</span><div class="rx-rollout-bars" id="rx-rollout-bars"></div><div class="rx-rollout-playback" aria-hidden="true"><div class="rx-rollout-playhead at-start" id="rx-rollout-playhead"><span id="rx-rollout-playhead-time">00:00</span></div></div></div></div>
+<p class="rx-small rx-rollout-now" id="rx-rollout-now">竖线标记当前播放位置，播放中的片段会同步标亮。</p>
+<div class="rx-turn-layout"><div class="rx-turn-list" id="rx-rollout-segments" aria-label="选择已播放音频片段"></div><div class="rx-sim-detail"><div class="rx-turn-head"><h3 id="rx-rollout-title"></h3><span class="rx-chip blue" id="rx-rollout-kind"></span></div><p class="rx-small" id="rx-rollout-time"></p><div class="rx-utterance" id="rx-rollout-text"></div><p class="rx-small" id="rx-rollout-outcome"></p><button type="button" class="rx-button" data-rollout-seek>跳到这段前 1 秒试听</button><details class="rx-details" id="rx-rollout-tail" hidden><summary>未播出的助手后半段 · 仅归档，未进入双方已听记忆</summary><pre id="rx-rollout-unplayed"></pre></details><div class="rx-source" id="rx-rollout-files"></div></div></div>
+<div class="rx-grid"><div class="rx-card"><h3>中断到底取消了什么</h3><p class="rx-small">GPT 回复和 TTS 音频在离线采样时间推进前生成；语义收听控制器决定停播后，调度器丢弃未播缓冲，后续助手上下文也只保留已播前缀。本次不声称取消了正在生成的服务端请求，也不据此计算原生模型停声延迟。</p></div><div class="rx-card"><h3>文字如何对应音频</h3><p class="rx-small">实际 MiniMax 请求返回逐词时间戳。词结束采样被消耗后，才向另一方释放相应文字。换行与片段开头逗号仅做明确的位置转换，T02 的原始裁剪和静音采样保留；没有独立 ASR 或按字数估算时长。</p></div></div>
+
+<details class="rx-details"><summary>查看本次中途起声、旁语、句内停顿与停播事件</summary><pre>[
+  {
+    &quot;sequence&quot;: 3,
+    &quot;frame&quot;: 180800,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;respond&quot;,
+    &quot;evidence&quot;: &quot;我想先判断餐桌上两处杯底水印该怎么处理。前天擦过以后已经干了四十八小时，还是乳白色的，不过没有发黑。&quot;,
+    &quot;incoming_state&quot;: &quot;silence&quot;,
+    &quot;silence_ms&quot;: 600
+  },
+  {
+    &quot;sequence&quot;: 9,
+    &quot;frame&quot;: 304364,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;stop_and_listen&quot;,
+    &quot;evidence&quot;: &quot;等一下，侧光&quot;,
+    &quot;incoming_state&quot;: &quot;speaking&quot;,
+    &quot;silence_ms&quot;: 0
+  },
+  {
+    &quot;sequence&quot;: 10,
+    &quot;frame&quot;: 304364,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_queue_discard&quot;,
+    &quot;response_id&quot;: &quot;A001&quot;,
+    &quot;reason&quot;: &quot;semantic listener requested stop on heard input&quot;,
+    &quot;discarded_audio_frames&quot;: 798777,
+    &quot;discarded_text_chars&quot;: 228,
+    &quot;provider_request_cancelled&quot;: false,
+    &quot;native_stop_latency_measured&quot;: false
+  },
+  {
+    &quot;sequence&quot;: 13,
+    &quot;frame&quot;: 396118,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;respond&quot;,
+    &quot;evidence&quot;: &quot;侧光下如果原来的光泽还是连着的，这能说明水印在哪一层吗？&quot;,
+    &quot;incoming_state&quot;: &quot;silence&quot;,
+    &quot;silence_ms&quot;: 600
+  },
+  {
+    &quot;sequence&quot;: 18,
+    &quot;frame&quot;: 1185556,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;respond&quot;,
+    &quot;evidence&quot;: &quot;能帮我把这些情况一起分类吗？&quot;,
+    &quot;incoming_state&quot;: &quot;silence&quot;,
+    &quot;silence_ms&quot;: 600
+  },
+  {
+    &quot;sequence&quot;: 21,
+    &quot;frame&quot;: 1430822,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;continue_speaking&quot;,
+    &quot;evidence&quot;: &quot;嗯。&quot;,
+    &quot;incoming_state&quot;: &quot;speaking&quot;,
+    &quot;silence_ms&quot;: 0
+  },
+  {
+    &quot;sequence&quot;: 23,
+    &quot;frame&quot;: 1433465,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;continue_speaking&quot;,
+    &quot;evidence&quot;: &quot;嗯。&quot;,
+    &quot;incoming_state&quot;: &quot;silence&quot;,
+    &quot;silence_ms&quot;: 0
+  },
+  {
+    &quot;sequence&quot;: 24,
+    &quot;frame&quot;: 1433465,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_backchannel_outcome&quot;,
+    &quot;owner_turn_id&quot;: &quot;U03&quot;,
+    &quot;action&quot;: &quot;backchannel&quot;,
+    &quot;plan&quot;: {
+      &quot;text&quot;: &quot;嗯。&quot;,
+      &quot;trigger_anchor&quot;: &quot;助手已说明连续光泽的水印更可能属于涂层发白时&quot;
+    },
+    &quot;pending_unchanged&quot;: true
+  },
+  {
+    &quot;sequence&quot;: 28,
+    &quot;frame&quot;: 2239334,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;respond&quot;,
+    &quot;evidence&quot;: &quot;那条能轻微挂到指甲的，是不是就必须用砂纸磨掉？&quot;,
+    &quot;incoming_state&quot;: &quot;silence&quot;,
+    &quot;silence_ms&quot;: 600
+  },
+  {
+    &quot;sequence&quot;: 33,
+    &quot;frame&quot;: 3387085,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;respond&quot;,
+    &quot;evidence&quot;: &quot;长边附近还有一块大约三乘两厘米的掉漆，已经露出偏浅的木头，不过周围没有大片翘起来。我手里只有240目、400目、600目砂纸、手工打磨块和半罐木蜡油；油罐上写着只适用于裸木或彻底去除旧涂层的木材。&quot;,
+    &quot;incoming_state&quot;: &quot;silence&quot;,
+    &quot;silence_ms&quot;: 600
+  },
+  {
+    &quot;sequence&quot;: 54,
+    &quot;frame&quot;: 3992014,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;continue_speaking&quot;,
+    &quot;evidence&quot;: &quot;明白。&quot;,
+    &quot;incoming_state&quot;: &quot;speaking&quot;,
+    &quot;silence_ms&quot;: 0
+  },
+  {
+    &quot;sequence&quot;: 56,
+    &quot;frame&quot;: 3997326,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;continue_speaking&quot;,
+    &quot;evidence&quot;: &quot;明白。&quot;,
+    &quot;incoming_state&quot;: &quot;silence&quot;,
+    &quot;silence_ms&quot;: 0
+  },
+  {
+    &quot;sequence&quot;: 57,
+    &quot;frame&quot;: 3997326,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_backchannel_outcome&quot;,
+    &quot;owner_turn_id&quot;: &quot;U05&quot;,
+    &quot;action&quot;: &quot;backchannel&quot;,
+    &quot;plan&quot;: {
+      &quot;text&quot;: &quot;明白。&quot;,
+      &quot;trigger_anchor&quot;: &quot;助手已说明木蜡油不能直接用于现有聚氨酯涂层时&quot;
+    },
+    &quot;pending_unchanged&quot;: true
+  },
+  {
+    &quot;sequence&quot;: 76,
+    &quot;frame&quot;: 4565260,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;stop_and_listen&quot;,
+    &quot;evidence&quot;: &quot;先不用细讲两&quot;,
+    &quot;incoming_state&quot;: &quot;speaking&quot;,
+    &quot;silence_ms&quot;: 0
+  },
+  {
+    &quot;sequence&quot;: 77,
+    &quot;frame&quot;: 4565260,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_queue_discard&quot;,
+    &quot;response_id&quot;: &quot;A005&quot;,
+    &quot;reason&quot;: &quot;semantic listener requested stop on heard input&quot;,
+    &quot;discarded_audio_frames&quot;: 203251,
+    &quot;discarded_text_chars&quot;: 57,
+    &quot;provider_request_cancelled&quot;: false,
+    &quot;native_stop_latency_measured&quot;: false
+  },
+  {
+    &quot;sequence&quot;: 80,
+    &quot;frame&quot;: 4680566,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;respond&quot;,
+    &quot;evidence&quot;: &quot;先不用细讲两种磨法，直接告诉我，这几种砂纸够不够把整张桌面旧涂层去干净？&quot;,
+    &quot;incoming_state&quot;: &quot;silence&quot;,
+    &quot;silence_ms&quot;: 600
+  },
+  {
+    &quot;sequence&quot;: 84,
+    &quot;frame&quot;: 5060343,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;listen&quot;,
+    &quot;evidence&quot;: &quot;时间上还有个硬条件，我看一下罐身&quot;,
+    &quot;incoming_state&quot;: &quot;silence&quot;,
+    &quot;silence_ms&quot;: 400
+  },
+  {
+    &quot;sequence&quot;: 85,
+    &quot;frame&quot;: 5060343,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;intra_user_pause_observed&quot;,
+    &quot;focus_turn_id&quot;: &quot;U07&quot;,
+    &quot;pause_frames&quot;: 33600,
+    &quot;listener_decision&quot;: &quot;listen&quot;,
+    &quot;premature_response&quot;: false
+  },
+  {
+    &quot;sequence&quot;: 87,
+    &quot;frame&quot;: 5282038,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;respond&quot;,
+    &quot;evidence&quot;: &quot;薄涂后八小时才能再涂，二十四小时可轻度接触，七天完全固化。今天是周六，餐桌周一十八点就得恢复摆餐具。&quot;,
+    &quot;incoming_state&quot;: &quot;silence&quot;,
+    &quot;silence_ms&quot;: 600
+  },
+  {
+    &quot;sequence&quot;: 92,
+    &quot;frame&quot;: 5374198,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;stop_and_listen&quot;,
+    &quot;evidence&quot;: &quot;整面翻新来不&quot;,
+    &quot;incoming_state&quot;: &quot;speaking&quot;,
+    &quot;silence_ms&quot;: 0
+  },
+  {
+    &quot;sequence&quot;: 93,
+    &quot;frame&quot;: 5374198,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_queue_discard&quot;,
+    &quot;response_id&quot;: &quot;A007&quot;,
+    &quot;reason&quot;: &quot;semantic listener requested stop on heard input&quot;,
+    &quot;discarded_audio_frames&quot;: 647536,
+    &quot;discarded_text_chars&quot;: 173,
+    &quot;provider_request_cancelled&quot;: false,
+    &quot;native_stop_latency_measured&quot;: false
+  },
+  {
+    &quot;sequence&quot;: 96,
+    &quot;frame&quot;: 5519538,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;respond&quot;,
+    &quot;evidence&quot;: &quot;能不能只做点保守改善，而且别影响以后正式翻新？&quot;,
+    &quot;incoming_state&quot;: &quot;silence&quot;,
+    &quot;silence_ms&quot;: 600
+  },
+  {
+    &quot;sequence&quot;: 103,
+    &quot;frame&quot;: 6622956,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;respond&quot;,
+    &quot;evidence&quot;: &quot;我先岔开问一下安全问题。桌子搬不到阳台，只能在原位施工，不过窗洗户涤程和阳序台已结门束，都能打请开；及时取罐出身衣还物特。别写了，沾油的布不能揉成一团扔掉。&quot;,
+    &quot;incoming_state&quot;: &quot;silence&quot;,
+    &quot;silence_ms&quot;: 600
+  },
+  {
+    &quot;sequence&quot;: 106,
+    &quot;frame&quot;: 7500900,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_backchannel_not_triggered&quot;,
+    &quot;owner_turn_id&quot;: &quot;U09&quot;,
+    &quot;plan&quot;: {
+      &quot;text&quot;: &quot;嗯嗯。&quot;,
+      &quot;trigger_anchor&quot;: &quot;助手已说明室内打磨所需的通风和个人防护时&quot;
+    },
+    &quot;reason&quot;: &quot;assistant_response_finished_before_trigger&quot;
+  },
+  {
+    &quot;sequence&quot;: 109,
+    &quot;frame&quot;: 7611300,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;respond&quot;,
+    &quot;evidence&quot;: &quot;如果以后把沾油布浸水，普通带盖塑料桶能代替金属容器吗？&quot;,
+    &quot;incoming_state&quot;: &quot;silence&quot;,
+    &quot;silence_ms&quot;: 600
+  },
+  {
+    &quot;sequence&quot;: 114,
+    &quot;frame&quot;: 8421796,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;respond&quot;,
+    &quot;evidence&quot;: &quot;回到桌面吧，麻烦按顺序排一下：这个周末先做什么，整面翻新如果延期又该从哪一步开始。&quot;,
+    &quot;incoming_state&quot;: &quot;silence&quot;,
+    &quot;silence_ms&quot;: 600
+  },
+  {
+    &quot;sequence&quot;: 117,
+    &quot;frame&quot;: 8516687,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_backchannel_outcome&quot;,
+    &quot;owner_turn_id&quot;: &quot;U11&quot;,
+    &quot;action&quot;: &quot;wait&quot;,
+    &quot;plan&quot;: {
+      &quot;text&quot;: &quot;嗯。&quot;,
+      &quot;trigger_anchor&quot;: &quot;助手已梳理本周末可做的低风险处理步骤时&quot;
+    },
+    &quot;pending_unchanged&quot;: true
+  },
+  {
+    &quot;sequence&quot;: 121,
+    &quot;frame&quot;: 10844007,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;respond&quot;,
+    &quot;evidence&quot;: &quot;浅蜂蜜色和半哑光尽量保留，旧痕留一点没关系，但不能修出明显亮斑或深色块。按这个标准，你帮我定个最终方向。&quot;,
+    &quot;incoming_state&quot;: &quot;silence&quot;,
+    &quot;silence_ms&quot;: 600
+  },
+  {
+    &quot;sequence&quot;: 124,
+    &quot;frame&quot;: 10910226,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_backchannel_outcome&quot;,
+    &quot;owner_turn_id&quot;: &quot;U12&quot;,
+    &quot;action&quot;: &quot;wait&quot;,
+    &quot;plan&quot;: {
+      &quot;text&quot;: &quot;明白。&quot;,
+      &quot;trigger_anchor&quot;: &quot;助手已给出暂缓整面木蜡油翻新的总体判断时&quot;
+    },
+    &quot;pending_unchanged&quot;: true
+  },
+  {
+    &quot;sequence&quot;: 128,
+    &quot;frame&quot;: 12038426,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_listener_decision&quot;,
+    &quot;decision&quot;: &quot;ignore&quot;,
+    &quot;evidence&quot;: &quot;好，我就按这个方向安排，谢谢。&quot;,
+    &quot;incoming_state&quot;: &quot;silence&quot;,
+    &quot;silence_ms&quot;: 600
+  }
+]</pre></details>
+<p class="rx-small">这里验证连接、信息边界和音频证据。事后评分与训练数据导出属于独立环节。最终 Audit：100 分 / pass。修复、拒绝和旧版本分别保留。</p>
+<div class="rx-actions"><a class="rx-button primary" href="https://github.com/Yuanhong-Zheng/duplex-synthetic-dialogue/releases/download/workflow-20261101/sampled10-07-records.zip" download>下载本次合成交互记录 ↓</a><a class="rx-button" href="../../runtime/sampled10-07/result.json" target="_blank" rel="noopener">运行结果 JSON ↗</a><a class="rx-button" href="../../runtime/sampled10-07/integrity.json" target="_blank" rel="noopener">因果与音频完整性核验 ↗</a><a class="rx-button" href="../../runtime/sampled10-07/timeline.json" target="_blank" rel="noopener">完整采样时间轴 ↗</a></div></div></article></div><script type="application/json" id="results-explorer-data">{"view": "synthetic_rollout", "case_id": "R01-V01", "omit_canonical_case": true, "synthetic_rollout": {"public_view": true, "status": "completed", "failure_reason": "", "delivered_turns": 12, "duration_seconds": 752.401625, "interruptions": 3, "wall_seconds": 783.4261435605586, "segments": [{"speaker": "user", "audio_id": "user-001", "title": "U01 · 用户主表达", "short_label": "U01", "kind": "deliver", "kind_label": "用户主表达", "text": "我想先判断餐桌上两处杯底水印该怎么处理。前天擦过以后已经干了四十八小时，还是乳白色的，不过没有发黑。", "unplayed_text": "", "start_seconds": 0.0, "duration_seconds": 10.7, "outcome_note": "保留真实用户模型、检查器与 TTS 输出。", "files": [{"label": "用户实际输入", "path": "../../runtime/sampled10-07/user/calls/0001-generation/input.json"}, {"label": "候选检查结果", "path": "../../runtime/sampled10-07/user/calls/0002-guard/raw_response.txt"}, {"label": "用户音频 · MP3 试听", "path": "../../runtime/sampled10-07/user-speech/events/d6ea5451b7117f44a0280e5f/main.mp3"}]}, {"speaker": "assistant", "audio_id": "A001", "title": "A001 · 助手（被真正插话打断）", "short_label": "A001", "kind": "assistant", "kind_label": "助手已播前缀", "text": "看起来更像是水汽进入桌面漆层形成的白印；没有发黑，暂时不像典型的霉变或木", "unplayed_text": "材变色，但仅凭描述还不能完全确认。\n\n先别再湿擦，也不要用酒精、牙膏、食用油或强力清洁剂。可以先在不显眼处测试：隔着干棉布，用吹风机最低温、保持二三十厘米距离来回吹，每次约十秒，停下来摸一下，确保桌面不发烫。重复几轮，观察白印是否变淡；一旦漆面发黏、失去光泽或颜色改变，就立刻停止。\n\n如果完全没有变淡，或者桌面是古董、贴木皮、虫胶漆及其他不确定涂层，就不要继续加热或打磨，最好请家具修复人员判断。也请确认一下桌面材质和表面涂层，我可以再帮你缩小处理方案。", "start_seconds": 11.3, "duration_seconds": 7.72275, "outcome_note": "未播尾部未进入双方历史。", "files": [{"label": "助手实际输入", "path": "../../runtime/sampled10-07/assistant/0002-response/input.json"}, {"label": "实际已播音频 · MP3 试听", "path": "../../runtime/sampled10-07/played/A001.mp3"}, {"label": "逐词字幕", "path": "../../runtime/sampled10-07/assistant-audio/A001/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-002", "title": "U02 · 用户主表达", "short_label": "U02", "kind": "deliver", "kind_label": "用户主表达", "text": "等一下，侧光下如果原来的光泽还是连着的，这能说明水印在哪一层吗？", "unplayed_text": "", "start_seconds": 17.657375, "duration_seconds": 6.5, "outcome_note": "保留真实用户模型、检查器与 TTS 输出。", "files": [{"label": "用户实际输入", "path": "../../runtime/sampled10-07/user/calls/0003-generation/input.json"}, {"label": "候选检查结果", "path": "../../runtime/sampled10-07/user/calls/0004-guard/raw_response.txt"}, {"label": "用户音频 · MP3 试听", "path": "../../runtime/sampled10-07/user-speech/events/479220359f9cf0a5fe6178db/main.mp3"}]}, {"speaker": "assistant", "audio_id": "A002", "title": "A002 · 助手", "short_label": "A002", "kind": "assistant", "kind_label": "助手已播前缀", "text": "侧光下原来的光泽连续，而且摸起来也平整，通常说明最表面的漆膜没有明显磨损或腐蚀；乳白色更可能在透明漆层内部，或漆层与木材交界处，是受潮后产生的雾白。不过，仅凭光泽连续还不能确定具体在哪一层。要是白印会随观察角度变化，更偏向漆层内部；如果各角度都一样，边缘也很清楚，则可能更深。", "unplayed_text": "", "start_seconds": 24.757375, "duration_seconds": 31.439875, "outcome_note": "同一条回复的音频完整消费。", "files": [{"label": "助手实际输入", "path": "../../runtime/sampled10-07/assistant/0008-response/input.json"}, {"label": "实际已播音频 · MP3 试听", "path": "../../runtime/sampled10-07/played/A002.mp3"}, {"label": "逐词字幕", "path": "../../runtime/sampled10-07/assistant-audio/A002/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-003", "title": "U03 · 用户主表达", "short_label": "U03", "kind": "deliver", "kind_label": "用户主表达", "text": "我刚看了，小的那处水印还有连续光泽。桌面中央另外有四道顺着木纹的划痕，三道基本摸不出来，只有一道指甲能轻微感觉到，但都没露出浅色木头。能帮我把这些情况一起分类吗？", "unplayed_text": "", "start_seconds": 56.19725, "duration_seconds": 17.3, "outcome_note": "保留真实用户模型、检查器与 TTS 输出。", "files": [{"label": "用户实际输入", "path": "../../runtime/sampled10-07/user/calls/0005-generation/input.json"}, {"label": "候选检查结果", "path": "../../runtime/sampled10-07/user/calls/0006-guard/raw_response.txt"}, {"label": "用户音频 · MP3 试听", "path": "../../runtime/sampled10-07/user-speech/events/75301788e165daaf4908f29b/main.mp3"}]}, {"speaker": "assistant", "audio_id": "A003", "title": "A003 · 助手", "short_label": "A003", "kind": "assistant", "kind_label": "助手已播前缀", "text": "可以，先这样分类：\n\n小的杯底水印：已经干燥四十八小时，仍呈乳白色、没有发黑，侧光下光泽连续。更像是透明漆层内部或漆层与木材交界处的受潮雾白，表面漆膜暂时看不出明显破损。另一处水印的光泽、触感和颜色变化还没提供，暂时不能和小水印完全归为同一类，需要单独确认。\n\n中央四道顺木纹的划痕：三道基本摸不出来，可归为表层细划痕或光泽划伤；另有一道指甲能轻微感觉到，属于稍深的漆膜划痕。四道都没有露出浅色木头，所以目前没有证据表明已经划穿漆层伤到木材。\n\n总体上，可以先分成“受潮形成的白印”和“未露木的漆面划痕”两组，不建议把划痕当成水印一起擦磨处理。", "unplayed_text": "", "start_seconds": 74.09725, "duration_seconds": 60.061125, "outcome_note": "同一条回复的音频完整消费。", "files": [{"label": "助手实际输入", "path": "../../runtime/sampled10-07/assistant/0010-response/input.json"}, {"label": "实际已播音频 · MP3 试听", "path": "../../runtime/sampled10-07/played/A003.mp3"}, {"label": "逐词字幕", "path": "../../runtime/sampled10-07/assistant-audio/A003/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-004", "title": "U03 · 附和 · 用户附和 · 不接管话轮", "short_label": "U03 · 附和", "kind": "backchannel", "kind_label": "用户附和 · 不接管话轮", "text": "嗯。", "unplayed_text": "", "start_seconds": 88.8716875, "duration_seconds": 0.719875, "outcome_note": "内部事件类型没有传给助手；助手应根据实际听到的内容继续原播报。", "files": [{"label": "用户实际输入", "path": "../../runtime/sampled10-07/user/calls/0007-generation/input.json"}, {"label": "候选检查结果", "path": "../../runtime/sampled10-07/user/calls/0008-guard/raw_response.txt"}, {"label": "用户音频 · MP3 试听", "path": "../../runtime/sampled10-07/user-speech/events/096a782ed02c9e1d16400c9e/main.mp3"}]}, {"speaker": "user", "audio_id": "user-005", "title": "U04 · 用户主表达", "short_label": "U04", "kind": "deliver", "kind_label": "用户主表达", "text": "那条能轻微挂到指甲的，是不是就必须用砂纸磨掉？", "unplayed_text": "", "start_seconds": 134.158375, "duration_seconds": 5.2, "outcome_note": "保留真实用户模型、检查器与 TTS 输出。", "files": [{"label": "用户实际输入", "path": "../../runtime/sampled10-07/user/calls/0009-generation/input.json"}, {"label": "候选检查结果", "path": "../../runtime/sampled10-07/user/calls/0010-guard/raw_response.txt"}, {"label": "用户音频 · MP3 试听", "path": "../../runtime/sampled10-07/user-speech/events/74fde50f65ac2e401579d4d0/main.mp3"}]}, {"speaker": "assistant", "audio_id": "A004", "title": "A004 · 助手", "short_label": "A004", "kind": "assistant", "kind_label": "助手已播前缀", "text": "不一定，而且不建议直接上砂纸。它只是轻微挂指甲、又没露出木头，说明更可能是较深一点的漆膜划痕，但未必已经穿透漆层。\n\n砂纸所谓“磨掉”，其实是把周围漆面一起磨低，很容易留下失光、凹陷或色差。先清洁后观察；如果不明显，可以保留，或根据桌面的漆种做局部抛光、补透明漆。漆种不清楚时，先别自行打磨，也不要把水印区域一起磨。若确实要做到几乎看不见，最好先确认饰面类型，再让家具修复人员判断是填补还是局部研磨。", "unplayed_text": "", "start_seconds": 139.958375, "duration_seconds": 45.6344375, "outcome_note": "同一条回复的音频完整消费。", "files": [{"label": "助手实际输入", "path": "../../runtime/sampled10-07/assistant/0020-response/input.json"}, {"label": "实际已播音频 · MP3 试听", "path": "../../runtime/sampled10-07/played/A004.mp3"}, {"label": "逐词字幕", "path": "../../runtime/sampled10-07/assistant-audio/A004/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-006", "title": "U05 · 用户主表达", "short_label": "U05", "kind": "deliver", "kind_label": "用户主表达", "text": "桌底标签写的是橡胶木实木、聚氨酯透明涂装。长边附近还有一块大约三乘两厘米的掉漆，已经露出偏浅的木头，不过周围没有大片翘起来。我手里只有240目、400目、600目砂纸、手工打磨块和半罐木蜡油；油罐上写着只适用于裸木或彻底去除旧涂层的木材。", "unplayed_text": "", "start_seconds": 185.5928125, "duration_seconds": 25.5, "outcome_note": "保留真实用户模型、检查器与 TTS 输出。", "files": [{"label": "用户实际输入", "path": "../../runtime/sampled10-07/user/calls/0011-generation/input.json"}, {"label": "候选检查结果", "path": "../../runtime/sampled10-07/user/calls/0012-guard/raw_response.txt"}, {"label": "用户音频 · MP3 试听", "path": "../../runtime/sampled10-07/user-speech/events/fb1de7faebe5b4f8f90317b9/main.mp3"}]}, {"speaker": "assistant", "audio_id": "A005", "title": "A005 · 助手（被真正插话打断）", "short_label": "A005", "kind": "assistant", "kind_label": "助手已播前缀", "text": "这样可以再分成三类：\n\n小杯底白印属于聚氨酯透明漆层内或漆层交界处的受潮雾白，目前表面光泽连续，不要打磨。四道划痕仍属于未露木的漆面划痕，那道轻微挂指甲的也不等于必须用砂纸。\n\n长边三乘两厘米的部位则是明确的漆层缺失，已经露出木材，但周围没有大片翘起，暂时看不出大范围剥离。它比白印和划痕更需要优先防水、防污。\n\n你现有的木蜡油不适合直接补这块，因为周围是聚氨酯漆，而且罐身也明确要求裸木或彻底除掉旧涂层；局部涂上可能产生附着不良、颜色变深和明显接边。二百四十到六百目的砂纸对这种透明漆局部修补也偏粗，尤其不要用打磨块直接磨白印、划痕或掉漆边缘，容易把缺口扩大并磨出一圈失光区。\n\n现在先保持露木处干燥，避免湿擦、酒精、清洁剂和热杯接触，也先别上木蜡油。后续较稳妥", "unplayed_text": "的是确认并使用与原涂层相容的透明聚氨酯修补材料，做小范围封闭；如果在意平整度和色差，交给家具修复人员处理会更安全。", "start_seconds": 211.6928125, "duration_seconds": 73.6359375, "outcome_note": "未播尾部未进入双方历史。", "files": [{"label": "助手实际输入", "path": "../../runtime/sampled10-07/assistant/0022-response/input.json"}, {"label": "实际已播音频 · MP3 试听", "path": "../../runtime/sampled10-07/played/A005.mp3"}, {"label": "逐词字幕", "path": "../../runtime/sampled10-07/assistant-audio/A005/url-delivery/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-007", "title": "U05 · 附和 · 用户附和 · 不接管话轮", "short_label": "U05 · 附和", "kind": "backchannel", "kind_label": "用户附和 · 不接管话轮", "text": "明白。", "unplayed_text": "", "start_seconds": 248.732875, "duration_seconds": 1.1, "outcome_note": "内部事件类型没有传给助手；助手应根据实际听到的内容继续原播报。", "files": [{"label": "用户实际输入", "path": "../../runtime/sampled10-07/user/calls/0013-generation/input.json"}, {"label": "候选检查结果", "path": "../../runtime/sampled10-07/user/calls/0014-guard/raw_response.txt"}, {"label": "用户音频 · MP3 试听", "path": "../../runtime/sampled10-07/user-speech/events/4cef3119d9cc42d46d40884a/main.mp3"}]}, {"speaker": "user", "audio_id": "user-009", "title": "U06 · 用户主表达", "short_label": "U06", "kind": "deliver", "kind_label": "用户主表达", "text": "先不用细讲两种磨法，直接告诉我，这几种砂纸够不够把整张桌面旧涂层去干净？", "unplayed_text": "", "start_seconds": 283.835375, "duration_seconds": 8.1, "outcome_note": "保留真实用户模型、检查器与 TTS 输出。", "files": [{"label": "用户实际输入", "path": "../../runtime/sampled10-07/user/calls/0017-generation/input.json"}, {"label": "候选检查结果", "path": "../../runtime/sampled10-07/user/calls/0018-guard/raw_response.txt"}, {"label": "用户音频 · MP3 试听", "path": "../../runtime/sampled10-07/user-speech/events/f46f4ce9add68b47b767732d/main.mp3"}]}, {"speaker": "assistant", "audio_id": "A006", "title": "A006 · 助手", "short_label": "A006", "kind": "assistant", "kind_label": "助手已播前缀", "text": "不够。二百四十目起步太细，去除整张桌面的聚氨酯旧漆会很慢、容易堵砂纸，也可能去除不均；四百目和六百目主要用于精细处理，不适合脱漆。通常还需要八十到一百二十目这类较粗砂纸，再逐级细化。", "unplayed_text": "", "start_seconds": 292.535375, "duration_seconds": 20.2781875, "outcome_note": "同一条回复的音频完整消费。", "files": [{"label": "助手实际输入", "path": "../../runtime/sampled10-07/assistant/0078-response/input.json"}, {"label": "实际已播音频 · MP3 试听", "path": "../../runtime/sampled10-07/played/A006.mp3"}, {"label": "逐词字幕", "path": "../../runtime/sampled10-07/assistant-audio/A006/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-010", "title": "U07 · 用户主表达", "short_label": "U07", "kind": "deliver", "kind_label": "用户主表达", "text": "时间上还有个硬条件，我看一下罐身，它写着薄涂后八小时才能再涂，二十四小时可轻度接触，七天完全固化。今天是周六，餐桌周一十八点就得恢复摆餐具。", "unplayed_text": "", "start_seconds": 312.8135625, "duration_seconds": 16.7138125, "outcome_note": "保留真实用户模型、检查器与 TTS 输出。", "files": [{"label": "用户实际输入", "path": "../../runtime/sampled10-07/user/calls/0019-generation/input.json"}, {"label": "候选检查结果", "path": "../../runtime/sampled10-07/user/calls/0020-guard/raw_response.txt"}, {"label": "用户音频 · MP3 试听", "path": "../../runtime/sampled10-07/user-speech/events/eab5d805b41be3276e7c5061/main.mp3"}]}, {"speaker": "assistant", "audio_id": "A007", "title": "A007 · 助手（被真正插话打断）", "short_label": "A007", "kind": "assistant", "kind_label": "助手已播前缀", "text": "按这个时间表，来不及完成整桌除漆、涂木蜡油并充分固", "unplayed_text": "化。即使今天薄涂，周一十八点也只达到“轻度接触”阶段，远没到七天完全固化；如果涂第二遍，时间还要从后一次涂刷重新算，而且你现有砂纸也不适合整桌脱漆。\n\n所以这周末不要开工整桌翻新，也别在掉漆处局部上木蜡油。周一可以维持现状谨慎使用：露木处保持干燥，上方用干燥、洁净、不易渗水的隔垫保护，避免热杯、汤水和湿擦；正式修复等能连续停用至少七天时再安排。", "start_seconds": 330.127375, "duration_seconds": 5.76, "outcome_note": "未播尾部未进入双方历史。", "files": [{"label": "助手实际输入", "path": "../../runtime/sampled10-07/assistant/0081-response/input.json"}, {"label": "实际已播音频 · MP3 试听", "path": "../../runtime/sampled10-07/played/A007.mp3"}, {"label": "逐词字幕", "path": "../../runtime/sampled10-07/assistant-audio/A007/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-011", "title": "U08 · 用户主表达", "short_label": "U08", "kind": "deliver", "kind_label": "用户主表达", "text": "整面翻新来不及我接受，可也不想这周末什么都不做。能不能只做点保守改善，而且别影响以后正式翻新？", "unplayed_text": "", "start_seconds": 334.479375, "duration_seconds": 9.89175, "outcome_note": "保留真实用户模型、检查器与 TTS 输出。", "files": [{"label": "用户实际输入", "path": "../../runtime/sampled10-07/user/calls/0021-generation/input.json"}, {"label": "候选检查结果", "path": "../../runtime/sampled10-07/user/calls/0022-guard/raw_response.txt"}, {"label": "用户音频 · MP3 试听", "path": "../../runtime/sampled10-07/user-speech/events/039c0270238bfb6d3cad1cfd/main.mp3"}]}, {"speaker": "assistant", "audio_id": "A008", "title": "A008 · 助手", "short_label": "A008", "kind": "assistant", "kind_label": "助手已播前缀", "text": "可以。这个周末只做“清洁、干燥和隔离”，不做不可逆处理。\n\n完整漆面用微湿的软布轻擦，马上擦干；露木掉漆处只用干布除尘，不沾水。白印、划痕和掉漆处都先不打磨、不加热，也不涂木蜡油、抛光剂或含硅家具蜡，掉漆边缘不要撕、刮。这样不会给以后正式翻新增加太多清理工作。\n\n周一摆餐具时，用不带胶的桌垫、杯垫或桌面保护垫做物理隔离，尤其盖住露木处，但不要把胶带贴在桌面上。用餐后及时移开垫子并保持通风；有液体洒出就立刻吸干，不要来回擦进缺口。\n\n这能改善使用风险和外观整洁度，但白印、划痕和掉漆本身这周末先不修。", "unplayed_text": "", "start_seconds": 344.971125, "duration_seconds": 55.363625, "outcome_note": "同一条回复的音频完整消费。", "files": [{"label": "助手实际输入", "path": "../../runtime/sampled10-07/assistant/0086-response/input.json"}, {"label": "实际已播音频 · MP3 试听", "path": "../../runtime/sampled10-07/played/A008.mp3"}, {"label": "逐词字幕", "path": "../../runtime/sampled10-07/assistant-audio/A008/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-012", "title": "U09 · 用户主表达", "short_label": "U09", "kind": "deliver", "kind_label": "用户主表达", "text": "我先岔开问一下安全问题。桌子搬不到阳台，只能在原位施工，不过窗户和阳台门都能打开；罐身还特别写了，沾油的布不能揉成一团扔掉。", "unplayed_text": "", "start_seconds": 400.33475, "duration_seconds": 13.0, "outcome_note": "保留真实用户模型、检查器与 TTS 输出。", "files": [{"label": "用户实际输入", "path": "../../runtime/sampled10-07/user/calls/0023-generation/input.json"}, {"label": "候选检查结果", "path": "../../runtime/sampled10-07/user/calls/0024-guard/raw_response.txt"}, {"label": "用户音频 · MP3 试听", "path": "../../runtime/sampled10-07/user-speech/events/125297f9060b3f180a1fcadd/main.mp3"}]}, {"speaker": "user", "audio_id": "input-e6c4680c3475", "title": "U09 · 带词的机器播报", "short_label": "U09 · 旁语", "kind": "side_speech", "kind_label": "带词的机器播报", "text": "洗涤程序已结束，请及时取出衣物。", "unplayed_text": "", "start_seconds": 406.6494375, "duration_seconds": 3.2740625, "outcome_note": "发生于本轮用户发言期间。旁语单独衰减，主用户、附和与助手保持原音量。", "files": [{"label": "用户实际输入", "path": "../../runtime/sampled10-07/user/calls/0023-generation/input.json"}, {"label": "候选检查结果", "path": "../../runtime/sampled10-07/user/calls/0024-guard/raw_response.txt"}, {"label": "用户音频 · MP3 试听", "path": "../../runtime/sampled10-07/user-speech/events/125297f9060b3f180a1fcadd/side-00.mp3"}, {"label": "旁语与附和执行核验", "path": "../../sampled10-07-interaction-proof.json"}]}, {"speaker": "assistant", "audio_id": "A009", "title": "A009 · 助手", "short_label": "A009", "kind": "assistant", "kind_label": "助手已播前缀", "text": "对，罐身这条是在防止沾木蜡油的布自发升温甚至起火。不要揉成团、堆放，也不要直接扔进普通垃圾桶，更不能放进洗衣机或烘干机。\n\n用完后按罐身说明处理；若说明不完整，较稳妥的是把油布完全浸入水中，装进带盖金属容器，暂时放在远离火源和儿童宠物的位置，再按当地含油废弃物规定处置。不要把它摊在室内晾。\n\n另外，原位施工即使门窗都能打开，也不等于一定安全。以后正式翻新前还要核对罐身或安全数据表里的通风、防火和呼吸防护要求；施工期间停用明火、燃气灶和会产生火花的设备，并隔离打磨粉尘。就这个周末而言，仍建议不开罐、不涂油。", "unplayed_text": "", "start_seconds": 413.93475, "duration_seconds": 54.8715, "outcome_note": "同一条回复的音频完整消费。", "files": [{"label": "助手实际输入", "path": "../../runtime/sampled10-07/assistant/0088-response/input.json"}, {"label": "实际已播音频 · MP3 试听", "path": "../../runtime/sampled10-07/played/A009.mp3"}, {"label": "逐词字幕", "path": "../../runtime/sampled10-07/assistant-audio/A009/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-013", "title": "U10 · 用户主表达", "short_label": "U10", "kind": "deliver", "kind_label": "用户主表达", "text": "如果以后把沾油布浸水，普通带盖塑料桶能代替金属容器吗？", "unplayed_text": "", "start_seconds": 468.80625, "duration_seconds": 6.3, "outcome_note": "保留真实用户模型、检查器与 TTS 输出。", "files": [{"label": "用户实际输入", "path": "../../runtime/sampled10-07/user/calls/0025-generation/input.json"}, {"label": "候选检查结果", "path": "../../runtime/sampled10-07/user/calls/0026-guard/raw_response.txt"}, {"label": "用户音频 · MP3 试听", "path": "../../runtime/sampled10-07/user-speech/events/e4afcf69330291639a49f52a/main.mp3"}]}, {"speaker": "assistant", "audio_id": "A010", "title": "A010 · 助手", "short_label": "A010", "kind": "assistant", "kind_label": "助手已播前缀", "text": "不建议把普通带盖塑料桶当作金属容器的等同替代品。塑料桶本身可燃，也可能不耐木蜡油中的溶剂；是否能用要看罐身说明和桶的材质标识。\n\n在等待处置时，应优先用带严密金属盖的金属容器，让布完全浸没在水中，远离热源和火源；这只是临时存放，不要长期留在室内。最终按产品说明和当地含油废弃物要求处理。若只能用塑料桶，先不要自行认定安全，最好向产品厂家或当地消防、废弃物处理机构确认。", "unplayed_text": "", "start_seconds": 475.70625, "duration_seconds": 39.156, "outcome_note": "同一条回复的音频完整消费。", "files": [{"label": "助手实际输入", "path": "../../runtime/sampled10-07/assistant/0115-response/input.json"}, {"label": "实际已播音频 · MP3 试听", "path": "../../runtime/sampled10-07/played/A010.mp3"}, {"label": "逐词字幕", "path": "../../runtime/sampled10-07/assistant-audio/A010/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-014", "title": "U11 · 用户主表达", "short_label": "U11", "kind": "deliver", "kind_label": "用户主表达", "text": "好，安全这块我记下了。回到桌面吧，麻烦按顺序排一下：这个周末先做什么，整面翻新如果延期又该从哪一步开始。", "unplayed_text": "", "start_seconds": 514.86225, "duration_seconds": 10.9, "outcome_note": "保留真实用户模型、检查器与 TTS 输出。", "files": [{"label": "用户实际输入", "path": "../../runtime/sampled10-07/user/calls/0027-generation/input.json"}, {"label": "候选检查结果", "path": "../../runtime/sampled10-07/user/calls/0028-guard/raw_response.txt"}, {"label": "用户音频 · MP3 试听", "path": "../../runtime/sampled10-07/user-speech/events/1babdde8f71b58097fbfcc61/main.mp3"}]}, {"speaker": "assistant", "audio_id": "A011", "title": "A011 · 助手", "short_label": "A011", "kind": "assistant", "kind_label": "助手已播前缀", "text": "按顺序来。\n\n这个周末：\n\n第一，只处理使用环境。把完整漆面用微湿软布轻擦，立即擦干；露木掉漆处只用干布除尘。\n\n第二，记录现状。给两处白印、四道划痕和三乘两厘米的掉漆拍照，方便以后比较和规划修补。\n\n第三，不打磨、不加热、不撕掉漆边缘，也不开木蜡油。\n\n第四，周一使用前铺不带胶的保护垫，重点隔开露木处；洒水就立即吸干，用完及时移开垫子通风。\n\n整面翻新延期后，再从这些步骤开始：\n\n第一，先核对木蜡油的完整说明和安全要求，确认它适合橡胶木餐桌，以及食品接触、通风、涂布温湿度和废弃油布的规定。\n\n第二，预留足够时间。按罐身标注，最后一遍后至少二十四小时才能轻度接触，七天才完全固化；餐桌恢复正常使用应按更保守的完全固化时间安排。\n\n第三，备齐合适的除漆、打磨、集尘和防护用品。你现有的二百四十、四百、六百目不足以完成整面去除聚氨酯旧漆，具体起始目数和递进顺序要结合采用的除漆方式及产品说明确定。\n\n第四，先在不显眼处做小范围测试，确认能均匀除掉聚氨酯漆，又不会造成明显色差或过度磨低。\n\n第五，正式施工时整面均匀去除旧涂层，而不是只磨白印、划痕和掉漆块。确认旧漆彻底去除后，再处理残余划痕和边缘高低差。\n\n第六，按木蜡油要求完成最终细磨和除尘，再薄涂；每遍至少间隔罐身写的八小时，不擅自缩短。\n\n第七，最后留足七天固化期，再恢复餐具、湿擦和正常用餐。这样对白印、划痕和掉漆是一次统一处理，也比较不容易留下局部接边。", "unplayed_text": "", "start_seconds": 526.36225, "duration_seconds": 137.4881875, "outcome_note": "同一条回复的音频完整消费。", "files": [{"label": "助手实际输入", "path": "../../runtime/sampled10-07/assistant/0117-response/input.json"}, {"label": "实际已播音频 · MP3 试听", "path": "../../runtime/sampled10-07/played/A011.mp3"}, {"label": "逐词字幕", "path": "../../runtime/sampled10-07/assistant-audio/A011/url-delivery/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-016", "title": "U12 · 用户主表达", "short_label": "U12", "kind": "deliver", "kind_label": "用户主表达", "text": "我把外观标准也说清楚吧：浅蜂蜜色和半哑光尽量保留，旧痕留一点没关系，但不能修出明显亮斑或深色块。按这个标准，你帮我定个最终方向。", "unplayed_text": "", "start_seconds": 663.8504375, "duration_seconds": 13.3, "outcome_note": "保留真实用户模型、检查器与 TTS 输出。", "files": [{"label": "用户实际输入", "path": "../../runtime/sampled10-07/user/calls/0031-generation/input.json"}, {"label": "候选检查结果", "path": "../../runtime/sampled10-07/user/calls/0032-guard/raw_response.txt"}, {"label": "用户音频 · MP3 试听", "path": "../../runtime/sampled10-07/user-speech/events/170409295c6ee26a1cbb8d3a/main.mp3"}]}, {"speaker": "assistant", "audio_id": "A012", "title": "A012 · 助手", "short_label": "A012", "kind": "assistant", "kind_label": "助手已播前缀", "text": "按你的外观标准，最终方向定为“先保守使用，之后整张桌面统一翻新”，不要做局部打磨、局部抛光或点涂木蜡油。因为这些最容易形成你不接受的亮斑、深色块和接边。\n\n正式翻新时，优先延续原来的聚氨酯透明涂装体系，选择适用于餐桌的半哑光产品，并先在桌底隐蔽处试样。尤其要先确认浅蜂蜜色来自木材本身、旧漆老化，还是另有着色层；彻底除漆后颜色可能变浅，不能预先保证原色不变。必要时通过整面均匀调色恢复，而不是局部补深。\n\n你现有的木蜡油暂不作为最终方案，因为它在裸木和残留旧漆上的吸收差异，较容易造成深浅不一。若特别重视保留现有颜色和光泽，最好让修复人员先做色泽样板。旧白印和细划痕可以允许少量保留，重点是整面色泽均匀、半哑光一致，并把露木区域重新封闭。", "unplayed_text": "", "start_seconds": 677.7504375, "duration_seconds": 70.777125, "outcome_note": "同一条回复的音频完整消费。", "files": [{"label": "助手实际输入", "path": "../../runtime/sampled10-07/assistant/0122-response/input.json"}, {"label": "实际已播音频 · MP3 试听", "path": "../../runtime/sampled10-07/played/A012.mp3"}, {"label": "逐词字幕", "path": "../../runtime/sampled10-07/assistant-audio/A012/url-delivery/subtitle.json"}]}, {"speaker": "user", "audio_id": "user-018", "title": "U12 · 用户告别", "short_label": "U12", "kind": "end", "kind_label": "用户告别", "text": "好，我就按这个方向安排，谢谢。", "unplayed_text": "", "start_seconds": 748.5275625, "duration_seconds": 3.2740625, "outcome_note": "保留真实用户模型、检查器与 TTS 输出。", "files": [{"label": "用户实际输入", "path": "../../runtime/sampled10-07/user/calls/0035-generation/input.json"}, {"label": "候选检查结果", "path": "../../runtime/sampled10-07/user/calls/0036-guard/raw_response.txt"}, {"label": "用户音频 · MP3 试听", "path": "../../runtime/sampled10-07/user-speech/events/0d7276fbb66da63e13461aec/main.mp3"}]}], "audio_path": "../../runtime/sampled10-07/dialogue-stereo.mp3", "result_path": "../../runtime/sampled10-07/result.json", "integrity_path": "../../runtime/sampled10-07/integrity.json", "timeline_path": "../../runtime/sampled10-07/timeline.json", "archive_path": "https://github.com/Yuanhong-Zheng/duplex-synthetic-dialogue/releases/download/workflow-20261101/sampled10-07-records.zip", "event_summary": "[\n  {\n    \"sequence\": 3,\n    \"frame\": 180800,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"respond\",\n    \"evidence\": \"我想先判断餐桌上两处杯底水印该怎么处理。前天擦过以后已经干了四十八小时，还是乳白色的，不过没有发黑。\",\n    \"incoming_state\": \"silence\",\n    \"silence_ms\": 600\n  },\n  {\n    \"sequence\": 9,\n    \"frame\": 304364,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"stop_and_listen\",\n    \"evidence\": \"等一下，侧光\",\n    \"incoming_state\": \"speaking\",\n    \"silence_ms\": 0\n  },\n  {\n    \"sequence\": 10,\n    \"frame\": 304364,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_queue_discard\",\n    \"response_id\": \"A001\",\n    \"reason\": \"semantic listener requested stop on heard input\",\n    \"discarded_audio_frames\": 798777,\n    \"discarded_text_chars\": 228,\n    \"provider_request_cancelled\": false,\n    \"native_stop_latency_measured\": false\n  },\n  {\n    \"sequence\": 13,\n    \"frame\": 396118,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"respond\",\n    \"evidence\": \"侧光下如果原来的光泽还是连着的，这能说明水印在哪一层吗？\",\n    \"incoming_state\": \"silence\",\n    \"silence_ms\": 600\n  },\n  {\n    \"sequence\": 18,\n    \"frame\": 1185556,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"respond\",\n    \"evidence\": \"能帮我把这些情况一起分类吗？\",\n    \"incoming_state\": \"silence\",\n    \"silence_ms\": 600\n  },\n  {\n    \"sequence\": 21,\n    \"frame\": 1430822,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"continue_speaking\",\n    \"evidence\": \"嗯。\",\n    \"incoming_state\": \"speaking\",\n    \"silence_ms\": 0\n  },\n  {\n    \"sequence\": 23,\n    \"frame\": 1433465,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"continue_speaking\",\n    \"evidence\": \"嗯。\",\n    \"incoming_state\": \"silence\",\n    \"silence_ms\": 0\n  },\n  {\n    \"sequence\": 24,\n    \"frame\": 1433465,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_backchannel_outcome\",\n    \"owner_turn_id\": \"U03\",\n    \"action\": \"backchannel\",\n    \"plan\": {\n      \"text\": \"嗯。\",\n      \"trigger_anchor\": \"助手已说明连续光泽的水印更可能属于涂层发白时\"\n    },\n    \"pending_unchanged\": true\n  },\n  {\n    \"sequence\": 28,\n    \"frame\": 2239334,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"respond\",\n    \"evidence\": \"那条能轻微挂到指甲的，是不是就必须用砂纸磨掉？\",\n    \"incoming_state\": \"silence\",\n    \"silence_ms\": 600\n  },\n  {\n    \"sequence\": 33,\n    \"frame\": 3387085,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"respond\",\n    \"evidence\": \"长边附近还有一块大约三乘两厘米的掉漆，已经露出偏浅的木头，不过周围没有大片翘起来。我手里只有240目、400目、600目砂纸、手工打磨块和半罐木蜡油；油罐上写着只适用于裸木或彻底去除旧涂层的木材。\",\n    \"incoming_state\": \"silence\",\n    \"silence_ms\": 600\n  },\n  {\n    \"sequence\": 54,\n    \"frame\": 3992014,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"continue_speaking\",\n    \"evidence\": \"明白。\",\n    \"incoming_state\": \"speaking\",\n    \"silence_ms\": 0\n  },\n  {\n    \"sequence\": 56,\n    \"frame\": 3997326,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"continue_speaking\",\n    \"evidence\": \"明白。\",\n    \"incoming_state\": \"silence\",\n    \"silence_ms\": 0\n  },\n  {\n    \"sequence\": 57,\n    \"frame\": 3997326,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_backchannel_outcome\",\n    \"owner_turn_id\": \"U05\",\n    \"action\": \"backchannel\",\n    \"plan\": {\n      \"text\": \"明白。\",\n      \"trigger_anchor\": \"助手已说明木蜡油不能直接用于现有聚氨酯涂层时\"\n    },\n    \"pending_unchanged\": true\n  },\n  {\n    \"sequence\": 76,\n    \"frame\": 4565260,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"stop_and_listen\",\n    \"evidence\": \"先不用细讲两\",\n    \"incoming_state\": \"speaking\",\n    \"silence_ms\": 0\n  },\n  {\n    \"sequence\": 77,\n    \"frame\": 4565260,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_queue_discard\",\n    \"response_id\": \"A005\",\n    \"reason\": \"semantic listener requested stop on heard input\",\n    \"discarded_audio_frames\": 203251,\n    \"discarded_text_chars\": 57,\n    \"provider_request_cancelled\": false,\n    \"native_stop_latency_measured\": false\n  },\n  {\n    \"sequence\": 80,\n    \"frame\": 4680566,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"respond\",\n    \"evidence\": \"先不用细讲两种磨法，直接告诉我，这几种砂纸够不够把整张桌面旧涂层去干净？\",\n    \"incoming_state\": \"silence\",\n    \"silence_ms\": 600\n  },\n  {\n    \"sequence\": 84,\n    \"frame\": 5060343,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"listen\",\n    \"evidence\": \"时间上还有个硬条件，我看一下罐身\",\n    \"incoming_state\": \"silence\",\n    \"silence_ms\": 400\n  },\n  {\n    \"sequence\": 85,\n    \"frame\": 5060343,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"intra_user_pause_observed\",\n    \"focus_turn_id\": \"U07\",\n    \"pause_frames\": 33600,\n    \"listener_decision\": \"listen\",\n    \"premature_response\": false\n  },\n  {\n    \"sequence\": 87,\n    \"frame\": 5282038,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"respond\",\n    \"evidence\": \"薄涂后八小时才能再涂，二十四小时可轻度接触，七天完全固化。今天是周六，餐桌周一十八点就得恢复摆餐具。\",\n    \"incoming_state\": \"silence\",\n    \"silence_ms\": 600\n  },\n  {\n    \"sequence\": 92,\n    \"frame\": 5374198,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"stop_and_listen\",\n    \"evidence\": \"整面翻新来不\",\n    \"incoming_state\": \"speaking\",\n    \"silence_ms\": 0\n  },\n  {\n    \"sequence\": 93,\n    \"frame\": 5374198,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_queue_discard\",\n    \"response_id\": \"A007\",\n    \"reason\": \"semantic listener requested stop on heard input\",\n    \"discarded_audio_frames\": 647536,\n    \"discarded_text_chars\": 173,\n    \"provider_request_cancelled\": false,\n    \"native_stop_latency_measured\": false\n  },\n  {\n    \"sequence\": 96,\n    \"frame\": 5519538,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"respond\",\n    \"evidence\": \"能不能只做点保守改善，而且别影响以后正式翻新？\",\n    \"incoming_state\": \"silence\",\n    \"silence_ms\": 600\n  },\n  {\n    \"sequence\": 103,\n    \"frame\": 6622956,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"respond\",\n    \"evidence\": \"我先岔开问一下安全问题。桌子搬不到阳台，只能在原位施工，不过窗洗户涤程和阳序台已结门束，都能打请开；及时取罐出身衣还物特。别写了，沾油的布不能揉成一团扔掉。\",\n    \"incoming_state\": \"silence\",\n    \"silence_ms\": 600\n  },\n  {\n    \"sequence\": 106,\n    \"frame\": 7500900,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_backchannel_not_triggered\",\n    \"owner_turn_id\": \"U09\",\n    \"plan\": {\n      \"text\": \"嗯嗯。\",\n      \"trigger_anchor\": \"助手已说明室内打磨所需的通风和个人防护时\"\n    },\n    \"reason\": \"assistant_response_finished_before_trigger\"\n  },\n  {\n    \"sequence\": 109,\n    \"frame\": 7611300,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"respond\",\n    \"evidence\": \"如果以后把沾油布浸水，普通带盖塑料桶能代替金属容器吗？\",\n    \"incoming_state\": \"silence\",\n    \"silence_ms\": 600\n  },\n  {\n    \"sequence\": 114,\n    \"frame\": 8421796,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"respond\",\n    \"evidence\": \"回到桌面吧，麻烦按顺序排一下：这个周末先做什么，整面翻新如果延期又该从哪一步开始。\",\n    \"incoming_state\": \"silence\",\n    \"silence_ms\": 600\n  },\n  {\n    \"sequence\": 117,\n    \"frame\": 8516687,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_backchannel_outcome\",\n    \"owner_turn_id\": \"U11\",\n    \"action\": \"wait\",\n    \"plan\": {\n      \"text\": \"嗯。\",\n      \"trigger_anchor\": \"助手已梳理本周末可做的低风险处理步骤时\"\n    },\n    \"pending_unchanged\": true\n  },\n  {\n    \"sequence\": 121,\n    \"frame\": 10844007,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"respond\",\n    \"evidence\": \"浅蜂蜜色和半哑光尽量保留，旧痕留一点没关系，但不能修出明显亮斑或深色块。按这个标准，你帮我定个最终方向。\",\n    \"incoming_state\": \"silence\",\n    \"silence_ms\": 600\n  },\n  {\n    \"sequence\": 124,\n    \"frame\": 10910226,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_backchannel_outcome\",\n    \"owner_turn_id\": \"U12\",\n    \"action\": \"wait\",\n    \"plan\": {\n      \"text\": \"明白。\",\n      \"trigger_anchor\": \"助手已给出暂缓整面木蜡油翻新的总体判断时\"\n    },\n    \"pending_unchanged\": true\n  },\n  {\n    \"sequence\": 128,\n    \"frame\": 12038426,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_listener_decision\",\n    \"decision\": \"ignore\",\n    \"evidence\": \"好，我就按这个方向安排，谢谢。\",\n    \"incoming_state\": \"silence\",\n    \"silence_ms\": 600\n  }\n]", "total_turns": 12, "backchannel_summary": {"spoken": 2, "passed": 2, "first_segment_index": 6, "proof_path": "../../sampled10-07-interaction-proof.json", "note": "计划 5 次，实际 2 次，静默 2 次，未触发 1 次。"}, "audit_note": "最终 Audit：100 分 / pass。修复、拒绝和旧版本分别保留。", "user_voice_profile": {"profile": "女性声音，感知年龄四十多岁，音色温和略低，语速平稳，吐字清楚，谈到不确定之处时会稍作停顿。", "voice_name": "Chinese (Mandarin)_News_Anchor", "speed": 1.0, "plan_path": "../../runtime/sampled10-07/user-voice-plan.json"}, "web_audio": {"format": "mp3", "bitrate_kbps": 96, "original_path": "https://github.com/Yuanhong-Zheng/duplex-synthetic-dialogue/releases/download/workflow-20261101/original-sampled10-07.wav"}}}</script><script>
+(() => {
+  'use strict';
+  const root = document.querySelector('[data-results-explorer]');
+  const payload = document.getElementById('results-explorer-data');
+  if (!root || !payload) return;
+  const data = JSON.parse(payload.textContent);
+  const focusedRollout = data.view === 'synthetic_rollout';
+  const turns = focusedRollout ? [] : data.episode_script.episode_turns;
+  const enhanced = focusedRollout ? [] : data.enhanced_episode_script.episode_turns;
+  const rubrics = focusedRollout ? [] : data.actor_rubric.turn_rubrics;
+  const byID = new Map(turns.map(turn => [turn.turn_id, turn]));
+  const byEnhancedID = new Map(enhanced.map(turn => [turn.turn_id, turn]));
+  const byRubricID = new Map(rubrics.map(item => [item.turn_id, item]));
+  const state = {turn: byID.has('U03') ? 'U03' : turns[0]?.turn_id, filter: 'all'};
+  const actLabels = {A01:'建立 / 补充信息', A02:'控制播报', A03:'追问 / 核对', A04:'修改条件', A05:'异议 / 拒绝', A06:'支线 / 返回'};
+  const timingLabels = {T01:'自然接话', T02:'句内停顿', T03:'播报中途起声'};
+  const get = id => document.getElementById(id);
+  const setText = (id, text) => { get(id).textContent = text; };
+  const node = (tag, text, className) => { const item = document.createElement(tag); item.textContent = text; if (className) item.className = className; return item; };
+  const visibleTurns = () => turns.filter(turn => state.filter === 'all' || (turn.timing_refs || []).includes(state.filter === 't03' ? 'T03' : 'T02'));
+  const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const scrollTo = id => { const target = get(id); if (target) target.scrollIntoView({behavior:smooth ? 'smooth' : 'auto', block:'start'}); };
+
+  function renderTurn() {
+    const turn = byID.get(state.turn);
+    setText('rx-turn-title', `${turn.turn_id} · ${actLabels[turn.act_ref] || turn.act_ref}`);
+    setText('rx-turn-utterance', turn.user_utterance);
+    setText('rx-turn-goal', turn.semantic_goal);
+    setText('rx-turn-expected', turn.assistant_semantic_goal);
+    const badges = get('rx-turn-tags');
+    badges.replaceChildren(...turn.timing_refs.map(timing => node('span', `${timing} · ${timingLabels[timing] || timing}`, `rx-chip ${timing === 'T03' ? 'amber' : 'blue'}`)));
+    get('rx-interrupt').hidden = !turn.interrupt_anchor;
+    setText('rx-interrupt-text', turn.interrupt_anchor || '');
+    get('rx-pause').hidden = !turn.pause_cue;
+    setText('rx-pause-text', turn.pause_cue ? `在“${turn.pause_cue.after_text}”后停 ${turn.pause_cue.duration_ms} 毫秒，再继续表达。` : '');
+    setText('rx-turn-reading', (data.turn_annotations || {})[turn.turn_id] || '本轮原文与目标直接取自 Stage 3 的冻结剧本。');
+    const visible = new Set(visibleTurns().map(item => item.turn_id));
+    root.querySelectorAll('[data-turn-option]').forEach(button => {
+      button.hidden = !visible.has(button.dataset.turnOption);
+      button.setAttribute('aria-pressed', String(button.dataset.turnOption === state.turn));
+    });
+    root.querySelectorAll('[data-turn-filter]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.turnFilter === state.filter)));
+    setText('rx-turn-count', `当前显示 ${visible.size} / ${turns.length} 轮；点击轮次查看原文`);
+  }
+
+  function fillCriteria(id, criteria, emptyText) {
+    const container = get(id);
+    container.replaceChildren();
+    if (criteria.length) {
+      const list = document.createElement('ol'); list.className = 'rx-criteria';
+      criteria.forEach(text => list.append(node('li', text)));
+      container.append(list);
+    } else container.append(node('p', emptyText, 'rx-small'));
+  }
+
+  function renderRubric() {
+    const turn = byEnhancedID.get(state.turn);
+    const rubric = byRubricID.get(state.turn);
+    setText('rx-rubric-title', `${turn.turn_id} 的评分标准`);
+    setText('rx-rubric-utterance', turn.user_utterance);
+    setText('rx-semantic-count', `${rubric.semantic.length} 条`);
+    setText('rx-behavior-count', `${rubric.behavior.length} 条`);
+    fillCriteria('rx-semantic-items', rubric.semantic, '本轮没有语义标准。');
+    fillCriteria('rx-behavior-items', rubric.behavior, '本轮按现有规则不单列行为标准，保存的 behavior 为 []。');
+    root.querySelectorAll('[data-rubric-option]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.rubricOption === state.turn)));
+    const isAside = turn.turn_id === data.side_event.turn_id;
+    get('rx-rubric-aside').hidden = !isAside;
+    get('rx-rubric-review').hidden = !['U06','U09'].includes(turn.turn_id);
+    get('rx-rubric-voice').hidden = !turn.side_speech;
+    setText('rx-rubric-voice-text', turn.side_speech ? turn.side_speech.map(event => event.text).join('；') : '');
+  }
+
+  function selectTurn(id) {
+    if (!byID.has(id)) return;
+    state.turn = id;
+    if (!visibleTurns().some(turn => turn.turn_id === id)) state.filter = 'all';
+    renderTurn(); renderRubric();
+  }
+
+  const simulator = data.user_simulator;
+  const simState = {caseID:simulator ? simulator.cases[0].id : null, index:0};
+  const actionLabels = {deliver:'交付主轮', correct:'同轮纠错', clarify:'同轮澄清', unknown:'未知信息不编造', wait:'等待 · 不发言', end:'告别'};
+  const speech = data.user_speech;
+  const speechState = {caseID:speech ? speech.cases[0].id : null, index:0};
+
+  function renderSpeech() {
+    if (!speech) return;
+    const scenario=speech.cases.find(item=>item.id===speechState.caseID);
+    const item=scenario.events[speechState.index];
+    const event=item.event, rendered=item.render;
+    root.querySelectorAll('button[data-speech-case]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.speechCase===scenario.id)));
+    const list=get('rx-speech-events');list.replaceChildren();
+    scenario.events.forEach((entry,index)=>{
+      const button=node('button','', 'rx-turn-button');button.type='button';button.dataset.speechIndex=String(index);button.setAttribute('aria-pressed',String(index===speechState.index));
+      button.append(node('b',entry.event.focus_turn_id||'结束'),node('span',entry.label),node('small',actionLabels[entry.event.action]||entry.event.action));list.append(button);
+    });
+    setText('rx-speech-title',`${event.focus_turn_id||'结束'} · ${item.label}`);
+    setText('rx-speech-action',actionLabels[event.action]||event.action);
+    setText('rx-speech-text',event.action==='wait'?'（等待，不发言，不生成音频）':event.utterance);
+    setText('rx-speech-timing',(rendered.timing_refs||[]).map(value=>`${value} · ${timingLabels[value]||value}`).join(' / ')+'；这里展示用户音频资产，实际起声时机尚未执行。');
+    const main=get('rx-speech-audio'),side=get('rx-speech-side-audio');
+    setText('rx-speech-playback-note','');
+    [main,side].forEach(player=>{player.pause();player.removeAttribute('src');});
+    get('rx-speech-main').hidden=!rendered.main;
+    if(rendered.main) {
+      main.src=rendered.main.audio_path;main.setAttribute('aria-label',`${event.focus_turn_id} ${item.label}`);
+      get('rx-speech-download').href=rendered.main.audio_path;
+      setText('rx-speech-duration',`WAV · ${rendered.main.duration_seconds.toFixed(2)} 秒 · 16kHz · 单声道`);
+    }
+    const aside=rendered.side_speech[0];get('rx-speech-side').hidden=!aside;
+    if(aside) {side.src=aside.audio_path;get('rx-speech-side-download').href=aside.audio_path;setText('rx-speech-side-text',aside.text);}
+    [main,side].forEach(player=>player.load());
+    const pause=rendered.main?.pause;get('rx-speech-pause').hidden=!pause;
+    setText('rx-speech-pause-text',pause?`在“${pause.after_text}”后插入 ${pause.requested_ms} 毫秒静音（${pause.frames} 个采样）；当前音频中的停顿从 ${pause.start_seconds.toFixed(3)} 秒开始。`:'');
+    setText('rx-speech-pause-proof',pause?JSON.stringify({pause,segments:rendered.main.segments},null,2):'');
+    const files=get('rx-speech-files');files.replaceChildren(node('b','这条发言的来源'));
+    item.files.forEach(entry=>{const link=node('a',entry.label);link.href=entry.path;link.target='_blank';link.rel='noopener';files.append(link);});
+    get('rx-speech-back-script').dataset.selectTurn=event.focus_turn_id||'';
+    root.querySelector('[data-speech-prev]').disabled=speechState.index===0;
+    root.querySelector('[data-speech-next]').disabled=speechState.index===scenario.events.length-1;
+  }
+
+  function renderSimulator(sync=false) {
+    if (!simulator) return;
+    const scenario = simulator.cases.find(item=>item.id===simState.caseID);
+    const record = scenario.events[simState.index];
+    const event = record.event;
+    root.querySelectorAll('[data-sim-case]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.simCase===scenario.id)));
+    setText('rx-sim-case-description',scenario.description);
+    const timeline=get('rx-sim-events'); timeline.replaceChildren();
+    scenario.events.forEach((item,index)=>{
+      const button=document.createElement('button'); button.type='button'; button.className='rx-turn-button'; button.dataset.simIndex=String(index); button.setAttribute('aria-pressed',String(index===simState.index));
+      button.append(node('b',item.event.focus_turn_id||'结束'),node('span',item.label),node('small',actionLabels[item.event.action]||item.event.action));
+      timeline.append(button);
+    });
+    setText('rx-sim-title',`${event.focus_turn_id||'结束'} · ${record.label}`);
+    setText('rx-sim-action',actionLabels[event.action]||event.action);
+    setText('rx-sim-cursor',`待交付主轮：${event.pending_before||'全部已交付'} → ${event.pending_after||'全部已交付'}；本次处理 ${event.focus_turn_id||'结束'}。`);
+    setText('rx-sim-heard',event.observation.heard_text||'开场：尚无助手观测。');
+    setText('rx-sim-utterance',event.action==='wait'?'（等待，不向助手发送用户话语）':event.utterance);
+    setText('rx-sim-guard',record.rejudge?'同一候选复审通过：原 Judge 拒绝，修正规则说明后通过；用户输出和审查输入均未改动。':`独立语义检查：${event.semantic_guard.decision==='pass'?'通过':'未通过'}；${event.semantic_guard.findings.length} 条 finding。`);
+    get('rx-sim-rejudge').hidden=!record.rejudge;
+    setText('rx-sim-old-guard',record.rejudge?JSON.stringify(record.rejudge.old_guard,null,2):'');
+    setText('rx-sim-new-guard',record.rejudge?JSON.stringify(record.rejudge.new_guard,null,2):'');
+    setText('rx-sim-evidence',event.evidence||'本次不需要引用助手前缀；主表达依据当前冻结用户轮。');
+    const raw=record.raw_observation;
+    const unplayed=raw ? raw.text.slice(raw.played_chars) : '';
+    get('rx-sim-unplayed').hidden=!unplayed;
+    setText('rx-sim-unplayed-text',unplayed);
+    setText('rx-sim-model-input',JSON.stringify(record.model_input,null,2));
+    const dispatch=event.dispatch;
+    const notes=[];
+    if(dispatch?.pause_cue) notes.push(`保留的语音计划：在“${dispatch.pause_cue.after_text}”后暂停 ${dispatch.pause_cue.duration_ms} ms。`);
+    if(dispatch?.side_speech?.length) notes.push(`旁语单独保留：${dispatch.side_speech.map(item=>item.text).join('；')}。`);
+    if(notes.length) notes.push(data.tts_api_check ? '该模拟器事件仅记录计划；独立音频样本见“音频测试”试听区，尚未执行真实交互调度。' : '这些计划尚未合成或播放音频。');
+    get('rx-sim-dispatch').hidden=!notes.length; setText('rx-sim-dispatch',notes.join(' '));
+    const files=get('rx-sim-files'); files.replaceChildren(node('b','本次原始记录'));
+    record.files.forEach(item=>{const link=node('a',item.label);link.href=item.path;link.target='_blank';link.rel='noopener';files.append(link);});
+    ['rx-sim-back-script','rx-sim-back-rubric'].forEach(id=>{get(id).dataset.selectTurn=event.focus_turn_id||'';});
+    if(get('rx-sim-back-speech')) {get('rx-sim-back-speech').dataset.speechCase=scenario.id;get('rx-sim-back-speech').dataset.speechIndex=String(simState.index);}
+    if(sync && byID.has(event.focus_turn_id)) selectTurn(event.focus_turn_id);
+  }
+
+  const scoring=data.actual_scoring;
+  let scoreIndex=0;
+  const scoreLabels={pass:'通过',fail:'失败',not_triggered:'未触发',insufficient_evidence:'证据不足'};
+  function renderScoring() {
+    if(!scoring)return;
+    const list=get('rx-score-turns');list.replaceChildren();
+    scoring.turns.forEach((turn,index)=>{
+      const counts={};turn.criteria.forEach(c=>{counts[c.status]=(counts[c.status]||0)+1;});
+      const button=node('button','', 'rx-score-turn');button.type='button';button.dataset.scoreTurn=String(index);
+      button.setAttribute('aria-pressed',String(index===scoreIndex));
+      button.append(node('b',turn.turn_id),node('span',Object.entries(counts).map(([status,count])=>`${scoreLabels[status]} ${count}`).join(' · ')));
+      if(counts.fail)button.classList.add('has-failure');else if(counts.insufficient_evidence)button.classList.add('has-insufficient');
+      list.append(button);
+    });
+    const turn=scoring.turns[scoreIndex];
+    setText('rx-score-title',`${turn.turn_id} · 实际评分`);
+    setText('rx-score-time',`${(turn.clip_start_frame/16000).toFixed(3)} → ${(turn.clip_end_frame/16000).toFixed(3)} 秒`);
+    get('rx-score-turn-play').dataset.scoreSeek=String(turn.clip_start_frame);
+    get('rx-score-clip-download').href=turn.audio_path;
+    const criteria=get('rx-score-criteria');criteria.replaceChildren();
+    turn.criteria.forEach(c=>{
+      const card=node('div','','rx-score-criterion');card.dataset.criterionId=c.criterion_id;
+      const title=node('div','','rx-score-criterion-title');
+      title.append(node('b',`${c.criterion_id} · ${c.kind==='semantic'?'语义':'行为'}`),node('span',scoreLabels[c.status],`rx-score-status ${c.status}`));
+      card.append(title,node('p',c.text,'rx-score-original'),node('p',c.reason,'rx-small'));
+      c.evidence.forEach(e=>{
+        const quote=node('blockquote',e.quote,'rx-score-quote');
+        const button=node('button',`${e.response_id} · ${(e.start_frame/16000).toFixed(2)} 秒 · 试听引用`,'rx-button');
+        button.type='button';button.dataset.scoreSeek=String(e.start_frame);card.append(quote,button);
+      });
+      if(c.measurement){
+        const m=c.measurement;
+        const text=m.type==='T02'?`停顿 ${m.requested_ms} ms；用户继续到说完前，助手非零采样 ${m.assistant_samples_before_user_end} 个。`:
+          `用户起声至停止旧播报 ${m.onset_to_stop_ms?.toFixed(1)??'无记录'} ms；停止至用户说完，助手非零采样 ${m.assistant_samples_after_stop_before_user_end??'无记录'} 个。`;
+        card.append(node('p',text,'rx-small'));
+        const button=node('button',m.type==='T02'?'试听句内停顿':'试听起声、停播与恢复','rx-button');button.type='button';
+        button.dataset.scoreSeek=String(m.type==='T02'?m.pause_start_frame:m.user_start_frame);card.append(button);
+      }
+      criteria.append(card);
+    });
+    setText('rx-score-responses',turn.responses.map(r=>`${r.response_id} · ${r.interrupted?'中途停止':'完整播出'}\n${r.heard_text}`).join('\n\n'));
+    setText('rx-score-measurement',JSON.stringify(turn.measurement,null,2));
+    const files=get('rx-score-files');files.replaceChildren(node('b','本轮评分来源'));
+    [['Judge 实际输入',`calls/${turn.turn_id}/input.json`],['Judge 原始响应',`calls/${turn.turn_id}/raw_response.txt`],['本轮评分 JSON',`score-${turn.turn_id}.json`]].forEach(([label,path])=>{
+      const link=node('a',label);link.href=scoring.record_prefix+path;link.target='_blank';link.rel='noopener';files.append(link);
+    });
+  }
+
+  const rollout=data.synthetic_rollout;
+  let rolloutIndex=0;
+  let playbackFrame=0, playingSegments='';
+  const playbackTime = seconds => `${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;
+  function updateRolloutPlayback(force=false) {
+    const player=get('rx-rollout-audio'),head=get('rx-rollout-playhead');
+    if(!rollout || !player || !head)return;
+    const duration=rollout.duration_seconds;
+    const time=Math.min(duration,Math.max(0,player.currentTime||0));
+    const ratio=duration>0?time/duration:0;
+    head.style.left=(100*ratio)+'%';
+    head.classList.toggle('at-start',ratio<.05);head.classList.toggle('at-end',ratio>.95);
+    setText('rx-rollout-playhead-time',playbackTime(time));
+    const active=rollout.segments.map((segment,index)=>({segment,index})).filter(({segment})=>
+      segment.start_seconds<=time && time<segment.start_seconds+segment.duration_seconds);
+    const key=active.map(({index})=>index).join(',');
+    if(force || key!==playingSegments){
+      playingSegments=key;
+      const indices=new Set(active.map(({index})=>index));
+      root.querySelectorAll('#rx-rollout-bars [data-rollout-segment], #rx-rollout-segments [data-rollout-segment]').forEach(button=>
+        button.classList.toggle('is-playing',indices.has(Number(button.dataset.rolloutSegment))));
+    }
+    const current=active.map(({segment})=>segment.title).join(' / ') || (time>=duration?'播放结束':'静音间隔');
+    const status=`播放位置 ${playbackTime(time)} / ${playbackTime(duration)} · ${current}`;
+    if(get('rx-rollout-now').textContent!==status)setText('rx-rollout-now',status);
+    // Follow the actual media clock; keep the cursor visible on narrow timelines.
+    const scroll=head.closest('.rx-rollout-scroll');
+    if(scroll && (!player.paused || player.seeking)){
+      const position=head.parentElement.offsetLeft+ratio*head.parentElement.clientWidth;
+      if(position<scroll.scrollLeft+16 || position>scroll.scrollLeft+scroll.clientWidth-16)
+        scroll.scrollLeft=Math.max(0,position-scroll.clientWidth/2);
+    }
+  }
+  function followRolloutPlayback() {
+    updateRolloutPlayback();
+    const player=get('rx-rollout-audio');
+    if(player && !player.paused && !player.ended)playbackFrame=requestAnimationFrame(followRolloutPlayback);
+  }
+  function renderRollout() {
+    if(!rollout || !get('rx-rollout-segments'))return;
+    const list=get('rx-rollout-segments'),bars=get('rx-rollout-bars');list.replaceChildren();bars.replaceChildren();
+    rollout.segments.forEach((segment,index)=>{
+      const button=node('button','', 'rx-turn-button');button.type='button';button.dataset.rolloutSegment=String(index);button.setAttribute('aria-pressed',String(index===rolloutIndex));
+      button.append(node('b',segment.speaker==='user'?'用户':'助手'),node('span',segment.title));list.append(button);
+      const bar=node('button',segment.short_label,'rx-rollout-bar'+(segment.speaker==='assistant'?' assistant':'')+(segment.kind==='side_speech'?' aside':'')+(segment.kind==='backchannel'?' backchannel':''));
+      bar.type='button';bar.dataset.rolloutSegment=String(index);bar.style.left=(100*segment.start_seconds/rollout.duration_seconds)+'%';bar.style.width=(100*segment.duration_seconds/rollout.duration_seconds)+'%';
+      bar.title=segment.title+' · '+segment.start_seconds.toFixed(2)+' 秒';bar.setAttribute('aria-label',bar.title);bar.setAttribute('aria-pressed',String(index===rolloutIndex));bars.append(bar);
+    });
+    if(!rollout.segments.length)return;
+    const segment=rollout.segments[rolloutIndex];
+    setText('rx-rollout-title',segment.title);setText('rx-rollout-kind',segment.kind_label);
+    setText('rx-rollout-time',`${segment.start_seconds.toFixed(3)} → ${(segment.start_seconds+segment.duration_seconds).toFixed(3)} 秒 · 已消费 ${segment.duration_seconds.toFixed(3)} 秒音频`);
+    setText('rx-rollout-text',segment.text||'（本段在任何文字对应的音频消费前已被取消）');
+    setText('rx-rollout-outcome',segment.outcome_note||'原始输入与已消费音频可由下方记录核对。');
+    get('rx-rollout-tail').hidden=!segment.unplayed_text;setText('rx-rollout-unplayed',segment.unplayed_text||'');
+    const files=get('rx-rollout-files');files.replaceChildren();
+    segment.files.forEach(file=>{const link=node('a',file.label);link.href=file.path;link.target='_blank';link.rel='noopener';files.append(link);});
+    updateRolloutPlayback(true);
+  }
+
+  root.addEventListener('play', event => {
+    if (!event.target.matches('audio[data-tts-audio]')) return;
+    root.querySelectorAll('audio[data-tts-audio]').forEach(player => {
+      if (player !== event.target) player.pause();
+    });
+  }, true);
+
+  root.addEventListener('click', event => {
+    const target = event.target.closest('button, a');
+    if (target && target.dataset.batchFilter) {
+      const panel = target.closest('.rx-details');
+      panel.querySelectorAll('[data-batch-criterion]').forEach(row => { row.hidden = target.dataset.batchFilter === 'issues' && row.dataset.batchCriterion === 'pass'; });
+      panel.querySelectorAll('[data-batch-filter]').forEach(button => button.setAttribute('aria-pressed', String(button === target)));
+    }
+    if (target && target.dataset.batchAudio) {
+      const player = get(target.dataset.batchAudio);
+      const seek = () => { player.currentTime = Number(target.dataset.batchFrame) / 16000; player.play().then(() => setText(player.id+'-status', '正在试听原交互引用。')).catch(() => setText(player.id+'-status', '已定位，请点击播放器继续。')); };
+      if (player.readyState >= 1) seek(); else { player.addEventListener('loadedmetadata', seek, {once:true}); player.load(); }
+    }
+    if (!target) return;
+    if(target.dataset.scoreTurn!==undefined && scoring){scoreIndex=Number(target.dataset.scoreTurn);renderScoring();}
+    if(target.dataset.scoreSeek!==undefined && scoring){
+      const player=get('rx-score-audio'),frame=Number(target.dataset.scoreSeek);
+      const seek=()=>{player.currentTime=Math.max(0,frame/16000-1);player.play().catch(()=>setText('rx-score-player-status','请点击播放器播放，或下载对应片段。'));};
+      setText('rx-score-player-status',`从 ${Math.max(0,frame/16000-1).toFixed(2)} 秒试听评分证据。`);
+      if(player.readyState>=1)seek();else{player.addEventListener('loadedmetadata',seek,{once:true});player.load();}
+    }
+    if(target.dataset.rolloutSegment!==undefined && rollout){rolloutIndex=Number(target.dataset.rolloutSegment);renderRollout();}
+    if(target.hasAttribute('data-rollout-seek') && rollout){
+      const player=get('rx-rollout-audio'),index=rolloutIndex;
+      const seek=()=>{if(index!==rolloutIndex)return;player.currentTime=Math.max(0,rollout.segments[index].start_seconds-1);player.play().catch(()=>setText('rx-rollout-player-status','播放未开始，请点击播放器上的播放按钮，或下载音频。'));};
+      if(player.readyState>=1)seek();else{player.addEventListener('loadedmetadata',seek,{once:true});player.load();}
+    }
+    if (target.dataset.turnOption) selectTurn(target.dataset.turnOption);
+    if (target.dataset.rubricOption) selectTurn(target.dataset.rubricOption);
+    if (target.dataset.simCase) {simState.caseID=target.dataset.simCase;simState.index=0;renderSimulator(true);}
+    if (target.dataset.simIndex!==undefined) {simState.index=Number(target.dataset.simIndex);renderSimulator(true);}
+    if (target.dataset.speechCase && speech) {speechState.caseID=target.dataset.speechCase;speechState.index=0;renderSpeech();}
+    if (target.dataset.speechIndex!==undefined && speech) {speechState.index=Number(target.dataset.speechIndex);renderSpeech();}
+    if (target.hasAttribute('data-speech-prev') && speechState.index>0) {speechState.index--;renderSpeech();}
+    if (target.hasAttribute('data-speech-next') && speech) {const scenario=speech.cases.find(item=>item.id===speechState.caseID);if(speechState.index<scenario.events.length-1){speechState.index++;renderSpeech();}}
+    if (target.hasAttribute('data-speech-seek') && speech) {
+      const entry=speech.cases.find(item=>item.id===speechState.caseID).events[speechState.index];
+      const player=get('rx-speech-audio'),pause=entry.render.main?.pause;
+      if(pause) {
+        const source=player.src;
+        const seek=()=>{if(player.src!==source)return;player.currentTime=Math.max(0,pause.start_seconds-1);player.play().catch(()=>{setText('rx-speech-playback-note','播放未开始，请点击播放器上的播放按钮，或下载音频。');});};
+        if(player.readyState>=1)seek();else {player.addEventListener('loadedmetadata',seek,{once:true});player.load();}
+      }
+    }
+    if (target.dataset.turnFilter) {
+      state.filter = target.dataset.turnFilter;
+      const visible = visibleTurns();
+      if (visible.length && !visible.some(turn => turn.turn_id === state.turn)) state.turn = visible[0].turn_id;
+      renderTurn(); renderRubric();
+    }
+    if (target.dataset.personFilter) {
+      const filter = target.dataset.personFilter;
+      let count = 0;
+      root.querySelectorAll('[data-person-card]').forEach(card => { card.hidden = filter !== 'all' && card.dataset.personCard !== filter; if (!card.hidden) count += 1; });
+      root.querySelectorAll('[data-person-filter]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.personFilter === filter)));
+      setText('rx-person-count', `当前显示 ${count} 名员工的材料说明`);
+    }
+    if (target.dataset.openReference) {
+      event.preventDefault(); const detail = get(target.dataset.openReference); if (detail) { detail.open = true; scrollTo(detail.id); }
+    }
+    if (target.dataset.sideMode) {
+      const withAside = target.dataset.sideMode === 'with';
+      get('rx-side-event').hidden = !withAside;
+      root.querySelectorAll('[data-side-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.sideMode === target.dataset.sideMode)));
+      setText('rx-side-view-label', withAside ? 'Stage 3.5：原主表达 + 新增旁语' : 'Stage 3：仅原主表达，尚未附加旁语');
+    }
+    if (target.dataset.jump) { event.preventDefault(); if (target.dataset.selectTurn) selectTurn(target.dataset.selectTurn); scrollTo(target.dataset.jump); }
+  });
+
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver(entries => {
+      const current = entries.filter(entry => entry.isIntersecting).sort((a,b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!current) return;
+      root.querySelectorAll('[data-stage-nav]').forEach(link => {
+        if (link.dataset.stageNav === current.target.id) link.setAttribute('aria-current','step');
+        else link.removeAttribute('aria-current');
+      });
+    }, {rootMargin:'-105px 0px -45% 0px', threshold:[0,.1,.3,.6]});
+    root.querySelectorAll('[data-rx-stage]').forEach(stage => observer.observe(stage));
+  }
+  root.querySelectorAll('[data-batch-criterion="pass"]').forEach(row => { row.hidden = true; });
+  if (focusedRollout) renderRollout();
+  else {renderTurn(); renderRubric(); renderSimulator(); renderSpeech(); renderRollout(); renderScoring();}
+  const rolloutPlayer=get('rx-rollout-audio');
+  if(rolloutPlayer){
+    ['timeupdate','loadedmetadata','seeking','seeked','ended','emptied'].forEach(event=>
+      rolloutPlayer.addEventListener(event,()=>updateRolloutPlayback()));
+    rolloutPlayer.addEventListener('play',()=>{cancelAnimationFrame(playbackFrame);followRolloutPlayback();});
+    rolloutPlayer.addEventListener('pause',()=>{cancelAnimationFrame(playbackFrame);updateRolloutPlayback();});
+    window.addEventListener('pagehide',()=>cancelAnimationFrame(playbackFrame));
+  }
+  root.dataset.ready = 'true';
+})();
+
+</script>
+</main></body></html>

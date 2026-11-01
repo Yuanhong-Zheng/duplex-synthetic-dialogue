@@ -1,0 +1,194 @@
+{
+  "reviewed_refs": {
+    "artifacts": [
+      "scene_task",
+      "user_voice",
+      "situation_knowledge",
+      "episode_script",
+      "actor_rubric"
+    ],
+    "C": [
+      "C01",
+      "C02",
+      "C03",
+      "C04"
+    ],
+    "L": [
+      "L01",
+      "L02",
+      "L03"
+    ],
+    "U": [
+      "U01",
+      "U02",
+      "U03",
+      "U04",
+      "U05",
+      "U06",
+      "U07",
+      "U08",
+      "U09",
+      "U10",
+      "U11",
+      "U12"
+    ]
+  },
+  "findings": [
+    {
+      "finding_id": "EV01",
+      "category": "knowledge_leakage",
+      "severity": "hard_gate",
+      "stage": "actor_rubric",
+      "path": "/turn_rubrics/0/semantic/0",
+      "evidence": "根据乳白、无发黑且充分干燥后仍存在的特征，判断水印更可能是聚氨酯涂层内或表层发白，而非木材深处的黑色水渍。",
+      "reason": "U01 用户只交付了乳白、无发黑和干燥四十八小时的信息，尚未交付桌底标签中的“聚氨酯透明涂装”；该涂层类型要到 U05 才明确告知 Assistant。此处把“聚氨酯”设为 U01 的评分责任，要求 actor 使用当前轮尚不可见的具体事实。",
+      "suggested_fix": "将 U01 的评分对象改为当前可推断的“透明涂层内或表层发白”，删除对聚氨酯这一尚未披露涂层类型的要求。"
+    },
+    {
+      "finding_id": "EV02",
+      "category": "actor_rubric",
+      "severity": "major",
+      "stage": "actor_rubric",
+      "path": "/turn_rubrics/7/semantic/0",
+      "evidence": "提出不会妨碍后续翻新的保守改善方案，避免整面去膜、直接上木蜡油或可能扩大色差和亮斑的局部重磨。",
+      "reason": "U08 的当前语义目标要求分别说明水印、浅划痕和掉漆处本周末可以观察或轻度处理到什么程度，用户也明确拒绝“什么都不做”。本条主要列出禁止事项，没有为三类损伤规定可复现评分的正向保守措施，无法充分测量该轮目标是否完成。",
+      "suggested_fix": "在这一语义条目中明确要求分别给出水印、浅划痕和掉漆处的低风险观察或保守处理范围，同时保留不整面去膜、不直接上木蜡油的边界。"
+    }
+  ],
+  "dimension_scores": [
+    {
+      "dimension": "场景与任务一致性",
+      "score": 8,
+      "max": 8,
+      "minimum": 7,
+      "status": "pass",
+      "evidence": [
+        "/task_instance/goal 同时要求损伤判断、现有材料评估和施工顺序，符合家庭 DIY 场景",
+        "/task_style 为“混合型”，剧本先处理通用损伤判断，再进入具体材料和期限决策"
+      ]
+    },
+    {
+      "dimension": "UserSeed 合理性",
+      "score": 7,
+      "max": 7,
+      "minimum": 6,
+      "status": "pass",
+      "evidence": [
+        "/user_seed 将用户设为准备独立翻新的住户且熟悉度为 low，与逐步询问涂层、砂纸和安全事项相容"
+      ]
+    },
+    {
+      "dimension": "VoiceProfile 场景相容性",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "/voice_profile 的平稳语速、清楚吐字和不确定时稍作停顿适合常规居家评估场景",
+        "U07 的找词停顿与声音画像中“不确定之处时会稍作停顿”一致"
+      ]
+    },
+    {
+      "dimension": "EpisodeSituation 具体性",
+      "score": 10,
+      "max": 10,
+      "minimum": 8,
+      "status": "pass",
+      "evidence": [
+        "/episode_situation 明确了时间、地点、桌面材质与涂层、三类损伤、已有材料和未决方向",
+        "/episode_situation 给出了周一恢复使用、室内原位施工和外观偏好等实际障碍"
+      ]
+    },
+    {
+      "dimension": "Situation / Constraint 边界",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "C01–C04 分别覆盖使用期限、涂层相容性、现有材料优先级和外观边界",
+        "L01–L03 覆盖油布自热、通风与火源、粉尘和个人防护，且与产品标签资料一致"
+      ]
+    },
+    {
+      "dimension": "Episode Script 任务推进",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "U01–U08 从水印判断递进到划痕、掉漆、材料能力、施工期限和保守替代方案",
+        "U09–U12 完成安全支线、返回主线、两阶段排序和最终方向确定"
+      ]
+    },
+    {
+      "dimension": "用户表达自然度",
+      "score": 12,
+      "max": 12,
+      "minimum": 10,
+      "status": "pass",
+      "evidence": [
+        "U02、U06 和 U08 的插话均以口语化方式直接承接正在展开的内容",
+        "U07 的“我看一下罐身”及 2100 毫秒停顿是自然且唯一的句内查找停顿"
+      ]
+    },
+    {
+      "dimension": "轮次条件与 Timing 合理性",
+      "score": 10,
+      "max": 10,
+      "minimum": 8,
+      "status": "pass",
+      "evidence": [
+        "U02、U06、U08 的 T03 锚点分别对应前一轮预期播报中的侧光方法、两种磨法比较和延期理由",
+        "U03、U05、U09、U11、U12 的 backchannel 均有具体播报触发点，并有继续同一播报的 Behavior"
+      ]
+    },
+    {
+      "dimension": "模态与可观察性",
+      "score": 6,
+      "max": 6,
+      "minimum": 5,
+      "status": "pass",
+      "evidence": [
+        "/capability_contract 仅提供 audio，而所有现场观察、标签内容和材料库存都由用户口头交付",
+        "T02、T03、机器旁语和短附和均可由音频、转写、说话人及播放边界观察"
+      ]
+    },
+    {
+      "dimension": "信息泄漏",
+      "score": 6,
+      "max": 8,
+      "minimum": 7,
+      "status": "fail",
+      "evidence": [
+        "actor_rubric U01 要求判断“聚氨酯涂层”，但该具体涂层类型直到 U05 才由用户交付",
+        "其余损伤尺寸、砂纸目数、标签时限和安全警示均在被使用前由用户相应披露"
+      ]
+    },
+    {
+      "dimension": "Anti-hack",
+      "score": 5,
+      "max": 5,
+      "minimum": 4,
+      "status": "pass",
+      "evidence": [
+        "/episode_turns 仅包含有序用户节点，没有伪造 actor 回复、工具结果或未来 trajectory",
+        "U09 的机器提示音被 Rubric 明确限定为不可误认的环境事件"
+      ]
+    },
+    {
+      "dimension": "Actor Rubric 可测量性",
+      "score": 3,
+      "max": 5,
+      "minimum": 4,
+      "status": "fail",
+      "evidence": [
+        "U01 Semantic 使用了该轮尚不可见的聚氨酯涂层事实",
+        "U08 Semantic 未分别规定水印、浅划痕和掉漆处应给出的正向保守处理范围"
+      ]
+    }
+  ],
+  "total_score": 96,
+  "frequency_calibration": "N-A",
+  "release_decision": "repair"
+}
