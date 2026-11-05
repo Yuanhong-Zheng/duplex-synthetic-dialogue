@@ -1,0 +1,116 @@
+{
+  "scene_task": {
+    "scene": {
+      "domain_id": "D05",
+      "domain": "个人组织、计划与决策",
+      "scenario_id": "D05-S05",
+      "scenario": "清单与打包准备"
+    },
+    "task_style": "常识问答",
+    "task_instance": {
+      "goal": "围绕短途出行时洗漱用品的打包，弄清哪些属于必需品、如何避免液体渗漏，以及在空间有限时怎样取舍和替代，并能根据实际行程继续追问具体情况。"
+    }
+  },
+  "user_voice": {
+    "user_seed": {
+      "role_relation": "负责安排家庭周末出行物品的成年女儿",
+      "task_familiarity": "low"
+    },
+    "voice_profile": "女性，感知年龄为二十多岁，音色清亮但不尖，吐字清楚，语速中等，整体听感有礼而略显谨慎。",
+    "interaction_profile": {
+      "schema": "duplex_v2.interaction_profile.v1",
+      "formality": "formal",
+      "directness": "balanced",
+      "emotional_expressiveness": "balanced",
+      "verbosity": "balanced",
+      "initiative": "high",
+      "caution": "high",
+      "patience": "medium",
+      "behavioral_notes": [
+        "会主动补充相关情况，并在不确定时请求说明判断依据。",
+        "倾向于先确认适用范围，再逐步追问具体做法。",
+        "表达完整但不过度铺陈，遇到多种选择时会认真比较后再决定。"
+      ]
+    }
+  },
+  "dialogue_length_plan": {
+    "schema": "duplex_v2.dialogue_length_plan.v1",
+    "tier": "medium",
+    "target_turns": 15,
+    "min_turns": 14,
+    "max_turns": 15
+  },
+  "situation_knowledge": {
+    "episode_situation": "周五晚上，用户正在家中洗手间整理自己和父母第二天自驾出行要用的洗漱用品，三人将在酒店住两晚，母亲则在相邻房间收拾衣物。她把家里的常用物品摆到台面后，发现几瓶正装用品几乎装满了唯一的洗漱包，而且担心瓶盖受挤压后渗漏。酒店预订页列出了部分基础用品，但她不确定哪些可以放心省略，也不了解分装、密封和摆放液体的稳妥做法。她希望先弄清必需品的判断原则，再结合三人的使用习惯、酒店供应和有限空间逐项取舍。",
+    "task_reference_data": [
+      "用户写在便签上的当前待选物品包括：3支牙刷、1管120克牙膏、300毫升洗发水、250毫升护发素、500毫升沐浴露、100克洗面奶、梳子、剃须刀，以及三人各自使用的护肤品；这些物品已摆在洗手间台面上，但尚未完成筛选。",
+      "用户手边的行程记录写明：三名成人自驾出行，在酒店住两晚，共用一个约24厘米×15厘米×10厘米的洗漱包；车辆运输，不涉及航空随身液体限量。",
+      "用户已经读到的酒店预订页注明客房提供牙刷、牙膏、洗发水和沐浴露，但没有列出护发素、洗面奶、梳子或剃须用品；页面未说明容器容量和具体品牌。"
+    ],
+    "environment_audio": "头顶排风设备持续发出低而稳定的机械嗡鸣，音量基本不变。相邻房间偶尔传来很轻的衣物整理声，距离稍远，不影响近距离交谈。",
+    "estimated_snr_db": 28,
+    "constraints": [
+      {
+        "constraint_id": "C01",
+        "text": "实际行程为三名成人自驾住店两晚，全部洗漱用品需要装入一个约24厘米×15厘米×10厘米的共用洗漱包。",
+        "kind": "hard"
+      }
+    ],
+    "safety_limits": []
+  },
+  "soundscape_plan": {
+    "mode": "layered",
+    "ambient_layers": [
+      {
+        "source_id": "AMB01",
+        "asset_id": "fan-fsd50k-eval-415925",
+        "reason": "稳定的机械通风声与家中洗手间正在运行的排风设备相符。"
+      }
+    ],
+    "environment_events": [
+      {
+        "source_id": "ENV01",
+        "asset_id": "water_tap-fsd50k-eval-232499",
+        "reason": "用户正在洗手间整理洗漱用品，短暂的近处水龙头声与场景兼容。"
+      }
+    ],
+    "schema": "duplex_v2.soundscape_plan.v3",
+    "side_speech_sources": [
+      {
+        "source_id": "SP01",
+        "speaker": "third_party",
+        "voice_profile": "自然清晰、音量较低的成年普通话声音",
+        "description": "正在相邻房间整理出行衣物的用户母亲"
+      }
+    ],
+    "side_speech_count": 1,
+    "draws": [
+      {
+        "source_id": "AMB01",
+        "category": "fan",
+        "asset_id": "fan-fsd50k-eval-415925",
+        "eligible_categories": [
+          "fan"
+        ],
+        "eligible_assets": [
+          "fan-fsd50k-eval-235362",
+          "fan-fsd50k-eval-415925",
+          "fan-fsd50k-eval-419427"
+        ]
+      },
+      {
+        "source_id": "ENV01",
+        "category": "water_tap",
+        "asset_id": "water_tap-fsd50k-eval-232499",
+        "eligible_categories": [
+          "water_tap"
+        ],
+        "eligible_assets": [
+          "water_tap-fsd50k-eval-232499",
+          "water_tap-fsd50k-eval-402127",
+          "water_tap-fsd50k-eval-402128"
+        ]
+      }
+    ]
+  }
+}
