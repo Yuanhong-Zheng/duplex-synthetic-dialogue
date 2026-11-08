@@ -1,0 +1,4968 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-11-08T15:06:32.504545+00:00",
+  "title": "MiniCPM-o 4.5 / Gander 本机实测",
+  "summary": "本次已完成 1 项明确批准范围的双模型评测；进行中项目见下表。论文榜单继续保留在 04，待测不记为 0 分。",
+  "shared_environment": {
+    "gpu": "按用户最新要求使用本机物理 GPU 0–7 八卡并行评测，每张卡同时启用动态补负载，平均利用率目标超过 90%；已完成结果复用，模型、缓存与评测协议保持不变。",
+    "input_audio": "16 kHz 单声道、因果流式输入；保留原始静默和输出播放时钟。",
+    "timing": "原始停声／响应延迟按实际墙钟以秒或毫秒分别报告，注明有效样本或区间数；本轮按用户要求启用动态补负载，执行窗口另有记录。不自行生成归一化总分。",
+    "asr": "HumDial／FDB v1.5 评分 ASR 使用独立兼容环境：NeMo 2.4.0、FunASR 1.2.7、Transformers 4.52.0；已批准以 4.52.0 替代有依赖冲突的作者 freeze 4.56.2。权重与解码参数保持；与原生模型的 Transformers 4.51 环境分开。"
+  },
+  "models": [
+    {
+      "id": "minicpm-o4.5",
+      "name": "MiniCPM-o 4.5",
+      "environment_status": "已通过原生流式推理验证；完整范围进度与评分见各 benchmark",
+      "environment": {
+        "python": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/miniconda3/envs/minicpm-o45/bin/python",
+        "code_root": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/minicpm-o-4_5-pytorch-simple-demo",
+        "model_path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/cache/modelscope/models/OpenBMB--MiniCPM-o-4_5/snapshots/master",
+        "versions": {
+          "torch": "2.8.0",
+          "transformers": "4.51.0",
+          "minicpmo-utils": "1.0.5"
+        },
+        "component": "Official unified PyTorch full-duplex model; no external VAD or interruption controller",
+        "output_sample_rate_hz": 24000,
+        "attention": "sdpa"
+      },
+      "native_configuration": {
+        "python": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/miniconda3/envs/minicpm-o45/bin/python",
+        "code_root": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/minicpm-o-4_5-pytorch-simple-demo",
+        "model_path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/cache/modelscope/models/OpenBMB--MiniCPM-o-4_5/snapshots/master",
+        "reference_audio_path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/minicpm-o-4_5-pytorch-simple-demo/assets/ref_audio/ref_minicpm_signature.wav",
+        "expected_output_sample_rate_hz": 24000,
+        "model_component": "Official unified PyTorch full-duplex model; no external VAD or interruption controller",
+        "duplex_config": {
+          "generate_audio": true,
+          "force_listen_count": 0
+        },
+        "attn_implementation": "sdpa",
+        "playback_policy": "minicpm_official_audio_player",
+        "versions_at_audit": {
+          "torch": "2.8.0",
+          "transformers": "4.51.0",
+          "minicpmo-utils": "1.0.5"
+        }
+      }
+    },
+    {
+      "id": "gander",
+      "name": "Gander",
+      "environment_status": "已通过原生流式推理验证；完整范围进度与评分见各 benchmark",
+      "environment": {
+        "python": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/envs/gander-bench/bin/python",
+        "code_root": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/Gander",
+        "model_path": "/ytech_m2v8_hdd/workspace/kling_mm/Models/MiniCPM-o-4_5",
+        "versions": {
+          "torch": "2.8.0",
+          "transformers": "4.51.0",
+          "minicpmo-utils": "1.0.6"
+        },
+        "component": "Released streaming Thinker + Talker Cerebellum, no external Brain or tools",
+        "output_sample_rate_hz": 24000,
+        "attention": "sdpa",
+        "thinker_checkpoint": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/Gander/checkpoints/Gander/thinker",
+        "talker_checkpoint": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/Gander/checkpoints/Gander/talker"
+      },
+      "native_configuration": {
+        "python": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/envs/gander-bench/bin/python",
+        "python_environment_note": "Shared CPython3.10.21 venv, no system-site; .pth processes exclusively original Gander3.10.19 site-packages (same CPython3.10 ABI). Original env unchanged; replacement needed because its /root uv interpreter symlink is broken.",
+        "code_root": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/Gander",
+        "model_path": "/ytech_m2v8_hdd/workspace/kling_mm/Models/MiniCPM-o-4_5",
+        "thinker_checkpoint": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/Gander/checkpoints/Gander/thinker",
+        "talker_checkpoint": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/Gander/checkpoints/Gander/talker",
+        "token2wav_dir": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/Gander/checkpoints/Gander/talker/assets/token2wav",
+        "reference_audio_path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/Gander/checkpoints/Gander/talker/assets/ref_audio.wav",
+        "expected_output_sample_rate_hz": 24000,
+        "model_component": "Released streaming Thinker + Talker Cerebellum, no external Brain or tools",
+        "duplex_params": {
+          "chunk_ms": 1000,
+          "first_chunk_ms": 1035,
+          "speak_text_tokens_per_unit": 8,
+          "max_new_speak_tokens_per_chunk": 11,
+          "talker_speech_tokens_per_unit": 50,
+          "talker_final_speech_tokens_max": 0,
+          "generate_audio": true,
+          "decode_mode": "sampling",
+          "temperature": 0.7,
+          "top_p": 0.8,
+          "top_k": 20,
+          "sliding_window_mode": "context_slate",
+          "context_previous_max_tokens": 1500,
+          "context_max_units": 128
+        },
+        "attn_implementation": "sdpa",
+        "playback_policy": "gander_official_inline_talker",
+        "versions_at_audit": {
+          "torch": "2.8.0",
+          "transformers": "4.51.0",
+          "minicpmo-utils": "1.0.6"
+        }
+      }
+    }
+  ],
+  "benchmarks": [
+    {
+      "id": "humdial",
+      "status": "paused_by_user",
+      "status_label": "已后置 · 保留进度",
+      "status_detail": "用户要求先运行其他 benchmark；已完成样本保留，恢复时复用，不从头重跑。",
+      "protocol": "保留官方九类场景、test／clean 与中英 ASR；对旁人说话仍做原两阶段裁剪和重 ASR。已批准 GPT-4o 别名／Sol 替换官方 DeepSeek Judge，分开计分；先报告原始行为与延迟。",
+      "coverage": "发布包实际 4,999 条 test（中文 2,499、英文 2,500），另有 4,099 条 clean；每模型共 9,098 次流式推理。论文写 5,000 条，少的是中文对旁人说话 1 条。",
+      "results": {
+        "minicpm-o4.5": {
+          "status": "paused_by_user",
+          "coverage": {
+            "completed": 1088,
+            "total": 9098,
+            "unit": "次流式推理"
+          },
+          "metrics": [],
+          "native_coverage": {
+            "completed": 1088,
+            "total": 9098,
+            "unit": "次流式推理"
+          },
+          "native_failures": 0,
+          "scope": "full_released_test4999"
+        },
+        "gander": {
+          "status": "paused_by_user",
+          "coverage": {
+            "completed": 429,
+            "total": 9098,
+            "unit": "次流式推理"
+          },
+          "metrics": [],
+          "native_coverage": {
+            "completed": 429,
+            "total": 9098,
+            "unit": "次流式推理"
+          },
+          "native_failures": 0,
+          "scope": "full_released_test4999"
+        }
+      },
+      "evaluation_scope": "full_released_test4999",
+      "runtime_progress": {
+        "phase": "native_generation",
+        "native": {
+          "minicpm-o4.5": {
+            "completed": 1088,
+            "total": 9098,
+            "unit": "次流式推理",
+            "failed": 0
+          },
+          "gander": {
+            "completed": 429,
+            "total": 9098,
+            "unit": "次流式推理",
+            "failed": 0
+          }
+        },
+        "status_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/评测/selected-benchmarks-20261107/results/humdial/pipeline-status.json"
+      }
+    },
+    {
+      "id": "sid",
+      "status": "paused_by_user",
+      "status_label": "用户暂缓",
+      "status_detail": "先保留已下载数据；用户确认暂不开展自定义适配。",
+      "protocol": "官方 notebook 的 FIR／IRL／APT；尚未规定这两套原生生成模型的统一发言上下文，不将替代检测器当作模型成绩。",
+      "coverage": "目标全集 3,700 项；本轮评测暂缓，没有产生本机分数。",
+      "results": {
+        "minicpm-o4.5": {
+          "status": "paused_by_user",
+          "coverage": {
+            "completed": 0,
+            "total": null,
+            "unit": "项"
+          },
+          "metrics": []
+        },
+        "gander": {
+          "status": "paused_by_user",
+          "coverage": {
+            "completed": 0,
+            "total": null,
+            "unit": "项"
+          },
+          "metrics": []
+        }
+      }
+    },
+    {
+      "id": "fdb15",
+      "status": "complete",
+      "status_label": "已完成",
+      "status_detail": "两个模型均已完成本轮明确批准范围，指标来自原始评分函数，各 Judge 独立展示。",
+      "protocol": "保持官方 overlap／clean 输入、行为提示词、原温度及计分公式；同输出分别用 GPT-4o 别名（日期版未核实）和 GPT-5.6 Sol 评分，独立报告。原始延迟另列。",
+      "coverage": "发布包实际 498 组：打断 200、附和 98、对旁人说话 100、背景人声 100；每模型 996 次推理。README 写 499 组，当前官方附和压缩包只含 ID 1–98。",
+      "results": {
+        "minicpm-o4.5": {
+          "status": "complete",
+          "coverage": {
+            "completed": 996,
+            "total": 996,
+            "unit": "次原生流式推理"
+          },
+          "metrics": [
+            {
+              "name": "C_RESPOND",
+              "value": 0.54,
+              "unit": "ratio",
+              "n": 200,
+              "split": "user_interruption",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_RESUME",
+              "value": 0.37,
+              "unit": "ratio",
+              "n": 200,
+              "split": "user_interruption",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_UNCERTAIN_HANDLING",
+              "value": 0.03,
+              "unit": "ratio",
+              "n": 200,
+              "split": "user_interruption",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_UNKNOWN",
+              "value": 0.07,
+              "unit": "ratio",
+              "n": 200,
+              "split": "user_interruption",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_RESPOND",
+              "value": 0.42,
+              "unit": "ratio",
+              "n": 200,
+              "split": "user_interruption",
+              "judge": "sol"
+            },
+            {
+              "name": "C_RESUME",
+              "value": 0.41,
+              "unit": "ratio",
+              "n": 200,
+              "split": "user_interruption",
+              "judge": "sol"
+            },
+            {
+              "name": "C_UNCERTAIN_HANDLING",
+              "value": 0.01,
+              "unit": "ratio",
+              "n": 200,
+              "split": "user_interruption",
+              "judge": "sol"
+            },
+            {
+              "name": "C_UNKNOWN",
+              "value": 0.15,
+              "unit": "ratio",
+              "n": 200,
+              "split": "user_interruption",
+              "judge": "sol"
+            },
+            {
+              "name": "官方脚本停声区间算术均值（本机汇总）",
+              "value": 2.501271028037383,
+              "unit": "s",
+              "n": 214,
+              "trial_n": 200,
+              "split": "user_interruption",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本停声区间中位数（本机汇总）",
+              "value": 2.4599999999999995,
+              "unit": "s",
+              "n": 214,
+              "trial_n": 200,
+              "split": "user_interruption",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本响应区间算术均值（本机汇总）",
+              "value": 2.5072899408284024,
+              "unit": "s",
+              "n": 338,
+              "trial_n": 200,
+              "split": "user_interruption",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本响应区间中位数（本机汇总）",
+              "value": 2.5319999999999996,
+              "unit": "s",
+              "n": 338,
+              "trial_n": 200,
+              "split": "user_interruption",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "补充统计：speech_dur_s",
+              "value": 4.803200000000001,
+              "unit": "s",
+              "n": 200,
+              "split": "user_interruption/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：utmosv2",
+              "value": 3.08169677734375,
+              "unit": "score",
+              "n": 200,
+              "split": "user_interruption/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_intensity",
+              "value": 61.94244827270508,
+              "unit": "dB",
+              "n": 200,
+              "split": "user_interruption/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_intensity",
+              "value": 16.221055631637572,
+              "unit": "dB",
+              "n": 200,
+              "split": "user_interruption/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_pitch",
+              "value": 264.8194113922119,
+              "unit": "Hz",
+              "n": 200,
+              "split": "user_interruption/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：wpm",
+              "value": 171.40994493002614,
+              "unit": "words/min",
+              "n": 200,
+              "split": "user_interruption/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_pitch",
+              "value": 57.55575815200805,
+              "unit": "Hz",
+              "n": 200,
+              "split": "user_interruption/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：speech_dur_s",
+              "value": 4.158000000000003,
+              "unit": "s",
+              "n": 200,
+              "split": "user_interruption/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：utmosv2",
+              "value": 2.950712890625,
+              "unit": "score",
+              "n": 200,
+              "split": "user_interruption/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_intensity",
+              "value": 61.44010934829712,
+              "unit": "dB",
+              "n": 200,
+              "split": "user_interruption/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_intensity",
+              "value": 17.643375034332276,
+              "unit": "dB",
+              "n": 200,
+              "split": "user_interruption/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_pitch",
+              "value": 265.16306060791015,
+              "unit": "Hz",
+              "n": 200,
+              "split": "user_interruption/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：wpm",
+              "value": 146.16640410319994,
+              "unit": "words/min",
+              "n": 200,
+              "split": "user_interruption/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_pitch",
+              "value": 59.08149872779846,
+              "unit": "Hz",
+              "n": 200,
+              "split": "user_interruption/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "C_RESPOND",
+              "value": 0.3,
+              "unit": "ratio",
+              "n": 98,
+              "split": "user_backchannel",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_RESUME",
+              "value": 0.64,
+              "unit": "ratio",
+              "n": 98,
+              "split": "user_backchannel",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_UNKNOWN",
+              "value": 0.06,
+              "unit": "ratio",
+              "n": 98,
+              "split": "user_backchannel",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_RESPOND",
+              "value": 0.07,
+              "unit": "ratio",
+              "n": 98,
+              "split": "user_backchannel",
+              "judge": "sol"
+            },
+            {
+              "name": "C_RESUME",
+              "value": 0.44,
+              "unit": "ratio",
+              "n": 98,
+              "split": "user_backchannel",
+              "judge": "sol"
+            },
+            {
+              "name": "C_UNKNOWN",
+              "value": 0.49,
+              "unit": "ratio",
+              "n": 98,
+              "split": "user_backchannel",
+              "judge": "sol"
+            },
+            {
+              "name": "官方脚本停声区间算术均值（本机汇总）",
+              "value": 0.7316734693877551,
+              "unit": "s",
+              "n": 98,
+              "trial_n": 98,
+              "split": "user_backchannel",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本停声区间中位数（本机汇总）",
+              "value": 0.7320000000000002,
+              "unit": "s",
+              "n": 98,
+              "trial_n": 98,
+              "split": "user_backchannel",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本响应区间算术均值（本机汇总）",
+              "value": 2.4677064220183484,
+              "unit": "s",
+              "n": 109,
+              "trial_n": 98,
+              "split": "user_backchannel",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本响应区间中位数（本机汇总）",
+              "value": 2.4359999999999995,
+              "unit": "s",
+              "n": 109,
+              "trial_n": 98,
+              "split": "user_backchannel",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "补充统计：speech_dur_s",
+              "value": 2.399183673469388,
+              "unit": "s",
+              "n": 98,
+              "split": "user_backchannel/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：utmosv2",
+              "value": 2.852728396045918,
+              "unit": "score",
+              "n": 98,
+              "split": "user_backchannel/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_intensity",
+              "value": 61.08190073285784,
+              "unit": "dB",
+              "n": 98,
+              "split": "user_backchannel/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_intensity",
+              "value": 16.349296316808584,
+              "unit": "dB",
+              "n": 98,
+              "split": "user_backchannel/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_pitch",
+              "value": 266.6771901967574,
+              "unit": "Hz",
+              "n": 98,
+              "split": "user_backchannel/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：wpm",
+              "value": 132.86211130586318,
+              "unit": "words/min",
+              "n": 98,
+              "split": "user_backchannel/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_pitch",
+              "value": 55.55841436191481,
+              "unit": "Hz",
+              "n": 98,
+              "split": "user_backchannel/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：speech_dur_s",
+              "value": 4.7706122448979595,
+              "unit": "s",
+              "n": 98,
+              "split": "user_backchannel/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：utmosv2",
+              "value": 3.1869419642857144,
+              "unit": "score",
+              "n": 98,
+              "split": "user_backchannel/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_intensity",
+              "value": 63.61060313789212,
+              "unit": "dB",
+              "n": 98,
+              "split": "user_backchannel/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_intensity",
+              "value": 16.118756712699422,
+              "unit": "dB",
+              "n": 98,
+              "split": "user_backchannel/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_pitch",
+              "value": 257.5344021855568,
+              "unit": "Hz",
+              "n": 98,
+              "split": "user_backchannel/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：wpm",
+              "value": 155.90239931027625,
+              "unit": "words/min",
+              "n": 98,
+              "split": "user_backchannel/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_pitch",
+              "value": 56.04955885361652,
+              "unit": "Hz",
+              "n": 98,
+              "split": "user_backchannel/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "C_RESPOND",
+              "value": 0.35,
+              "unit": "ratio",
+              "n": 100,
+              "split": "talking_to_other",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_RESUME",
+              "value": 0.49,
+              "unit": "ratio",
+              "n": 100,
+              "split": "talking_to_other",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_UNCERTAIN_HANDLING",
+              "value": 0.06,
+              "unit": "ratio",
+              "n": 100,
+              "split": "talking_to_other",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_UNKNOWN",
+              "value": 0.1,
+              "unit": "ratio",
+              "n": 100,
+              "split": "talking_to_other",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_RESPOND",
+              "value": 0.29,
+              "unit": "ratio",
+              "n": 100,
+              "split": "talking_to_other",
+              "judge": "sol"
+            },
+            {
+              "name": "C_RESUME",
+              "value": 0.48,
+              "unit": "ratio",
+              "n": 100,
+              "split": "talking_to_other",
+              "judge": "sol"
+            },
+            {
+              "name": "C_UNCERTAIN_HANDLING",
+              "value": 0.01,
+              "unit": "ratio",
+              "n": 100,
+              "split": "talking_to_other",
+              "judge": "sol"
+            },
+            {
+              "name": "C_UNKNOWN",
+              "value": 0.22,
+              "unit": "ratio",
+              "n": 100,
+              "split": "talking_to_other",
+              "judge": "sol"
+            },
+            {
+              "name": "官方脚本停声区间算术均值（本机汇总）",
+              "value": 1.8353725490196078,
+              "unit": "s",
+              "n": 102,
+              "trial_n": 99,
+              "split": "talking_to_other",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本停声区间中位数（本机汇总）",
+              "value": 1.932,
+              "unit": "s",
+              "n": 102,
+              "trial_n": 99,
+              "split": "talking_to_other",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本响应区间算术均值（本机汇总）",
+              "value": 2.397081081081081,
+              "unit": "s",
+              "n": 148,
+              "trial_n": 100,
+              "split": "talking_to_other",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本响应区间中位数（本机汇总）",
+              "value": 2.436,
+              "unit": "s",
+              "n": 148,
+              "trial_n": 100,
+              "split": "talking_to_other",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "补充统计：speech_dur_s",
+              "value": 3.6488,
+              "unit": "s",
+              "n": 100,
+              "split": "talking_to_other/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：utmosv2",
+              "value": 3.0444384765625,
+              "unit": "score",
+              "n": 100,
+              "split": "talking_to_other/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_intensity",
+              "value": 61.38292572021484,
+              "unit": "dB",
+              "n": 100,
+              "split": "talking_to_other/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_intensity",
+              "value": 16.04613118171692,
+              "unit": "dB",
+              "n": 100,
+              "split": "talking_to_other/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_pitch",
+              "value": 260.0239605712891,
+              "unit": "Hz",
+              "n": 100,
+              "split": "talking_to_other/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：wpm",
+              "value": 162.24452791136136,
+              "unit": "words/min",
+              "n": 100,
+              "split": "talking_to_other/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_pitch",
+              "value": 51.82333879470825,
+              "unit": "Hz",
+              "n": 100,
+              "split": "talking_to_other/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：speech_dur_s",
+              "value": 3.9983999999999993,
+              "unit": "s",
+              "n": 100,
+              "split": "talking_to_other/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：utmosv2",
+              "value": 2.6693310546875,
+              "unit": "score",
+              "n": 100,
+              "split": "talking_to_other/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_intensity",
+              "value": 60.73300258636475,
+              "unit": "dB",
+              "n": 100,
+              "split": "talking_to_other/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_intensity",
+              "value": 18.55545449256897,
+              "unit": "dB",
+              "n": 100,
+              "split": "talking_to_other/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_pitch",
+              "value": 257.6480960083008,
+              "unit": "Hz",
+              "n": 100,
+              "split": "talking_to_other/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：wpm",
+              "value": 148.5899089718572,
+              "unit": "words/min",
+              "n": 100,
+              "split": "talking_to_other/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_pitch",
+              "value": 53.43034627914429,
+              "unit": "Hz",
+              "n": 100,
+              "split": "talking_to_other/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "C_RESPOND",
+              "value": 0.29,
+              "unit": "ratio",
+              "n": 100,
+              "split": "background_speech",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_RESUME",
+              "value": 0.55,
+              "unit": "ratio",
+              "n": 100,
+              "split": "background_speech",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_UNCERTAIN_HANDLING",
+              "value": 0.09,
+              "unit": "ratio",
+              "n": 100,
+              "split": "background_speech",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_UNKNOWN",
+              "value": 0.07,
+              "unit": "ratio",
+              "n": 100,
+              "split": "background_speech",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_RESPOND",
+              "value": 0.12,
+              "unit": "ratio",
+              "n": 100,
+              "split": "background_speech",
+              "judge": "sol"
+            },
+            {
+              "name": "C_RESUME",
+              "value": 0.66,
+              "unit": "ratio",
+              "n": 100,
+              "split": "background_speech",
+              "judge": "sol"
+            },
+            {
+              "name": "C_UNKNOWN",
+              "value": 0.22,
+              "unit": "ratio",
+              "n": 100,
+              "split": "background_speech",
+              "judge": "sol"
+            },
+            {
+              "name": "官方脚本停声区间算术均值（本机汇总）",
+              "value": 1.4196799999999998,
+              "unit": "s",
+              "n": 100,
+              "trial_n": 99,
+              "split": "background_speech",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本停声区间中位数（本机汇总）",
+              "value": 1.436,
+              "unit": "s",
+              "n": 100,
+              "trial_n": 99,
+              "split": "background_speech",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本响应区间算术均值（本机汇总）",
+              "value": 2.302920634920635,
+              "unit": "s",
+              "n": 126,
+              "trial_n": 100,
+              "split": "background_speech",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本响应区间中位数（本机汇总）",
+              "value": 2.34,
+              "unit": "s",
+              "n": 126,
+              "trial_n": 100,
+              "split": "background_speech",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "补充统计：speech_dur_s",
+              "value": 3.4112000000000013,
+              "unit": "s",
+              "n": 100,
+              "split": "background_speech/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：utmosv2",
+              "value": 3.024306640625,
+              "unit": "score",
+              "n": 100,
+              "split": "background_speech/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_intensity",
+              "value": 60.45284473419189,
+              "unit": "dB",
+              "n": 100,
+              "split": "background_speech/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_intensity",
+              "value": 16.425855646133424,
+              "unit": "dB",
+              "n": 100,
+              "split": "background_speech/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_pitch",
+              "value": 262.7433570861816,
+              "unit": "Hz",
+              "n": 100,
+              "split": "background_speech/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：wpm",
+              "value": 167.9940292779692,
+              "unit": "words/min",
+              "n": 100,
+              "split": "background_speech/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_pitch",
+              "value": 55.538836307525635,
+              "unit": "Hz",
+              "n": 100,
+              "split": "background_speech/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：speech_dur_s",
+              "value": 3.8072000000000004,
+              "unit": "s",
+              "n": 100,
+              "split": "background_speech/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：utmosv2",
+              "value": 2.6939208984375,
+              "unit": "score",
+              "n": 100,
+              "split": "background_speech/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_intensity",
+              "value": 61.20061546325684,
+              "unit": "dB",
+              "n": 100,
+              "split": "background_speech/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_intensity",
+              "value": 18.191952362060547,
+              "unit": "dB",
+              "n": 100,
+              "split": "background_speech/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_pitch",
+              "value": 255.95715362548827,
+              "unit": "Hz",
+              "n": 100,
+              "split": "background_speech/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：wpm",
+              "value": 173.68901075247223,
+              "unit": "words/min",
+              "n": 100,
+              "split": "background_speech/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_pitch",
+              "value": 52.666865521669386,
+              "unit": "Hz",
+              "n": 100,
+              "split": "background_speech/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "utmosv2 pre_vs_post mean_before",
+              "value": 3.0452397184551887,
+              "unit": "MOS",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 pre_vs_post mean_after",
+              "value": 2.909207326061321,
+              "unit": "MOS",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 pre_vs_post mean_diff",
+              "value": -0.1360323923938679,
+              "unit": "MOS",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 pre_vs_post p_t",
+              "value": 0.05755795118143717,
+              "unit": "",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 pre_vs_post p_adj",
+              "value": 0.345347707088623,
+              "unit": "",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post mean_before",
+              "value": 3.209747023809524,
+              "unit": "MOS",
+              "n": 105,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post mean_after",
+              "value": 2.8999720982142856,
+              "unit": "MOS",
+              "n": 105,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post mean_diff",
+              "value": -0.3097749255952381,
+              "unit": "MOS",
+              "n": 105,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post p_t",
+              "value": 6.5823134994624025e-06,
+              "unit": "",
+              "n": 105,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post p_adj",
+              "value": 6.582313499462402e-05,
+              "unit": "",
+              "n": 105,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post mean_before",
+              "value": 170.93870783868655,
+              "unit": "words/min",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post mean_after",
+              "value": 142.04833053930014,
+              "unit": "words/min",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post mean_diff",
+              "value": -28.890377299386444,
+              "unit": "words/min",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post p_t",
+              "value": 1.0649998941931391e-07,
+              "unit": "",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post p_adj",
+              "value": 1.1714998836124531e-06,
+              "unit": "",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post mean_before",
+              "value": 176.93224589521887,
+              "unit": "words/min",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post mean_after",
+              "value": 142.04833053930014,
+              "unit": "words/min",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post mean_diff",
+              "value": -34.88391535591872,
+              "unit": "words/min",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post p_t",
+              "value": 7.199065056219199e-10,
+              "unit": "",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post p_adj",
+              "value": 8.638878067463039e-09,
+              "unit": "",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post mean_before",
+              "value": 264.6317890095261,
+              "unit": "Hz",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post mean_after",
+              "value": 267.7667422024709,
+              "unit": "Hz",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post mean_diff",
+              "value": 3.1349531929447965,
+              "unit": "Hz",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post p_t",
+              "value": 0.1493821338748462,
+              "unit": "",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post p_adj",
+              "value": 0.44814640162453856,
+              "unit": "",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post mean_before",
+              "value": 259.9271440326043,
+              "unit": "Hz",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post mean_after",
+              "value": 267.7667422024709,
+              "unit": "Hz",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post mean_diff",
+              "value": 7.839598169866598,
+              "unit": "Hz",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post p_t",
+              "value": 0.00029397395375889836,
+              "unit": "",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post p_adj",
+              "value": 0.002351791630071187,
+              "unit": "",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post mean_before",
+              "value": 56.63593909853981,
+              "unit": "Hz",
+              "n": 105,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post mean_after",
+              "value": 59.664676411946616,
+              "unit": "Hz",
+              "n": 105,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post mean_diff",
+              "value": 3.028737313406808,
+              "unit": "Hz",
+              "n": 105,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post p_t",
+              "value": 0.04818576220505107,
+              "unit": "",
+              "n": 105,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post p_adj",
+              "value": 0.33730033543535753,
+              "unit": "",
+              "n": 105,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post mean_before",
+              "value": 57.86443172636486,
+              "unit": "Hz",
+              "n": 105,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post mean_after",
+              "value": 59.664676411946616,
+              "unit": "Hz",
+              "n": 105,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post mean_diff",
+              "value": 1.8002446855817522,
+              "unit": "Hz",
+              "n": 105,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post p_t",
+              "value": 0.17476263480280685,
+              "unit": "",
+              "n": 105,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post p_adj",
+              "value": 0.44814640162453856,
+              "unit": "",
+              "n": 105,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post mean_before",
+              "value": 61.88863826247881,
+              "unit": "dB",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post mean_after",
+              "value": 61.18482600517993,
+              "unit": "dB",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post mean_diff",
+              "value": -0.7038122572988834,
+              "unit": "dB",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post p_t",
+              "value": 0.111772688392809,
+              "unit": "",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post p_adj",
+              "value": 0.447090753571236,
+              "unit": "",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post mean_before",
+              "value": 62.900284821132445,
+              "unit": "dB",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post mean_after",
+              "value": 61.18482600517993,
+              "unit": "dB",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post mean_diff",
+              "value": -1.715458815952517,
+              "unit": "dB",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post p_t",
+              "value": 3.2633009608443304e-05,
+              "unit": "",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post p_adj",
+              "value": 0.0002936970864759897,
+              "unit": "",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post mean_before",
+              "value": 16.31902431991865,
+              "unit": "dB",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post mean_after",
+              "value": 17.161424843770153,
+              "unit": "dB",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post mean_diff",
+              "value": 0.8424005238515027,
+              "unit": "dB",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post p_t",
+              "value": 0.07994494439957459,
+              "unit": "",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post p_adj",
+              "value": 0.3997247219978729,
+              "unit": "",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post mean_before",
+              "value": 16.59935340341532,
+              "unit": "dB",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post mean_after",
+              "value": 17.161424843770153,
+              "unit": "dB",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post mean_diff",
+              "value": 0.562071440354833,
+              "unit": "dB",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post p_t",
+              "value": 0.20469618978648732,
+              "unit": "",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post p_adj",
+              "value": 0.44814640162453856,
+              "unit": "",
+              "n": 106,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 pre_vs_post mean_before",
+              "value": 3.0407571231617645,
+              "unit": "MOS",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 pre_vs_post mean_after",
+              "value": 2.8478860294117645,
+              "unit": "MOS",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 pre_vs_post mean_diff",
+              "value": -0.19287109375,
+              "unit": "MOS",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 pre_vs_post p_t",
+              "value": 0.01618345020487016,
+              "unit": "",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 pre_vs_post p_adj",
+              "value": 0.08091725102435081,
+              "unit": "",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post mean_before",
+              "value": 3.2507207961309526,
+              "unit": "MOS",
+              "n": 84,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post mean_after",
+              "value": 2.8356119791666665,
+              "unit": "MOS",
+              "n": 84,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post mean_diff",
+              "value": -0.4151088169642857,
+              "unit": "MOS",
+              "n": 84,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post p_t",
+              "value": 9.40200446851685e-08,
+              "unit": "",
+              "n": 84,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post p_adj",
+              "value": 9.40200446851685e-07,
+              "unit": "",
+              "n": 84,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post mean_before",
+              "value": 167.96822006062308,
+              "unit": "words/min",
+              "n": 83,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post mean_after",
+              "value": 130.72197079698702,
+              "unit": "words/min",
+              "n": 83,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post mean_diff",
+              "value": -37.24624926363608,
+              "unit": "words/min",
+              "n": 83,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post p_t",
+              "value": 1.6533484864901003e-11,
+              "unit": "",
+              "n": 83,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post p_adj",
+              "value": 1.9840181837881202e-10,
+              "unit": "",
+              "n": 83,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post mean_before",
+              "value": 174.10233389685988,
+              "unit": "words/min",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post mean_after",
+              "value": 133.69365893300005,
+              "unit": "words/min",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post mean_diff",
+              "value": -40.40867496385982,
+              "unit": "words/min",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post p_t",
+              "value": 9.193169279115654e-11,
+              "unit": "",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post p_adj",
+              "value": 1.011248620702722e-09,
+              "unit": "",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post mean_before",
+              "value": 264.54247131347654,
+              "unit": "Hz",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post mean_after",
+              "value": 267.88312072753905,
+              "unit": "Hz",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post mean_diff",
+              "value": 3.3406494140625,
+              "unit": "Hz",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post p_t",
+              "value": 0.1676939876412894,
+              "unit": "",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post p_adj",
+              "value": 0.6412706932571258,
+              "unit": "",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post mean_before",
+              "value": 259.12293431899127,
+              "unit": "Hz",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post mean_after",
+              "value": 267.88312072753905,
+              "unit": "Hz",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post mean_diff",
+              "value": 8.760186408547794,
+              "unit": "Hz",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post p_t",
+              "value": 0.0006114646765100539,
+              "unit": "",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post p_adj",
+              "value": 0.004891717412080431,
+              "unit": "",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post mean_before",
+              "value": 57.899803161621094,
+              "unit": "Hz",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post mean_after",
+              "value": 60.04752255608054,
+              "unit": "Hz",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post mean_diff",
+              "value": 2.147719394459444,
+              "unit": "Hz",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post p_t",
+              "value": 0.16906181486262067,
+              "unit": "",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post p_adj",
+              "value": 0.6412706932571258,
+              "unit": "",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post mean_before",
+              "value": 58.10746926700368,
+              "unit": "Hz",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post mean_after",
+              "value": 60.04752255608054,
+              "unit": "Hz",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post mean_diff",
+              "value": 1.9400532890768611,
+              "unit": "Hz",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post p_t",
+              "value": 0.18174366605018752,
+              "unit": "",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post p_adj",
+              "value": 0.6412706932571258,
+              "unit": "",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post mean_before",
+              "value": 62.16038746553309,
+              "unit": "dB",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post mean_after",
+              "value": 60.775070818732765,
+              "unit": "dB",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post mean_diff",
+              "value": -1.3853166468003217,
+              "unit": "dB",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post p_t",
+              "value": 0.005484023718264695,
+              "unit": "",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post p_adj",
+              "value": 0.03838816602785287,
+              "unit": "",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post mean_before",
+              "value": 62.906154901841106,
+              "unit": "dB",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post mean_after",
+              "value": 60.775070818732765,
+              "unit": "dB",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post mean_diff",
+              "value": -2.131084083108341,
+              "unit": "dB",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post p_t",
+              "value": 1.7680623101100147e-06,
+              "unit": "",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post p_adj",
+              "value": 1.5912560790990132e-05,
+              "unit": "",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post mean_before",
+              "value": 16.058213097708567,
+              "unit": "dB",
+              "n": 84,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post mean_after",
+              "value": 17.473646334239415,
+              "unit": "dB",
+              "n": 84,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post mean_diff",
+              "value": 1.4154332365308488,
+              "unit": "dB",
+              "n": 84,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post p_t",
+              "value": 0.007861805107461262,
+              "unit": "",
+              "n": 84,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post p_adj",
+              "value": 0.04717083064476757,
+              "unit": "",
+              "n": 84,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post mean_before",
+              "value": 16.716208368189193,
+              "unit": "dB",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post mean_after",
+              "value": 17.384776238834156,
+              "unit": "dB",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post mean_diff",
+              "value": 0.668567870644962,
+              "unit": "dB",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post p_t",
+              "value": 0.16031767331428146,
+              "unit": "",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post p_adj",
+              "value": 0.6412706932571258,
+              "unit": "",
+              "n": 85,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            }
+          ],
+          "native_failures": 0,
+          "native_coverage": {
+            "completed": 996,
+            "total": 996,
+            "unit": "次流式推理"
+          },
+          "scope": "full_released_set"
+        },
+        "gander": {
+          "status": "complete",
+          "coverage": {
+            "completed": 996,
+            "total": 996,
+            "unit": "次原生流式推理"
+          },
+          "metrics": [
+            {
+              "name": "C_RESPOND",
+              "value": 0.2,
+              "unit": "ratio",
+              "n": 200,
+              "split": "user_interruption",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_RESUME",
+              "value": 0.65,
+              "unit": "ratio",
+              "n": 200,
+              "split": "user_interruption",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_UNCERTAIN_HANDLING",
+              "value": 0.03,
+              "unit": "ratio",
+              "n": 200,
+              "split": "user_interruption",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_UNKNOWN",
+              "value": 0.13,
+              "unit": "ratio",
+              "n": 200,
+              "split": "user_interruption",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_RESPOND",
+              "value": 0.19,
+              "unit": "ratio",
+              "n": 200,
+              "split": "user_interruption",
+              "judge": "sol"
+            },
+            {
+              "name": "C_RESUME",
+              "value": 0.4,
+              "unit": "ratio",
+              "n": 200,
+              "split": "user_interruption",
+              "judge": "sol"
+            },
+            {
+              "name": "C_UNCERTAIN_HANDLING",
+              "value": 0.01,
+              "unit": "ratio",
+              "n": 200,
+              "split": "user_interruption",
+              "judge": "sol"
+            },
+            {
+              "name": "C_UNKNOWN",
+              "value": 0.41,
+              "unit": "ratio",
+              "n": 200,
+              "split": "user_interruption",
+              "judge": "sol"
+            },
+            {
+              "name": "官方脚本停声区间算术均值（本机汇总）",
+              "value": 2.5757281553398057,
+              "unit": "s",
+              "n": 206,
+              "trial_n": 195,
+              "split": "user_interruption",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本停声区间中位数（本机汇总）",
+              "value": 2.588,
+              "unit": "s",
+              "n": 206,
+              "trial_n": 195,
+              "split": "user_interruption",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本响应区间算术均值（本机汇总）",
+              "value": 3.6266534653465348,
+              "unit": "s",
+              "n": 303,
+              "trial_n": 199,
+              "split": "user_interruption",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本响应区间中位数（本机汇总）",
+              "value": 3.652,
+              "unit": "s",
+              "n": 303,
+              "trial_n": 199,
+              "split": "user_interruption",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "补充统计：speech_dur_s",
+              "value": 3.555999999999997,
+              "unit": "s",
+              "n": 200,
+              "split": "user_interruption/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：utmosv2",
+              "value": 3.175244140625,
+              "unit": "score",
+              "n": 200,
+              "split": "user_interruption/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_intensity",
+              "value": 60.60954053878784,
+              "unit": "dB",
+              "n": 200,
+              "split": "user_interruption/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_intensity",
+              "value": 14.931512722969055,
+              "unit": "dB",
+              "n": 200,
+              "split": "user_interruption/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_pitch",
+              "value": 245.6813966369629,
+              "unit": "Hz",
+              "n": 200,
+              "split": "user_interruption/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：wpm",
+              "value": 172.50222162825116,
+              "unit": "words/min",
+              "n": 200,
+              "split": "user_interruption/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_pitch",
+              "value": 46.95145396709442,
+              "unit": "Hz",
+              "n": 200,
+              "split": "user_interruption/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：speech_dur_s",
+              "value": 3.9628,
+              "unit": "s",
+              "n": 200,
+              "split": "user_interruption/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：utmosv2",
+              "value": 2.719197998046875,
+              "unit": "score",
+              "n": 200,
+              "split": "user_interruption/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_intensity",
+              "value": 56.59398675322532,
+              "unit": "dB",
+              "n": 200,
+              "split": "user_interruption/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_intensity",
+              "value": 14.930814479589463,
+              "unit": "dB",
+              "n": 200,
+              "split": "user_interruption/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_pitch",
+              "value": 241.19323341369628,
+              "unit": "Hz",
+              "n": 200,
+              "split": "user_interruption/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：wpm",
+              "value": 151.85205535808177,
+              "unit": "words/min",
+              "n": 200,
+              "split": "user_interruption/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_pitch",
+              "value": 48.848613991737366,
+              "unit": "Hz",
+              "n": 200,
+              "split": "user_interruption/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "C_RESPOND",
+              "value": 0.04,
+              "unit": "ratio",
+              "n": 98,
+              "split": "user_backchannel",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_RESUME",
+              "value": 0.89,
+              "unit": "ratio",
+              "n": 98,
+              "split": "user_backchannel",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_UNKNOWN",
+              "value": 0.07,
+              "unit": "ratio",
+              "n": 98,
+              "split": "user_backchannel",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_RESPOND",
+              "value": 0.06,
+              "unit": "ratio",
+              "n": 98,
+              "split": "user_backchannel",
+              "judge": "sol"
+            },
+            {
+              "name": "C_RESUME",
+              "value": 0.19,
+              "unit": "ratio",
+              "n": 98,
+              "split": "user_backchannel",
+              "judge": "sol"
+            },
+            {
+              "name": "C_UNKNOWN",
+              "value": 0.74,
+              "unit": "ratio",
+              "n": 98,
+              "split": "user_backchannel",
+              "judge": "sol"
+            },
+            {
+              "name": "官方脚本停声区间算术均值（本机汇总）",
+              "value": 0.701319587628866,
+              "unit": "s",
+              "n": 97,
+              "trial_n": 97,
+              "split": "user_backchannel",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本停声区间中位数（本机汇总）",
+              "value": 0.7000000000000002,
+              "unit": "s",
+              "n": 97,
+              "trial_n": 97,
+              "split": "user_backchannel",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本响应区间算术均值（本机汇总）",
+              "value": 3.7687999999999997,
+              "unit": "s",
+              "n": 100,
+              "trial_n": 97,
+              "split": "user_backchannel",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本响应区间中位数（本机汇总）",
+              "value": 3.8600000000000003,
+              "unit": "s",
+              "n": 100,
+              "trial_n": 97,
+              "split": "user_backchannel",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "补充统计：speech_dur_s",
+              "value": 1.043265306122449,
+              "unit": "s",
+              "n": 98,
+              "split": "user_backchannel/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：utmosv2",
+              "value": 2.388054049744898,
+              "unit": "score",
+              "n": 98,
+              "split": "user_backchannel/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_intensity",
+              "value": 55.16797367407351,
+              "unit": "dB",
+              "n": 98,
+              "split": "user_backchannel/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_intensity",
+              "value": 15.248883743794384,
+              "unit": "dB",
+              "n": 98,
+              "split": "user_backchannel/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_pitch",
+              "value": 287.39879841707193,
+              "unit": "Hz",
+              "n": 98,
+              "split": "user_backchannel/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：wpm",
+              "value": 110.56897278527946,
+              "unit": "words/min",
+              "n": 98,
+              "split": "user_backchannel/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_pitch",
+              "value": 43.37887711184366,
+              "unit": "Hz",
+              "n": 98,
+              "split": "user_backchannel/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：speech_dur_s",
+              "value": 4.8073469387755114,
+              "unit": "s",
+              "n": 98,
+              "split": "user_backchannel/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：utmosv2",
+              "value": 3.286297233737245,
+              "unit": "score",
+              "n": 98,
+              "split": "user_backchannel/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_intensity",
+              "value": 59.11454878048021,
+              "unit": "dB",
+              "n": 98,
+              "split": "user_backchannel/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_intensity",
+              "value": 12.15509219072303,
+              "unit": "dB",
+              "n": 98,
+              "split": "user_backchannel/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_pitch",
+              "value": 231.9355015657386,
+              "unit": "Hz",
+              "n": 98,
+              "split": "user_backchannel/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：wpm",
+              "value": 166.12024089680395,
+              "unit": "words/min",
+              "n": 98,
+              "split": "user_backchannel/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_pitch",
+              "value": 45.119899165873626,
+              "unit": "Hz",
+              "n": 98,
+              "split": "user_backchannel/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "C_RESPOND",
+              "value": 0.11,
+              "unit": "ratio",
+              "n": 100,
+              "split": "talking_to_other",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_RESUME",
+              "value": 0.48,
+              "unit": "ratio",
+              "n": 100,
+              "split": "talking_to_other",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_UNCERTAIN_HANDLING",
+              "value": 0.01,
+              "unit": "ratio",
+              "n": 100,
+              "split": "talking_to_other",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_UNKNOWN",
+              "value": 0.4,
+              "unit": "ratio",
+              "n": 100,
+              "split": "talking_to_other",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_RESPOND",
+              "value": 0.01,
+              "unit": "ratio",
+              "n": 100,
+              "split": "talking_to_other",
+              "judge": "sol"
+            },
+            {
+              "name": "C_RESUME",
+              "value": 0.39,
+              "unit": "ratio",
+              "n": 100,
+              "split": "talking_to_other",
+              "judge": "sol"
+            },
+            {
+              "name": "C_UNKNOWN",
+              "value": 0.6,
+              "unit": "ratio",
+              "n": 100,
+              "split": "talking_to_other",
+              "judge": "sol"
+            },
+            {
+              "name": "官方脚本停声区间算术均值（本机汇总）",
+              "value": 1.7429767441860464,
+              "unit": "s",
+              "n": 86,
+              "trial_n": 86,
+              "split": "talking_to_other",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本停声区间中位数（本机汇总）",
+              "value": 1.8519999999999994,
+              "unit": "s",
+              "n": 86,
+              "trial_n": 86,
+              "split": "talking_to_other",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本响应区间算术均值（本机汇总）",
+              "value": 3.6439999999999997,
+              "unit": "s",
+              "n": 100,
+              "trial_n": 94,
+              "split": "talking_to_other",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本响应区间中位数（本机汇总）",
+              "value": 3.7,
+              "unit": "s",
+              "n": 100,
+              "trial_n": 94,
+              "split": "talking_to_other",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "补充统计：speech_dur_s",
+              "value": 1.8688,
+              "unit": "s",
+              "n": 100,
+              "split": "talking_to_other/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：utmosv2",
+              "value": 2.9955029296875,
+              "unit": "score",
+              "n": 100,
+              "split": "talking_to_other/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_intensity",
+              "value": 45.719584922790524,
+              "unit": "dB",
+              "n": 100,
+              "split": "talking_to_other/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_intensity",
+              "value": 14.597667761077373,
+              "unit": "dB",
+              "n": 100,
+              "split": "talking_to_other/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_pitch",
+              "value": 235.59419052124022,
+              "unit": "Hz",
+              "n": 100,
+              "split": "talking_to_other/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：wpm",
+              "value": 136.93092202561246,
+              "unit": "words/min",
+              "n": 100,
+              "split": "talking_to_other/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_pitch",
+              "value": 39.23988970756531,
+              "unit": "Hz",
+              "n": 100,
+              "split": "talking_to_other/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：speech_dur_s",
+              "value": 2.2880000000000003,
+              "unit": "s",
+              "n": 100,
+              "split": "talking_to_other/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：utmosv2",
+              "value": 1.992645263671875,
+              "unit": "score",
+              "n": 100,
+              "split": "talking_to_other/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_intensity",
+              "value": -2.70504558801651,
+              "unit": "dB",
+              "n": 100,
+              "split": "talking_to_other/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_intensity",
+              "value": 11.454167566900106,
+              "unit": "dB",
+              "n": 100,
+              "split": "talking_to_other/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_pitch",
+              "value": 166.77821365356445,
+              "unit": "Hz",
+              "n": 100,
+              "split": "talking_to_other/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：wpm",
+              "value": 104.49505320543382,
+              "unit": "words/min",
+              "n": 100,
+              "split": "talking_to_other/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_pitch",
+              "value": 28.057542217969896,
+              "unit": "Hz",
+              "n": 100,
+              "split": "talking_to_other/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "C_RESPOND",
+              "value": 0.12,
+              "unit": "ratio",
+              "n": 100,
+              "split": "background_speech",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_RESUME",
+              "value": 0.45,
+              "unit": "ratio",
+              "n": 100,
+              "split": "background_speech",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_UNCERTAIN_HANDLING",
+              "value": 0.01,
+              "unit": "ratio",
+              "n": 100,
+              "split": "background_speech",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_UNKNOWN",
+              "value": 0.42,
+              "unit": "ratio",
+              "n": 100,
+              "split": "background_speech",
+              "judge": "gpt4o-alias"
+            },
+            {
+              "name": "C_RESPOND",
+              "value": 0.02,
+              "unit": "ratio",
+              "n": 100,
+              "split": "background_speech",
+              "judge": "sol"
+            },
+            {
+              "name": "C_RESUME",
+              "value": 0.41,
+              "unit": "ratio",
+              "n": 100,
+              "split": "background_speech",
+              "judge": "sol"
+            },
+            {
+              "name": "C_UNKNOWN",
+              "value": 0.57,
+              "unit": "ratio",
+              "n": 100,
+              "split": "background_speech",
+              "judge": "sol"
+            },
+            {
+              "name": "官方脚本停声区间算术均值（本机汇总）",
+              "value": 1.3436363636363635,
+              "unit": "s",
+              "n": 88,
+              "trial_n": 88,
+              "split": "background_speech",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本停声区间中位数（本机汇总）",
+              "value": 1.3560000000000003,
+              "unit": "s",
+              "n": 88,
+              "trial_n": 88,
+              "split": "background_speech",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本响应区间算术均值（本机汇总）",
+              "value": 3.5846666666666667,
+              "unit": "s",
+              "n": 96,
+              "trial_n": 93,
+              "split": "background_speech",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "官方脚本响应区间中位数（本机汇总）",
+              "value": 3.6199999999999997,
+              "unit": "s",
+              "n": 96,
+              "trial_n": 93,
+              "split": "background_speech",
+              "judge": "official VAD interval",
+              "availability": "valid"
+            },
+            {
+              "name": "补充统计：speech_dur_s",
+              "value": 1.7103999999999997,
+              "unit": "s",
+              "n": 100,
+              "split": "background_speech/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：utmosv2",
+              "value": 2.8838037109375,
+              "unit": "score",
+              "n": 100,
+              "split": "background_speech/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_intensity",
+              "value": 42.534044647216795,
+              "unit": "dB",
+              "n": 100,
+              "split": "background_speech/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_intensity",
+              "value": 14.806173677557782,
+              "unit": "dB",
+              "n": 100,
+              "split": "background_speech/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_pitch",
+              "value": 233.8803190612793,
+              "unit": "Hz",
+              "n": 100,
+              "split": "background_speech/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：wpm",
+              "value": 153.96252465827615,
+              "unit": "words/min",
+              "n": 100,
+              "split": "background_speech/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_pitch",
+              "value": 39.97648442268372,
+              "unit": "Hz",
+              "n": 100,
+              "split": "background_speech/pre",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：speech_dur_s",
+              "value": 2.7408000000000006,
+              "unit": "s",
+              "n": 100,
+              "split": "background_speech/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：utmosv2",
+              "value": 2.213125,
+              "unit": "score",
+              "n": 100,
+              "split": "background_speech/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_intensity",
+              "value": 7.363334493637085,
+              "unit": "dB",
+              "n": 100,
+              "split": "background_speech/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_intensity",
+              "value": 11.304402456636689,
+              "unit": "dB",
+              "n": 100,
+              "split": "background_speech/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：mean_pitch",
+              "value": 182.1305010986328,
+              "unit": "Hz",
+              "n": 100,
+              "split": "background_speech/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：wpm",
+              "value": 147.48652598565567,
+              "unit": "words/min",
+              "n": 100,
+              "split": "background_speech/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "补充统计：std_pitch",
+              "value": 31.445300209522248,
+              "unit": "Hz",
+              "n": 100,
+              "split": "background_speech/post",
+              "judge": "official acoustic model",
+              "analysis": "supplementary_all_trials"
+            },
+            {
+              "name": "utmosv2 pre_vs_post mean_before",
+              "value": 2.834498355263158,
+              "unit": "MOS",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 pre_vs_post mean_after",
+              "value": 2.8341642680921053,
+              "unit": "MOS",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 pre_vs_post mean_diff",
+              "value": -0.0003340871710526316,
+              "unit": "MOS",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 pre_vs_post p_t",
+              "value": 0.9986663349393738,
+              "unit": "",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 pre_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post mean_before",
+              "value": 2.961862664473684,
+              "unit": "MOS",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post mean_after",
+              "value": 2.8341642680921053,
+              "unit": "MOS",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post mean_diff",
+              "value": -0.12769839638157895,
+              "unit": "MOS",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post p_t",
+              "value": 0.5267609690940662,
+              "unit": "",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post mean_before",
+              "value": 162.34300507606326,
+              "unit": "words/min",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post mean_after",
+              "value": 156.62273290184845,
+              "unit": "words/min",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post mean_diff",
+              "value": -5.720272174214825,
+              "unit": "words/min",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post p_t",
+              "value": 0.6470058325491977,
+              "unit": "",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post mean_before",
+              "value": 166.638466118904,
+              "unit": "words/min",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post mean_after",
+              "value": 160.8356320126093,
+              "unit": "words/min",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post mean_diff",
+              "value": -5.802834106294733,
+              "unit": "words/min",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post p_t",
+              "value": 0.6423799718490844,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post mean_before",
+              "value": 242.5561069689299,
+              "unit": "Hz",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post mean_after",
+              "value": 245.93906241969057,
+              "unit": "Hz",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post mean_diff",
+              "value": 3.382955450760691,
+              "unit": "Hz",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post p_t",
+              "value": 0.38572375991550645,
+              "unit": "",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post mean_before",
+              "value": 241.75842204846833,
+              "unit": "Hz",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post mean_after",
+              "value": 245.93906241969057,
+              "unit": "Hz",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post mean_diff",
+              "value": 4.180640371222245,
+              "unit": "Hz",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post p_t",
+              "value": 0.26417225871629263,
+              "unit": "",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post mean_before",
+              "value": 44.28399154875014,
+              "unit": "Hz",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post mean_after",
+              "value": 49.006373749838936,
+              "unit": "Hz",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post mean_diff",
+              "value": 4.7223822010887995,
+              "unit": "Hz",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post p_t",
+              "value": 0.0916870928433596,
+              "unit": "",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post mean_before",
+              "value": 48.681458172045254,
+              "unit": "Hz",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post mean_after",
+              "value": 47.29840040206909,
+              "unit": "Hz",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post mean_diff",
+              "value": -1.3830577699761641,
+              "unit": "Hz",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post p_t",
+              "value": 0.6334662970701173,
+              "unit": "",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post mean_before",
+              "value": 61.53717381245381,
+              "unit": "dB",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post mean_after",
+              "value": 62.56611251831055,
+              "unit": "dB",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post mean_diff",
+              "value": 1.0289387058567356,
+              "unit": "dB",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post p_t",
+              "value": 0.2294923809183694,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post mean_before",
+              "value": 63.03603098127577,
+              "unit": "dB",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post mean_after",
+              "value": 62.408710373772514,
+              "unit": "dB",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post mean_diff",
+              "value": -0.6273206075032552,
+              "unit": "dB",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post p_t",
+              "value": 0.4427340206055598,
+              "unit": "",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post mean_before",
+              "value": 15.539362003928737,
+              "unit": "dB",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post mean_after",
+              "value": 15.383021354675293,
+              "unit": "dB",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post mean_diff",
+              "value": -0.15634064925344368,
+              "unit": "dB",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post p_t",
+              "value": 0.8408068096530286,
+              "unit": "",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post mean_before",
+              "value": 15.174059140054803,
+              "unit": "dB",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post mean_after",
+              "value": 15.383021354675293,
+              "unit": "dB",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post mean_diff",
+              "value": 0.20896221462048983,
+              "unit": "dB",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post p_t",
+              "value": 0.7862476984601117,
+              "unit": "",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 38,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "gpt4o-alias",
+              "selection_judge": "gpt4o-alias",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 pre_vs_post mean_before",
+              "value": 2.7589474239864864,
+              "unit": "MOS",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 pre_vs_post mean_after",
+              "value": 2.648754222972973,
+              "unit": "MOS",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 pre_vs_post mean_diff",
+              "value": -0.11019320101351351,
+              "unit": "MOS",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 pre_vs_post p_t",
+              "value": 0.5887962297670759,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 pre_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post mean_before",
+              "value": 2.93138988597973,
+              "unit": "MOS",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post mean_after",
+              "value": 2.648754222972973,
+              "unit": "MOS",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post mean_diff",
+              "value": -0.28263566300675674,
+              "unit": "MOS",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post p_t",
+              "value": 0.1405001881912922,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "utmosv2 clean_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post mean_before",
+              "value": 158.78739275419832,
+              "unit": "words/min",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post mean_after",
+              "value": 150.2604624236696,
+              "unit": "words/min",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post mean_diff",
+              "value": -8.526930330528735,
+              "unit": "words/min",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post p_t",
+              "value": 0.5698763444816448,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm pre_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post mean_before",
+              "value": 169.07948772268227,
+              "unit": "words/min",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post mean_after",
+              "value": 150.2604624236696,
+              "unit": "words/min",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post mean_diff",
+              "value": -18.819025299012722,
+              "unit": "words/min",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post p_t",
+              "value": 0.14165428687973797,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "wpm clean_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post mean_before",
+              "value": 242.19716747387037,
+              "unit": "Hz",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post mean_after",
+              "value": 246.7089167414485,
+              "unit": "Hz",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post mean_diff",
+              "value": 4.511749267578125,
+              "unit": "Hz",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post p_t",
+              "value": 0.33606570565044713,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch pre_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post mean_before",
+              "value": 242.50507375356312,
+              "unit": "Hz",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post mean_after",
+              "value": 246.7089167414485,
+              "unit": "Hz",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post mean_diff",
+              "value": 4.203842987885347,
+              "unit": "Hz",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post p_t",
+              "value": 0.2858262506438428,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_pitch clean_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post mean_before",
+              "value": 45.2417820853156,
+              "unit": "Hz",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post mean_after",
+              "value": 45.78511910825162,
+              "unit": "Hz",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post mean_diff",
+              "value": 0.5433370229360219,
+              "unit": "Hz",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post p_t",
+              "value": 0.879638539774861,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch pre_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post mean_before",
+              "value": 50.41719560365419,
+              "unit": "Hz",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post mean_after",
+              "value": 45.78511910825162,
+              "unit": "Hz",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post mean_diff",
+              "value": -4.632076495402568,
+              "unit": "Hz",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post p_t",
+              "value": 0.14183583913802034,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_pitch clean_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post mean_before",
+              "value": 61.548116302490236,
+              "unit": "dB",
+              "n": 35,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post mean_after",
+              "value": 61.285657501220705,
+              "unit": "dB",
+              "n": 35,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post mean_diff",
+              "value": -0.26245880126953125,
+              "unit": "dB",
+              "n": 35,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post p_t",
+              "value": 0.8174367080357265,
+              "unit": "",
+              "n": 35,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity pre_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 35,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post mean_before",
+              "value": 63.498347473144534,
+              "unit": "dB",
+              "n": 35,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post mean_after",
+              "value": 61.36452473231724,
+              "unit": "dB",
+              "n": 35,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post mean_diff",
+              "value": -2.133822740827288,
+              "unit": "dB",
+              "n": 35,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post p_t",
+              "value": 0.01134910481662774,
+              "unit": "",
+              "n": 35,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "mean_intensity clean_vs_post p_adj",
+              "value": 0.1361892577995329,
+              "unit": "",
+              "n": 35,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post mean_before",
+              "value": 15.52197046537657,
+              "unit": "dB",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post mean_after",
+              "value": 15.706906692401782,
+              "unit": "dB",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post mean_diff",
+              "value": 0.18493622702521248,
+              "unit": "dB",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post p_t",
+              "value": 0.8491504910122406,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity pre_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 37,
+              "split": "user_interruption/C_RESPOND/pre_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post mean_before",
+              "value": 14.790144311057198,
+              "unit": "dB",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post mean_after",
+              "value": 15.89946022298601,
+              "unit": "dB",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post mean_diff",
+              "value": 1.1093159119288127,
+              "unit": "dB",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post p_t",
+              "value": 0.14858152659073512,
+              "unit": "",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            },
+            {
+              "name": "std_intensity clean_vs_post p_adj",
+              "value": 1.0,
+              "unit": "",
+              "n": 36,
+              "split": "user_interruption/C_RESPOND/clean_vs_post",
+              "judge": "sol",
+              "selection_judge": "sol",
+              "availability": "valid",
+              "analysis": "paper_respond_subset"
+            }
+          ],
+          "native_failures": 0,
+          "native_coverage": {
+            "completed": 996,
+            "total": 996,
+            "unit": "次流式推理"
+          },
+          "scope": "full_released_set"
+        }
+      },
+      "evaluation_scope": "full_released_set",
+      "runtime_progress": {
+        "phase": "complete",
+        "native": {
+          "minicpm-o4.5": {
+            "completed": 996,
+            "total": 996,
+            "unit": "次流式推理",
+            "failed": 0
+          },
+          "gander": {
+            "completed": 996,
+            "total": 996,
+            "unit": "次流式推理",
+            "failed": 0
+          }
+        },
+        "status_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/评测/selected-benchmarks-20261107/results/fdb15/postprocess_status.json"
+      },
+      "error_type": "TimeoutError"
+    },
+    {
+      "id": "fdb2",
+      "status": "paused_by_user",
+      "status_label": "暂缓 · 未接通原定考官服务",
+      "status_detail": "已补测 README 的25组配置：对原定 gpt-realtime-2025-08-28 考官，GA 客户端密钥入口和原生 WebSocket 均未建立可验证会话；保留路由、认证、额度类及网络错误记录，按用户要求暂缓。",
+      "protocol": "必须由官方实时考官驱动，并保留快／慢条件；没有将静态录音或其他考官替代成正式 v2。",
+      "coverage": "官方 200 个动态任务，尚未启动本机考官会话。",
+      "results": {
+        "minicpm-o4.5": {
+          "status": "paused_by_user",
+          "coverage": {
+            "completed": 0,
+            "total": null,
+            "unit": "任务"
+          },
+          "metrics": []
+        },
+        "gander": {
+          "status": "paused_by_user",
+          "coverage": {
+            "completed": 0,
+            "total": null,
+            "unit": "任务"
+          },
+          "metrics": []
+        }
+      }
+    },
+    {
+      "id": "fdbench",
+      "status": "paused_by_user",
+      "status_label": "已后置 · 保留进度",
+      "status_detail": "用户要求先运行其他 benchmark；已完成样本保留，恢复时复用，不从头重跑。",
+      "protocol": "用户已确认论文 CosyVoice2 全部 9 条件；沿用原难度、噪声及评分模板／温度。同输出分别用 GPT-4o 别名（日期版未核实）和 Sol 评分；其余公开条件保留但不并入主表。",
+      "coverage": "本轮按论文 CosyVoice2 主表全部 9 个条件执行，每模型 2,637 个会话／条件任务。完整公开输入包 21 个条件、6,147 项已保留，未将其余 12 条件混作本轮主表范围。",
+      "results": {
+        "minicpm-o4.5": {
+          "status": "paused_by_user",
+          "coverage": {
+            "completed": 1,
+            "total": 2637,
+            "unit": "次原生流式推理"
+          },
+          "metrics": [],
+          "scope": "paper_main_9_conditions",
+          "native_coverage": {
+            "completed": 1,
+            "total": 2637,
+            "unit": "次流式推理"
+          },
+          "native_failures": 0,
+          "condition_coverage": {
+            "objective": 0,
+            "cppl": 0,
+            "judges": {
+              "gpt4o-alias": 0,
+              "sol": 0
+            },
+            "total": 9
+          }
+        },
+        "gander": {
+          "status": "paused_by_user",
+          "coverage": {
+            "completed": 1,
+            "total": 2637,
+            "unit": "次原生流式推理"
+          },
+          "metrics": [],
+          "scope": "paper_main_9_conditions",
+          "native_coverage": {
+            "completed": 1,
+            "total": 2637,
+            "unit": "次流式推理"
+          },
+          "native_failures": 0,
+          "condition_coverage": {
+            "objective": 0,
+            "cppl": 0,
+            "judges": {
+              "gpt4o-alias": 0,
+              "sol": 0
+            },
+            "total": 9
+          }
+        }
+      },
+      "evaluation_scope": "paper_main_9_conditions",
+      "runtime_progress": {
+        "phase": "GPU_dependency_preflight_before_bulk",
+        "native": {
+          "minicpm-o4.5": {
+            "completed": 1,
+            "total": 2637,
+            "unit": "次流式推理",
+            "failed": 0
+          },
+          "gander": {
+            "completed": 1,
+            "total": 2637,
+            "unit": "次流式推理",
+            "failed": 0
+          }
+        },
+        "status_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/评测/selected-benchmarks-20261107/results/fdbench/pipeline_status.json"
+      }
+    },
+    {
+      "id": "turnbench",
+      "status": "running",
+      "status_label": "TurnBench dev 原生流式推理",
+      "status_detail": "后台先确定阈值，再生成 test 预测；test 成绩由作者端评分。",
+      "protocol": "沿用论文完整语音模型的 EOT-only 协议，每段对话按两个说话方向分别流式运行，使用官方 VAD 读出；INT 不适用。",
+      "coverage": "test 116 段双人对话、每模型 232 个说话方向；test 标签不公开，正式成绩需作者端评分。dev 仅用于确定阈值。",
+      "results": {
+        "minicpm-o4.5": {
+          "status": "running",
+          "coverage": {
+            "completed": 0,
+            "total": 308,
+            "unit": "方向（dev76＋test232）"
+          },
+          "metrics": [],
+          "native_coverage": {
+            "completed": 0,
+            "total": 232,
+            "unit": "test 方向"
+          },
+          "native_failures": 0,
+          "scope": "dev_eot_and_test_predictions",
+          "native_skipped": 0,
+          "native_retry_attempts": 0,
+          "native_retry_limit": 3,
+          "status_label": "test 预测准备中"
+        },
+        "gander": {
+          "status": "running",
+          "coverage": {
+            "completed": 0,
+            "total": 308,
+            "unit": "方向（dev76＋test232）"
+          },
+          "metrics": [],
+          "native_coverage": {
+            "completed": 0,
+            "total": 232,
+            "unit": "test 方向"
+          },
+          "native_failures": 2,
+          "scope": "dev_eot_and_test_predictions",
+          "native_skipped": 0,
+          "native_retry_attempts": 0,
+          "native_retry_limit": 3,
+          "status_label": "test 预测准备中"
+        }
+      },
+      "evaluation_scope": "dev_eot_and_test_predictions",
+      "runtime_progress": {
+        "phase": "native_dev",
+        "native": {
+          "minicpm-o4.5": {
+            "completed": 76,
+            "total": 308,
+            "unit": "次流式推理",
+            "failed": 0,
+            "native_skipped": 0,
+            "native_retry_attempts": 0,
+            "native_retry_limit": 3,
+            "test_completed": 0,
+            "test_total": 232
+          },
+          "gander": {
+            "completed": 73,
+            "total": 308,
+            "unit": "次流式推理",
+            "failed": 2,
+            "native_skipped": 0,
+            "native_retry_attempts": 0,
+            "native_retry_limit": 3,
+            "test_completed": 0,
+            "test_total": 232
+          }
+        },
+        "status_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/评测/selected-benchmarks-20261107/results/turnbench/pipeline-status.json"
+      },
+      "error_type": "InterruptedError"
+    },
+    {
+      "id": "duplexledger",
+      "status": "paused_by_user",
+      "status_label": "暂缓 · 用户要求跳过",
+      "status_detail": "用户要求本轮先跳过该 benchmark；保留数据与环境，等待恢复指令。",
+      "protocol": "同一持续会话完成上下文、实际双工挑战与记忆问答；基座评测不开启 ACT-Mem，不输入未来事实或真值转写。",
+      "coverage": "官方全量 1,094 段：dev 237、test 857；本机有效挑战曝光和运行分母将在执行后填写。",
+      "results": {
+        "minicpm-o4.5": {
+          "status": "paused_by_user",
+          "coverage": {
+            "completed": 0,
+            "total": 857,
+            "unit": "公开test会话"
+          },
+          "metrics": [],
+          "native_coverage": {
+            "completed": 0,
+            "total": 857,
+            "unit": "公开test会话"
+          },
+          "native_failures": 0,
+          "scope": "public_test857"
+        },
+        "gander": {
+          "status": "paused_by_user",
+          "coverage": {
+            "completed": 0,
+            "total": 857,
+            "unit": "公开test会话"
+          },
+          "metrics": [],
+          "native_coverage": {
+            "completed": 0,
+            "total": 857,
+            "unit": "公开test会话"
+          },
+          "native_failures": 0,
+          "scope": "public_test857"
+        }
+      },
+      "evaluation_scope": "public_test857",
+      "runtime_progress": {
+        "phase": null,
+        "native": {
+          "minicpm-o4.5": {
+            "completed": 0,
+            "total": 857,
+            "unit": "公开test会话",
+            "failed": 0
+          },
+          "gander": {
+            "completed": 0,
+            "total": 857,
+            "unit": "公开test会话",
+            "failed": 0
+          }
+        },
+        "status_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/评测/selected-benchmarks-20261107/results/duplexledger/pipeline-status.json"
+      }
+    }
+  ],
+  "provenance": {
+    "task_root": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/评测/selected-benchmarks-20261107",
+    "input_audit": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/评测/selected-benchmarks-20261107/public-input-protocol-audit.json",
+    "model_manifest": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/评测/selected-benchmarks-20261107/harness/native_model_manifest.json",
+    "rules": [
+      "只纳入本次原生推理结果。",
+      "旧 FDB v3 结果不属于本轮七项组合，不进入此表。",
+      "未执行的空 metrics 显示待测；已执行但无有效样本或原函数未定义的 null 显示原因，绝不以 0 分填补。",
+      "部分样本成绩须标注 split、n 和覆盖范围，不能标为已完成全量。"
+    ]
+  },
+  "judge_comparison_note": "已批准对 HumDial、FDB v1.5 和 Peng 的 FD-Bench 使用同一份模型输出做双 Judge：GPT-4o 别名（官方日期版未核实）与 GPT-5.6 Sol。HumDial 的这两项是对官方 DeepSeek Judge 的已批准替换。保留各自原提示词、温度、seed 与计分公式，按 Judge、split 和 n 分别展示；不向 DuplexLedger 新增 LLM Judge。",
+  "judge_variants": [
+    {
+      "id": "gpt4o-alias",
+      "label": "GPT-4o 别名 · 日期版未核实",
+      "benchmarks": [
+        "fdb15",
+        "fdbench",
+        "humdial"
+      ],
+      "status": "approved"
+    },
+    {
+      "id": "sol",
+      "label": "GPT-5.6 Sol · 同输出对照",
+      "benchmarks": [
+        "fdb15",
+        "fdbench",
+        "humdial"
+      ],
+      "status": "approved",
+      "reasoning_effort": "default"
+    }
+  ]
+}

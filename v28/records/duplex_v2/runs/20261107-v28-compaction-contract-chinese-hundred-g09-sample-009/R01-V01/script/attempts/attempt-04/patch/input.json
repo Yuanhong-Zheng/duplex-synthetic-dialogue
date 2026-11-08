@@ -1,0 +1,1390 @@
+{
+  "frozen_source": {
+    "case_id": "R01-V01",
+    "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g09-sample-009-v2-stage2",
+    "language": "zh",
+    "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+    "script_execution_policy": {
+      "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+      "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+      "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+      "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+      "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+      "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+      "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+    },
+    "program_anchor_seed": 3098015823,
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    },
+    "relay_configuration": {
+      "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g09/relay-policy.json",
+      "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g09/relay-state",
+      "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+      "policy": {
+        "schema": "duplex_v2.timeout_relay_policy.v3",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "backup": {
+          "profile": "lianyu",
+          "endpoint": "https://api.openbili.com/v1/chat/completions",
+          "model_map": {
+            "openai/gpt-5.6-sol": "gpt-5.6-sol",
+            "openai/gpt-5.6-luna": "gpt-5.6-luna"
+          },
+          "verification": {
+            "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+            "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+          }
+        },
+        "trigger": {
+          "max_retries": 5,
+          "http_statuses": [
+            502,
+            503,
+            504
+          ],
+          "error_types": [
+            "TimeoutError",
+            "HTTP2DeadlineExceeded",
+            "ConnectionResetError",
+            "ConnectionAbortedError",
+            "BrokenPipeError",
+            "RemoteDisconnected",
+            "IncompleteRead"
+          ],
+          "http2_transport_errors": "negotiated_h2_only",
+          "require_all_attempts": true
+        },
+        "max_relay_switches": 1
+      }
+    },
+    "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+    "script_repair_policy": {
+      "schema": "duplex_v2.script_repair_policy.v1",
+      "mode": "json_patch",
+      "patch_schema": "duplex_v2.script_patch.v1",
+      "json_parse_max_retries": 3,
+      "content_max_repairs": 5,
+      "length_compaction_max_attempts": 3,
+      "overlength_after_compaction": "fail_case",
+      "judge_scope": "complete_script_and_heard_context"
+    },
+    "text_output_token_policy": "omit",
+    "scene_task": {
+      "scene": {
+        "domain_id": "D08",
+        "domain": "旅行、住宿与本地探索",
+        "scenario_id": "D08-S07",
+        "scenario": "行程中断后的重排"
+      },
+      "task_style": "开放式互动",
+      "task_instance": {
+        "goal": "围绕一次旅途中突发中断的情境，口头推演如何在时间、体力、预算和同行者偏好之间做取舍，逐步重排当天及后续行程；在讨论不同方案时，明确哪些安排应保留、哪些可以放弃，并练习怎样向同行者解释变化、确认共识，同时为新的不确定情况预留调整空间。"
+      }
+    },
+    "user_voice": {
+      "user_seed": {
+        "role_relation": "负责带父母和弟弟出游的家庭旅行组织者",
+        "task_familiarity": "medium"
+      },
+      "voice_profile": "男性，感知年龄三十多岁。音色偏温和但略显紧绷，吐字清楚，语速中等，遇到需要权衡时会有短暂停顿，整体带着持续赶时间后的轻微疲惫感。",
+      "interaction_profile": {
+        "schema": "duplex_v2.interaction_profile.v1",
+        "formality": "neutral",
+        "directness": "direct",
+        "emotional_expressiveness": "expressive",
+        "verbosity": "balanced",
+        "initiative": "high",
+        "caution": "high",
+        "patience": "high",
+        "behavioral_notes": [
+          "通常先明确说出当前最想解决的判断，再主动补充相关背景和限制条件。",
+          "会直接表达担心、犹豫或不同意见，同时愿意听完多个可能性后再作决定。",
+          "对含糊的表述会及时追问依据和边界，确认理解一致后才继续推进。"
+        ]
+      }
+    },
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "medium",
+      "target_turns": 13,
+      "min_turns": 12,
+      "max_turns": 14
+    },
+    "ambient_catalog": {
+      "schema": "duplex_v2.ambient_catalog.v1",
+      "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+      "assets": [
+        {
+          "asset_id": "fan-fsd50k-eval-419427",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 10.3909375
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-235362",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 11.0
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-415925",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 7.178
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-235541",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 29.045875
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-232686",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 10.3445
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-124020",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 24.78875
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-382582",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.9788125
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-21189",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.962
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-238016",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 11.32
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-185058",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 5.2114375
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-121877",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 11.696
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-340358",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 4.2745
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-82562",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 1.0094375
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-121200",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.83525
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-343098",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.796
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-153104",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.4691875
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-392303",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.6849375
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-272381",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.933375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-71212",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.3638125
+        },
+        {
+          "asset_id": "door-fsd50k-eval-119077",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.7944375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-209519",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 1.0398125
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-399740",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.322
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-233057",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.4700625
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-411545",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.5686875
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-232499",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 0.842
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402127",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402128",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-86343",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 7.5366875
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-57907",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.5773125
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-319512",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.755625
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113173",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 11.2184375
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113175",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.8773125
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113176",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.6341875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-348322",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 1.625
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-426594",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 0.3666875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-332563",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 4.0
+        }
+      ]
+    },
+    "ambient_control": {
+      "schema": "duplex_v2.soundscape_control.v2",
+      "seed": 3095994748,
+      "mode": "layered",
+      "discrete_event_target": 2,
+      "max_ambient_layers": 2,
+      "side_speech_requested": false,
+      "speech_kind_preferences": [
+        "third_party",
+        "machine"
+      ]
+    },
+    "situation_knowledge": {
+      "episode_situation": "仿真日期为2026年11月7日（周六），次日为2026年11月8日（周日）。周六上午十点十五分，用户和父母、弟弟坐在杭州龙翔桥附近一家酒店的大堂休息区，准备重新安排这次家庭旅行最后一个完整游览日。四人原本已经到了西湖游船码头，却从现场告示得知游船因持续降雨和雷电临时停航，只好冒雨返回酒店，现在仍不知道当天能否复航。用户一直负责订票、控制开销和衔接交通，手边有手机里的订单页面、自己记的行程表和一张纸质城区地图，但无法获得进一步的实时信息。父亲往返码头后膝盖有些僵，不希望再连续步行太久；母亲最期待灵隐景区，不愿轻易放弃下午的预约；弟弟则更想找室内活动，也不喜欢长时间坐在酒店等待。当天原计划依次安排西湖游船、午餐、灵隐景区和河坊街，停航使午餐与下午预约之间的时间衔接变得紧张。11月8日下午四点四十分的返程列车不能更改，原定当天上午还要去中国茶叶博物馆，因此把游船挪到11月8日会挤压休息、午餐和进站余量。用户愿意为改乘车辆、临时室内活动或调整餐食增加开支，但希望四人当天的额外费用不超过七百元。酒店大堂可以继续休息和讨论，四人也带着雨具，不过没有自驾车辆，而且湿滑路面让长距离户外步行不合适。当前最难取舍的是要不要继续保留灵隐预约、是否用室内项目替代游船，以及河坊街和11月8日上午的茶叶博物馆哪一项更可以放弃。用户还需要把变化解释得足够清楚，让家人分别说出最在意的安排，并在没有复航时间保证的情况下共同确定一个带有备用分支的方案。",
+      "task_reference_data": [
+        "来源为用户手机里的游船订单与码头现场告示，用户已读：四人原订周六十一点的西湖游船，合计二百二十元；现场告示写着因降雨和雷电临时停航，恢复时间另行通知，当前无法确认今天是否复航。",
+        "来源为用户手机里的灵隐景区预约页面，用户已读：四人预约入园时段为周六十三点三十分至十五点，门票合计一百八十元；页面注明超过预约日期后不能使用，用户尚未决定是否放弃。",
+        "来源为用户自己的当天行程表，用户可现场读取：原计划十一点游船，十二点三十分午餐，十四点进入灵隐景区，十八点前往河坊街，二十一点前回到酒店。",
+        "来源为用户自己的次日行程表，用户可现场读取：周日上午安排中国茶叶博物馆，中午在酒店附近用餐，十四点四十分从酒店出发前往杭州东站，返程列车十六点四十分开车。",
+        "来源为用户手机里的餐厅确认页面，用户已读：周六湖滨午餐订位为十二点三十分，预付一百元；可在十三点前到店，超过十三点是否保留座位尚未核实。",
+        "来源为酒店大堂提供的纸质城区地图和宣传页，用户可现场读取：宣传页列有杭州博物馆这一室内备选，开放时段标为九点至十七点，十六点三十分停止入馆；是否仍需提前预约尚未核实。",
+        "来源为用户出发前记下的交通预算，属于可能有偏差的估算：酒店至灵隐景区单程车辆费用约七十至一百元，酒店至杭州东站约六十至九十元，四人当天可接受的新增总支出上限为七百元。",
+        "来源为家人出发前共同列出的偏好记录，用户已知：母亲把灵隐景区列为首选，父亲希望减少连续步行并保留午休，弟弟更偏好室内展馆，用户自己最看重不误明天的返程列车并留出调整余量。"
+      ],
+      "environment_audio": "酒店大堂的通风声从上方持续低低传来，音量平稳。窗外雨声密集但隔着玻璃略显沉闷，偶尔随风短暂增强。远处公共区域只有模糊的人群活动底声，不影响近距离交谈。",
+      "estimated_snr_db": 22,
+      "constraints": [
+        {
+          "constraint_id": "C01",
+          "text": "四人当天因改排行程产生的额外总支出不得超过七百元。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C02",
+          "text": "周六晚二十一点前需要回到酒店。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C03",
+          "text": "周日十六点四十分的返程列车不能更改，行程必须保留充足的进站余量。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C04",
+          "text": "应尽量避免让父亲连续步行超过三十分钟，并安排可坐下休息的间隔。",
+          "kind": "soft"
+        },
+        {
+          "constraint_id": "C05",
+          "text": "重排方案需要让父母和弟弟分别确认自己最在意的安排，并保留至少一个应对游船继续停航的备用分支。",
+          "kind": "soft"
+        }
+      ],
+      "safety_limits": [
+        {
+          "limit_id": "L01",
+          "text": "持续降雨期间应避免把湿滑、长距离或需要赶路的户外步行作为主要衔接方式，尤其要考虑父亲膝盖不适。",
+          "severity": "advisory"
+        }
+      ],
+      "soundscape_plan": {
+        "mode": "layered",
+        "ambient_layers": [
+          {
+            "source_id": "AMB01",
+            "asset_id": "rain-fsd50k-eval-21189",
+            "reason": "连续雨声符合酒店大堂窗外正在降雨的环境。"
+          },
+          {
+            "source_id": "AMB02",
+            "asset_id": "fan-fsd50k-eval-419427",
+            "reason": "稳定机械声可表现酒店大堂上方的通风系统。"
+          }
+        ],
+        "environment_events": [
+          {
+            "source_id": "ENV01",
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "reason": "酒店公共区域偶尔有人经过，短段室内脚步声与场景相容。"
+          },
+          {
+            "source_id": "ENV02",
+            "asset_id": "door-fsd50k-eval-71212",
+            "reason": "酒店大堂入口偶尔开关门与当前室内场景相容。"
+          }
+        ],
+        "schema": "duplex_v2.soundscape_plan.v3",
+        "side_speech_sources": [],
+        "side_speech_count": 0,
+        "sampling": {
+          "schema": "duplex_v2.ambient_draw.v2",
+          "policy": {
+            "schema": "duplex_v2.soundscape_policy.v2",
+            "quiet_probability": 0.5,
+            "discrete_targets_by_tier": {
+              "short": [
+                0,
+                1
+              ],
+              "medium": [
+                1,
+                2
+              ],
+              "long": [
+                2,
+                4
+              ]
+            },
+            "discrete_count_includes": [
+              "environment_events",
+              "side_speech"
+            ],
+            "max_ambient_layers": 2,
+            "gain_range": [
+              0.3,
+              0.7
+            ],
+            "speech_request_probability": 0.5,
+            "third_party_preference_probability": 0.8,
+            "speech_requires_existing_scene_source": true,
+            "environment_audio": "base_only",
+            "stage2_repair": "atomic_scoped_patch",
+            "stage2_max_judge_attempts": 3,
+            "json_parse_max_retries": 3
+          },
+          "preferences": {
+            "schema": "duplex_v2.ambient_preferences.v1",
+            "seed": 202611073009,
+            "slot": 8,
+            "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+            "categories": {
+              "bed": [
+                "fan",
+                "rain",
+                "wind",
+                "crowd",
+                "traffic",
+                "birds"
+              ],
+              "event": [
+                "door",
+                "doorbell",
+                "footsteps",
+                "water_tap",
+                "paper",
+                "keyboard"
+              ]
+            },
+            "recordings": {
+              "bed:birds": [
+                "birds-fsd50k-eval-86343",
+                "birds-fsd50k-eval-57907",
+                "birds-fsd50k-eval-319512"
+              ],
+              "bed:crowd": [
+                "crowd-fsd50k-eval-121877",
+                "crowd-fsd50k-eval-340358",
+                "crowd-fsd50k-eval-185058"
+              ],
+              "bed:fan": [
+                "fan-fsd50k-eval-419427",
+                "fan-fsd50k-eval-415925",
+                "fan-fsd50k-eval-235362"
+              ],
+              "bed:rain": [
+                "rain-fsd50k-eval-21189",
+                "rain-fsd50k-eval-382582",
+                "rain-fsd50k-eval-238016"
+              ],
+              "bed:traffic": [
+                "traffic-fsd50k-eval-232686",
+                "traffic-fsd50k-eval-124020",
+                "traffic-fsd50k-eval-235541"
+              ],
+              "bed:wind": [
+                "wind-fsd50k-eval-113175",
+                "wind-fsd50k-eval-113173",
+                "wind-fsd50k-eval-113176"
+              ],
+              "event:door": [
+                "door-fsd50k-eval-71212",
+                "door-fsd50k-eval-209519",
+                "door-fsd50k-eval-119077"
+              ],
+              "event:doorbell": [
+                "doorbell-fsd50k-eval-426594",
+                "doorbell-fsd50k-eval-332563",
+                "doorbell-fsd50k-eval-348322"
+              ],
+              "event:footsteps": [
+                "footsteps-fsd50k-eval-272381",
+                "footsteps-fsd50k-eval-153104",
+                "footsteps-fsd50k-eval-392303"
+              ],
+              "event:keyboard": [
+                "keyboard-fsd50k-eval-233057",
+                "keyboard-fsd50k-eval-399740",
+                "keyboard-fsd50k-eval-411545"
+              ],
+              "event:paper": [
+                "paper-fsd50k-eval-121200",
+                "paper-fsd50k-eval-82562",
+                "paper-fsd50k-eval-343098"
+              ],
+              "event:water_tap": [
+                "water_tap-fsd50k-eval-402128",
+                "water_tap-fsd50k-eval-402127",
+                "water_tap-fsd50k-eval-232499"
+              ]
+            }
+          },
+          "control": {
+            "schema": "duplex_v2.soundscape_control.v2",
+            "seed": 3095994748,
+            "mode": "layered",
+            "discrete_event_target": 2,
+            "max_ambient_layers": 2,
+            "side_speech_requested": false,
+            "speech_kind_preferences": [
+              "third_party",
+              "machine"
+            ]
+          },
+          "control_sha256": "f26d6efe4b91895d26f26f67439dceab96e7c735e69183db903ae1f27e2eb546",
+          "candidate_plan": {
+            "schema": "duplex_v2.soundscape_plan.v3",
+            "mode": "layered",
+            "ambient_layers": [
+              {
+                "source_id": "AMB01",
+                "candidates": [
+                  {
+                    "asset_id": "rain-fsd50k-eval-21189",
+                    "reason": "连续雨声符合酒店大堂窗外正在降雨的环境。",
+                    "environment_audio": "隔着酒店玻璃传来的连续雨声，整体沉闷且稳定。"
+                  },
+                  {
+                    "asset_id": "rain-fsd50k-eval-382582",
+                    "reason": "可作为同一场景下略有变化的窗外雨声底层。",
+                    "environment_audio": "窗外密集的真实雨声，远离说话者并被玻璃削弱。"
+                  },
+                  {
+                    "asset_id": "rain-fsd50k-eval-238016",
+                    "reason": "持续性雨声与当前停航和室内等候的背景相容。",
+                    "environment_audio": "从窗外传入的连续雨声，偶有轻微强弱起伏。"
+                  }
+                ]
+              },
+              {
+                "source_id": "AMB02",
+                "candidates": [
+                  {
+                    "asset_id": "fan-fsd50k-eval-419427",
+                    "reason": "稳定机械声可表现酒店大堂上方的通风系统。",
+                    "environment_audio": "上方持续传来的低沉通风声，音量平稳。"
+                  },
+                  {
+                    "asset_id": "fan-fsd50k-eval-235362",
+                    "reason": "室内稳定通风底噪与酒店休息区相容。",
+                    "environment_audio": "酒店大堂内均匀的机械送风声，保持较低音量。"
+                  },
+                  {
+                    "asset_id": "fan-fsd50k-eval-415925",
+                    "reason": "可作为较短的室内通风声候选，不引入新设备事实。",
+                    "environment_audio": "从天花板方向传来的轻微通风运转声。"
+                  }
+                ]
+              }
+            ],
+            "environment_events": [
+              {
+                "source_id": "ENV01",
+                "candidates": [
+                  {
+                    "asset_id": "footsteps-fsd50k-eval-272381",
+                    "reason": "酒店公共区域偶尔有人经过，短段室内脚步声与场景相容。",
+                    "environment_audio": "一小段脚步从大堂较远处经过，随后消失。"
+                  },
+                  {
+                    "asset_id": "footsteps-fsd50k-eval-153104",
+                    "reason": "可表现住客穿过大堂，但不需要增加可辨识人物。",
+                    "environment_audio": "数秒钟的室内脚步声从侧后方掠过。"
+                  },
+                  {
+                    "asset_id": "footsteps-fsd50k-eval-392303",
+                    "reason": "短暂脚步事件符合公共休息区的自然活动。",
+                    "environment_audio": "远处有人走过大堂，脚步短暂接近后远去。"
+                  }
+                ]
+              },
+              {
+                "source_id": "ENV02",
+                "candidates": [
+                  {
+                    "asset_id": "door-fsd50k-eval-71212",
+                    "reason": "酒店大堂入口偶尔开关门与当前室内场景相容。",
+                    "environment_audio": "大堂远端传来一次完整的开门和关门声。"
+                  },
+                  {
+                    "asset_id": "door-fsd50k-eval-209519",
+                    "reason": "较短的门声可以表现公共区域正常出入。",
+                    "environment_audio": "侧面的门被短暂推开后合上，声音清晰但不响亮。"
+                  },
+                  {
+                    "asset_id": "door-fsd50k-eval-119077",
+                    "reason": "完整开关门声适合酒店公共区域且不改变任务状态。",
+                    "environment_audio": "远处入口出现一次开关门声，随即恢复安静。"
+                  }
+                ]
+              }
+            ],
+            "side_speech_eligibility": {
+              "third_party": {
+                "compatible": true,
+                "reason": "父母和弟弟都已在酒店大堂休息区与用户同行，存在合理的近处旁语来源。",
+                "source": {
+                  "speaker": "third_party",
+                  "voice_profile": "自然清晰、音量较低的成年普通话声音",
+                  "description": "当前故事中坐在用户附近的同行家人之一"
+                }
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "当前故事没有建立会播放可辨语音的设备或广播来源。",
+                "source": null
+              }
+            }
+          },
+          "base_environment_audio_sha256": "9f59cde94eeb4fb3efc1cbe96e112eecb64d81e65ddd9c7283eb619a8df6b0af",
+          "aggregate_environment_audio": "酒店大堂的通风声从上方持续低低传来，音量平稳。窗外雨声密集但隔着玻璃略显沉闷，偶尔随风短暂增强。远处公共区域只有模糊的人群活动底声，不影响近距离交谈。 隔着酒店玻璃传来的连续雨声，整体沉闷且稳定。 上方持续传来的低沉通风声，音量平稳。 一小段脚步从大堂较远处经过，随后消失。 大堂远端传来一次完整的开门和关门声。",
+          "draws": [
+            {
+              "source_id": "AMB01",
+              "category": "rain",
+              "asset_id": "rain-fsd50k-eval-21189",
+              "eligible_categories": [
+                "rain"
+              ],
+              "eligible_assets": [
+                "rain-fsd50k-eval-21189",
+                "rain-fsd50k-eval-238016",
+                "rain-fsd50k-eval-382582"
+              ]
+            },
+            {
+              "source_id": "AMB02",
+              "category": "fan",
+              "asset_id": "fan-fsd50k-eval-419427",
+              "eligible_categories": [
+                "fan"
+              ],
+              "eligible_assets": [
+                "fan-fsd50k-eval-235362",
+                "fan-fsd50k-eval-415925",
+                "fan-fsd50k-eval-419427"
+              ]
+            },
+            {
+              "source_id": "ENV01",
+              "category": "footsteps",
+              "asset_id": "footsteps-fsd50k-eval-272381",
+              "eligible_categories": [
+                "footsteps"
+              ],
+              "eligible_assets": [
+                "footsteps-fsd50k-eval-153104",
+                "footsteps-fsd50k-eval-272381",
+                "footsteps-fsd50k-eval-392303"
+              ]
+            },
+            {
+              "source_id": "ENV02",
+              "category": "door",
+              "asset_id": "door-fsd50k-eval-71212",
+              "eligible_categories": [
+                "door"
+              ],
+              "eligible_assets": [
+                "door-fsd50k-eval-119077",
+                "door-fsd50k-eval-209519",
+                "door-fsd50k-eval-71212"
+              ]
+            }
+          ],
+          "speech_selection": {
+            "requested": false,
+            "compatible_kinds": [
+              "third_party"
+            ],
+            "selected_kind": null,
+            "outcome": "not_requested",
+            "assessments": {
+              "third_party": {
+                "compatible": true,
+                "reason": "父母和弟弟都已在酒店大堂休息区与用户同行，存在合理的近处旁语来源。",
+                "source": {
+                  "speaker": "third_party",
+                  "voice_profile": "自然清晰、音量较低的成年普通话声音",
+                  "description": "当前故事中坐在用户附近的同行家人之一"
+                }
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "当前故事没有建立会播放可辨语音的设备或广播来源。",
+                "source": null
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "schema_version": "duplex_v2.fixed_script.v2",
+  "owner_attempt": 4,
+  "previous_candidate": {
+    "schema_version": "duplex_v2.fixed_script.v2",
+    "title": "西湖停航后的家庭行程重排",
+    "rounds": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_utterance": "我们原订的西湖游船突然停航了，下午还有灵隐预约，我爸膝盖也有点僵。我现在最想先判断，灵隐到底要不要保留？",
+        "assistant_utterance": "先暂时保留灵隐，别把未知的复航当主线。要进一步排稳，我需要知道灵隐入园时段、午餐限制，以及家人各自最不愿放弃什么。",
+        "user_intent": "说明突发停航及父亲身体状况，要求先判断是否保留灵隐预约",
+        "assistant_intent": "给出暂时保留灵隐的初步判断，并索取重排所需的关键限制",
+        "semantic_goal": "确定灵隐是否应作为当天优先保留项目",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": null,
+        "pause_cue": null
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_utterance": "灵隐是十三点半到十五点入园，四张票一百八十元，过了今天就不能用。我妈最想去灵隐，我爸要休息，弟弟更想待在室内。",
+        "assistant_utterance": "我会先保留灵隐预约，把游船从今天主线拿掉；父亲先休息，午餐后直接乘车去灵隐。晚间非核心项目降为可放弃项，室内项目只作停航后的备选。",
+        "user_intent": "补充预约时段、票款和三位家人的不同偏好",
+        "assistant_intent": "依据家庭偏好确定灵隐优先级，并提出当天主线的初步取舍",
+        "semantic_goal": "形成兼顾母亲期待、父亲休息和弟弟室内偏好的初步方案",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A001",
+          "user_onset_after_text": "先暂时保留灵隐，别把未知的复航当主线。要进一步排稳，我需要知道灵隐入园时段、午餐限制，以及家人各自最不愿放弃什么。",
+          "assistant_stop_after_text": "先暂时保留灵隐，别把未知的复航当主线。要进一步排稳，我需要知道灵隐入园时段、午餐限制，以及家人各自最不愿放弃什么。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_utterance": "等一下，午餐也卡着时间。湖滨餐厅订在十二点半，预付了一百元，十三点前能到，超过十三点还留不留座我没核实。",
+        "assistant_utterance": "那就不要让午餐承担延误风险。保留十二点半订位，最迟十三点前到店；游船等待设明确截止点，午餐后再乘车去灵隐，避免湿滑路面上赶路。",
+        "user_intent": "打断并补充午餐订位的到店限制，要求重新评估衔接",
+        "assistant_intent": "把午餐时限纳入主线，并调整等待游船和前往灵隐的顺序",
+        "semantic_goal": "避免因等待复航同时损失午餐订位和灵隐预约",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A002",
+          "user_onset_after_text": "我会先保留灵隐预约，把游船从今天主线拿掉；父亲先休息",
+          "assistant_stop_after_text": "我会先保留灵隐预约，把游船从今天主线拿掉；父亲先休息，午餐"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_utterance": "十二点半午餐再去灵隐，真的来得及吗？我不想为了赶预约，让我爸在雨里连续走。",
+        "assistant_utterance": "午餐最晚十三点到店，灵隐最晚十五点入园，时间上能并存，但要给乘车留余量。建议十三点二十分左右离开餐厅，全程用车衔接，宁可缩短用餐，也不安排长距离步行。",
+        "user_intent": "质疑午餐与灵隐能否兼容，并强调不能让父亲冒雨赶路",
+        "assistant_intent": "说明两个时限可以兼容的边界，并给出减少步行的衔接原则",
+        "semantic_goal": "确认保留午餐和灵隐不会以父亲过度步行为代价",
+        "act_ref": "A05",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A003",
+          "user_onset_after_text": "那就不要让午餐承担延误风险。保留十二点半订位，最迟十三点前到店；游船等待设明确截止点，午餐后再乘车去灵隐，避免湿滑路面上赶路。",
+          "assistant_stop_after_text": "那就不要让午餐承担延误风险。保留十二点半订位，最迟十三点前到店；游船等待设明确截止点，午餐后再乘车去灵隐，避免湿滑路面上赶路。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_utterance": "当天改排的额外费用最多七百元。游船四个人已经付了二百二十元，去灵隐单程车费我原先估的是七十到一百。要不要塞一个室内项目替代游船？",
+        "assistant_utterance": "不建议硬塞在午餐前，转场会消耗父亲体力。室内项目可作备用，但要先核实具体候选和入场条件。游船款已支付，退款情况未知，应单独记账，不要把它误当成今天新增支出。",
+        "user_intent": "补充预算、已付船票和车费估算，询问是否加入室内替代项目",
+        "assistant_intent": "评估室内项目的时间与体力代价，并澄清新增支出和既有付款的区别",
+        "semantic_goal": "判断室内替代是否值得加入，同时守住七百元新增预算",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A004",
+          "user_onset_after_text": "午餐最晚十三点到店，灵隐最晚十五点入园，时间上能并存，但要给乘车留余量。建议十三点二十分左右离开餐厅，全程用车衔接，宁可缩短用餐，也不安排长距离步行。",
+          "assistant_stop_after_text": "午餐最晚十三点到店，灵隐最晚十五点入园，时间上能并存，但要给乘车留余量。建议十三点二十分左右离开餐厅，全程用车衔接，宁可缩短用餐，也不安排长距离步行。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_utterance": "那今天不能一直耗着。现在十点十五分，你给我一个停止等复航的时间，再把有船和没船两条分支说清楚。",
+        "assistant_utterance": "最晚十点四十五分结束等待。仍无确定复航消息，就取消今天游船；若想保留，可挪到明早，但要先确认明早已有安排和硬截止点，再决定是否可行。",
+        "user_intent": "要求设置明确决策截止点，并建立复航与不复航的备用分支",
+        "assistant_intent": "给出等待截止时间，并说明两种游船处理方式的后果",
+        "semantic_goal": "避免无期限等待，并让后续行程可按条件切换",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A005",
+          "user_onset_after_text": "不建议硬塞在午餐前，转场会消耗父亲体力。室内项目可作备用，但要先核实具体候选和入场条件。游船款已支付，退款情况未知，应单独记账，不要把它误当成今天新增支出。",
+          "assistant_stop_after_text": "不建议硬塞在午餐前，转场会消耗父亲体力。室内项目可作备用，但要先核实具体候选和入场条件。游船款已支付，退款情况未知，应单独记账，不要把它误当成今天新增支出。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_utterance": "不行，别挪到明早。明早本来有中国茶叶博物馆，十四点四十分还得从酒店出发，赶十六点四十分不能改的火车。",
+        "assistant_utterance": "那就明确排除明早游船。十点四十五分仍无可靠复航时间，游船本次直接放弃；明早先保留茶博，但必须服从十四点四十分离店去车站这个硬截止点。",
+        "user_intent": "打断并否定次日上午游船方案，补充茶博和返程列车限制",
+        "assistant_intent": "撤回次日游船分支，并确立返程出发时间的最高优先级",
+        "semantic_goal": "防止游船挤压次日进站余量，保护不可更改的返程安排",
+        "act_ref": "A04",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A006",
+          "user_onset_after_text": "最晚十点四十五分结束等待。仍无确定复航消息，就取消今天游船；若想保留，可挪到明早",
+          "assistant_stop_after_text": "最晚十点四十五分结束等待。仍无确定复航消息，就取消今天游船；若想保留，可挪到明早，但要先"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_utterance": "方案我大致接受，但我得让他们自己确认。怎么问，才能不是我一个人替全家做决定？",
+        "assistant_utterance": "逐个只问一个取舍题：问母亲，灵隐是否值得放弃当天其他非核心或晚间项目；问父亲，午休和少走路是否优先于多看景点；问弟弟，能否接受不等游船，以换取一个确认能入场的室内备用。",
+        "user_intent": "请求设计简明的家庭共识确认方式",
+        "assistant_intent": "为三位同行者分别提供聚焦核心取舍的问题",
+        "semantic_goal": "让家人亲自表达优先项，而非由用户单方面决定",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A007",
+          "user_onset_after_text": "那就明确排除明早游船。十点四十五分仍无可靠复航时间，游船本次直接放弃；明早先保留茶博，但必须服从十四点四十分离店去车站这个硬截止点。",
+          "assistant_stop_after_text": "那就明确排除明早游船。十点四十五分仍无可靠复航时间，游船本次直接放弃；明早先保留茶博，但必须服从十四点四十分离店去车站这个硬截止点。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_utterance": "我刚问了。妈妈愿意拿河坊街换灵隐；爸爸要午休，也不想连续走超过半小时；弟弟同意不等船，但希望真有室内备用。我最在意明天别误车。",
+        "assistant_utterance": "共识已经清楚：保留灵隐和父亲休息，游船不再拖延决策，河坊街优先放弃；室内项目只作为可确认入场的备用，明天所有安排都不得越过十四点四十分出发线。",
+        "user_intent": "汇报家人分别确认的偏好，并重申自己的返程底线",
+        "assistant_intent": "把四人的优先项整合成明确的共同决策规则",
+        "semantic_goal": "形成获得家人确认的取舍顺序和硬边界",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A008",
+          "user_onset_after_text": "逐个只问一个取舍题：问母亲，灵隐是否值得放弃当天其他非核心或晚间项目；问父亲，午休和少走路是否优先于多看景点；问弟弟，能否接受不等游船，以换取一个确认能入场的室内备用。",
+          "assistant_stop_after_text": "逐个只问一个取舍题：问母亲，灵隐是否值得放弃当天其他非核心或晚间项目；问父亲，午休和少走路是否优先于多看景点；问弟弟，能否接受不等游船，以换取一个确认能入场的室内备用。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_utterance": "还有个边界：如果下午雨势让灵隐也不适合去，或者杭州博物馆需要预约但我们进不去，备用怎么落地？",
+        "assistant_utterance": "先核实灵隐是否仍可正常使用，再决定出发。若灵隐不可行，只在确认杭州博物馆可入馆后乘车前往；若室内项目也无法确认，就回酒店休息并提前用餐，不临时冒雨追景点。",
+        "user_intent": "追问灵隐和室内备用同时存在不确定性时的处理边界",
+        "assistant_intent": "建立按可用性逐级降级的备用方案，避免未经确认就赶路",
+        "semantic_goal": "确保双重不确定情况下仍有安全且可执行的收束方案",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A009",
+          "user_onset_after_text": "共识已经清楚：保留灵隐和父亲休息，游船不再拖延决策，河坊街优先放弃；室内项目只作为可确认入场的备用，明天所有安排都不得越过十四点四十分出发线。",
+          "assistant_stop_after_text": "共识已经清楚：保留灵隐和父亲休息，游船不再拖延决策，河坊街优先放弃；室内项目只作为可确认入场的备用，明天所有安排都不得越过十四点四十分出发线。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U11",
+        "assistant_id": "A011",
+        "user_utterance": "好，那把今天的具体时间轴和七百元怎么封顶一起给我。还有，车费和室内备选都要留余量。",
+        "assistant_utterance": "今天按这个节奏：十点四十五分停止等复航，父亲继续休息；十二点半午餐，十三点二十分左右乘车去灵隐，预约时段内入园，途中少走路多坐下。灵隐结束后根据体力决定是否还保留河坊街；否则直接用餐回酒店。预算按交通、室内备选、餐食差额和机动金四栏记账，新增合计到七百元即停。",
+        "user_intent": "要求给出当天具体时间轴和新增支出的封顶安排",
+        "assistant_intent": "把既定取舍转化为带时间节点的可执行日程",
+        "semantic_goal": "获得能直接向家人说明并照此执行的当天安排",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01",
+          "T02"
+        ],
+        "timing": {
+          "target_assistant_id": "A010",
+          "user_onset_after_text": "先核实灵隐是否仍可正常使用，再决定出发。若灵隐不可行，只在确认杭州博物馆可入馆后乘车前往；若室内项目也无法确认，就回酒店休息并提前用餐，不临时冒雨追景点。",
+          "assistant_stop_after_text": "先核实灵隐是否仍可正常使用，再决定出发。若灵隐不可行，只在确认杭州博物馆可入馆后乘车前往；若室内项目也无法确认，就回酒店休息并提前用餐，不临时冒雨追景点。"
+        },
+        "pause_cue": {
+          "after_text": "好，那把今天的具体时间轴和七百元怎么封顶一起给我。",
+          "duration_ms": 650
+        }
+      },
+      {
+        "user_id": "U12",
+        "assistant_id": "A012",
+        "user_utterance": "河坊街直接删掉吧，别再留成诱惑。省下来的体力给我爸休息。那明早茶博到底保不保？",
+        "assistant_utterance": "河坊街正式取消，今晚灵隐后直接吃饭回酒店。明早茶博先保留，但缩成可随时结束的安排；一旦上午延误或家人体力不足，就放弃茶博，十四点四十分照常从酒店出发。",
+        "user_intent": "打断并明确取消河坊街，同时追问次日上午茶博的去留原则",
+        "assistant_intent": "接受取消河坊街的修正，并为茶博设置服从返程的退出条件",
+        "semantic_goal": "彻底释放当晚体力，并确保茶博不会威胁返程",
+        "act_ref": "A04",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A011",
+          "user_onset_after_text": "今天按这个节奏：十点四十五分停止等复航，父亲继续休息；十二点半午餐，十三点二十分左右乘车去灵隐，预约时段内入园，途中少走路多坐下。灵隐结束后根据体力决定是否还保留河坊街",
+          "assistant_stop_after_text": "今天按这个节奏：十点四十五分停止等复航，父亲继续休息；十二点半午餐，十三点二十分左右乘车去灵隐，预约时段内入园，途中少走路多坐下。灵隐结束后根据体力决定是否还保留河坊街；否则直"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U13",
+        "assistant_id": "A013",
+        "user_utterance": "行，最后帮我完整回读一遍：今天保留什么、放弃什么，下午备用怎么切，七百元怎么守，明天又在哪个点必须收手。",
+        "assistant_utterance": "最终方案：十点四十五分不复航就放弃游船；十二点半午餐，之后乘车去灵隐，父亲全程减少步行；河坊街取消。灵隐不可行时，仅在确认可入馆后改去杭州博物馆，否则回酒店。今日新增支出上限七百元，可按交通三百、室内项目二百五、餐食差额一百、机动五十分配。明早茶博可缩短或放弃，十四点四十分必须从酒店出发，赶十六点四十分列车。",
+        "user_intent": "要求完整回读最终取舍、备用分支、预算分配和次日截止点",
+        "assistant_intent": "汇总经家庭确认后的完整方案，使所有保留项、放弃项和切换条件明确可执行",
+        "semantic_goal": "得到一份可直接向家人复述并共同遵守的最终行程方案",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A012",
+          "user_onset_after_text": "河坊街正式取消，今晚灵隐后直接吃饭回酒店。明早茶博先保留，但缩成可随时结束的安排；一旦上午延误或家人体力不足，就放弃茶博，十四点四十分照常从酒店出发。",
+          "assistant_stop_after_text": "河坊街正式取消，今晚灵隐后直接吃饭回酒店。明早茶博先保留，但缩成可随时结束的安排；一旦上午延误或家人体力不足，就放弃茶博，十四点四十分照常从酒店出发。"
+        },
+        "pause_cue": null
+      }
+    ],
+    "backchannels": [
+      {
+        "event_id": "BC01",
+        "target_assistant_id": "A001",
+        "after_text": "先暂时保留灵隐，别把未知的复航当主线。",
+        "text": "嗯，明白"
+      },
+      {
+        "event_id": "BC02",
+        "target_assistant_id": "A004",
+        "after_text": "午餐最晚十三点到店，灵隐最晚十五点入园，时间上能并存，",
+        "text": "嗯"
+      },
+      {
+        "event_id": "BC03",
+        "target_assistant_id": "A008",
+        "after_text": "逐个只问一个取舍题：问母亲，灵隐是否值得放弃当天其他非核心或晚间项目；",
+        "text": "好"
+      },
+      {
+        "event_id": "BC04",
+        "target_assistant_id": "A013",
+        "after_text": "最终方案：十点四十五分不复航就放弃游船；十二点半午餐，之后乘车去灵隐，父亲全程减少步行；河坊街取消。",
+        "text": "对"
+      }
+    ],
+    "side_speech": [],
+    "environment_events": [
+      {
+        "event_id": "ENV01",
+        "source_id": "ENV01",
+        "target_audio_id": "A004",
+        "placement_fraction": 0.18
+      },
+      {
+        "event_id": "ENV02",
+        "source_id": "ENV02",
+        "target_audio_id": "U13",
+        "placement_fraction": 0.46
+      }
+    ]
+  },
+  "findings": [
+    {
+      "severity": "must_fix",
+      "path": "/rounds/3/assistant_utterance",
+      "problem": "在没有已知车程或实时路况的情况下，断言午餐与灵隐“时间上能并存”并给出十三点二十分离店这一具体可行节点，依据不足。",
+      "evidence": "截至A004，已听内容只有午餐十三点前到店、灵隐十五点前入园和需要乘车；没有湖滨餐厅至灵隐的车程信息。冻结情境还明确“无法获得进一步的实时信息”，候选却说“时间上能并存”“建议十三点二十分左右离开餐厅”。",
+      "repair": "保留少步行、乘车衔接的主线，但将可行性改为条件判断：不能仅凭两个截止时间保证赶得上，应按当时可获得的预计到达时间或保守余量决定，并设置超过最晚安全出发点就调整午餐或放弃灵隐的边界。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/rounds/5/assistant_utterance",
+      "problem": "没有按用户要求说清“有船”和“没船”两条当天分支，反而把有船分支替换成了未经用户接受的次日挪船方案。",
+      "evidence": "U06明确要求“再把有船和没船两条分支说清楚”。A006只说明“仍无确定复航消息，就取消今天游船”，随后说“若想保留，可挪到明早”，没有交代十点四十五分前若确认复航，当天如何与午餐、灵隐衔接。U07因此只来得及否定“挪到明早”。",
+      "repair": "保留十点四十五分截止点，并最小补明当天两分支：届时若有可靠复航且能确认不冲突于午餐和灵隐才考虑乘船，否则按停航分支放弃；不要把次日上午作为所问“有船”分支。"
+    }
+  ],
+  "anchor_dependencies": [
+    {
+      "target_id": "A003",
+      "path": "/rounds/3/timing/user_onset_after_text",
+      "value": "那就不要让午餐承担延误风险。保留十二点半订位，最迟十三点前到店；游船等待设明确截止点，午餐后再乘车去灵隐，避免湿滑路面上赶路。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A003",
+      "path": "/rounds/3/timing/assistant_stop_after_text",
+      "value": "那就不要让午餐承担延误风险。保留十二点半订位，最迟十三点前到店；游船等待设明确截止点，午餐后再乘车去灵隐，避免湿滑路面上赶路。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A004",
+      "path": "/rounds/4/timing/user_onset_after_text",
+      "value": "午餐最晚十三点到店，灵隐最晚十五点入园，时间上能并存，但要给乘车留余量。建议十三点二十分左右离开餐厅，全程用车衔接，宁可缩短用餐，也不安排长距离步行。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A004",
+      "path": "/rounds/4/timing/assistant_stop_after_text",
+      "value": "午餐最晚十三点到店，灵隐最晚十五点入园，时间上能并存，但要给乘车留余量。建议十三点二十分左右离开餐厅，全程用车衔接，宁可缩短用餐，也不安排长距离步行。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A005",
+      "path": "/rounds/5/timing/user_onset_after_text",
+      "value": "不建议硬塞在午餐前，转场会消耗父亲体力。室内项目可作备用，但要先核实具体候选和入场条件。游船款已支付，退款情况未知，应单独记账，不要把它误当成今天新增支出。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A005",
+      "path": "/rounds/5/timing/assistant_stop_after_text",
+      "value": "不建议硬塞在午餐前，转场会消耗父亲体力。室内项目可作备用，但要先核实具体候选和入场条件。游船款已支付，退款情况未知，应单独记账，不要把它误当成今天新增支出。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A006",
+      "path": "/rounds/6/timing/user_onset_after_text",
+      "value": "最晚十点四十五分结束等待。仍无确定复航消息，就取消今天游船；若想保留，可挪到明早",
+      "owner": "model"
+    },
+    {
+      "target_id": "A006",
+      "path": "/rounds/6/timing/assistant_stop_after_text",
+      "value": "最晚十点四十五分结束等待。仍无确定复航消息，就取消今天游船；若想保留，可挪到明早，但要先",
+      "owner": "program"
+    },
+    {
+      "target_id": "A004",
+      "path": "/backchannels/1/after_text",
+      "value": "午餐最晚十三点到店，灵隐最晚十五点入园，时间上能并存，",
+      "owner": "model"
+    }
+  ],
+  "base_sha256": "0a33a97e5d66eea32a403cb8e4cb15d12e0a60a36babda65a742a0937982ee71"
+}

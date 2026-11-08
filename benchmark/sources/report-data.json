@@ -1,0 +1,2051 @@
+[
+  {
+    "id": "humdial",
+    "name": "HumDial-FDBench",
+    "group": "时序与话权",
+    "version": "2026 · ICASSP Challenge",
+    "focus": "中文相关性很高：真正插话要响应，附和、旁人说话与句内停顿要正确处理。",
+    "protocol": "实时交互／行为与延迟",
+    "data": "中英双语；LLM 写稿、真人表演录制，完整数据超过 100 小时。论文表 1 的测试集为 5,000 项、开发集为 1,800 项，包含五类打断和四类拒绝／等待。",
+    "models": [
+      "Cookie asr",
+      "Badcat [ 17 ]",
+      "SenseDialog",
+      "Gemini-2.5",
+      "Unity Squad*",
+      "RhythmSense",
+      "Lingcon Insight",
+      "Baseline",
+      "HelloWorld",
+      "Freeze-Omni",
+      "AISpeech",
+      "Cascade",
+      "Moshi"
+    ],
+    "metrics": [
+      [
+        "Interruption ↑",
+        "五类插话中，正确回应重叠输入意图的准确率；继续旧回答不算通过。"
+      ],
+      [
+        "Rejection ↑",
+        "用户附和／旁人插入／用户转向别人说话时保持原任务；句内停顿和旁人先说话时，不得提前回答。按子场景判二元结果。"
+      ],
+      [
+        "Stop latency ↓",
+        "插话开始 → 助手停声。"
+      ],
+      [
+        "Response latency ↓",
+        "插话结束 → 助手新回答起声；另测首个问题结束后的首次响应延迟。"
+      ],
+      [
+        "Delay score ↑",
+        "相关子场景延迟的均值 L，经对数公式归一化：100−40·log(L/Lmin)/log(Lbase/Lmin)。须冻结参考系统，不能把论文中的基线 60 分误读成 60 秒。"
+      ],
+      [
+        "Final ↑",
+        "0.4×Interruption + 0.4×Rejection + 0.2×Delay score；三个分项使用一致的分数尺度。"
+      ]
+    ],
+    "fit": "部分较强",
+    "gain": "当前中文打断、用户附和、暂停轨迹与前两类行为直接对应；若采用保留双流时间轴的训练，可合理预期相关行为分项受益。",
+    "gaps": "真实口语和中英迁移仍需验证；当前 87 条中只有 5 条第三方旁话，且没有用户转向旁人的主表达，不能预期整个 Rejection 都同步提高。",
+    "access": "官方仓库提供挑战协议与资源入口。这里区分完整训练语料和正式测试项，不能把 100 小时当成测试集时长。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2604.21406"
+      ],
+      [
+        "官方仓库",
+        "https://github.com/ASLP-lab/HumDial-FDBench"
+      ]
+    ],
+    "coverage": [
+      2,
+      2,
+      2,
+      1,
+      0,
+      0,
+      2,
+      0,
+      0
+    ],
+    "priority": "主评"
+  },
+  {
+    "id": "sid",
+    "name": "SID-Bench",
+    "group": "时序与话权",
+    "version": "2026-03 · v1",
+    "focus": "语义插话辨识：从“嗯、对”中识别真正要接管话权的起点。",
+    "protocol": "因果流式停声检测",
+    "data": "3,700 项：中文 1,600、英文 1,600、噪声／静默 500。两种语言均含纯附和、开头插话、先附和再转为插话；真值是首个实质词的首音素。",
+    "models": [
+      "FSMN-VAD",
+      "Freeze-Omni（Silero）",
+      "FireRedChat（pVAD）",
+      "Moshi",
+      "论文 SID-model（AuT + Qwen 0.6B）"
+    ],
+    "metrics": [
+      [
+        "FIR ↓",
+        "错误触发停声的比例；提前触发也会受罚。注意论文公式／发布 notebook 以全部测试项为分母，README 的文字写成非插话项，两者不同。"
+      ],
+      [
+        "IRL ↓",
+        "真实插话意图起点 → 模型停声的延迟。发布 notebook 对 ±50ms 置零，均值只纳入 delay>0 的项；须同时报漏检，避免“永不触发”看似低延迟。"
+      ],
+      [
+        "APT ↓",
+        "平均惩罚时间：迟停罚迟延；漏停罚剩余插话时间；误触发或明显提前停声按样本时长惩罚，正确不触发为 0。"
+      ]
+    ],
+    "fit": "部分较强",
+    "gain": "我们的真打断与非打断附和构成正负训练素材，适合提高选择性停声；该结论依赖训练包含并行输入、动作和静默监督。",
+    "gaps": "当前未专门平衡“同一句先附和、随后出现插话意图”的样本；1–3 字停声标签也不等于首实质音素标注。",
+    "access": "已检查官方 test.ipynb 的实际计分逻辑。复现必须锁定 scorer，并记录 FIR 分母与 IRL 纳入规则。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2603.24144v1"
+      ],
+      [
+        "官方仓库",
+        "https://github.com/xkx-hub/SID-bench"
+      ],
+      [
+        "实际评分 notebook",
+        "https://github.com/xkx-hub/SID-bench/blob/main/test.ipynb"
+      ]
+    ],
+    "coverage": [
+      2,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "priority": "主评"
+  },
+  {
+    "id": "fdb15",
+    "name": "Full-Duplex-Bench v1.5",
+    "group": "时序与话权",
+    "version": "2025 首发 · 2026 v4",
+    "focus": "四种重叠输入的选择性：该打断时停声，不该打断时继续。",
+    "protocol": "实时重叠／音频与文本双重分析",
+    "data": "499 项：用户插话 200、用户附和 99、用户转向别人说话 100、背景人声 100。",
+    "models": [
+      "Freeze-Omni",
+      "Moshi",
+      "Gemini",
+      "Sonic",
+      "GPT-4o"
+    ],
+    "metrics": [
+      [
+        "Respond / Resume / Uncertain / Unknown",
+        "分别为回应当前重叠输入、接续原播报、请求澄清、无关或无有效行为；报四类比例。真正插话希望 Respond，其余三类希望 Resume。"
+      ],
+      [
+        "Stop latency",
+        "重叠人声开始 → 助手停声。真正插话希望短；附和或旁人干扰下，不停声反而符合目标，不能把所有场景统一取越低越好。"
+      ],
+      [
+        "Response latency ↓",
+        "重叠人声结束 → 助手下一次起声。"
+      ],
+      [
+        "Prosodic shifts",
+        "比较插话前后 WPM、基频均值／标准差、强度均值／标准差，判断是否适应语境；是声学变化诊断，不是统一越大越好。"
+      ],
+      [
+        "UTMOSv2 ↑",
+        "无参考的语音质量预测分，不能代替任务完成度或话权正确性。"
+      ]
+    ],
+    "fit": "部分较强",
+    "gain": "与我们“用户附和时助手连续说、真插话时助手停止”最贴近，适合作为选择性行为对照。",
+    "gaps": "用户转向别人说话已被移除；背景人声仅 5 次。论文还使用声道／频谱加工，随机低音量混入不能覆盖全部声学条件。",
+    "access": "基于论文 v4 的五个实测模型列举；仓库后来支持的额外 API 不算该论文已测模型。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2507.23159v4"
+      ],
+      [
+        "官方代码与数据入口",
+        "https://github.com/DanielLin94144/Full-Duplex-Bench"
+      ]
+    ],
+    "coverage": [
+      2,
+      2,
+      0,
+      1,
+      0,
+      0,
+      2,
+      0,
+      0
+    ],
+    "priority": "对照"
+  },
+  {
+    "id": "fdb1",
+    "name": "Full-Duplex-Bench v1",
+    "group": "时序与话权",
+    "version": "2025-03 · 核对 v3",
+    "focus": "经典基础四项：句内停顿、助手附和、顺滑接话、用户打断。",
+    "protocol": "固定音频／流式输出",
+    "data": "727 项，来自 Candor、ICC 与合成语音；四项任务的样本和有效分母不同。",
+    "models": [
+      "dGSLM",
+      "Moshi",
+      "Freeze-Omni",
+      "Gemini Live（gemini-2.0-flash-live-001）"
+    ],
+    "metrics": [
+      [
+        "Pause TOR ↓",
+        "用户仍持有话权的停顿中，助手接管的比例。"
+      ],
+      [
+        "Backchannel TOR ↓ / Freq",
+        "用户讲话时，助手不应变成长回答接管；Freq 是助手附和事件／秒，频率本身并非越高越自然。"
+      ],
+      [
+        "Backchannel JSD ↓",
+        "200ms 时间格上的助手附和分布，与真人参考分布的 Jensen–Shannon 散度；只在未接管话权时计算，完全沉默按均匀分布处理。"
+      ],
+      [
+        "Turn-taking TOR ↑ / latency ↓",
+        "用户结束后是否接话；延迟从用户结束到助手起声，只在成功接管项计算。"
+      ],
+      [
+        "Interruption TOR ↑ / Score ↑ / latency ↓",
+        "打断后是否回应、0–5 的内容适应性分、打断后的响应延迟；内容和延迟同样是条件统计。"
+      ]
+    ],
+    "fit": "部分",
+    "gain": "我们的暂停、打断、普通接话可提供相关训练素材。",
+    "gaps": "其中 backchannel 测的是助手说“嗯、我在听”；我们生成的是用户附和，角色方向相反，不能据此预计该分项提点。",
+    "access": "已核论文结果表，未把背景综述中罗列的所有模型当成实测基线。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2503.04721v3"
+      ],
+      [
+        "官方仓库",
+        "https://github.com/DanielLin94144/Full-Duplex-Bench"
+      ]
+    ],
+    "coverage": [
+      2,
+      0,
+      2,
+      1,
+      2,
+      0,
+      0,
+      0,
+      0
+    ],
+    "priority": "对照"
+  },
+  {
+    "id": "fdbench",
+    "name": "FD-Bench（Peng 等）",
+    "group": "时序与话权",
+    "version": "2025-07",
+    "focus": "多轮插话、噪声鲁棒性及语音内容质量；与 Full-Duplex-Bench 是不同项目。",
+    "protocol": "合成多轮实时测试",
+    "data": "293 段会话、1,196 个插话事件，合成音频超过 40 小时；含不同长度、类型插话及信噪比条件。",
+    "models": [
+      "Moshi",
+      "Freeze-Omni",
+      "VITA-1.5"
+    ],
+    "metrics": [
+      [
+        "SRR ↑ / SIR ↑ / SRIR ↑",
+        "依次是普通问题成功回答率、用户插话成功打断率、已成功打断后的成功回答率；SRIR 的分母是成功打断事件。"
+      ],
+      [
+        "EIR ↓ / NIR ↓",
+        "助手过早打断用户的比例；被噪声错误打断的比例。"
+      ],
+      [
+        "IRD ↓ / FSED ↓",
+        "插话到停声的延迟；用户结束后首段语音输出的延迟。"
+      ],
+      [
+        "ERT / EIT",
+        "过早回复或过早打断相对于用户结束的提前时间；需结合事件率，不能只比较幸存项均值。"
+      ],
+      [
+        "WER ↓ / C-PPL ↓",
+        "语音相对于输出文本的词错率；给定上下文的回复困惑度，后者受所用外部语言模型影响。"
+      ],
+      [
+        "GPT-4o Score ↑",
+        "相关性、鼓励性、简洁性、灵活性、实用性、创造性各 1–10 分，再平均。"
+      ]
+    ],
+    "fit": "部分",
+    "gain": "多轮打断与噪声混音具备覆盖；预期更可能改善 SIR／SRIR，而非所有语音质量指标。",
+    "gaps": "我们的随机增益不是受控 SNR 梯度；简洁回复和自然韵律仍须分别检查。",
+    "access": "须单独保留成功率和延迟的分母；不要与 Lin 等的 TOR 系列拼成一张不加说明的总分榜。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2507.19040"
+      ],
+      [
+        "官方仓库",
+        "https://github.com/pengyizhou/FD-Bench"
+      ]
+    ],
+    "coverage": [
+      2,
+      1,
+      1,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "turnbench",
+    "name": "TurnBench",
+    "group": "时序与话权",
+    "version": "2026-08",
+    "focus": "在真实双人对话中，低误报地发现话轮结束和真正接管话权的插话。",
+    "protocol": "因果事件检测；完整代理另测 EOT",
+    "data": "154 段英文真人对话、30 小时、106 人，六种交流类型，三人标注。",
+    "models": [
+      "RMS VAD",
+      "OpenAI Realtime Server VAD",
+      "OpenAI Realtime Semantic VAD",
+      "Kyutai SVAD",
+      "SmartTurn v3",
+      "VAP",
+      "Mimi-EP",
+      "ESPnet TT-pred.",
+      "ESPnet TT-pred. per-channel",
+      "WavLM Base causal",
+      "WavLM Large causal",
+      "WavLM Large anchor",
+      "Gemini 3.1 Live（仅 EOT）",
+      "Moshi（仅 EOT）"
+    ],
+    "metrics": [
+      [
+        "EOT Recall ↑",
+        "在真实让出话权的时刻检出结束；用户随后继续的句内停顿是负例。"
+      ],
+      [
+        "INT Recall ↑",
+        "检出听者成功接管话权的插话；附和、笑声等不接管行为是负例。"
+      ],
+      [
+        "FPR ↓",
+        "被评分的负例区间中，错误触发的区间比例，不是每秒误报率。"
+      ],
+      [
+        "Signed latency P10/P50/P90",
+        "预测时刻减真实边界，匹配窗口 −0.25 至 +3 秒；负值表示提前判断，不能无限提前来优化。"
+      ],
+      [
+        "Operating point",
+        "开发集 FPR≤0.10 下选阈值并冻结；测试集 FPR≤0.15 才进入合格榜，之后按召回排序。"
+      ]
+    ],
+    "fit": "部分",
+    "gain": "能验证我们的模型是否真学会时序，适合做合成到真人的域外检验。",
+    "gaps": "现有暂停全为 650ms，容易学到固定时间阈值；主要中文和干净 TTS 也与英文真人语料有差异。完整代理原论文仅测 EOT，不能声称同榜已有其 INT 结果。",
+    "access": "开发数据需接受许可，测试真值不公开；非商业与禁止声音克隆等使用条款应按官方协议执行。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2608.25218"
+      ],
+      [
+        "官方仓库",
+        "https://github.com/SesameAILabs/turnbench"
+      ],
+      [
+        "官方榜单",
+        "https://turnbench.sesame.com/"
+      ]
+    ],
+    "coverage": [
+      2,
+      2,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "priority": "对照"
+  },
+  {
+    "id": "talking-turns",
+    "name": "Talking Turns",
+    "group": "时序与话权",
+    "version": "2025-03",
+    "focus": "不仅看说话频率，还检查每次话权决策是否符合真人时机。",
+    "protocol": "学习式时序裁判／人机交互",
+    "data": "基于 Switchboard、Columbia Games、Fisher 学习时序裁判，报告域内／域外真人参照。",
+    "models": [
+      "Moshi",
+      "级联 ASR→LLM→TTS",
+      "理解／预测对照：SALMONN、Qwen2-Audio-Instruct、Qwen-Audio-Chat、Whisper+GPT-4o"
+    ],
+    "metrics": [
+      [
+        "(a) 接话一致性 ↑",
+        "用户暂停时，助手选择接话或等待，与时序裁判标签的一致程度。"
+      ],
+      [
+        "(b) 助手附和一致性 ↑",
+        "助手是否在合适的用户讲话位置发出短附和。"
+      ],
+      [
+        "(c) 助手插话一致性 ↑",
+        "用户仍讲话时，助手是否应介入，而非仅统计有多少重叠。"
+      ],
+      [
+        "(d) 话权提示一致性 ↑",
+        "助手讲话／停顿时，能否通过自然线索让用户知道可以接话还是应继续等。"
+      ],
+      [
+        "(e) 让话一致性 ↑",
+        "用户已插话后，助手让出还是保持话权是否合适。"
+      ],
+      [
+        "AUC / Event accuracy",
+        "裁判模型的 ROC-AUC 是裁判有效性验证；另有音频模型事件理解／预测准确率，二者不等于被测助手的总质量。"
+      ]
+    ],
+    "fit": "部分",
+    "gain": "可诊断模型学到的是合适时机，还是只有较高重叠率。",
+    "gaps": "我们没有助手主动附和或介入的目标标签；真人线索和裁判跨语言可靠性需额外验证。",
+    "access": "属于评测方法与指标框架，接入成本不同于下载一个固定问题集。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2503.01174"
+      ]
+    ],
+    "coverage": [
+      2,
+      1,
+      2,
+      0,
+      2,
+      2,
+      0,
+      0,
+      0
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "flexi",
+    "name": "FLEXI",
+    "group": "时序与话权",
+    "version": "2025-09",
+    "focus": "六类双向互动，加入助手紧急介入与双方附和。",
+    "protocol": "实时场景测试",
+    "data": "普通接话、句内停顿、用户打断、助手打断、用户附和、助手附和；用户与模型的行为方向分开。",
+    "models": [
+      "Moshi",
+      "Freeze-Omni",
+      "VITA-1.5",
+      "Gemini 2.5 Flash Live"
+    ],
+    "metrics": [
+      [
+        "TOR / JIR",
+        "TOR 是接管话权率：真接话／紧急介入希望高，停顿或助手附和场景希望低；JIR 是用户结束前抢入的比例。"
+      ],
+      [
+        "TTR",
+        "助手停止当前话轮的比例：用户真打断希望高，用户附和希望低。"
+      ],
+      [
+        "Latency ↓",
+        "普通接话为用户结束→助手起声；用户打断为插话开始→助手停声。"
+      ],
+      [
+        "TSS ↑ / EDS ↑",
+        "0–5 分：打断后能否回应新主题；助手能否识别紧急情形并有效介入。"
+      ],
+      [
+        "Coherence ↑",
+        "若用户附和导致助手误停，是否在 1 秒内连贯接回原回答。"
+      ],
+      [
+        "BCR / JSD",
+        "助手附和率与其时机分布相对真人的散度；这里的 BCR 不是 DuplexAct-Bench 的行为正确率。"
+      ]
+    ],
+    "fit": "部分",
+    "gain": "当前能支持用户打断、用户附和、正常接话和暂停的训练。",
+    "gaps": "没有紧急助手插话和助手附和，不应预计六类任务全面提升。",
+    "access": "官方仓库已核到；总览模型表与结果表区分，实测为这里列出的四个。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2509.22243"
+      ],
+      [
+        "官方仓库",
+        "https://github.com/ChristineCHEN274/FLEXI"
+      ]
+    ],
+    "coverage": [
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      0,
+      0,
+      0
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "fdb2",
+    "name": "Full-Duplex-Bench v2",
+    "group": "多轮与恢复",
+    "version": "2025-10 首发 · 2026 v2",
+    "focus": "快／慢节奏下，多轮指令、信息修正、实体跟踪与安全能否保持。",
+    "protocol": "WebRTC 闭环考官／实时多轮",
+    "data": "Daily、Correction、Entity Tracking、Safety 四组；按事件评分，也按 15 秒时间段观察会话中性能变化。",
+    "models": [
+      "GPT-Realtime",
+      "Moshi",
+      "Freeze-Omni"
+    ],
+    "metrics": [
+      [
+        "Turn-Taking Fluency ↑",
+        "每个事件 1–5 分：何时回应、等待、衔接是否顺畅。"
+      ],
+      [
+        "Instruction Following ↑",
+        "每个事件 1–5 分：是否完成当前指令，含更正与新约束。"
+      ],
+      [
+        "Task-specific Global Score ↑",
+        "整段会话 1–5 分：实体指代是否一致、修正是否持续生效、安全边界是否保持；不是工具数据库成功率。"
+      ],
+      [
+        "Temporal degradation",
+        "分别看快／慢条件和不同会话时间段的得分衰减，判断早期成功能否延续。"
+      ]
+    ],
+    "fit": "较强（语义）",
+    "gain": "当前已听前缀、事实修正、跨轮目标与简洁回答正好覆盖其语义目标；是比较有希望看到内容收益的一类。",
+    "gaps": "受控快／慢节奏、英文迁移和系统性安全样本尚未匹配，不能据此保证安全子集提高。时序分仍依赖流式适配。",
+    "access": "考官与被测模型实时交互，不能拿固定剧本合成通过来替代模型闭环得分。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2510.07838v2"
+      ],
+      [
+        "官方演示",
+        "https://ericsunkuan.github.io/full-duplex-bench-v2-demo/"
+      ]
+    ],
+    "coverage": [
+      2,
+      1,
+      1,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "mtr",
+    "name": "MTR-DuplexBench",
+    "group": "多轮与恢复",
+    "version": "2025-11 · 核对 v3",
+    "focus": "一轮会做不够：多轮混合事件后的质量、指令和安全是否衰减。",
+    "protocol": "多轮音频交互",
+    "data": "交互特性 200 组、对话质量 200 组、指令跟随 300 组、安全 520 组；多数组为 10 轮，对话质量均值 5.88 轮。",
+    "models": [
+      "Moshi",
+      "Freeze-Omni",
+      "VocalNet",
+      "级联系统"
+    ],
+    "metrics": [
+      [
+        "Conversational Feature Success ↑",
+        "普通接话、插话、停顿、背景人声等事件的成功率；分别比较单一事件与多事件组合。"
+      ],
+      [
+        "Latency / Backchannel frequency",
+        "不同轮次的响应时延与助手附和频率；附和次数本身不是质量分。"
+      ],
+      [
+        "Dialogue Quality ↑ / #Words",
+        "GPT 内容质量分与生成词数；词数是描述量，长回答不自动得高分。"
+      ],
+      [
+        "Instruction-following success ↑",
+        "多轮执行给定指令的成功率。"
+      ],
+      [
+        "Safety refusal ↑",
+        "对恶意请求恰当拒绝的比例，并观察跨轮保持情况。"
+      ],
+      [
+        "Depth breakdown",
+        "对第 1 轮、前 2／5／10 轮等范围分别汇总，暴露会话后段退化。"
+      ]
+    ],
+    "fit": "较强（语义）",
+    "gain": "我们平均约 12.8 个主轮，适合训练连续修正和多轮保持；比只测单次停止更能体现管线价值。",
+    "gaps": "助手附和、对抗安全和受控事件组合未系统覆盖；目前 87 条规模也不足以证明长上下文泛化。",
+    "access": "官方仓库与论文的分维度数据划分均已核对。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2511.10262v3"
+      ],
+      [
+        "官方仓库",
+        "https://github.com/ZhangHe0918/MTR-DuplexBench"
+      ]
+    ],
+    "coverage": [
+      2,
+      1,
+      2,
+      2,
+      2,
+      0,
+      0,
+      0,
+      0
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "echochain",
+    "name": "EchoChain",
+    "group": "多轮与恢复",
+    "version": "2026-04",
+    "focus": "听见更正不代表记住：打断后更新约束、保持主目标、避免旧信息回潮。",
+    "protocol": "实时注入打断／会话级 Rubric",
+    "data": "200 段经过人工审查的打断会话；三类错误为上下文惯性、插话后遗忘、主目标被替换。",
+    "models": [
+      "GPT-realtime-2025-08-28",
+      "Gemini Live 2.5 Flash Native Audio",
+      "Grok Voice",
+      "Amazon Nova Sonic 2"
+    ],
+    "metrics": [
+      [
+        "MPR ↑",
+        "Mean Pass Rate：整段会话全部对应 Rubric 通过的比例；一项漏掉即该段未全通过。"
+      ],
+      [
+        "MCP ↑",
+        "Mean Criterion Passed：全部会话中已满足的单条标准比例，显示部分能力；不能与 MPR 混用。"
+      ],
+      [
+        "Contextual inertia ↓",
+        "打断已带来新约束，模型仍按旧状态继续。"
+      ],
+      [
+        "Interruption amnesia ↓",
+        "当下接受了更正，后续又忘记或恢复旧值。"
+      ],
+      [
+        "Objective displacement ↓",
+        "回答了临时插话，却遗忘原来仍需完成的主任务。"
+      ]
+    ],
+    "fit": "较强（语义）",
+    "gain": "与我们按实际已听前缀生成后续、维护冻结事实和多轮修正的目标高度相关；适合验证“恢复内容”是否真的学到。",
+    "gaps": "当前有 3 条长度精简后语义豁免样本；不能让它们把漏约束当正确答案。还需测试未见领域和英文口语。",
+    "access": "这是经过筛选的压力测试，失败类型比例不是自然对话中错误的流行率。时序与语义仍需联合验证。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2604.16456"
+      ],
+      [
+        "作者发布说明",
+        "https://labelbox.com/blog/introducing-echochain-an-audio-benchmark-for-reasoning-under-pressure-in-full-duplex-dialogue/"
+      ]
+    ],
+    "coverage": [
+      2,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "priority": "主评"
+  },
+  {
+    "id": "ihbench",
+    "name": "IHBench",
+    "group": "多轮与恢复",
+    "version": "2026-06",
+    "focus": "给定插话前的完整上下文，下一条回复能否继续推进任务并妥善恢复。",
+    "protocol": "固定历史／下一回复；非实时停声测试",
+    "data": "45 段会话、10 个领域、428 个插话点；每段平均 30.1 条消息。六类为质疑、急躁、普通补充、换题、填充语、更正。",
+    "models": [
+      "GPT Realtime 2 (medium) †",
+      "GPT Realtime 2 (xhigh) †",
+      "GPT Realtime 1.5",
+      "GPT Audio",
+      "Gemini 3 Flash †",
+      "Gemini 3 Flash",
+      "GPT Realtime",
+      "Gemini 2.5 Flash †",
+      "Gemini 3.1 Pro †",
+      "Gemini 2.5 Pro †",
+      "GPT-4o Audio (baseline)",
+      "Gemini 2.5 Flash",
+      "GPT Audio Mini",
+      "Gemini 3.1 Flash Live",
+      "GPT Realtime Mini",
+      "Gemini 3.1 Flash Live †",
+      "GPT-4o Mini Audio",
+      "Gemma 4 12B Instruct †",
+      "Gemma 4 12B Instruct",
+      "MiMo-Audio-7B †",
+      "MiMo-Audio-7B",
+      "Voxtral-Small-24B",
+      "Qwen3-Omni-30B",
+      "Kimi-Audio-7B",
+      "Qwen2.5-Omni-7B",
+      "Phi-4-Multimodal",
+      "Qwen2-Audio-7B"
+    ],
+    "metrics": [
+      [
+        "TF win rate ↑",
+        "任务推进相对 GPT-4o Audio 的偏好胜率，候选顺序随机；0.50 表示与基线相当，不是“任务只成功了一半”。"
+      ],
+      [
+        "RQ pass rate ↑",
+        "Recovery Quality：该插话类型的 2–4 条标准全部满足才通过，是真正的绝对通过率。"
+      ],
+      [
+        "Depth / Type breakdown",
+        "按会话深度和六类插话拆分；三次重复，配合 bootstrap 95% 区间报告稳定性。"
+      ]
+    ],
+    "fit": "较强（语义）",
+    "gain": "即使用逐轮内容训练，也有望提高下一回复的任务推进和更正处理；它可作为语义收益与时序收益的隔离测试。",
+    "gaps": "本 benchmark 不测流式停声、真正音频重叠或 TTS 延迟；RQ 提高不能作为全双工时序已改善的证据。",
+    "access": "论文结果表实际列有 27 个配置，含推理开关。这里保留表中配置标签，† 的含义见论文，不把它与独立新模型混算。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2606.19595"
+      ],
+      [
+        "官方仓库",
+        "https://github.com/boson-ai/ihbench"
+      ],
+      [
+        "数据集",
+        "https://huggingface.co/datasets/bosonai/ihbench"
+      ]
+    ],
+    "coverage": [
+      0,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "priority": "主评"
+  },
+  {
+    "id": "duplexledger",
+    "name": "DuplexLedger",
+    "group": "多轮与恢复",
+    "version": "2026-10",
+    "focus": "实时互动会如何污染或更新同一会话内的记忆账本。",
+    "protocol": "自适应挑战／同会话记忆问答",
+    "data": "1,094 段中英双语会话、6,564 个记忆问题；显式 Write／Update／Ignore／Retain 事件与前后状态。",
+    "models": [
+      "MiniCPM-o 4.5",
+      "Freeze-Omni",
+      "Moshi",
+      "Lychee-FD",
+      "PersonaPlex-7B-v1",
+      "ACT-Mem + MiniCPM-o 4.5（219 段实验）"
+    ],
+    "metrics": [
+      [
+        "Validity / Observability / RCR",
+        "协议有效、实际有可评分语音、计划挑战真正触发的比例。RCR 是挑战暴露度，不能当作答对率。另报触发等待超时率。"
+      ],
+      [
+        "conditional cFD / adaptive FD ↑",
+        "可评分挑战上的停声／继续／等待／说话人选择正确性；adaptive FD 再考虑挑战实现机会，不能用两个总体均值相乘重建。"
+      ],
+      [
+        "Response coverage ↑ / intrusion ↓",
+        "该回复的轮次是否回复；另区分过早新起声、上轮残留语音、用户结束前重叠、句内停顿侵入率。"
+      ],
+      [
+        "Stop P50/P90 ↓ / ≤800ms ↑",
+        "真正注入插话且有效测得停声的事件上，报延迟分位数及 800ms 内停止率；缺失样本不能填零。"
+      ],
+      [
+        "Latest-value accuracy ↑ / superseded error ↓",
+        "回答是否只采用更新后的正确值，是否还说出被取代的旧值；另报有回应条件下准确率。"
+      ],
+      [
+        "Distractor adoption ↓ / rejection ↑",
+        "是否把应忽略的内容写进答案；正确拒绝必须实际回答，因此必须同时看不回答率。"
+      ],
+      [
+        "Summary fact coverage ↑ / token F1",
+        "最终摘要覆盖多少原子事实，原文用 token F1≥0.50 判事实覆盖；整答 token F1 为兼容诊断，不是唯一记忆指标。"
+      ]
+    ],
+    "fit": "部分",
+    "gain": "我们的跨轮事实更正和已听前缀与记忆更新相关，适合验证旧值回潮和最终总结遗漏。",
+    "gaps": "尚无事件级外部记忆读写监督；背景文本不进入主历史，也缺少大量“同义但应忽略”的身份干扰，不能等同于事务记忆训练。",
+    "access": "官方仓库已核到。不同模型触发的挑战和有效分母会不同，须同时报告暴露度，不能只比较条件成功率。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2610.27581"
+      ],
+      [
+        "官方仓库",
+        "https://github.com/lyx-researcher/DuplexLedger"
+      ]
+    ],
+    "coverage": [
+      2,
+      2,
+      2,
+      2,
+      0,
+      0,
+      2,
+      0,
+      0
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "duplexact",
+    "name": "DuplexAct",
+    "group": "行为与指令",
+    "version": "2026-10",
+    "focus": "八种互动动作：不仅是否执行，还检查后续行为是否贯彻。",
+    "protocol": "Direct Replay + Interactive Simulator",
+    "data": "4,691 个实例、24 种条件；2,531 个来自真人对话。公开包含 3,456 项，Candor 部分需用获许可的原始数据重建。",
+    "models": [
+      "Moshi",
+      "Freeze-Omni",
+      "VITA-1.5",
+      "MiniOmni2",
+      "Voila-Autonomous",
+      "FLM-Audio",
+      "Raon-SpeechChat",
+      "BayLing-Duplex",
+      "Lychee-FD",
+      "MiniCPM-o 4.5",
+      "Gemini 3.1 Flash Live",
+      "GPT Realtime 2.1",
+      "Grok Voice",
+      "Qwen3.5-Omni Flash Realtime"
+    ],
+    "metrics": [
+      [
+        "Wait / Ignore / Take Turn",
+        "用户仍在讲时等待；无关输入时不响应；该接话时开始实质回答。"
+      ],
+      [
+        "Stop / Hold Floor / Recover",
+        "被真插话时停止；面对非接管输入继续持有话权；插话结束后结合新信息接回。"
+      ],
+      [
+        "Interrupt / Backchannel",
+        "助手在用户讲话时主动介入；或只发短反馈而让用户保留话权。"
+      ],
+      [
+        "Immediate success I ↑",
+        "所有该动作实例中，是否在正确位置和时机执行目标动作的比例。"
+      ],
+      [
+        "Subsequent success S ↑",
+        "只在 I 已成功的实例中，继续符合后续内容／行为标准的比例；S 不是所有实例上的端到端成功率。"
+      ],
+      [
+        "Timing diagnostics",
+        "动作特定的停声、主动介入时机、恢复延迟等；按条件报中位数、IQR 和有效数量。"
+      ]
+    ],
+    "fit": "部分",
+    "gain": "当前对应 Wait、Take Turn、Stop、Hold Floor、Recover 的一部分，可用它系统暴露能力边界。",
+    "gaps": "没有助手主动附和／介入，Ignore 的说话人干扰也很少。全八动作均值未必显著提高，即使 Stop／Recover 子项提高。",
+    "access": "Direct Replay 实测 14 个；模拟器结果只有 10 个，VITA-1.5、MiniOmni2、Voila、Lychee 因双向接口受限未参与后者。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2610.17738"
+      ],
+      [
+        "官方仓库",
+        "https://github.com/JiahengDong/DuplexAct"
+      ],
+      [
+        "数据集",
+        "https://huggingface.co/datasets/LincolnD/DuplexAct"
+      ]
+    ],
+    "coverage": [
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      0,
+      0
+    ],
+    "priority": "覆盖审计"
+  },
+  {
+    "id": "duplexact-bench",
+    "name": "DuplexAct-Bench",
+    "group": "行为与指令",
+    "version": "2026-09 · 与 DuplexAct 不同",
+    "focus": "是否因画像、当前指令或隐含语境，采取正确参与行为。",
+    "protocol": "实时双语场景／内容和时机联合",
+    "data": "1,290 个中英实例、30 个场景；六类行为，三种条件为会话前画像、会话中显式要求、无显式指令。",
+    "models": [
+      "Freeze-Omni",
+      "MiniCPM-o 4.5",
+      "Moshi",
+      "PersonaPlex",
+      "VITA-1.5",
+      "Raon-SpeechChat",
+      "DuplexCascade",
+      "Nemotron 3 VoiceChat",
+      "Qwen3.5-Omni",
+      "Grok Voice",
+      "GPT Realtime 2.1",
+      "Gemini 2.5 Native Audio"
+    ],
+    "metrics": [
+      [
+        "六类行为",
+        "助手主动插话、用户插话、抗非打断干扰、主动沉默、主动发起、助手附和；同一行为在不同指令条件下可能有不同答案。"
+      ],
+      [
+        "Content ↑",
+        "0–5 分：语义完成 0–2、遵守约束 0–1、上下文一致 0–1、语音风格／情感合适 0–1。最后一项需听音频。"
+      ],
+      [
+        "Timing / L ↓",
+        "按行为判时机成功；用户插话的 L=起声到让话 + 用户结束到有效回答。失败记完整评测区间，不能当纯成功项延迟。"
+      ],
+      [
+        "BAS ↑",
+        "助手附和时间格经平滑后，与参考机会分布做软交并比；不是次数越多越高。"
+      ],
+      [
+        "BCR ↑",
+        "Behavioral Correctness Rate：内容≥2.5 且该行为时机满足的联合通过比例；主动沉默只看沉默。用户插话仅在助手当时确实讲话的有效试次评分。"
+      ]
+    ],
+    "fit": "部分",
+    "gain": "用户打断与抗附和干扰有直接相关样本；适合观察时机与内容能否同时达标。",
+    "gaps": "我们有用户表达画像，尚无助手按角色改变主动沉默、主动发起、主动插话和附和策略的数据。",
+    "access": "需与 Jiaheng Dong 等的 DuplexAct 分开建表；名称相似，动作数量、协议和指标均不同。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2609.39446"
+      ],
+      [
+        "官方项目页",
+        "https://alitaxky.icu/DuplexAct-Bench/"
+      ]
+    ],
+    "coverage": [
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      0,
+      0,
+      0
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "dsb",
+    "name": "DSB-IFEval",
+    "group": "行为与指令",
+    "version": "2026-09 · 核对 v2",
+    "focus": "听懂“你是心理咨询师”后，能否据此改变等待、插话等话权策略。",
+    "protocol": "相同音频／五级条件的对照实验",
+    "data": "1,038 项、240 个固定会话、八类助手角色；L0 默认、L1 明确指令、L2 仅画像、L3 画像加明示、L4 指令冲突。",
+    "models": [
+      "PersonaPlex",
+      "F-Actor",
+      "Moshi",
+      "GPT-Realtime",
+      "MiniCPM-o-4.5",
+      "Fun-Audio-Chat",
+      "GPT-Live-1",
+      "Gemini-3.8-Live",
+      "StepAudio-3-Realtime",
+      "Nemotron-VoiceChat",
+      "Realtime-Venus-Audio"
+    ],
+    "metrics": [
+      [
+        "IAS ↑",
+        "按已知时间戳确定性判 Listen、Backchannel、No-Backchannel、Interrupt、Take-Turn、Readback、Yield、Continue、Accept-Overlap 九类要求，取二元通过均值。"
+      ],
+      [
+        "PAS ↑",
+        "0–100 的角色适配分：回复的内容和表达语域是否符合助手画像。"
+      ],
+      [
+        "Entailment Gap",
+        "IAS(L1)−IAS(L2)：明说与只给画像的差距。差小也可能是两者都差，须同时看 L0 及绝对分。"
+      ],
+      [
+        "Redundancy Gain / Role Tax",
+        "分别为 IAS(L3)−IAS(L2)、IAS(L3)−IAS(L1)，看复述隐含规则有无帮助、加入角色是否拖累明确指令执行。"
+      ],
+      [
+        "Conflict Profile / SafetyOverride ↑",
+        "报告明确指令胜、画像胜、折中、混乱的分布；安全冲突中安全相关角色要求优先的比例。"
+      ]
+    ],
+    "fit": "弱",
+    "gain": "我们能提供一般等待／停声，但对角色条件化策略仅有很弱的间接帮助。",
+    "gaps": "用户的口气和性格画像不等于助手角色策略；不能因文本更口语化便预期 IAS 或冲突处理提高。",
+    "access": "论文 v2 为 11 个实测系统；较早项目页仍写 6 个，报告以 v2 结果表为准。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2609.03423"
+      ],
+      [
+        "官方项目页",
+        "https://dsb-ifeval.github.io/"
+      ]
+    ],
+    "coverage": [
+      2,
+      2,
+      2,
+      1,
+      2,
+      2,
+      0,
+      0,
+      0
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "mib",
+    "name": "Model Interruption Bench（MIB）",
+    "group": "行为与指令",
+    "version": "2026-10 · EMNLP",
+    "focus": "用户推理到错误时，助手能否主动在中途指出具体错误。",
+    "protocol": "实时主动纠错＋轮流模式消融",
+    "data": "GSM8K 派生 600 项：300 有错、300 无错；另有 Reveal／FAVA 小型诊断。以首个非附和输出判断。",
+    "models": [
+      "Freeze-Omni",
+      "Gemini 2.5 Flash Live",
+      "Gemini 3.1 Flash Live",
+      "GPT-4o Realtime",
+      "Moshi",
+      "PersonaPlex"
+    ],
+    "metrics": [
+      [
+        "TP / FN",
+        "在错误步骤开始 ts 到结束 te 后 10 秒的窗口内，边听边正确指出错误才为 TP；时机不对或纠错错误为 FN。"
+      ],
+      [
+        "TN / FP",
+        "无错时保持安静为 TN；无故主动插话或事后捏造错误为 FP。"
+      ],
+      [
+        "Precision / Recall / F1 ↑",
+        "由上述严格事件标签计算；不能只测“是否发现数学错误”。"
+      ],
+      [
+        "Interruption latency ↓ + n",
+        "错误音频中实际中途介入的样本，延迟=max(0, t−te)，在错误步骤内介入为 0；均值须同时报有效次数 n。"
+      ],
+      [
+        "Failure taxonomy / turn-based control",
+        "区分太早、太晚、纠错错误、事后才发现、完全不答；轮流模式对照用于分离“不会推理”与“不会及时行动”。"
+      ]
+    ],
+    "fit": "缺口",
+    "gain": "当前可能间接保留一般纠错语言能力，但没有训练该 benchmark 最核心的主动介入动作。",
+    "gaps": "我们是用户打断助手；MIB 是助手打断用户，方向相反。仅增加用户打断数量不会补齐。",
+    "access": "协议在模型起声后暂停用户音频，方便识别首个非附和回复；这也与持续双向播放的评测不同。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://aclanthology.org/2026.emnlp-main.2349.pdf"
+      ],
+      [
+        "官方仓库",
+        "https://github.com/ericsunkuan/Model-Interruption-Bench"
+      ]
+    ],
+    "coverage": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "fdb3",
+    "name": "Full-Duplex-Bench v3",
+    "group": "工具与任务",
+    "version": "2026-04 · v1",
+    "focus": "口语不流利、自我更正和暂停下，工具选择、参数和状态回退是否正确。",
+    "protocol": "实时音频＋可验证 Mock API",
+    "data": "100 条真人语音请求、12 人、79 个情境；四个业务领域，1–3 步工具链，21 项需回滚。覆盖填充语、暂停、犹豫、重启和自我修正。",
+    "models": [
+      "GPT-Realtime",
+      "Gemini Live 2.5",
+      "Gemini Live 3.1",
+      "Grok",
+      "Ultravox v0.7",
+      "Whisper→GPT-4o→TTS"
+    ],
+    "metrics": [
+      [
+        "Tool Selection F1 ↑",
+        "预期与实际工具调用的 F1，同时惩罚漏调和多调。"
+      ],
+      [
+        "Argument Accuracy ↑",
+        "工具参数语义正确率，允许等价日期格式等表达；由裁判判断。"
+      ],
+      [
+        "Pass@1 ↑",
+        "一次执行中，工具集合完全正确且每次参数都满分，才算任务通过。"
+      ],
+      [
+        "Response Quality ↑",
+        "即使工具做对，是否还把结果准确、自然地告诉用户。"
+      ],
+      [
+        "Take-turn / Interruption",
+        "自然时机接话比例；用户结束前助手起声计抢话，基准时差=助手开始−用户结束。"
+      ],
+      [
+        "Latency ↓",
+        "分别报告任意首语音、首次工具调用、真正含答案的任务完成时间；不能用一句“我查一下”替代完成延迟。"
+      ],
+      [
+        "Filler rate ↓",
+        "实质回答前输出无内容垫话的情境比例，揭示用垫话降低感知首响的策略。"
+      ]
+    ],
+    "fit": "任务缺口",
+    "gain": "现有修正／暂停样本可能间接帮助听懂新约束和减少抢话。",
+    "gaps": "当前没有真实工具调用、参数和后端状态监督；不能预期 Pass@1／Tool F1 有系统性收益。",
+    "access": "工具准则必须实际执行验证；文本“已完成转账”不等于工具成功。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2604.04847v1"
+      ],
+      [
+        "官方项目页",
+        "https://daniellin94144.github.io/FDB-v3-demo/"
+      ]
+    ],
+    "coverage": [
+      1,
+      0,
+      2,
+      2,
+      0,
+      0,
+      0,
+      2,
+      0
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "tauvoice",
+    "name": "τ-Voice / τ-bench voice",
+    "group": "工具与任务",
+    "version": "2026-03 论文；2026-10 voice-v2",
+    "focus": "从语音接待到后端事务完成的端到端可靠性。",
+    "protocol": "双向实时模拟用户＋业务工具",
+    "data": "原论文 278 项：零售 114、航空 50、电信 114。现仓库 voice-v2 为六种语言×三个领域×50 项=900 个单次任务，包含中文；版本应分开。",
+    "models": [
+      "原论文：gpt-realtime-1.5",
+      "原论文：gemini-live-2.5-flash-native-audio",
+      "原论文：grok-voice-agent"
+    ],
+    "metrics": [
+      [
+        "Task pass@1 ↑",
+        "工具执行后的最终数据库状态是否等于目标状态，确定性判断整项成功。"
+      ],
+      [
+        "Response rate / Yield rate ↑",
+        "需要回答的用户轮中是否回答；真实插话中是否在 2 秒内让话。"
+      ],
+      [
+        "Response / Yield latency ↓",
+        "用户话结束→助手响应；插话开始→助手停止。"
+      ],
+      [
+        "Agent interruption rate ↓",
+        "用户尚未结束时助手主动起声的次数／用户轮；同一轮多次抢话可超过 100%。"
+      ],
+      [
+        "Selectivity ↑",
+        "分别正确忽略用户附和、口头习惯声、非面向助手的话，再取均值。"
+      ],
+      [
+        "New-release judges",
+        "voice-v2 的自然度、语音忠实度、工具与语言检查是事后诊断，不改变确定性的任务 reward。"
+      ]
+    ],
+    "fit": "任务缺口",
+    "gain": "用户附和不打断、真插话让话及任务对话内容可部分迁移。",
+    "gaps": "无业务工具与状态验证，且没有系统覆盖口头习惯声和复杂身份字段；不能拿我们的生成成功率预测其任务 pass@1。",
+    "access": "voice-v1 英文 278 项与新 voice-v2 900 项不混比。这里实测模型来自原论文；仓库可接入供应商不等于其已公布同一版本分数。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2603.13686"
+      ],
+      [
+        "官方仓库／新版定义",
+        "https://github.com/sierra-research/tau2-bench"
+      ]
+    ],
+    "coverage": [
+      2,
+      2,
+      2,
+      2,
+      0,
+      0,
+      1,
+      2,
+      0
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "eva",
+    "name": "EVA-Bench",
+    "group": "工具与任务",
+    "version": "2026-05 · 核对 v3",
+    "focus": "任务做对、说对，与对话简洁流畅分开评估。",
+    "protocol": "端到端语音业务代理／重复试验",
+    "data": "213 个场景：航空 50、医疗 HR 83、ITSM 80；干净条件每项五次。另以 90 项测试口音、咖啡店噪声及组合扰动。",
+    "models": [
+      "级联：Cohere+Gemma-4-26B+Voxtral",
+      "Scribe+Gemini-3-Flash+Conversational v3",
+      "Ink-whisper+Haiku-4.5+Sonic 3",
+      "Nova-3+GPT-5.4+Sonic 3",
+      "Nova-3+GPT-5.4-mini+Aura-2",
+      "Parakeet-1.1+Gemma-4-31B+Kokoro",
+      "Whisper+Qwen3.5-27B+Voxtral",
+      "混合：Gemini-3-Flash+Gemini-3.1-Flash-TTS",
+      "Ultravox-Realtime",
+      "S2S：Gemini-3.1-Flash-Live",
+      "GPT-Realtime-1.5",
+      "GPT-Realtime-mini"
+    ],
+    "metrics": [
+      [
+        "EVA-A: Task Completion ↑",
+        "最终数据库 SHA-256 是否等于目标；漏、错、额外改动都失败。"
+      ],
+      [
+        "EVA-A: Faithfulness ↑",
+        "执行与语言是否忠于指令、业务政策、工具结果和用户输入。"
+      ],
+      [
+        "EVA-A: Speech Fidelity ↑",
+        "实际发音是否正确传达意图文本和高风险实体；语音到语音模型也按关键用户／工具实体检查。"
+      ],
+      [
+        "EVA-X: Progression ↑",
+        "是否保留上下文并推进任务，避免重复、停滞和回退。"
+      ],
+      [
+        "EVA-X: Conciseness ↑",
+        "口语长度是否合适，是否给用户带来过多细节／问题的理解负担。"
+      ],
+      [
+        "EVA-X: Turn-Taking ↑",
+        "按普通轮、工具轮、用户插话、助手抢话分别评分延迟、重叠、让话与恢复，也惩罚不响应。"
+      ],
+      [
+        "Dimension pass",
+        "A 要求 Task=1、Faithfulness≥0.5、Speech Fidelity≥0.95；X 要求 Turn-Taking≥0.8、Progression≥0.5、Conciseness≥0.5。"
+      ],
+      [
+        "pass@1 / pass@k / pass^k ↑",
+        "依次为平均单次通过、k 次至少一次通过、按每场景通过率估计 k 次全通过的可靠性；三者问题不同。"
+      ]
+    ],
+    "fit": "部分／任务缺口",
+    "gain": "我们对冗余与 250 字上限的约束，较可能帮助 Conciseness；多轮事实保持可能帮助 Progression。",
+    "gaps": "短不保证完整正确：语义豁免会伤害 Faithfulness。没有工具后端，EVA-A 的整维度通过无法仅靠当前数据补齐。",
+    "access": "论文实际评 12 套完整系统：七级联、两混合、三 S2S。不能把系统分数归结为其中某个单独文本模型。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2605.13841v3"
+      ],
+      [
+        "官方项目页",
+        "https://servicenow.github.io/eva"
+      ],
+      [
+        "官方仓库",
+        "https://github.com/ServiceNow/eva"
+      ]
+    ],
+    "coverage": [
+      2,
+      1,
+      1,
+      2,
+      0,
+      0,
+      0,
+      2,
+      0
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "tpi",
+    "name": "TPI-Bench / Janus-Test",
+    "group": "说话人与多人",
+    "version": "2026-04 · Still Between Us?",
+    "focus": "看相同文字换了说话人后，助手是否会改变响应策略。",
+    "protocol": "固定输入／第三方插话辨识",
+    "data": "TPI-Test 2K、Janus-Test 2K，另有 100 条真人场景。后者专门制造文本相似但声学身份不同的困难对照。",
+    "models": [
+      "ChatGPT-4o-audio",
+      "Kimi-Audio-Instruct-7B",
+      "Vita-Audio-Instruct-7B",
+      "Qwen2.5-Omni-7B",
+      "Qwen3-Omni-30B-A3B-Instruct",
+      "TPI-Base / TPI-VA / TPI-Full（Qwen2.5-Omni 微调）"
+    ],
+    "metrics": [
+      [
+        "Response Strategy Following",
+        "TPI-Test 中正确识别第三方并按“可行动／可忽略”策略处理的比例越高越好；Janus-Test 的同名数值记录误把单人当插话，反而越低越好。"
+      ],
+      [
+        "Overall Helpfulness ↑",
+        "1–5 分：响应是否有用、自然，并正确理解主用户与第三方身份，而不是把两人的话拼成单一请求。"
+      ],
+      [
+        "ROUGE-L / BLEU（配对诊断）",
+        "同文不同声学身份的两个输入是否得到几乎相同答案；过高可能暴露忽略声纹线索，不能按通常文本生成质量理解为越高越好。"
+      ]
+    ],
+    "fit": "弱",
+    "gain": "现有不同音色第三方旁话是相关原料，但只有 5 条，训练有效性取决于模型确实听到混音。",
+    "gaps": "旁话始终更轻、被排除出主文本，容易形成音量捷径；缺少同文换人、同音量、可行动第三方的对照。",
+    "access": "另测真人域外迁移和通用语音能力回归；不等于实时停声延迟 bench。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2604.17358"
+      ],
+      [
+        "官方项目页",
+        "https://tpi-va.github.io/"
+      ]
+    ],
+    "coverage": [
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      2,
+      0,
+      0
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "msi",
+    "name": "MSI-Bench",
+    "group": "说话人与多人",
+    "version": "2026-09",
+    "focus": "多个合法说话人的权限、约束和信息要如何共同影响答案及工具。",
+    "protocol": "固定多说话人上下文＋旁人探针",
+    "data": "1,152 项，中英各 576、2–3 人。六类为发令权限、选择性披露、约束优先级、时序整合、范围跟踪、背景话检索。",
+    "models": [
+      "APR",
+      "Gemini 3.1 Pro †",
+      "Gemini 3.5 Flash †",
+      "GPT Realtime 2.1 (xhigh) †",
+      "GPT Realtime 2.1 (medium) †",
+      "GPT Audio 1.5",
+      "GPT Audio",
+      "GPT Audio Mini",
+      "Qwen3-Omni-30B",
+      "Gemma 4-12B",
+      "Gemma 4-12B †",
+      "Qwen2.5-Omni-7B",
+      "MiMo-Audio-7B †",
+      "MiMo-Audio-7B",
+      "Phi-4-Multimodal",
+      "Qwen2-Audio-7B"
+    ],
+    "metrics": [
+      [
+        "APR ↑",
+        "一个案例全部原子 Rubric（含工具验证项）均通过的比例。"
+      ],
+      [
+        "ARS ↑",
+        "全部案例的原子 Rubric 合并后，通过条目所占比例；这与 AudioMC 的逐案例先平均 ARS 口径不同。"
+      ],
+      [
+        "Tool ↑",
+        "需工具子集上的严格执行成功率：函数、次数、参数、归属和无额外调用都要对。"
+      ],
+      [
+        "BIR ↑",
+        "助手回答中插入无关旁人讲话后，恢复的答案仍通过原 Rubric 的比例；轮流模型用截断预填代理协议，不与原生双工完全等同。"
+      ],
+      [
+        "PRR ↓",
+        "尚未向助手发问、只有人对人讲话时，助手提前回答的比例；需同时看输出有效率，避免不答模型虚假占优。"
+      ]
+    ],
+    "fit": "弱／任务缺口",
+    "gain": "一般抗旁人干扰可能受益；实体与跨轮信息整合有少量相关性。",
+    "gaps": "无关旁人不等于多个合法用户；当前没有权限绑定、选择性披露或工具归属监督。尤其“背景检索”可能要求使用旁话，不能一概忽略。",
+    "access": "英文与中文结果分别报告；表中 † 为推理配置。托管模型与开源模型存在接口和有效输出差异。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2609.24812"
+      ],
+      [
+        "官方仓库",
+        "https://github.com/boson-ai/MSI-Bench"
+      ]
+    ],
+    "coverage": [
+      0,
+      0,
+      1,
+      2,
+      0,
+      0,
+      2,
+      2,
+      0
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "mptb",
+    "name": "MultiPartyTurnBench",
+    "group": "说话人与多人",
+    "version": "2026 · 官方数据卡",
+    "focus": "把话权事件检测从双人扩展到 2–5 人。",
+    "protocol": "因果事件检测／多通道",
+    "data": "240 段英文合成对话、6.89 小时，48 dev／192 test，六类互动；成功接管、失败抢话、附和、笑声分开标注。",
+    "models": [
+      "截至本次核查，官方数据卡未提供可核实的完整模型结果表；不把协议兼容模型视为已评测模型。"
+    ],
+    "metrics": [
+      [
+        "EOT Recall ↑ / FPR ↓",
+        "真实让话点为正；同一人随后恢复的持有式停顿为负。"
+      ],
+      [
+        "INT Recall ↑ / FPR ↓",
+        "真正夺得话权的插话为正；附和和笑声为负，未成功抢话被排除评分。"
+      ],
+      [
+        "Signed latency",
+        "预测时刻−真值；匹配范围 −0.25 至 +3 秒。每个负区间最多记一次误报。"
+      ],
+      [
+        "Frozen operating point",
+        "开发集 FPR≤0.10 时选最高召回阈值，冻结后测试 FPR≤0.15；不允许用测试集调阈值。"
+      ]
+    ],
+    "fit": "弱",
+    "gain": "我们的双流标签可帮助基础检测，但不能充分训练多人话权选择。",
+    "gaps": "当前仅一个主用户与助手，第三方主要是噪声；缺少多个合法参与者、争夺话权失败和多路归因。",
+    "access": "数据卡为 CC BY 4.0，下载需要接受访问条件；页面混音预览不是正式评测输入，应使用分说话人通道。",
+    "urls": [
+      [
+        "官方数据／协议",
+        "https://huggingface.co/datasets/puneetUMD/MultiPartyTurnBench"
+      ]
+    ],
+    "coverage": [
+      2,
+      2,
+      2,
+      0,
+      0,
+      0,
+      2,
+      0,
+      0
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "multitalk",
+    "name": "MultiTalkBench",
+    "group": "说话人与多人",
+    "version": "2026-09",
+    "focus": "长多人讨论里，追踪谁说什么、协调分歧，并按角色贡献。",
+    "protocol": "长时多人替代参与者／音频评价",
+    "data": "104 段真实测试对话，英文 60、中文 44；多说话人音轨累计约 56.5 小时，会话平均约 32.6 分钟。",
+    "models": [
+      "Qwen3-Omni",
+      "MiniCPM-o 4.5",
+      "PersonaPlex",
+      "Moshiko-7B",
+      "Moshi-MTB",
+      "真人参考"
+    ],
+    "metrics": [
+      [
+        "General ↑",
+        "清晰可行动、相关且准确、符合议程节奏、推动讨论进展四项。"
+      ],
+      [
+        "Multi-party IQ ↑",
+        "说话人状态跟踪、区别对待不同立场、跨人整合、多人分歧处理、面向群体的意识、噪声与输入优先级六项。"
+      ],
+      [
+        "Facilitator ↑",
+        "主持角色：议程推进、激活参与、收敛决策、总结收尾、中立公平。"
+      ],
+      [
+        "Driver / Collaborator / Evaluator ↑",
+        "推动者：新方向、可执行方案、论证推动、节奏；协作者：扩展整合、降摩擦、协同进展；评估者：质疑准确、批评建设性、证据、风险落行动。"
+      ],
+      [
+        "Participation",
+        "输出覆盖的参与区间与真人参考的差异，用 100×max(0,1−|r模型−r真人|) 描述；不能靠一直说话获得高质量分。"
+      ],
+      [
+        "Final score ↑",
+        "先把 1–5 分映射到 0–100，n/a 按最低分；General、Multi-party IQ、所分配角色三组平均。角色列含全体样本占比，不能误作该角色条件均分。"
+      ]
+    ],
+    "fit": "弱",
+    "gain": "现有多轮一致性与简洁表达有间接帮助。",
+    "gaps": "我们的平均会话约 5.5 分钟，而且没有多个合法用户、多人分歧和角色化主持数据，不能预期多人主指标明显提升。",
+    "access": "真实会议材料的不同音轨总时长与墙钟会话时长须区分；训练集不能混入正式测试会话。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2609.36903"
+      ],
+      [
+        "官方数据集",
+        "https://huggingface.co/datasets/MultiTalk/MultiTalkBench"
+      ]
+    ],
+    "coverage": [
+      1,
+      1,
+      1,
+      2,
+      0,
+      1,
+      2,
+      0,
+      0
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "voxprivacy",
+    "name": "VoxPrivacy",
+    "group": "说话人与多人",
+    "version": "2026-01 · 核对 v2",
+    "focus": "认出声音与权限后，何时应保密、何时应正常披露。",
+    "protocol": "固定多说话人语音／隐私决策",
+    "data": "三级任务：直接保密、核验说话人后的条件披露、存在旁人时主动保护隐私；含中英与真人验证。",
+    "models": [
+      "Kimi-Audio",
+      "Qwen2.5-Omni",
+      "MiniCPM2.6-o",
+      "Qwen2Audio",
+      "Voxtral3B",
+      "Baichuan-Omni-1.5",
+      "GLM4Voice",
+      "Gemini-2.0-Flash",
+      "Gemini-2.5-Pro",
+      "Kimi-Audio 隐私微调",
+      "完美身份标签的文本上界"
+    ],
+    "metrics": [
+      [
+        "IRR ↓",
+        "无关、复述问题、错误等无效回答的比例；拒绝得多不等于会保护隐私。"
+      ],
+      [
+        "Accuracy ↑",
+        "该保密时不泄漏、该给授权者时给出的决策正确率。"
+      ],
+      [
+        "Precision ↑",
+        "以“应保密且确实保密”为正例：保密决定有多少正确，误拒授权用户会降低精确率。"
+      ],
+      [
+        "Recall / F1 ↑",
+        "该保密时保护成功的覆盖率及其与精确率的调和平均，平衡隐私泄漏与过度拒绝。"
+      ],
+      [
+        "Speaker verification ACC / EER",
+        "辅助验证是否会识别声音身份；并非仅识别人就能自动完成隐私上下文推理。"
+      ]
+    ],
+    "fit": "缺口",
+    "gain": "我们的音色一致性是基础音频条件，不等于隐私权限监督。",
+    "gaps": "当前没有授权／未授权身份对应关系、秘密归属、旁听者到场后的披露策略，无法直接预期隐私得分提高。",
+    "access": "这是相关的语音身份安全 bench，不是实时打断速度 bench；应放在拓展能力表。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2601.19956v2"
+      ]
+    ],
+    "coverage": [
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      2,
+      0,
+      0
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "spear",
+    "name": "SPEARBench",
+    "group": "自然度与语音",
+    "version": "2026-07",
+    "focus": "会接话不等于像人：联合观察声音、情感、话权节奏和人际表达。",
+    "protocol": "真人 QA 替换／音频自然度",
+    "data": "Seamless Interaction 英文真人材料，筛选 5,419 个上下文—问题—回答单元，约 37.3 小时；即兴与自然场景分开。",
+    "models": [
+      "GPT-audio-1.5（非流式）",
+      "GPT-realtime-2",
+      "Qwen3-Omni-30B-Instruct",
+      "Qwen2.5-Omni-7B（半双工）",
+      "Gemini-2.5-Flash-Native-Audio",
+      "Gemini-3.1-Flash-Live",
+      "Mini-omni（半双工）"
+    ],
+    "metrics": [
+      [
+        "WER / CER ↓；UTMOS ↑",
+        "相对模型意图文本的识别错误、无参考质量预测；用多个 ASR 降低单一识别器偏差。"
+      ],
+      [
+        "Latency / Interruption",
+        "正常接话从用户结束到助手有声段；重叠不混入普通延迟，另报重叠时长和发生比例。"
+      ],
+      [
+        "Turn-taking naturalness ↑",
+        "用真人双通道对话训练的预测器，判断生成的未来语音活动是否符合自然轮换；不是简单固定间隔分数。"
+      ],
+      [
+        "English answers / dialect",
+        "英文回复比例、方言分布方差、问题与答案的方言回归系数；方言趋同或变化本身不总等于更自然。"
+      ],
+      [
+        "Emotional naturalness / AVD",
+        "情感与上下文／关系是否自然；另报唤醒度、效价、支配度在问答之间的相关性，须相对真人参考解释。"
+      ],
+      [
+        "Interpersonal stances",
+        "礼貌、共情、温暖、平静、谦让、社交性、条理、专注、诚实、自由表达十维，报相同／更正向／更负向比例，属于描述诊断。"
+      ],
+      [
+        "Temporal / spectral features",
+        "回答时长、发声占比、归一化基频变化，与真人分布比较；不是越长、越快或音调越高越好。"
+      ]
+    ],
+    "fit": "部分",
+    "gain": "更简洁、多样的用户表达与稳定音色有助于素材质量，但未构成自然情感韵律训练的充分证据。",
+    "gaps": "我们的 TTS 主要按固定参考音色合成，文本画像不保证声音表现出性格／情绪；英文、真人韵律和自然微停顿仍有差距。",
+    "access": "包含非流式／半双工对照，不能把同表语音质量排名当全双工能力排名。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2607.05365"
+      ]
+    ],
+    "coverage": [
+      1,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "omniinteract",
+    "name": "OmniInteract",
+    "group": "视听与在线环境",
+    "version": "2026-05",
+    "focus": "持续观看真实场景，及时答问、主动提醒、处理中途插入的嵌套任务。",
+    "protocol": "在线音视频／不得看未来帧",
+    "data": "250 个视频、1,430 个响应槽：1,062 个 1Q1A、368 个连续 1QnA；包含实时、主动与嵌套场景。",
+    "models": [
+      "AURA",
+      "Gemini 2.5 Flash Live",
+      "MiniCPM-o 4.5",
+      "Qwen3.5-Omni Flash Realtime"
+    ],
+    "metrics": [
+      [
+        "IA-QTF1 ↑",
+        "Interaction-Aware Quality-Timeliness F1：正确内容按时机衰减成为软 TP；无关输出、提前幻觉、低质量及越界继续说话计 FP，缺答计 FN；总分=2ΣTP/(2ΣTP+ΣFP+ΣFN)。"
+      ],
+      [
+        "IDS: NOR / PAQ",
+        "被插断的问题是否完全没输出，以及已说出的部分是否有用；没输出在取消任务场景可能合理，不能统一视为失败。"
+      ],
+      [
+        "IDS: CSM-SR / CSM-AS ↓",
+        "只在已有输出的被打断槽中，越过终止边界继续说话的比例与平均溢出时长。"
+      ],
+      [
+        "NCCS ↑",
+        "嵌套任务外层与内层正确性得分的几何平均，要求回答临时任务后还能回到原任务。"
+      ]
+    ],
+    "fit": "视听缺口",
+    "gain": "打断后恢复的语言模式可能间接迁移。",
+    "gaps": "没有视频帧、在线观察和事件触发任务；单靠当前音频数据不应预计整体 IA-QTF1 或视觉主动提醒提高。",
+    "access": "它测原生在线视听流，不应通过先读完视频摘要或未来帧来模拟。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2605.26485"
+      ],
+      [
+        "官方仓库",
+        "https://github.com/Lucky-Lance/OmniInteract"
+      ]
+    ],
+    "coverage": [
+      2,
+      0,
+      1,
+      2,
+      0,
+      2,
+      0,
+      0,
+      2
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "videofdb",
+    "name": "VideoFDB",
+    "group": "视听与在线环境",
+    "version": "2026-05 · 核对当前论文",
+    "focus": "目光、表情和肢体信号是否改变话权，以及代理能否产生合适非语言反馈。",
+    "protocol": "真实视频通话／感知与生成分评",
+    "data": "237 段真实视频通话、11 类非语言动态。音频、音视频和带头像生成的设置分别报告。",
+    "models": [
+      "Gemini 2.5 Flash Native",
+      "Gemini 3.1 Flash Live",
+      "GPT-Realtime-mini",
+      "GPT-Realtime",
+      "MiniCPM-o 4.5",
+      "MiniOmni2",
+      "VITA-1.5",
+      "生成对照：Gemini 2.5 + Anam / Keyframe",
+      "真人参考"
+    ],
+    "metrics": [
+      [
+        "Perception rubrics ↑",
+        "0–5 分：语言流利、会话流动、视觉落地，判断是否对真实目光／身体信号作出正确回应。"
+      ],
+      [
+        "Generation rubrics ↑",
+        "0–5 分：流利、双方情感匹配、非语言动作合适；测的是代理实际生成的可见行为。"
+      ],
+      [
+        "TOR-Alignment ↑",
+        "按每类动态应保持沉默、继续说、让话、平滑交接或附和，统一统计符合预期时机的比例。"
+      ],
+      [
+        "Latency",
+        "按目标时机类别衡量相应动作的延迟；安静地等与正在发言时继续说是两种目标，不能混为一类。"
+      ]
+    ],
+    "fit": "视听缺口",
+    "gain": "只有音频子集中的一般停声／等待可能有间接帮助。",
+    "gaps": "没有视觉输入与代理视频输出监督，不能预期 Visual Grounding 或 Nonverbal Cue Appropriateness 提点。",
+    "access": "真实视频数据需遵守官方访问与用途限制；是否支持图像输入、抽帧率和头像渲染延迟都需在实验里公开。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2605.30256"
+      ],
+      [
+        "官方项目页",
+        "https://research.nvidia.com/labs/amri/projects/video-fdb/"
+      ]
+    ],
+    "coverage": [
+      2,
+      1,
+      2,
+      1,
+      2,
+      1,
+      0,
+      0,
+      2
+    ],
+    "priority": "扩展"
+  },
+  {
+    "id": "audiomc",
+    "name": "Audio MultiChallenge（AudioMC）",
+    "group": "相邻语音能力",
+    "version": "2025-12",
+    "focus": "多轮语音中的记忆、长期指令、立场一致与口述编辑。",
+    "protocol": "固定上下文／指定最终回复",
+    "data": "452 段真人会话、1,712 条 Rubric、47 人；3–8 轮，中位 5 轮。含 42 项由声音而非文本提供线索的记忆子集。",
+    "models": [
+      "Gemini 3 Pro Preview Thinking",
+      "Gemini 2.5 Pro Thinking",
+      "Gemini 2.5 Flash ±Thinking",
+      "GPT-Realtime（文字／音频输出）",
+      "GPT-4o Audio Preview（文字／音频）",
+      "GPT-4o Mini Audio Preview（文字／音频）",
+      "Qwen3-Omni（音频）",
+      "Qwen2.5-Omni（文字）",
+      "Voxtral-Small-24B",
+      "MiMo-Audio-7B ±Thinking",
+      "Phi-4-MM",
+      "Gemma-3n-E4B",
+      "Kimi-Audio-7B（文字／音频）",
+      "LFM2-Audio-1.5B"
+    ],
+    "metrics": [
+      [
+        "Inference Memory ↑",
+        "回收并综合之前隐含相关信息；声音线索记忆是其中子集，如早先雨声约束后面的出行建议。"
+      ],
+      [
+        "Instruction Retention ↑",
+        "跨轮持续遵守明确指令、条件触发规则和叠加限制。"
+      ],
+      [
+        "Self Coherence ↑",
+        "没有新证据时，不因用户质疑就自相矛盾或改变已建立的事实／立场。"
+      ],
+      [
+        "Voice Editing ↑",
+        "随口述修订逐步改文稿，正确保留未修改部分和最新版要求。"
+      ],
+      [
+        "APR ↑",
+        "Average Pass Rate：一个会话所有 Rubric 都通过的比例。"
+      ],
+      [
+        "ARS ↑",
+        "Average Rubric Score：先算每会话通过的条目比例，再对会话等权平均；不同于把所有条目直接混池。"
+      ]
+    ],
+    "fit": "部分较强（语义）",
+    "gain": "跨轮修正、实体保持、简洁与一致性有较好对应；适合作为通用语音对话不退化的回归项。",
+    "gaps": "它不测实时停声。我们把环境音作为无关扰动，不能训练“听雨声并记住其任务含义”这样的声音线索记忆。",
+    "access": "固定历史中已有助手文本，只生成指定回复；文字与音频输出榜分开，也要区分真人 AudioMC 与更早同名 TTS MultiChallenge。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2512.14865"
+      ],
+      [
+        "官方说明",
+        "https://labs.scale.com/papers/audiomc"
+      ],
+      [
+        "官方数据集",
+        "https://huggingface.co/datasets/ScaleAI/audiomc"
+      ]
+    ],
+    "coverage": [
+      0,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "priority": "回归"
+  },
+  {
+    "id": "omnilingua",
+    "name": "Omnilingua-AudioMC",
+    "group": "相邻语音能力",
+    "version": "2026-11 · 新近发布",
+    "focus": "同一多轮任务从文字变语音、从英文变中文时，能力损失出在哪里。",
+    "protocol": "平行语言／模态对照；固定历史",
+    "data": "354 段、1,404 条 Rubric、十种语言；保留 AudioMC 四种能力，排除依赖非语音背景音的项。英文真人另配 TTS 对照。",
+    "models": [
+      "Qwen3.8 Omni",
+      "Gemini 3.1 Pro",
+      "Gemini 3.8 Flash",
+      "Doubao Seed Lite",
+      "Qwen3.5 Omni",
+      "Muse-Spark 1.2",
+      "附录：Qwen2.5-Omni",
+      "Voxtral-Mini",
+      "Qwen3-Omni",
+      "Voxtral-Small"
+    ],
+    "metrics": [
+      [
+        "Rubric / Instance success ↑",
+        "单条标准通过率，以及一个会话全部标准均通过的比例。"
+      ],
+      [
+        "Modality / language gap",
+        "同任务参考文字与直接语音的配对得分差；逐语言和十语言等权均值展示，另报范围及标准差。"
+      ],
+      [
+        "Reference-pass survival ↑",
+        "只在文字已答对的同一批标准中，转成语音后仍答对的比例；不是两个总体均值相减。"
+      ],
+      [
+        "History / Current / Full transcript rescue",
+        "分别把之前历史、本轮输入或全部替换成转写，定位可恢复损失发生在哪里；还对照共享／模型自己的 ASR。"
+      ]
+    ],
+    "fit": "部分（中文语义）",
+    "gain": "提供中文语义测试与文字／语音差距对照，能区分“推理退化”和“听不清”，适合辅助选训练目标。",
+    "gaps": "没有实时双向时序，且当前训练主要中文，不能预计其余九种语言同步提高。",
+    "access": "新近论文与仓库；附录本地模型有不同完整响应保留集，不可把其分数当完全配对的模态差异证据。",
+    "urls": [
+      [
+        "论文／指标原文",
+        "https://arxiv.org/html/2611.04390"
+      ],
+      [
+        "官方仓库",
+        "https://github.com/QwenLM/Omnilingua-Bench/tree/main/Omnilingua-AudioMC"
+      ]
+    ],
+    "coverage": [
+      0,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "priority": "扩展"
+  }
+]

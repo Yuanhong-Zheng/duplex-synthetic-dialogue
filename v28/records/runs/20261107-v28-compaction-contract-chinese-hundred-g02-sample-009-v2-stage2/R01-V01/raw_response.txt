@@ -1,0 +1,82 @@
+{
+  "episode_situation": "今晚用户在家整理刚收到的一件上衣，发现尺码不合适，这是他第一次独立处理网购服装的退换问题。快递外包装和商品透明袋已经打开，但吊牌仍在，衣服只隔着干净打底衫短暂试穿过，没有清洗、弄脏或在室外穿着。用户保留着衣服、包装和可自行查看的订单页面，但还没有核对该商家的退换期限、运费承担方式以及是否提供直接换码。由于他分不清退货后重拍与直接换货的通常差别，也担心拆封和试穿影响处理，因此想先弄懂一般判断框架，再确认订单中必须查看的具体条件。",
+  "task_reference_data": [
+    "来自用户眼前商品现状：上衣吊牌仍在，只隔着干净打底衫短暂试穿，未清洗、未弄脏、未在室外穿着；外包装和透明商品袋均已打开并保留。",
+    "来自用户可自行查看但尚未核对的订单页面：具体退换期限、退回运费承担方式、是否支持直接换码以及尺码库存情况目前都未确认。"
+  ],
+  "environment_audio": "室内近处有持续而低沉的风扇声，音量稳定。用户手边的衣物包装偶尔轻微窸窣，除此之外房间较安静。",
+  "estimated_snr_db": 29,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "需要明确区分网购服装退换的一般惯例与该商家订单的具体规则，不能把通用说明当作已确认的店铺政策。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "判断时应覆盖商品状态、退换期限、换码库存、运费承担和退款路径这些通用关键条件。",
+      "kind": "soft"
+    }
+  ],
+  "safety_limits": [],
+  "soundscape_plan": {
+    "schema": "duplex_v2.soundscape_plan.v3",
+    "mode": "layered",
+    "ambient_layers": [
+      {
+        "source_id": "AMB01",
+        "candidates": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "reason": "与用户在安静家中整理衣物的场景相容，可形成稳定低强度室内底噪。",
+            "environment_audio": "室内近处持续传来低沉而稳定的机械风扇声。"
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "reason": "适合作为家中持续通风声的另一录音候选，不引入额外人物或事件。",
+            "environment_audio": "房间一侧有音量平稳的风扇运转声。"
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "reason": "短时稳定的室内机械底噪与当前居家环境一致。",
+            "environment_audio": "近处风扇保持均匀运转，声音较轻。"
+          }
+        ]
+      }
+    ],
+    "environment_events": [
+      {
+        "source_id": "ENV01",
+        "candidates": [
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "reason": "可表现用户手边已保留的衣物包装被轻微翻动，不增加新的场景事实。",
+            "environment_audio": "近处短暂响起一次轻微的包装翻动声。"
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "reason": "纸张或薄包装的窸窣声与用户整理原包装的现状相容。",
+            "environment_audio": "用户手边传来一阵短促的包装窸窣声。"
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "reason": "可作为衣物包装被拿起或放下时的短促声响候选。",
+            "environment_audio": "近距离出现一次短而清晰的薄包装摩擦声。"
+          }
+        ]
+      }
+    ],
+    "side_speech_eligibility": {
+      "third_party": {
+        "compatible": false,
+        "reason": "故事中只有用户独自在家整理衣物，没有已建立的在场第三方。",
+        "source": null
+      },
+      "machine": {
+        "compatible": false,
+        "reason": "当前场景未建立会发出可辨语音的设备。",
+        "source": null
+      }
+    }
+  }
+}

@@ -1,0 +1,1768 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 7 轮，允许 6–8 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 旁语仅限第三方或机器，不包含用户说着说着转向旁人的模式；声音 profile 必须只描述声音。旁语不提供隐藏关键任务材料，不被助手当成正式用户新请求，不使助手停顿或另起回答。声景未支持此来源时不应凭空编人或设备。30%–70% 音量合规即可。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 和 voice_profile 必须逐字匹配对应源，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g08-sample-003-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 1636476769,
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g08/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g08/relay-state",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D11",
+          "domain": "软件、设备与信息技术支持",
+          "scenario_id": "D11-S02",
+          "scenario": "应用与软件使用说明"
+        },
+        "task_style": "混合型",
+        "task_instance": {
+          "goal": "想弄清楚如何在手机应用中完成一项经常使用但容易误触的设置，并在描述自己看到的界面、已经尝试过的步骤和使用习惯后，比较几条可行路径的便利性、可逆性与误操作风险，最后确定一套自己能稳定照着做的操作方法。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "负责为社区读书会维护线上报名与通知信息的志愿者",
+          "task_familiarity": "low"
+        },
+        "voice_profile": "男性，感知三十多岁，音色偏温和，吐字清楚但带一点谨慎的停顿，整体语气平稳克制，语速中等偏慢。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "neutral",
+          "directness": "indirect",
+          "emotional_expressiveness": "reserved",
+          "verbosity": "detailed",
+          "initiative": "high",
+          "caution": "low",
+          "patience": "high",
+          "behavioral_notes": [
+            "通常会先较完整地交代来龙去脉，再补充自己认为可能有用的细节。",
+            "提出请求时措辞较委婉，遇到不确定之处会用描述和试探来表达，而不是直接下结论。",
+            "愿意耐心听完说明，也会在理解后主动复述自己的判断以确认是否准确。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "short",
+        "target_turns": 7,
+        "min_turns": 6,
+        "max_turns": 8
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v2",
+        "seed": 2512018623,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "third_party",
+          "machine"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "2026年11月7日星期六晚上，用户独自在家整理社区读书会下一场活动的报名信息，活动计划于11月15日举行，目前仍是未发布草稿。用户是读书会负责线上报名与通知维护的志愿者，每周都要在“邻里报名”手机应用里建立或复制活动。当前需要处理的是“允许报名者提交后修改信息”这一开关；常规读书会通常要关闭它，主题征集活动才会开启。眼前这份草稿是从上一次主题征集活动复制而来，因此该开关继承为蓝色开启状态。用户已经进入过“编辑活动—报名设置”，也试着关过一次，但因为不确定是否还要点右上角的“保存”，便在退出前把它恢复成原样，当前草稿没有发生变化。上个月他曾因复制旧活动而沿用不合适的开启状态，发布后才发现并重新关闭，所以这次希望在发布前弄清楚可靠做法。应用中还存在一个名为“周末读书会”的活动模板，但用户不清楚修改模板会不会同时改变现有草稿。除了逐个编辑活动和修改模板，他也知道可以复制一场设置正确的历史活动，只是这种方法可能连日期、地点和通知文字一起带过来。用户手边只有正在操作的这一部手机，无法同时对照另一块屏幕上的教程，但可以停留在页面上逐项朗读按钮和提示。用户更在意步骤稳定、容易复核和能够撤回，而不是单纯减少点击次数。现阶段需要先区分当前草稿设置与未来活动默认值，再比较逐项修改、调整模板和复制历史活动三条路径。仍待确认的问题包括蓝色开关的确切含义、保存动作的生效范围、模板是否影响既有草稿，以及哪种流程最适合他每周重复使用。",
+        "task_reference_data": [
+          "来自用户当前可现场读取的草稿页：活动标题为“十一月共读：《城南旧事》”，日期为2026年11月15日，状态显示“未发布草稿”。",
+          "来自用户当前可现场读取的“报名设置”页：“允许报名者提交后修改信息”开关呈蓝色；页面右上角有“保存”，左上角有返回箭头。",
+          "来自该设置旁的应用内说明，用户尚未完整读完但可现场展开：“开启后，报名者可在截止时间前修改自己提交的姓名、联系方式及备注；关闭后，已提交内容仅活动管理员可编辑。”",
+          "来自草稿编辑页底部的应用内提示，用户可现场读取：“编辑内容需点击右上角保存；直接返回时，未保存的更改不会应用。”",
+          "来自“周末读书会”模板页的应用内提示，用户此前看到过：“模板修改仅用于之后基于该模板新建的活动，不会更新已有草稿或已发布活动。”该模板中的“允许报名者提交后修改信息”目前为开启。",
+          "来自历史活动菜单，用户此前实际使用过：“复制活动”会生成新的未发布草稿，并保留原活动的报名设置、通知文字、地点和时间字段，之后可分别编辑。",
+          "来自用户自己的活动习惯记录：每月通常建立四场读书会，其中约三场常规活动需要关闭提交后修改，一场主题征集活动需要开启；用户现有的纸质检查顺序是“标题、日期、地点、通知文字”，尚未把报名设置列入其中。"
+        ],
+        "environment_audio": "室内整体安静，近处没有持续交谈或明显设备声。远处只有极轻且稳定的住宅环境底噪，音量基本不变。",
+        "estimated_snr_db": 34,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "当前活动必须保持未发布草稿状态，直至标题、日期、地点、通知文字和报名设置均完成复核。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "当前这场常规读书会的目标状态是关闭“允许报名者提交后修改信息”。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C03",
+            "text": "操作方案必须明确区分当前草稿的单次设置与未来新活动的默认设置。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C04",
+            "text": "在便利性相近时，优先选择容易复核、可以撤回且不易继承旧日期或旧通知文字的流程。",
+            "kind": "soft"
+          }
+        ],
+        "safety_limits": [],
+        "soundscape_plan": {
+          "mode": "quiet",
+          "ambient_layers": [],
+          "environment_events": [],
+          "schema": "duplex_v2.soundscape_plan.v3",
+          "side_speech_sources": [],
+          "side_speech_count": 0,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v2",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v2",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611073008,
+              "slot": 2,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "crowd",
+                  "birds",
+                  "traffic",
+                  "fan",
+                  "wind",
+                  "rain"
+                ],
+                "event": [
+                  "keyboard",
+                  "water_tap",
+                  "doorbell",
+                  "door",
+                  "footsteps",
+                  "paper"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-319512",
+                  "birds-fsd50k-eval-86343",
+                  "birds-fsd50k-eval-57907"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-121877",
+                  "crowd-fsd50k-eval-340358",
+                  "crowd-fsd50k-eval-185058"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-419427",
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-235362"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-382582",
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-21189"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-232686",
+                  "traffic-fsd50k-eval-124020",
+                  "traffic-fsd50k-eval-235541"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113175",
+                  "wind-fsd50k-eval-113173",
+                  "wind-fsd50k-eval-113176"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-71212",
+                  "door-fsd50k-eval-119077",
+                  "door-fsd50k-eval-209519"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-426594",
+                  "doorbell-fsd50k-eval-348322",
+                  "doorbell-fsd50k-eval-332563"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-153104",
+                  "footsteps-fsd50k-eval-392303",
+                  "footsteps-fsd50k-eval-272381"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-399740",
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-411545"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-82562",
+                  "paper-fsd50k-eval-343098"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-232499",
+                  "water_tap-fsd50k-eval-402128",
+                  "water_tap-fsd50k-eval-402127"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v2",
+              "seed": 2512018623,
+              "mode": "quiet",
+              "discrete_event_target": 0,
+              "max_ambient_layers": 2,
+              "side_speech_requested": false,
+              "speech_kind_preferences": [
+                "third_party",
+                "machine"
+              ]
+            },
+            "control_sha256": "953b4cf01fcae01b88855041973498916a269b1c092f7ea0c2cec8d6ef522d9a",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v3",
+              "mode": "quiet",
+              "ambient_layers": [],
+              "environment_events": [],
+              "side_speech_eligibility": {
+                "third_party": {
+                  "compatible": false,
+                  "reason": "用户独自在家，当前故事中没有在场的第三方。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "手机应用仅建立了可视界面，没有已建立的机器语音来源。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "c756cf7cbd95421dbf3353eb7fffa82daa77ca8b12bc1dc12e343631cc6ae845",
+            "aggregate_environment_audio": "室内整体安静，近处没有持续交谈或明显设备声。远处只有极轻且稳定的住宅环境底噪，音量基本不变。",
+            "draws": [],
+            "speech_selection": {
+              "requested": false,
+              "compatible_kinds": [],
+              "selected_kind": null,
+              "outcome": "not_requested",
+              "assessments": {
+                "third_party": {
+                  "compatible": false,
+                  "reason": "用户独自在家，当前故事中没有在场的第三方。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "手机应用仅建立了可视界面，没有已建立的机器语音来源。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v2",
+      "title": "读书会报名修改权限设置",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "我在“邻里报名”里编辑十一月十五日的常规读书会，现在还是未发布草稿。报名设置里“允许报名者提交后修改信息”是蓝色，我上次复制活动就把这个状态带错了。这次想关掉，但不确定蓝色到底代表什么，也不知道关完是不是还要点右上角“保存”。",
+          "assistant_utterance": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。",
+          "user_intent": "说明当前草稿、目标开关和以往误操作，询问蓝色状态与保存要求。",
+          "assistant_intent": "保持草稿未发布，并引导用户读取现场说明以确认开关含义和保存规则。",
+          "semantic_goal": "先确认蓝色开关的确切含义及更改是否需要保存。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "我展开了，写的是：“开启后，报名者可在截止时间前修改自己提交的姓名、联系方式及备注；关闭后，已提交内容仅活动管理员可编辑。”这场是常规读书会，我要的是后面那种。",
+          "assistant_utterance": "这段说明能确认，蓝色表示允许报名者在截止前修改。既然这场常规读书会要关闭，就把开关点成灰色，再点右上角保存；保存不等于发布。随后返回编辑页，再进来复核一次。",
+          "user_intent": "朗读开关说明并明确当前常规活动应关闭该权限。",
+          "assistant_intent": "依据现场说明确认状态含义，并给出修改、保存和复核当前草稿的步骤。",
+          "semantic_goal": "把当前草稿的开关安全改为关闭，同时不发布活动。",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。",
+            "assistant_stop_after_text": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "我照着做了，保存后重新进报名设置，开关现在是灰色。编辑页底下还写着：“编辑内容需点击右上角保存；直接返回时，未保存的更改不会应用。”活动仍显示未发布草稿。这样如果改错，也还能改回来吧？",
+          "assistant_utterance": "现在这场草稿已经按目标改好，仍未发布；若改错，再切回蓝色并保存即可撤回。接下来若想减少每周重复操作，可以再看模板是否只影响以后新建的活动。",
+          "user_intent": "报告修改与复核结果，补充保存提示，并确认设置是否可撤回。",
+          "assistant_intent": "确认当前草稿状态和可逆方式，并自然转向未来重复建活动的流程。",
+          "semantic_goal": "确认当前更改已生效、未导致发布，而且可以通过再次保存来撤回。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "这段说明能确认，蓝色表示允许报名者在截止前修改。既然这场常规读书会要关闭，就把开关点成灰色，再点右上角保存；保存不等于发布。随后返回编辑页，再进来复核一次。",
+            "assistant_stop_after_text": "这段说明能确认，蓝色表示允许报名者在截止前修改。既然这场常规读书会要关闭，就把开关点成灰色，再点右上角保存；保存不等于发布。随后返回编辑页，再进来复核一次。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "先等等，我正好还有两条路拿不准。“周末读书会”模板里这个开关也是开启的，提示说模板修改只用于之后基于模板新建的活动，不会更新已有草稿或已发布活动。另外也能复制一场设置正确的历史活动，但日期、地点和通知文字都会一起带过来。这三种做法怎么比较？",
+          "assistant_utterance": "三条路里，逐项改当前草稿最稳：范围清楚，也不会带入旧日期和通知。改模板适合设未来常规活动的起点，但不修正现有草稿；复制历史活动省设置，却最容易连旧字段一起带过来。",
+          "user_intent": "打断后补充模板与复制活动两条路径，请求比较便利性和误操作风险。",
+          "assistant_intent": "区分当前草稿、未来模板和复制历史活动的作用范围，并比较三条路径。",
+          "semantic_goal": "明确三条可行路径各自的适用范围、便利性和继承旧信息的风险。",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "现在这场草稿已经按目标改好，仍未发布；若改错，再切回蓝色并保存即可撤回。",
+            "assistant_stop_after_text": "现在这场草稿已经按目标改好，仍未发布；若改错，再切回蓝色并保存即可撤回。接下"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "我每月大概建四场，通常三场常规活动要关闭，一场主题征集要开启。现在纸上的检查顺序只有标题、日期、地点、通知文字，还没写报名设置。照这个习惯，哪条路更适合长期用？",
+          "assistant_utterance": "建议采用“模板加单场复核”：把“周末读书会”模板设为关闭，以后常规活动从它新建；主题征集再单独开启。当前草稿保持刚保存的关闭状态。复制历史活动只作备用，并逐项核对旧字段。",
+          "user_intent": "补充每月活动比例和现有检查习惯，请求选择长期稳定的流程。",
+          "assistant_intent": "结合常规活动占多数的习惯推荐默认模板与单场例外相结合的方案。",
+          "semantic_goal": "确定兼顾重复使用、复核便利和误操作风险的长期建活动方法。",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "三条路里，逐项改当前草稿最稳：范围清楚，也不会带入旧日期和通知。改模板适合设未来常规活动的起点，但不修正现有草稿；复制历史活动省设置，却最容易连旧字段一起带过来。",
+            "assistant_stop_after_text": "三条路里，逐项改当前草稿最稳：范围清楚，也不会带入旧日期和通知。改模板适合设未来常规活动的起点，但不修正现有草稿；复制历史活动省设置，却最容易连旧字段一起带过来。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U06",
+          "assistant_id": "A006",
+          "user_utterance": "那我想把它写进纸质检查表，固定成一个顺序：先处理眼前草稿，再改模板，以后遇到主题征集再单独打开。能不能把每次该怎么走，按顺序说一遍？",
+          "assistant_utterance": "先核对当前草稿的标题、日期、地点、通知文字和报名设置，确认开关灰色并保存，仍不要发布。之后单独编辑模板，把开关关闭并保存。以后常规活动从模板新建，主题征集再开启并保存。",
+          "user_intent": "准备更新纸质检查表，请求把当前草稿、模板和例外活动整理成固定顺序。",
+          "assistant_intent": "给出可直接照做的分阶段操作顺序，并维持当前草稿未发布。",
+          "semantic_goal": "形成一套清晰、可复核且区分单次设置与未来默认值的固定流程。",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A005",
+            "user_onset_after_text": "建议采用“模板加单场复核”：把“周末读书会”模板设为关闭，以后常规活动从它新建；主题征集再单独开启。当前草稿保持刚保存的关闭状态。复制历史活动只作备用，并逐项核对旧字段。",
+            "assistant_stop_after_text": "建议采用“模板加单场复核”：把“周末读书会”模板设为关闭，以后常规活动从它新建；主题征集再单独开启。当前草稿保持刚保存的关闭状态。复制历史活动只作备用，并逐项核对旧字段。"
+          },
+          "pause_cue": {
+            "after_text": "那我想把它写进纸质检查表，固定成一个顺序：",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U07",
+          "assistant_id": "A007",
+          "user_utterance": "我确认一下：眼前这场继续保持草稿，五项都核完才发布；模板关闭只管以后从模板新建的常规场；主题征集建好后再把这一项打开。复制旧活动不是首选。这样理解对吗？",
+          "assistant_utterance": "对。每次保存后再进入报名设置复核：常规场应为灰色，主题征集应为蓝色。五项全部核对完以前保持草稿，这样当前活动、未来模板和例外活动就不会混淆。",
+          "user_intent": "复述最终方案并确认各设置范围及发布前提。",
+          "assistant_intent": "确认用户理解，并补充保存后复核开关状态的稳定检查动作。",
+          "semantic_goal": "最终确认可长期执行的操作方法及发布前的复核标准。",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A006",
+            "user_onset_after_text": "先核对当前草稿的标题、日期、地点、通知文字和报名设置，确认开关灰色并保存，仍不要发布。之后单独编辑模板，把开关关闭并保存。以后常规活动从模板新建，主题征集再开启并保存。",
+            "assistant_stop_after_text": "先核对当前草稿的标题、日期、地点、通知文字和报名设置，确认开关灰色并保存，仍不要发布。之后单独编辑模板，把开关关闭并保存。以后常规活动从模板新建，主题征集再开启并保存。"
+          },
+          "pause_cue": null
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "这段说明能确认，蓝色表示允许报名者在截止前修改。",
+          "text": "嗯"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A004",
+          "after_text": "三条路里，逐项改当前草稿最稳：范围清楚，也不会带入旧日期和通知。",
+          "text": "明白"
+        }
+      ],
+      "side_speech": [],
+      "environment_events": []
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在“邻里报名”里编辑十一月十五日的常规读书会，现在还是未发布草稿。报名设置里“允许报名者提交后修改信息”是蓝色，我上次复制活动就把这个状态带错了。这次想关掉，但不确定蓝色到底代表什么，也不知道关完是不是还要点右上角“保存”。"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在“邻里报名”里编辑十一月十五日的常规读书会，现在还是未发布草稿。报名设置里“允许报名者提交后修改信息”是蓝色，我上次复制活动就把这个状态带错了。这次想关掉，但不确定蓝色到底代表什么，也不知道关完是不是还要点右上角“保存”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在“邻里报名”里编辑十一月十五日的常规读书会，现在还是未发布草稿。报名设置里“允许报名者提交后修改信息”是蓝色，我上次复制活动就把这个状态带错了。这次想关掉，但不确定蓝色到底代表什么，也不知道关完是不是还要点右上角“保存”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我展开了，写的是：“开启后，报名者可在截止时间前修改自己提交的姓名、联系方式及备注；关闭后，已提交内容仅活动管理员可编辑。”这场是常规读书会，我要的是后面那种。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。",
+          "final_shared_played_prefix": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "这段说明能确认，蓝色表示允许报名者在截止前修改。既然这场常规读书会要关闭，就把开关点成灰色，再点右上角保存；保存不等于发布。随后返回编辑页，再进来复核一次。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在“邻里报名”里编辑十一月十五日的常规读书会，现在还是未发布草稿。报名设置里“允许报名者提交后修改信息”是蓝色，我上次复制活动就把这个状态带错了。这次想关掉，但不确定蓝色到底代表什么，也不知道关完是不是还要点右上角“保存”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我展开了，写的是：“开启后，报名者可在截止时间前修改自己提交的姓名、联系方式及备注；关闭后，已提交内容仅活动管理员可编辑。”这场是常规读书会，我要的是后面那种。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这段说明能确认，蓝色表示允许报名者在截止前修改。既然这场常规读书会要关闭，就把开关点成灰色，再点右上角保存；保存不等于发布。随后返回编辑页，再进来复核一次。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在“邻里报名”里编辑十一月十五日的常规读书会，现在还是未发布草稿。报名设置里“允许报名者提交后修改信息”是蓝色，我上次复制活动就把这个状态带错了。这次想关掉，但不确定蓝色到底代表什么，也不知道关完是不是还要点右上角“保存”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我展开了，写的是：“开启后，报名者可在截止时间前修改自己提交的姓名、联系方式及备注；关闭后，已提交内容仅活动管理员可编辑。”这场是常规读书会，我要的是后面那种。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这段说明能确认，蓝色表示允许报名者在截止前修改。既然这场常规读书会要关闭，就把开关点成灰色，再点右上角保存；保存不等于发布。随后返回编辑页，再进来复核一次。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我照着做了，保存后重新进报名设置，开关现在是灰色。编辑页底下还写着：“编辑内容需点击右上角保存；直接返回时，未保存的更改不会应用。”活动仍显示未发布草稿。这样如果改错，也还能改回来吧？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "这段说明能确认，蓝色表示允许报名者在截止前修改。既然这场常规读书会要关闭，就把开关点成灰色，再点右上角保存；保存不等于发布。随后返回编辑页，再进来复核一次。",
+          "final_shared_played_prefix": "这段说明能确认，蓝色表示允许报名者在截止前修改。既然这场常规读书会要关闭，就把开关点成灰色，再点右上角保存；保存不等于发布。随后返回编辑页，再进来复核一次。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "这段说明能确认，蓝色表示允许报名者在截止前修改。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "现在这场草稿已经按目标改好，仍未发布；若改错，再切回蓝色并保存即可撤回。接下来若想减少每周重复操作，可以再看模板是否只影响以后新建的活动。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在“邻里报名”里编辑十一月十五日的常规读书会，现在还是未发布草稿。报名设置里“允许报名者提交后修改信息”是蓝色，我上次复制活动就把这个状态带错了。这次想关掉，但不确定蓝色到底代表什么，也不知道关完是不是还要点右上角“保存”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我展开了，写的是：“开启后，报名者可在截止时间前修改自己提交的姓名、联系方式及备注；关闭后，已提交内容仅活动管理员可编辑。”这场是常规读书会，我要的是后面那种。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这段说明能确认，蓝色表示允许报名者在截止前修改。既然这场常规读书会要关闭，就把开关点成灰色，再点右上角保存；保存不等于发布。随后返回编辑页，再进来复核一次。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我照着做了，保存后重新进报名设置，开关现在是灰色。编辑页底下还写着：“编辑内容需点击右上角保存；直接返回时，未保存的更改不会应用。”活动仍显示未发布草稿。这样如果改错，也还能改回来吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "现在这场草稿已经按目标改好，仍未发布；若改错，再切回蓝色并保存即可撤回。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在“邻里报名”里编辑十一月十五日的常规读书会，现在还是未发布草稿。报名设置里“允许报名者提交后修改信息”是蓝色，我上次复制活动就把这个状态带错了。这次想关掉，但不确定蓝色到底代表什么，也不知道关完是不是还要点右上角“保存”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我展开了，写的是：“开启后，报名者可在截止时间前修改自己提交的姓名、联系方式及备注；关闭后，已提交内容仅活动管理员可编辑。”这场是常规读书会，我要的是后面那种。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这段说明能确认，蓝色表示允许报名者在截止前修改。既然这场常规读书会要关闭，就把开关点成灰色，再点右上角保存；保存不等于发布。随后返回编辑页，再进来复核一次。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我照着做了，保存后重新进报名设置，开关现在是灰色。编辑页底下还写着：“编辑内容需点击右上角保存；直接返回时，未保存的更改不会应用。”活动仍显示未发布草稿。这样如果改错，也还能改回来吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "现在这场草稿已经按目标改好，仍未发布；若改错，再切回蓝色并保存即可撤回。接下"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先等等，我正好还有两条路拿不准。“周末读书会”模板里这个开关也是开启的，提示说模板修改只用于之后基于模板新建的活动，不会更新已有草稿或已发布活动。另外也能复制一场设置正确的历史活动，但日期、地点和通知文字都会一起带过来。这三种做法怎么比较？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "现在这场草稿已经按目标改好，仍未发布；若改错，再切回蓝色并保存即可撤回。",
+          "final_shared_played_prefix": "现在这场草稿已经按目标改好，仍未发布；若改错，再切回蓝色并保存即可撤回。接下",
+          "discarded_unheard_tail": "来若想减少每周重复操作，可以再看模板是否只影响以后新建的活动。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "这段说明能确认，蓝色表示允许报名者在截止前修改。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "三条路里，逐项改当前草稿最稳：范围清楚，也不会带入旧日期和通知。改模板适合设未来常规活动的起点，但不修正现有草稿；复制历史活动省设置，却最容易连旧字段一起带过来。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在“邻里报名”里编辑十一月十五日的常规读书会，现在还是未发布草稿。报名设置里“允许报名者提交后修改信息”是蓝色，我上次复制活动就把这个状态带错了。这次想关掉，但不确定蓝色到底代表什么，也不知道关完是不是还要点右上角“保存”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我展开了，写的是：“开启后，报名者可在截止时间前修改自己提交的姓名、联系方式及备注；关闭后，已提交内容仅活动管理员可编辑。”这场是常规读书会，我要的是后面那种。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这段说明能确认，蓝色表示允许报名者在截止前修改。既然这场常规读书会要关闭，就把开关点成灰色，再点右上角保存；保存不等于发布。随后返回编辑页，再进来复核一次。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我照着做了，保存后重新进报名设置，开关现在是灰色。编辑页底下还写着：“编辑内容需点击右上角保存；直接返回时，未保存的更改不会应用。”活动仍显示未发布草稿。这样如果改错，也还能改回来吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "现在这场草稿已经按目标改好，仍未发布；若改错，再切回蓝色并保存即可撤回。接下"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先等等，我正好还有两条路拿不准。“周末读书会”模板里这个开关也是开启的，提示说模板修改只用于之后基于模板新建的活动，不会更新已有草稿或已发布活动。另外也能复制一场设置正确的历史活动，但日期、地点和通知文字都会一起带过来。这三种做法怎么比较？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "三条路里，逐项改当前草稿最稳：范围清楚，也不会带入旧日期和通知。改模板适合设未来常规活动的起点，但不修正现有草稿；复制历史活动省设置，却最容易连旧字段一起带过来。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在“邻里报名”里编辑十一月十五日的常规读书会，现在还是未发布草稿。报名设置里“允许报名者提交后修改信息”是蓝色，我上次复制活动就把这个状态带错了。这次想关掉，但不确定蓝色到底代表什么，也不知道关完是不是还要点右上角“保存”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我展开了，写的是：“开启后，报名者可在截止时间前修改自己提交的姓名、联系方式及备注；关闭后，已提交内容仅活动管理员可编辑。”这场是常规读书会，我要的是后面那种。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这段说明能确认，蓝色表示允许报名者在截止前修改。既然这场常规读书会要关闭，就把开关点成灰色，再点右上角保存；保存不等于发布。随后返回编辑页，再进来复核一次。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我照着做了，保存后重新进报名设置，开关现在是灰色。编辑页底下还写着：“编辑内容需点击右上角保存；直接返回时，未保存的更改不会应用。”活动仍显示未发布草稿。这样如果改错，也还能改回来吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "现在这场草稿已经按目标改好，仍未发布；若改错，再切回蓝色并保存即可撤回。接下"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先等等，我正好还有两条路拿不准。“周末读书会”模板里这个开关也是开启的，提示说模板修改只用于之后基于模板新建的活动，不会更新已有草稿或已发布活动。另外也能复制一场设置正确的历史活动，但日期、地点和通知文字都会一起带过来。这三种做法怎么比较？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "三条路里，逐项改当前草稿最稳：范围清楚，也不会带入旧日期和通知。改模板适合设未来常规活动的起点，但不修正现有草稿；复制历史活动省设置，却最容易连旧字段一起带过来。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "我每月大概建四场，通常三场常规活动要关闭，一场主题征集要开启。现在纸上的检查顺序只有标题、日期、地点、通知文字，还没写报名设置。照这个习惯，哪条路更适合长期用？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "三条路里，逐项改当前草稿最稳：范围清楚，也不会带入旧日期和通知。改模板适合设未来常规活动的起点，但不修正现有草稿；复制历史活动省设置，却最容易连旧字段一起带过来。",
+          "final_shared_played_prefix": "三条路里，逐项改当前草稿最稳：范围清楚，也不会带入旧日期和通知。改模板适合设未来常规活动的起点，但不修正现有草稿；复制历史活动省设置，却最容易连旧字段一起带过来。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "这段说明能确认，蓝色表示允许报名者在截止前修改。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "三条路里，逐项改当前草稿最稳：范围清楚，也不会带入旧日期和通知。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "建议采用“模板加单场复核”：把“周末读书会”模板设为关闭，以后常规活动从它新建；主题征集再单独开启。当前草稿保持刚保存的关闭状态。复制历史活动只作备用，并逐项核对旧字段。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在“邻里报名”里编辑十一月十五日的常规读书会，现在还是未发布草稿。报名设置里“允许报名者提交后修改信息”是蓝色，我上次复制活动就把这个状态带错了。这次想关掉，但不确定蓝色到底代表什么，也不知道关完是不是还要点右上角“保存”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我展开了，写的是：“开启后，报名者可在截止时间前修改自己提交的姓名、联系方式及备注；关闭后，已提交内容仅活动管理员可编辑。”这场是常规读书会，我要的是后面那种。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这段说明能确认，蓝色表示允许报名者在截止前修改。既然这场常规读书会要关闭，就把开关点成灰色，再点右上角保存；保存不等于发布。随后返回编辑页，再进来复核一次。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我照着做了，保存后重新进报名设置，开关现在是灰色。编辑页底下还写着：“编辑内容需点击右上角保存；直接返回时，未保存的更改不会应用。”活动仍显示未发布草稿。这样如果改错，也还能改回来吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "现在这场草稿已经按目标改好，仍未发布；若改错，再切回蓝色并保存即可撤回。接下"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先等等，我正好还有两条路拿不准。“周末读书会”模板里这个开关也是开启的，提示说模板修改只用于之后基于模板新建的活动，不会更新已有草稿或已发布活动。另外也能复制一场设置正确的历史活动，但日期、地点和通知文字都会一起带过来。这三种做法怎么比较？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "三条路里，逐项改当前草稿最稳：范围清楚，也不会带入旧日期和通知。改模板适合设未来常规活动的起点，但不修正现有草稿；复制历史活动省设置，却最容易连旧字段一起带过来。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "我每月大概建四场，通常三场常规活动要关闭，一场主题征集要开启。现在纸上的检查顺序只有标题、日期、地点、通知文字，还没写报名设置。照这个习惯，哪条路更适合长期用？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "建议采用“模板加单场复核”：把“周末读书会”模板设为关闭，以后常规活动从它新建；主题征集再单独开启。当前草稿保持刚保存的关闭状态。复制历史活动只作备用，并逐项核对旧字段。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在“邻里报名”里编辑十一月十五日的常规读书会，现在还是未发布草稿。报名设置里“允许报名者提交后修改信息”是蓝色，我上次复制活动就把这个状态带错了。这次想关掉，但不确定蓝色到底代表什么，也不知道关完是不是还要点右上角“保存”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我展开了，写的是：“开启后，报名者可在截止时间前修改自己提交的姓名、联系方式及备注；关闭后，已提交内容仅活动管理员可编辑。”这场是常规读书会，我要的是后面那种。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这段说明能确认，蓝色表示允许报名者在截止前修改。既然这场常规读书会要关闭，就把开关点成灰色，再点右上角保存；保存不等于发布。随后返回编辑页，再进来复核一次。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我照着做了，保存后重新进报名设置，开关现在是灰色。编辑页底下还写着：“编辑内容需点击右上角保存；直接返回时，未保存的更改不会应用。”活动仍显示未发布草稿。这样如果改错，也还能改回来吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "现在这场草稿已经按目标改好，仍未发布；若改错，再切回蓝色并保存即可撤回。接下"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先等等，我正好还有两条路拿不准。“周末读书会”模板里这个开关也是开启的，提示说模板修改只用于之后基于模板新建的活动，不会更新已有草稿或已发布活动。另外也能复制一场设置正确的历史活动，但日期、地点和通知文字都会一起带过来。这三种做法怎么比较？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "三条路里，逐项改当前草稿最稳：范围清楚，也不会带入旧日期和通知。改模板适合设未来常规活动的起点，但不修正现有草稿；复制历史活动省设置，却最容易连旧字段一起带过来。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "我每月大概建四场，通常三场常规活动要关闭，一场主题征集要开启。现在纸上的检查顺序只有标题、日期、地点、通知文字，还没写报名设置。照这个习惯，哪条路更适合长期用？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "建议采用“模板加单场复核”：把“周末读书会”模板设为关闭，以后常规活动从它新建；主题征集再单独开启。当前草稿保持刚保存的关闭状态。复制历史活动只作备用，并逐项核对旧字段。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我想把它写进纸质检查表，固定成一个顺序：先处理眼前草稿，再改模板，以后遇到主题征集再单独打开。能不能把每次该怎么走，按顺序说一遍？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A005",
+          "at_user_onset_heard_prefix": "建议采用“模板加单场复核”：把“周末读书会”模板设为关闭，以后常规活动从它新建；主题征集再单独开启。当前草稿保持刚保存的关闭状态。复制历史活动只作备用，并逐项核对旧字段。",
+          "final_shared_played_prefix": "建议采用“模板加单场复核”：把“周末读书会”模板设为关闭，以后常规活动从它新建；主题征集再单独开启。当前草稿保持刚保存的关闭状态。复制历史活动只作备用，并逐项核对旧字段。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "这段说明能确认，蓝色表示允许报名者在截止前修改。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "三条路里，逐项改当前草稿最稳：范围清楚，也不会带入旧日期和通知。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "先核对当前草稿的标题、日期、地点、通知文字和报名设置，确认开关灰色并保存，仍不要发布。之后单独编辑模板，把开关关闭并保存。以后常规活动从模板新建，主题征集再开启并保存。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在“邻里报名”里编辑十一月十五日的常规读书会，现在还是未发布草稿。报名设置里“允许报名者提交后修改信息”是蓝色，我上次复制活动就把这个状态带错了。这次想关掉，但不确定蓝色到底代表什么，也不知道关完是不是还要点右上角“保存”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我展开了，写的是：“开启后，报名者可在截止时间前修改自己提交的姓名、联系方式及备注；关闭后，已提交内容仅活动管理员可编辑。”这场是常规读书会，我要的是后面那种。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这段说明能确认，蓝色表示允许报名者在截止前修改。既然这场常规读书会要关闭，就把开关点成灰色，再点右上角保存；保存不等于发布。随后返回编辑页，再进来复核一次。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我照着做了，保存后重新进报名设置，开关现在是灰色。编辑页底下还写着：“编辑内容需点击右上角保存；直接返回时，未保存的更改不会应用。”活动仍显示未发布草稿。这样如果改错，也还能改回来吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "现在这场草稿已经按目标改好，仍未发布；若改错，再切回蓝色并保存即可撤回。接下"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先等等，我正好还有两条路拿不准。“周末读书会”模板里这个开关也是开启的，提示说模板修改只用于之后基于模板新建的活动，不会更新已有草稿或已发布活动。另外也能复制一场设置正确的历史活动，但日期、地点和通知文字都会一起带过来。这三种做法怎么比较？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "三条路里，逐项改当前草稿最稳：范围清楚，也不会带入旧日期和通知。改模板适合设未来常规活动的起点，但不修正现有草稿；复制历史活动省设置，却最容易连旧字段一起带过来。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "我每月大概建四场，通常三场常规活动要关闭，一场主题征集要开启。现在纸上的检查顺序只有标题、日期、地点、通知文字，还没写报名设置。照这个习惯，哪条路更适合长期用？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "建议采用“模板加单场复核”：把“周末读书会”模板设为关闭，以后常规活动从它新建；主题征集再单独开启。当前草稿保持刚保存的关闭状态。复制历史活动只作备用，并逐项核对旧字段。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我想把它写进纸质检查表，固定成一个顺序：先处理眼前草稿，再改模板，以后遇到主题征集再单独打开。能不能把每次该怎么走，按顺序说一遍？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先核对当前草稿的标题、日期、地点、通知文字和报名设置，确认开关灰色并保存，仍不要发布。之后单独编辑模板，把开关关闭并保存。以后常规活动从模板新建，主题征集再开启并保存。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在“邻里报名”里编辑十一月十五日的常规读书会，现在还是未发布草稿。报名设置里“允许报名者提交后修改信息”是蓝色，我上次复制活动就把这个状态带错了。这次想关掉，但不确定蓝色到底代表什么，也不知道关完是不是还要点右上角“保存”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我展开了，写的是：“开启后，报名者可在截止时间前修改自己提交的姓名、联系方式及备注；关闭后，已提交内容仅活动管理员可编辑。”这场是常规读书会，我要的是后面那种。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这段说明能确认，蓝色表示允许报名者在截止前修改。既然这场常规读书会要关闭，就把开关点成灰色，再点右上角保存；保存不等于发布。随后返回编辑页，再进来复核一次。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我照着做了，保存后重新进报名设置，开关现在是灰色。编辑页底下还写着：“编辑内容需点击右上角保存；直接返回时，未保存的更改不会应用。”活动仍显示未发布草稿。这样如果改错，也还能改回来吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "现在这场草稿已经按目标改好，仍未发布；若改错，再切回蓝色并保存即可撤回。接下"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先等等，我正好还有两条路拿不准。“周末读书会”模板里这个开关也是开启的，提示说模板修改只用于之后基于模板新建的活动，不会更新已有草稿或已发布活动。另外也能复制一场设置正确的历史活动，但日期、地点和通知文字都会一起带过来。这三种做法怎么比较？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "三条路里，逐项改当前草稿最稳：范围清楚，也不会带入旧日期和通知。改模板适合设未来常规活动的起点，但不修正现有草稿；复制历史活动省设置，却最容易连旧字段一起带过来。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "我每月大概建四场，通常三场常规活动要关闭，一场主题征集要开启。现在纸上的检查顺序只有标题、日期、地点、通知文字，还没写报名设置。照这个习惯，哪条路更适合长期用？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "建议采用“模板加单场复核”：把“周末读书会”模板设为关闭，以后常规活动从它新建；主题征集再单独开启。当前草稿保持刚保存的关闭状态。复制历史活动只作备用，并逐项核对旧字段。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我想把它写进纸质检查表，固定成一个顺序：先处理眼前草稿，再改模板，以后遇到主题征集再单独打开。能不能把每次该怎么走，按顺序说一遍？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先核对当前草稿的标题、日期、地点、通知文字和报名设置，确认开关灰色并保存，仍不要发布。之后单独编辑模板，把开关关闭并保存。以后常规活动从模板新建，主题征集再开启并保存。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "我确认一下：眼前这场继续保持草稿，五项都核完才发布；模板关闭只管以后从模板新建的常规场；主题征集建好后再把这一项打开。复制旧活动不是首选。这样理解对吗？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A006",
+          "at_user_onset_heard_prefix": "先核对当前草稿的标题、日期、地点、通知文字和报名设置，确认开关灰色并保存，仍不要发布。之后单独编辑模板，把开关关闭并保存。以后常规活动从模板新建，主题征集再开启并保存。",
+          "final_shared_played_prefix": "先核对当前草稿的标题、日期、地点、通知文字和报名设置，确认开关灰色并保存，仍不要发布。之后单独编辑模板，把开关关闭并保存。以后常规活动从模板新建，主题征集再开启并保存。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "这段说明能确认，蓝色表示允许报名者在截止前修改。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "三条路里，逐项改当前草稿最稳：范围清楚，也不会带入旧日期和通知。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "对。每次保存后再进入报名设置复核：常规场应为灰色，主题征集应为蓝色。五项全部核对完以前保持草稿，这样当前活动、未来模板和例外活动就不会混淆。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A002",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在“邻里报名”里编辑十一月十五日的常规读书会，现在还是未发布草稿。报名设置里“允许报名者提交后修改信息”是蓝色，我上次复制活动就把这个状态带错了。这次想关掉，但不确定蓝色到底代表什么，也不知道关完是不是还要点右上角“保存”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我展开了，写的是：“开启后，报名者可在截止时间前修改自己提交的姓名、联系方式及备注；关闭后，已提交内容仅活动管理员可编辑。”这场是常规读书会，我要的是后面那种。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这段说明能确认，蓝色表示允许报名者在截止前修改。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "这段说明能确认，蓝色表示允许报名者在截止前修改。",
+        "event_text": "嗯",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC02",
+        "kind": "backchannels",
+        "target_assistant_id": "A004",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在“邻里报名”里编辑十一月十五日的常规读书会，现在还是未发布草稿。报名设置里“允许报名者提交后修改信息”是蓝色，我上次复制活动就把这个状态带错了。这次想关掉，但不确定蓝色到底代表什么，也不知道关完是不是还要点右上角“保存”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先不要发布。蓝色通常表示开启，但以应用内说明为准。请把开关旁的说明读给我；如果页面还有保存或返回提示，也一并告诉我。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我展开了，写的是：“开启后，报名者可在截止时间前修改自己提交的姓名、联系方式及备注；关闭后，已提交内容仅活动管理员可编辑。”这场是常规读书会，我要的是后面那种。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这段说明能确认，蓝色表示允许报名者在截止前修改。既然这场常规读书会要关闭，就把开关点成灰色，再点右上角保存；保存不等于发布。随后返回编辑页，再进来复核一次。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我照着做了，保存后重新进报名设置，开关现在是灰色。编辑页底下还写着：“编辑内容需点击右上角保存；直接返回时，未保存的更改不会应用。”活动仍显示未发布草稿。这样如果改错，也还能改回来吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "现在这场草稿已经按目标改好，仍未发布；若改错，再切回蓝色并保存即可撤回。接下"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先等等，我正好还有两条路拿不准。“周末读书会”模板里这个开关也是开启的，提示说模板修改只用于之后基于模板新建的活动，不会更新已有草稿或已发布活动。另外也能复制一场设置正确的历史活动，但日期、地点和通知文字都会一起带过来。这三种做法怎么比较？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "三条路里，逐项改当前草稿最稳：范围清楚，也不会带入旧日期和通知。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "三条路里，逐项改当前草稿最稳：范围清楚，也不会带入旧日期和通知。",
+        "event_text": "明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

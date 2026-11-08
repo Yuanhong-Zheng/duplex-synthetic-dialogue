@@ -1,0 +1,121 @@
+{
+  "episode_situation": "周三晚上九点半，用户在刚搬入一周的杭州住宅小区公寓里休息，近几晚留意到楼上或走廊传来的脚步、挪椅和关门声，偶尔还夹着短暂的低频音乐，但隔着墙很难判断具体来源。她以前的住处较安静，对社区里的合理生活声、持续扰民以及装修、儿童活动或宠物声等边界都不熟悉，也担心贸然上门会把邻里关系弄僵。她已经读过住户手册中的夜间降噪提醒，但手边没有可靠的测量设备，手册也未给出具体时段、分贝标准或投诉流程。她现在希望先掌握时段、频率、持续时间、可避免程度和实际影响等判断维度，再弄清如何友善询问、记录反复情况、联系物业，以及在来源不明或沟通不顺时怎样逐步处理。",
+  "task_reference_data": [
+    "用户手边的住户手册写着：“请住户在夜间降低电视、乐器和聚会音量，装修作业遵守物业公示时段。”用户已经读到这段内容，但手册没有列明夜间的起止时间、分贝值、装修公示时段或投诉流程。"
+  ],
+  "environment_audio": "室内近处有持续而低弱的通风声，音量基本稳定。关着的窗外传来很远的稀疏车流声，车辆经过时略微增强，随后缓慢减弱。",
+  "estimated_snr_db": 28,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "用户希望优先采用不指责、低冲突的沟通和处理方式，不因一次短暂声响直接投诉。",
+      "kind": "soft"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "现有材料没有杭州该小区适用的具体法定分贝、夜间起止时间或装修时段，因此不能把一般经验表述成已经核实的本地固定标准。",
+      "kind": "hard"
+    }
+  ],
+  "safety_limits": [],
+  "soundscape_plan": {
+    "schema": "duplex_v2.soundscape_plan.v3",
+    "mode": "layered",
+    "ambient_layers": [
+      {
+        "source_id": "AMB01",
+        "candidates": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "reason": "稳定的室内机械通风声与住宅公寓的当前环境相容。",
+            "environment_audio": "近处持续响着低弱、均匀的机械通风声。"
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "reason": "可作为安静住宅室内不抢占语音的通风底噪。",
+            "environment_audio": "室内有平稳而轻微的通风设备运转声。"
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "reason": "短而稳定的风扇类底噪适合当前室内声景。",
+            "environment_audio": "近距离传来连续、音量较低的机械送风声。"
+          }
+        ]
+      },
+      {
+        "source_id": "AMB02",
+        "candidates": [
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "reason": "远处道路车流可以透过住宅窗户形成轻微背景声。",
+            "environment_audio": "窗外远处有稀疏车流经过，声响间歇起伏。"
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "reason": "连续但距离较远的道路声与城市住宅夜间环境相容。",
+            "environment_audio": "远处道路传来低弱车流声，车辆驶过时稍有增强。"
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "reason": "较长的真实车流录音可构成窗外低强度城市底色。",
+            "environment_audio": "关窗后仍能听见很远的车流底声，整体音量较低。"
+          }
+        ]
+      }
+    ],
+    "environment_events": [
+      {
+        "source_id": "ENV01",
+        "candidates": [
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "reason": "公寓走廊偶发开关门声与当前住宅场景相容。",
+            "environment_audio": "门外走廊方向短暂传来一次开关门声。"
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "reason": "短段室内门声可自然出现在住宅楼环境中。",
+            "environment_audio": "侧后方隔着墙传来一阵短促的门扇开合声。"
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "reason": "简短门声适合作为公寓环境中的单次离散事件。",
+            "environment_audio": "远处响起一次很短的关门声，随即恢复安静。"
+          }
+        ]
+      },
+      {
+        "source_id": "ENV02",
+        "candidates": [
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "reason": "住宅走廊中的短段脚步声符合当前场景。",
+            "environment_audio": "门外走廊传来几步脚步声，由近到远逐渐消失。"
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "reason": "短暂室内脚步可作为公寓公共区域的偶发声响。",
+            "environment_audio": "隔着门传来一小段脚步声，音量不高。"
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "reason": "真实短段脚步声与居民经过走廊的环境相容。",
+            "environment_audio": "走廊方向响起节奏均匀的几步脚步，随后远去。"
+          }
+        ]
+      }
+    ],
+    "side_speech_eligibility": {
+      "third_party": {
+        "compatible": false,
+        "reason": "当前故事中没有已建立且在场的第三方人物。",
+        "source": null
+      },
+      "machine": {
+        "compatible": false,
+        "reason": "当前场景只有通风设备等非语音声源，没有已建立的语音设备。",
+        "source": null
+      }
+    }
+  }
+}

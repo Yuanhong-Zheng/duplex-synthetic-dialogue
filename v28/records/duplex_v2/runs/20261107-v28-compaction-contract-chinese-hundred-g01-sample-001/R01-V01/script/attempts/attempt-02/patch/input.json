@@ -1,0 +1,1031 @@
+{
+  "frozen_source": {
+    "case_id": "R01-V01",
+    "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g01-sample-001-v2-stage2",
+    "language": "zh",
+    "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+    "script_execution_policy": {
+      "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+      "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+      "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+      "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+      "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+      "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+      "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+    },
+    "program_anchor_seed": 3151691379,
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    },
+    "relay_configuration": {
+      "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g01/relay-policy.json",
+      "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g01/relay-state",
+      "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+      "policy": {
+        "schema": "duplex_v2.timeout_relay_policy.v3",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "backup": {
+          "profile": "lianyu",
+          "endpoint": "https://api.openbili.com/v1/chat/completions",
+          "model_map": {
+            "openai/gpt-5.6-sol": "gpt-5.6-sol",
+            "openai/gpt-5.6-luna": "gpt-5.6-luna"
+          },
+          "verification": {
+            "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+            "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+          }
+        },
+        "trigger": {
+          "max_retries": 5,
+          "http_statuses": [
+            502,
+            503,
+            504
+          ],
+          "error_types": [
+            "TimeoutError",
+            "HTTP2DeadlineExceeded",
+            "ConnectionResetError",
+            "ConnectionAbortedError",
+            "BrokenPipeError",
+            "RemoteDisconnected",
+            "IncompleteRead"
+          ],
+          "http2_transport_errors": "negotiated_h2_only",
+          "require_all_attempts": true
+        },
+        "max_relay_switches": 1
+      }
+    },
+    "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+    "script_repair_policy": {
+      "schema": "duplex_v2.script_repair_policy.v1",
+      "mode": "json_patch",
+      "patch_schema": "duplex_v2.script_patch.v1",
+      "json_parse_max_retries": 3,
+      "content_max_repairs": 5,
+      "length_compaction_max_attempts": 3,
+      "overlength_after_compaction": "fail_case",
+      "judge_scope": "complete_script_and_heard_context"
+    },
+    "text_output_token_policy": "omit",
+    "scene_task": {
+      "scene": {
+        "domain_id": "D12",
+        "domain": "通信、网络与订阅服务",
+        "scenario_id": "D12-S03",
+        "scenario": "信号与网络问题"
+      },
+      "task_style": "混合型",
+      "task_instance": {
+        "goal": "家中晚间网络间歇性变慢且部分设备频繁掉线时，结合用户随后提供的使用时段、设备表现、测速记录和路由器摆放限制，区分更可能的宽带接入、无线覆盖或单设备问题，并确定一套按信息价值和实施难度排序的排查与调整方案。"
+      }
+    },
+    "user_voice": {
+      "user_seed": {
+        "role_relation": "负责照顾家中老人和孩子、需要维持家庭网络正常使用的同住家人",
+        "task_familiarity": "low"
+      },
+      "voice_profile": "男性，感知三十多岁，音色偏厚但不沉闷，吐字清楚，语速中等，遇到网络反复中断时会显出明显的着急和不耐烦，但整体仍努力保持连贯。",
+      "interaction_profile": {
+        "schema": "duplex_v2.interaction_profile.v1",
+        "formality": "casual",
+        "directness": "direct",
+        "emotional_expressiveness": "expressive",
+        "verbosity": "balanced",
+        "initiative": "high",
+        "caution": "medium",
+        "patience": "medium",
+        "behavioral_notes": [
+          "通常主动补充观察到的现象和限制，希望尽快缩小排查范围。",
+          "会直接表达困惑或着急，也愿意在不确定时询问判断依据。",
+          "信息较多时会按自己的记忆顺序说明，接受对方通过问题帮助整理。"
+        ]
+      }
+    },
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "short",
+      "target_turns": 5,
+      "min_turns": 5,
+      "max_turns": 6
+    },
+    "ambient_catalog": {
+      "schema": "duplex_v2.ambient_catalog.v1",
+      "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+      "assets": [
+        {
+          "asset_id": "fan-fsd50k-eval-419427",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 10.3909375
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-235362",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 11.0
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-415925",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 7.178
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-235541",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 29.045875
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-232686",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 10.3445
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-124020",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 24.78875
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-382582",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.9788125
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-21189",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.962
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-238016",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 11.32
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-185058",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 5.2114375
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-121877",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 11.696
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-340358",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 4.2745
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-82562",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 1.0094375
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-121200",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.83525
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-343098",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.796
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-153104",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.4691875
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-392303",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.6849375
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-272381",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.933375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-71212",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.3638125
+        },
+        {
+          "asset_id": "door-fsd50k-eval-119077",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.7944375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-209519",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 1.0398125
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-399740",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.322
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-233057",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.4700625
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-411545",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.5686875
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-232499",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 0.842
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402127",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402128",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-86343",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 7.5366875
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-57907",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.5773125
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-319512",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.755625
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113173",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 11.2184375
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113175",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.8773125
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113176",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.6341875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-348322",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 1.625
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-426594",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 0.3666875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-332563",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 4.0
+        }
+      ]
+    },
+    "ambient_control": {
+      "schema": "duplex_v2.soundscape_control.v2",
+      "seed": 1908551510,
+      "mode": "layered",
+      "discrete_event_target": 0,
+      "max_ambient_layers": 2,
+      "side_speech_requested": false,
+      "speech_kind_preferences": [
+        "third_party",
+        "machine"
+      ]
+    },
+    "situation_knowledge": {
+      "episode_situation": "2026年11月7日星期六晚上20点40分，用户正在家中客厅照看母亲和孩子，近两周反复出现的晚间网络问题刚刚再次影响到孩子上网课和母亲观看网络电视，因此他决定趁现象仍在时梳理排查思路。家里使用一条标称300Mbps下载、50Mbps上传的宽带，入户光纤、光猫和唯一一台无线路由器都集中在玄关木柜内。路由器放在柜子下层，柜门平时关闭，家中没有无线扩展器、Mesh节点或预埋到各房间的网线。客厅距离路由器较近，而孩子使用电脑的南侧卧室与玄关之间隔着两面墙，母亲偶尔使用的旧平板会在客厅和卧室之间移动。用户记得白天使用通常没有明显问题，变慢和掉线主要集中在19点30分至22点30分，但不同设备的表现并不完全一致。他已经把最近三晚的测速结果、掉线时间和测试位置记在手机备忘录里，并保留了一根1.5米网线，可以让笔记本在玄关旁临时直连路由器。现有记录既出现过有线和近距离无线同时降速，也出现过远端设备掉线而近端手机仍可使用的情况，因此宽带接入和无线覆盖都还不能直接排除。母亲的旧平板还曾在靠近路由器时单独断开，而同处客厅的新手机没有中断，这又留下了单设备兼容或设置问题的可能。用户不熟悉频段、信道和光猫指示灯的含义，也不希望因为盲目重置设备而丢失当前配置。今晚21点前母亲仍在看网络电视，孩子也需要保持在线，所以只能先做低干扰观察，短暂断网测试需要避开他们正在使用的时段。玄关柜附近没有合适的高处平台，光纤余量也很短，路由器不能直接搬到客厅中央，但可以尝试开柜门、调整朝向或在柜外附近临时放置。当前尚需根据各设备、位置、连接方式和时段之间的对应关系，判断哪些现象值得优先复测，并把无需改配置的检查、短时调整和可能需要购买设备的方案分层排序。",
+      "task_reference_data": [
+        "来自用户手边的宽带安装单，用户已读：套餐标称下行300Mbps、上行50Mbps；家中现有一台光猫和一台无线路由器，没有Mesh节点或无线扩展器。",
+        "来自用户手机备忘录，用户可现场逐条读取：最近三晚的明显异常都发生在19点30分至22点30分之间；白天没有记录到持续变慢。",
+        "来自11月6日晚的测速记录，用户已记录但尚未系统比较：20点10分，客厅新手机无线测速为下行286Mbps、上行48Mbps；21点05分，同一手机在路由器附近测得下行42Mbps、上行45Mbps。",
+        "来自11月6日晚的临时有线测试，用户已记录：21点15分，笔记本用1.5米网线直连路由器，测得下行91Mbps、上行46Mbps；同一分钟附近的新手机无线测速为下行88Mbps、上行44Mbps。",
+        "来自用户对设备表现的观察，尚未核实具体频段：南侧卧室的新手机和孩子的电脑更容易掉线，手机走到玄关附近后通常能重新联网；客厅网络电视更多表现为画面降清晰度或缓冲，而不是完全断开。",
+        "来自用户对母亲旧平板的记录，仍需复测：该平板有一次在客厅靠近路由器时显示无线连接断开，当时旁边的新手机仍能正常打开网页；平板的系统版本、是否启用省电限制以及保存的无线网络设置目前未知。",
+        "来自用户现场可见的摆放条件：光猫和路由器位于玄关木柜下层，柜门平时关闭，周围有电源适配器；入户光纤余量很短，路由器可在柜外附近临时放置或调整朝向，但不能直接移到客厅中央。"
+      ],
+      "environment_audio": "左后方约两米处有一台风扇持续低速运转，机械风声平稳且音量较低。室内其余声音较轻，近距离说话清晰可辨。",
+      "estimated_snr_db": 29,
+      "constraints": [
+        {
+          "constraint_id": "C01",
+          "text": "21点前应优先进行不会主动中断网络的观察和对照，避免影响母亲观看网络电视及孩子上网课。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C02",
+          "text": "在确认现有配置和恢复方式前，不进行恢复出厂设置、删除无线网络配置或修改宽带认证信息。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C03",
+          "text": "排查方案应先利用现有手机、笔记本和1.5米网线，购买扩展器、Mesh设备或更换路由器只能列为后续选项。",
+          "kind": "soft"
+        },
+        {
+          "constraint_id": "C04",
+          "text": "路由器受入户光纤长度和玄关位置限制，只能在柜内或柜外附近调整，不能假定可迁移到房屋中央。",
+          "kind": "hard"
+        }
+      ],
+      "safety_limits": [
+        {
+          "limit_id": "L01",
+          "text": "不得强拉、急弯或自行拆开入户光纤及光纤接头；涉及光纤线路的异常只做外观观察。",
+          "severity": "hard"
+        },
+        {
+          "limit_id": "L02",
+          "text": "调整玄关柜内设备时应先确认电源适配器稳定放置且通风口未被遮挡，不把通电设备堆叠在易燃覆盖物上。",
+          "severity": "advisory"
+        }
+      ],
+      "soundscape_plan": {
+        "mode": "layered",
+        "ambient_layers": [
+          {
+            "source_id": "AMB01",
+            "asset_id": "fan-fsd50k-eval-415925",
+            "reason": "稳定的室内机械风扇声与当前客厅环境相符，可作为低音量连续底噪。"
+          }
+        ],
+        "environment_events": [],
+        "schema": "duplex_v2.soundscape_plan.v3",
+        "side_speech_sources": [],
+        "side_speech_count": 0,
+        "sampling": {
+          "schema": "duplex_v2.ambient_draw.v2",
+          "policy": {
+            "schema": "duplex_v2.soundscape_policy.v2",
+            "quiet_probability": 0.5,
+            "discrete_targets_by_tier": {
+              "short": [
+                0,
+                1
+              ],
+              "medium": [
+                1,
+                2
+              ],
+              "long": [
+                2,
+                4
+              ]
+            },
+            "discrete_count_includes": [
+              "environment_events",
+              "side_speech"
+            ],
+            "max_ambient_layers": 2,
+            "gain_range": [
+              0.3,
+              0.7
+            ],
+            "speech_request_probability": 0.5,
+            "third_party_preference_probability": 0.8,
+            "speech_requires_existing_scene_source": true,
+            "environment_audio": "base_only",
+            "stage2_repair": "atomic_scoped_patch",
+            "stage2_max_judge_attempts": 3,
+            "json_parse_max_retries": 3
+          },
+          "preferences": {
+            "schema": "duplex_v2.ambient_preferences.v1",
+            "seed": 202611073001,
+            "slot": 0,
+            "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+            "categories": {
+              "bed": [
+                "rain",
+                "crowd",
+                "traffic",
+                "wind",
+                "fan",
+                "birds"
+              ],
+              "event": [
+                "door",
+                "doorbell",
+                "paper",
+                "keyboard",
+                "footsteps",
+                "water_tap"
+              ]
+            },
+            "recordings": {
+              "bed:birds": [
+                "birds-fsd50k-eval-57907",
+                "birds-fsd50k-eval-86343",
+                "birds-fsd50k-eval-319512"
+              ],
+              "bed:crowd": [
+                "crowd-fsd50k-eval-121877",
+                "crowd-fsd50k-eval-185058",
+                "crowd-fsd50k-eval-340358"
+              ],
+              "bed:fan": [
+                "fan-fsd50k-eval-415925",
+                "fan-fsd50k-eval-235362",
+                "fan-fsd50k-eval-419427"
+              ],
+              "bed:rain": [
+                "rain-fsd50k-eval-238016",
+                "rain-fsd50k-eval-382582",
+                "rain-fsd50k-eval-21189"
+              ],
+              "bed:traffic": [
+                "traffic-fsd50k-eval-124020",
+                "traffic-fsd50k-eval-235541",
+                "traffic-fsd50k-eval-232686"
+              ],
+              "bed:wind": [
+                "wind-fsd50k-eval-113175",
+                "wind-fsd50k-eval-113173",
+                "wind-fsd50k-eval-113176"
+              ],
+              "event:door": [
+                "door-fsd50k-eval-71212",
+                "door-fsd50k-eval-209519",
+                "door-fsd50k-eval-119077"
+              ],
+              "event:doorbell": [
+                "doorbell-fsd50k-eval-332563",
+                "doorbell-fsd50k-eval-348322",
+                "doorbell-fsd50k-eval-426594"
+              ],
+              "event:footsteps": [
+                "footsteps-fsd50k-eval-392303",
+                "footsteps-fsd50k-eval-272381",
+                "footsteps-fsd50k-eval-153104"
+              ],
+              "event:keyboard": [
+                "keyboard-fsd50k-eval-399740",
+                "keyboard-fsd50k-eval-233057",
+                "keyboard-fsd50k-eval-411545"
+              ],
+              "event:paper": [
+                "paper-fsd50k-eval-82562",
+                "paper-fsd50k-eval-121200",
+                "paper-fsd50k-eval-343098"
+              ],
+              "event:water_tap": [
+                "water_tap-fsd50k-eval-402128",
+                "water_tap-fsd50k-eval-402127",
+                "water_tap-fsd50k-eval-232499"
+              ]
+            }
+          },
+          "control": {
+            "schema": "duplex_v2.soundscape_control.v2",
+            "seed": 1908551510,
+            "mode": "layered",
+            "discrete_event_target": 0,
+            "max_ambient_layers": 2,
+            "side_speech_requested": false,
+            "speech_kind_preferences": [
+              "third_party",
+              "machine"
+            ]
+          },
+          "control_sha256": "dc066a8062c75679618efb53d56600c9476e821107f09e622a057185d3e715da",
+          "candidate_plan": {
+            "schema": "duplex_v2.soundscape_plan.v3",
+            "mode": "layered",
+            "ambient_layers": [
+              {
+                "source_id": "AMB01",
+                "candidates": [
+                  {
+                    "asset_id": "fan-fsd50k-eval-415925",
+                    "reason": "稳定的室内机械风扇声与当前客厅环境相符，可作为低音量连续底噪。",
+                    "environment_audio": "左后方约两米处传来持续而平稳的低速风扇声。"
+                  },
+                  {
+                    "asset_id": "fan-fsd50k-eval-235362",
+                    "reason": "连续通风声适合表现家中客厅正在运转的风扇，不引入新的场景事件。",
+                    "environment_audio": "左后方约两米处有低声运转的风扇，声音保持稳定。"
+                  },
+                  {
+                    "asset_id": "fan-fsd50k-eval-419427",
+                    "reason": "真实机械风扇底噪与已建立的安静室内声景兼容。",
+                    "environment_audio": "室内左后方传来音量较低的机械风声，节奏均匀。"
+                  }
+                ]
+              }
+            ],
+            "environment_events": [],
+            "side_speech_eligibility": {
+              "third_party": {
+                "compatible": false,
+                "reason": "母亲和孩子虽在家中使用网络，但当前背景未建立他们在录音附近交谈或可辨发声。",
+                "source": null
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "当前仅建立了风扇等非语音设备，没有可合理产生机器旁语的设备。",
+                "source": null
+              }
+            }
+          },
+          "base_environment_audio_sha256": "b84c6e6aa33feb7a36f6cf393895eb7b4be19bdff2049cabec3905677715c696",
+          "aggregate_environment_audio": "左后方约两米处有一台风扇持续低速运转，机械风声平稳且音量较低。室内其余声音较轻，近距离说话清晰可辨。 左后方约两米处传来持续而平稳的低速风扇声。",
+          "draws": [
+            {
+              "source_id": "AMB01",
+              "category": "fan",
+              "asset_id": "fan-fsd50k-eval-415925",
+              "eligible_categories": [
+                "fan"
+              ],
+              "eligible_assets": [
+                "fan-fsd50k-eval-235362",
+                "fan-fsd50k-eval-415925",
+                "fan-fsd50k-eval-419427"
+              ]
+            }
+          ],
+          "speech_selection": {
+            "requested": false,
+            "compatible_kinds": [],
+            "selected_kind": null,
+            "outcome": "not_requested",
+            "assessments": {
+              "third_party": {
+                "compatible": false,
+                "reason": "母亲和孩子虽在家中使用网络，但当前背景未建立他们在录音附近交谈或可辨发声。",
+                "source": null
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "当前仅建立了风扇等非语音设备，没有可合理产生机器旁语的设备。",
+                "source": null
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "schema_version": "duplex_v2.fixed_script.v2",
+  "owner_attempt": 2,
+  "previous_candidate": {
+    "schema_version": "duplex_v2.fixed_script.v2",
+    "title": "晚间家庭网络掉线排查",
+    "rounds": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_utterance": "家里这两周一到晚上网就时快时慢，孩子的电脑还老掉线，电视也开始缓冲。我现在该怎么判断到底是哪儿有问题？",
+        "assistant_utterance": "先看现象是否跟时段、设备和位置有关。最常出问题的是几点、哪些设备、在哪个房间？是完全掉线还是单纯变慢？另外，有没有靠近路由器或接网线时的测速记录？",
+        "user_intent": "说明晚间家庭网络反复异常并请求帮助定位原因",
+        "assistant_intent": "建立区分宽带接入、无线覆盖和单设备问题所需的信息框架",
+        "semantic_goal": "明确需要提供哪些观察和记录才能开始判断",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": null,
+        "pause_cue": null
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_utterance": "基本都在晚上七点半到十点半，白天没明显问题。南边卧室的手机和孩子电脑最容易断，手机走到玄关附近通常又能连上；客厅电视主要是降清晰度、转圈，很少彻底断。",
+        "assistant_utterance": "先按设备、位置、连接方式分开记。今晚只做不中断的观察：记下各设备掉线或缓冲的时间、所在房间，以及同一时刻近处手机是否正常。再把最近一晚的近距离无线和有线测速按时间读给我。",
+        "user_intent": "补充异常时段以及不同位置和设备的表现",
+        "assistant_intent": "初步识别无线覆盖迹象，并要求可用于判断接入问题的对照测速",
+        "semantic_goal": "把零散现象整理成可比较的时段、位置和连接方式记录",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A001",
+          "user_onset_after_text": "先看现象是否跟时段、设备和位置有关。最常出问题的是几点、哪些设备、在哪个房间？是完全掉线还是单纯变慢？另外，有没有靠近路由器或接网线时的测速记录？",
+          "assistant_stop_after_text": "先看现象是否跟时段、设备和位置有关。最常出问题的是几点、哪些设备、在哪个房间？是完全掉线还是单纯变慢？另外，有没有靠近路由器或接网线时的测速记录？"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_utterance": "我看备忘录，十一月六号：晚上八点十分，客厅新手机是下行二百八十六、上行四十八；九点零五分在路由器旁变成下行四十二、上行四十五。九点十五分，笔记本接网线下行九十一、上行四十六，同一分钟手机无线是下行八十八、上行四十四。",
+        "assistant_utterance": "这组记录说明二十一点左右不只是远端无线差：有线和近端无线同时降速，宽带接入或路由器整体更可疑。今晚先别重启；等不影响家人时，再做同一分钟的有线、玄关无线和卧室无线对照，并观察光猫指示灯。",
+        "user_intent": "按时间读取近距离无线和有线测速记录",
+        "assistant_intent": "根据同步降速识别宽带接入或路由器整体问题的可能性并提出复测方向",
+        "semantic_goal": "判断现有记录是否足以排除单纯的远端无线覆盖问题",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01",
+          "T02"
+        ],
+        "timing": {
+          "target_assistant_id": "A002",
+          "user_onset_after_text": "先按设备、位置、连接方式分开记。今晚只做不中断的观察：记下各设备掉线或缓冲的时间、所在房间，以及同一时刻近处手机是否正常。再把最近一晚的近距离无线和有线测速按时间读给我。",
+          "assistant_stop_after_text": "先按设备、位置、连接方式分开记。今晚只做不中断的观察：记下各设备掉线或缓冲的时间、所在房间，以及同一时刻近处手机是否正常。再把最近一晚的近距离无线和有线测速按时间读给我。"
+        },
+        "pause_cue": {
+          "after_text": "我看备忘录，十一月六号：",
+          "duration_ms": 650
+        }
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_utterance": "对，重启先别提，我现在只能做不断网的检查，母亲和孩子都还在用。光猫和路由器塞在玄关木柜下层，柜门平时关着；光纤很短，不能搬远，但路由器可以临时放到柜外附近。",
+        "assistant_utterance": "那就先拍下指示灯状态，不碰光纤；确认电源和通风后开柜门，把路由器临时放到柜外附近，不改设置。再用新手机依次在玄关、客厅和卧室测速，记录是否改善。还有没有设备在路由器附近也会单独掉线？",
+        "user_intent": "打断后强调不能中断网络，并补充设备摆放和移动限制",
+        "assistant_intent": "改为安排低干扰观察和有限摆位测试，同时追问单设备异常线索",
+        "semantic_goal": "在不影响家人用网的前提下立即进行有信息价值的检查",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A003",
+          "user_onset_after_text": "这组记录说明二十一点左右不只是远端无线差：有线和近端无线同时降速，宽带接入或路由器整体更可疑。今晚先别重启；",
+          "assistant_stop_after_text": "这组记录说明二十一点左右不只是远端无线差：有线和近端无线同时降速，宽带接入或路由器整体更可疑。今晚先别重启；等不影"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_utterance": "有，母亲那台旧平板有一次就在客厅靠近路由器时自己断了，旁边的新手机还能上网。平板系统和省电设置我都不清楚。你把今晚能做的、之后复测的，还有最后才考虑买设备的顺序直接排一下。",
+        "assistant_utterance": "优先级这样排：一，今晚拍指示灯、开柜门并做三点无线对照。二，家人不用网后同步测有线、玄关无线和卧室无线；有线与近端都低，留记录联系宽带方，仅远端差且靠近恢复，判覆盖。三，旧平板单独掉线就先查系统和省电。四，柜外摆放仍无改善，再考虑Mesh或扩展器。不要恢复出厂，也别拉扯光纤。",
+        "user_intent": "补充旧平板的独立掉线现象并要求给出分层排查顺序",
+        "assistant_intent": "综合区分接入、覆盖和单设备问题，并按信息价值和实施难度给出方案",
+        "semantic_goal": "获得一套今晚可执行、之后可复测且购买设备最后考虑的排查计划",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A004",
+          "user_onset_after_text": "那就先拍下指示灯状态，不碰光纤；确认电源和通风后开柜门，把路由器临时放到柜外附近，不改设置。再用新手机依次在玄关、客厅和卧室测速，记录是否改善。还有没有设备在路由器附近也会单独掉线？",
+          "assistant_stop_after_text": "那就先拍下指示灯状态，不碰光纤；确认电源和通风后开柜门，把路由器临时放到柜外附近，不改设置。再用新手机依次在玄关、客厅和卧室测速，记录是否改善。还有没有设备在路由器附近也会单独掉线？"
+        },
+        "pause_cue": null
+      }
+    ],
+    "backchannels": [
+      {
+        "event_id": "BC01",
+        "target_assistant_id": "A002",
+        "after_text": "先按设备、位置、连接方式分开记。今晚只做不中断的观察：记下各设备掉线或缓冲的时间、所在房间，",
+        "text": "嗯，明白"
+      }
+    ],
+    "side_speech": [],
+    "environment_events": []
+  },
+  "findings": [
+    {
+      "severity": "must_fix",
+      "path": "/rounds/4/assistant_utterance",
+      "problem": "购买Mesh或扩展器的触发条件不足，可能把接入或路由器整体问题误当成覆盖问题。",
+      "evidence": "A005先说“有线与近端都低”时联系宽带方，却又以“柜外摆放仍无改善”直接作为考虑Mesh或扩展器的条件；但柜外摆放无改善并不能证明只有远端覆盖差，而现有记录还出现过有线和近端无线同时降速。",
+      "repair": "保留购买设备最后考虑的顺序，但把条件改为复测确认有线和近端正常、仅卧室等远端持续较差且靠近路由器可恢复后，才考虑Mesh或扩展器。"
+    }
+  ],
+  "anchor_dependencies": [
+    {
+      "target_id": "A004",
+      "path": "/rounds/4/timing/user_onset_after_text",
+      "value": "那就先拍下指示灯状态，不碰光纤；确认电源和通风后开柜门，把路由器临时放到柜外附近，不改设置。再用新手机依次在玄关、客厅和卧室测速，记录是否改善。还有没有设备在路由器附近也会单独掉线？",
+      "owner": "program"
+    },
+    {
+      "target_id": "A004",
+      "path": "/rounds/4/timing/assistant_stop_after_text",
+      "value": "那就先拍下指示灯状态，不碰光纤；确认电源和通风后开柜门，把路由器临时放到柜外附近，不改设置。再用新手机依次在玄关、客厅和卧室测速，记录是否改善。还有没有设备在路由器附近也会单独掉线？",
+      "owner": "program"
+    }
+  ],
+  "base_sha256": "9cee5261c2ec87605fdf721561ebe82c49c32ed798536118bb7df39b13330692"
+}

@@ -1,0 +1,336 @@
+{
+  "episode_situation": "周六晚间，用户在租住公寓的浴室做例行清洁，刚洗完澡，排风扇仍开着。她注意到玻璃淋浴门下沿和竖边靠近透明密封胶的位置散布着黑色斑点，有的像附着在表面，有的似乎藏在胶边里；此前只用湿布轻擦过一小处，痕迹没有明显消失。她不熟悉浴室材料，担心把霉斑、积垢和密封胶本身变色混为一谈，也怕强力刷洗或用错清洁剂损伤租住房屋设施。她手边只有软布、旧牙刷、洗洁精和一瓶标签完整的含氯浴室清洁剂，尚未确认斑点是否有绒毛感、能否被温和清洁带起、密封胶是否开裂，因此想先按外观和位置逐项判断，再了解低风险处理及控湿预防重点。",
+  "task_reference_data": [
+    "用户当前可现场查看：黑色斑点主要分布在淋浴玻璃门下沿及竖边附近，部分位于透明密封胶表面，另有部分看起来在胶边内部。",
+    "用户已经做过但尚不足以判断的测试：仅用湿布轻擦过一小处，痕迹没有明显消失，尚未使用洗洁精、刷子或含氯清洁剂。",
+    "用户手边清洁剂标签可现场读取：产品标注为含氯浴室清洁剂；是否适用于密封胶、要求的停留时间及稀释方式仍需按瓶身说明核对。"
+  ],
+  "environment_audio": "浴室排风扇从上方持续发出平稳的低频运转声，音量不高，带有轻微的空间回响。",
+  "estimated_snr_db": 26,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "判断和处理建议应优先采用不会刮伤玻璃或破坏现有密封胶的温和方法。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "在斑点的触感、可擦除性和密封胶完整程度尚未确认前，不把任何单一成因当作已经确定的结论。",
+      "kind": "hard"
+    }
+  ],
+  "safety_limits": [
+    {
+      "limit_id": "L01",
+      "text": "含氯清洁剂不得与酸性清洁剂、洁厕剂、醋或含氨产品混合使用。",
+      "severity": "critical"
+    },
+    {
+      "limit_id": "L02",
+      "text": "若使用含氯清洁剂，应按瓶身说明保持通风并避免接触眼睛和裸露皮肤；出现明显刺激时停止使用并离开浴室。",
+      "severity": "hard"
+    }
+  ],
+  "soundscape_plan": {
+    "mode": "layered",
+    "ambient_layers": [
+      {
+        "source_id": "AMB01",
+        "asset_id": "fan-fsd50k-eval-415925",
+        "reason": "稳定的室内机械通风声与正在运行的浴室排风扇相容。"
+      }
+    ],
+    "environment_events": [
+      {
+        "source_id": "ENV01",
+        "asset_id": "water_tap-fsd50k-eval-402127",
+        "reason": "短暂水龙头声与用户在浴室内查看和清洁玻璃门的场景相容。"
+      },
+      {
+        "source_id": "ENV02",
+        "asset_id": "footsteps-fsd50k-eval-392303",
+        "reason": "室内短段脚步声与用户在浴室中靠近玻璃门检查边缘相容。"
+      }
+    ],
+    "schema": "duplex_v2.soundscape_plan.v3",
+    "side_speech_sources": [],
+    "side_speech_count": 0,
+    "sampling": {
+      "schema": "duplex_v2.ambient_draw.v2",
+      "policy": {
+        "schema": "duplex_v2.soundscape_policy.v2",
+        "quiet_probability": 0.5,
+        "discrete_targets_by_tier": {
+          "short": [
+            0,
+            1
+          ],
+          "medium": [
+            1,
+            2
+          ],
+          "long": [
+            2,
+            4
+          ]
+        },
+        "discrete_count_includes": [
+          "environment_events",
+          "side_speech"
+        ],
+        "max_ambient_layers": 2,
+        "gain_range": [
+          0.3,
+          0.7
+        ],
+        "speech_request_probability": 0.5,
+        "third_party_preference_probability": 0.8,
+        "speech_requires_existing_scene_source": true,
+        "environment_audio": "base_only",
+        "stage2_repair": "atomic_scoped_patch",
+        "stage2_max_judge_attempts": 3,
+        "json_parse_max_retries": 3
+      },
+      "preferences": {
+        "schema": "duplex_v2.ambient_preferences.v1",
+        "seed": 202611073010,
+        "slot": 4,
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "categories": {
+          "bed": [
+            "rain",
+            "crowd",
+            "fan",
+            "traffic",
+            "wind",
+            "birds"
+          ],
+          "event": [
+            "doorbell",
+            "water_tap",
+            "keyboard",
+            "door",
+            "footsteps",
+            "paper"
+          ]
+        },
+        "recordings": {
+          "bed:birds": [
+            "birds-fsd50k-eval-57907",
+            "birds-fsd50k-eval-319512",
+            "birds-fsd50k-eval-86343"
+          ],
+          "bed:crowd": [
+            "crowd-fsd50k-eval-185058",
+            "crowd-fsd50k-eval-121877",
+            "crowd-fsd50k-eval-340358"
+          ],
+          "bed:fan": [
+            "fan-fsd50k-eval-415925",
+            "fan-fsd50k-eval-235362",
+            "fan-fsd50k-eval-419427"
+          ],
+          "bed:rain": [
+            "rain-fsd50k-eval-238016",
+            "rain-fsd50k-eval-21189",
+            "rain-fsd50k-eval-382582"
+          ],
+          "bed:traffic": [
+            "traffic-fsd50k-eval-232686",
+            "traffic-fsd50k-eval-235541",
+            "traffic-fsd50k-eval-124020"
+          ],
+          "bed:wind": [
+            "wind-fsd50k-eval-113175",
+            "wind-fsd50k-eval-113176",
+            "wind-fsd50k-eval-113173"
+          ],
+          "event:door": [
+            "door-fsd50k-eval-71212",
+            "door-fsd50k-eval-119077",
+            "door-fsd50k-eval-209519"
+          ],
+          "event:doorbell": [
+            "doorbell-fsd50k-eval-332563",
+            "doorbell-fsd50k-eval-426594",
+            "doorbell-fsd50k-eval-348322"
+          ],
+          "event:footsteps": [
+            "footsteps-fsd50k-eval-392303",
+            "footsteps-fsd50k-eval-272381",
+            "footsteps-fsd50k-eval-153104"
+          ],
+          "event:keyboard": [
+            "keyboard-fsd50k-eval-411545",
+            "keyboard-fsd50k-eval-233057",
+            "keyboard-fsd50k-eval-399740"
+          ],
+          "event:paper": [
+            "paper-fsd50k-eval-82562",
+            "paper-fsd50k-eval-343098",
+            "paper-fsd50k-eval-121200"
+          ],
+          "event:water_tap": [
+            "water_tap-fsd50k-eval-402127",
+            "water_tap-fsd50k-eval-402128",
+            "water_tap-fsd50k-eval-232499"
+          ]
+        }
+      },
+      "control": {
+        "schema": "duplex_v2.soundscape_control.v2",
+        "seed": 2954463805,
+        "mode": "layered",
+        "discrete_event_target": 2,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "machine",
+          "third_party"
+        ]
+      },
+      "control_sha256": "ec31128b1b189b2978fe50ea3a48991ad4d4ac00c0557c79388f9ff91eec5fbe",
+      "candidate_plan": {
+        "schema": "duplex_v2.soundscape_plan.v3",
+        "mode": "layered",
+        "ambient_layers": [
+          {
+            "source_id": "AMB01",
+            "candidates": [
+              {
+                "asset_id": "fan-fsd50k-eval-415925",
+                "reason": "稳定的室内机械通风声与正在运行的浴室排风扇相容。",
+                "environment_audio": "上方持续传来较轻的浴室排风扇运转声。"
+              },
+              {
+                "asset_id": "fan-fsd50k-eval-235362",
+                "reason": "连续风扇底噪可表现浴室清洁时保持通风的当前环境。",
+                "environment_audio": "浴室上方有平稳、连续的机械通风声。"
+              },
+              {
+                "asset_id": "fan-fsd50k-eval-419427",
+                "reason": "室内风扇录音符合小型浴室排风设备的基础声景。",
+                "environment_audio": "不远处持续响着音量较低的排风设备。"
+              }
+            ]
+          }
+        ],
+        "environment_events": [
+          {
+            "source_id": "ENV01",
+            "candidates": [
+              {
+                "asset_id": "water_tap-fsd50k-eval-402127",
+                "reason": "短暂水龙头声与用户在浴室内查看和清洁玻璃门的场景相容。",
+                "environment_audio": "近处水龙头短暂出水，随后关闭。"
+              },
+              {
+                "asset_id": "water_tap-fsd50k-eval-402128",
+                "reason": "短段流水事件适合当前浴室环境，不引入额外人物或设备状态。",
+                "environment_audio": "洗手池方向传来一小段流水声，很快停下。"
+              },
+              {
+                "asset_id": "water_tap-fsd50k-eval-232499",
+                "reason": "极短的水龙头声可自然融入刚使用过的浴室声景。",
+                "environment_audio": "近处水龙头发出短促的开关水声。"
+              }
+            ]
+          },
+          {
+            "source_id": "ENV02",
+            "candidates": [
+              {
+                "asset_id": "footsteps-fsd50k-eval-392303",
+                "reason": "室内短段脚步声与用户在浴室中靠近玻璃门检查边缘相容。",
+                "environment_audio": "近处响起几步轻短的室内脚步声。"
+              },
+              {
+                "asset_id": "footsteps-fsd50k-eval-272381",
+                "reason": "短暂脚步可表现用户在淋浴门与洗手池之间移动，不需要新增人物。",
+                "environment_audio": "浴室地面传来一小段缓慢脚步声。"
+              },
+              {
+                "asset_id": "footsteps-fsd50k-eval-153104",
+                "reason": "真实室内脚步事件与用户现场观察淋浴门的活动相容。",
+                "environment_audio": "近距离传来几步轻微移动的声音。"
+              }
+            ]
+          }
+        ],
+        "side_speech_eligibility": {
+          "third_party": {
+            "compatible": false,
+            "reason": "当前故事没有建立任何在场的第三方人物。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "排风扇只产生机械底噪，场景中没有已建立的语音设备。",
+            "source": null
+          }
+        }
+      },
+      "base_environment_audio_sha256": "a74e7aa570e3e2b98f310bab33ba839a73be9d4746cae592b5ab97b46c7b9966",
+      "aggregate_environment_audio": "浴室排风扇从上方持续发出平稳的低频运转声，音量不高，带有轻微的空间回响。 上方持续传来较轻的浴室排风扇运转声。 近处水龙头短暂出水，随后关闭。 近处响起几步轻短的室内脚步声。",
+      "draws": [
+        {
+          "source_id": "AMB01",
+          "category": "fan",
+          "asset_id": "fan-fsd50k-eval-415925",
+          "eligible_categories": [
+            "fan"
+          ],
+          "eligible_assets": [
+            "fan-fsd50k-eval-235362",
+            "fan-fsd50k-eval-415925",
+            "fan-fsd50k-eval-419427"
+          ]
+        },
+        {
+          "source_id": "ENV01",
+          "category": "water_tap",
+          "asset_id": "water_tap-fsd50k-eval-402127",
+          "eligible_categories": [
+            "water_tap"
+          ],
+          "eligible_assets": [
+            "water_tap-fsd50k-eval-232499",
+            "water_tap-fsd50k-eval-402127",
+            "water_tap-fsd50k-eval-402128"
+          ]
+        },
+        {
+          "source_id": "ENV02",
+          "category": "footsteps",
+          "asset_id": "footsteps-fsd50k-eval-392303",
+          "eligible_categories": [
+            "footsteps"
+          ],
+          "eligible_assets": [
+            "footsteps-fsd50k-eval-153104",
+            "footsteps-fsd50k-eval-272381",
+            "footsteps-fsd50k-eval-392303"
+          ]
+        }
+      ],
+      "speech_selection": {
+        "requested": false,
+        "compatible_kinds": [],
+        "selected_kind": null,
+        "outcome": "not_requested",
+        "assessments": {
+          "third_party": {
+            "compatible": false,
+            "reason": "当前故事没有建立任何在场的第三方人物。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "排风扇只产生机械底噪，场景中没有已建立的语音设备。",
+            "source": null
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,207 @@
+{
+  "episode_situation": "周六下午，用户独自在社区活动室整理下周面向小学高年级孩子的传统故事分享，现在想把《愚公移山》的内容讲得简短、清楚又不失准确。用户记得愚公带领家人挖山的大致情节，也写下了“起因、转折、寓意”三个提示词，但对他决定移山的直接原因、天帝相助前后的关键变化还不够确定。分享对象可能会追问人真的能否移走大山，以及坚持和固执有什么区别，因此用户既需要故事梗概，也想逐层弄清人物动机、情节作用和常见寓意。当前没有需要核对的教材版本，重点是采用通行讲法，并把现实中的坚持解释为有目标、肯行动且会根据条件调整，而不是不计代价地蛮干。",
+  "task_reference_data": [],
+  "environment_audio": "活动室内整体安静，只有很轻的室内底噪，远处没有明显人声。近处说话声清晰稳定，背景音量基本不变。",
+  "estimated_snr_db": 34,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "故事梗概应简短清楚，语言适合小学高年级孩子理解。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "内容采用《愚公移山》的通行讲法，不依赖特定教材版本的措辞。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C03",
+      "text": "现实意义需要区分有目标且能调整方法的坚持与不计条件的固执。",
+      "kind": "hard"
+    }
+  ],
+  "safety_limits": [],
+  "soundscape_plan": {
+    "mode": "quiet",
+    "ambient_layers": [],
+    "environment_events": [],
+    "schema": "duplex_v2.soundscape_plan.v3",
+    "side_speech_sources": [],
+    "side_speech_count": 0,
+    "sampling": {
+      "schema": "duplex_v2.ambient_draw.v2",
+      "policy": {
+        "schema": "duplex_v2.soundscape_policy.v2",
+        "quiet_probability": 0.5,
+        "discrete_targets_by_tier": {
+          "short": [
+            0,
+            1
+          ],
+          "medium": [
+            1,
+            2
+          ],
+          "long": [
+            2,
+            4
+          ]
+        },
+        "discrete_count_includes": [
+          "environment_events",
+          "side_speech"
+        ],
+        "max_ambient_layers": 2,
+        "gain_range": [
+          0.3,
+          0.7
+        ],
+        "speech_request_probability": 0.5,
+        "third_party_preference_probability": 0.8,
+        "speech_requires_existing_scene_source": true,
+        "environment_audio": "base_only",
+        "stage2_repair": "atomic_scoped_patch",
+        "stage2_max_judge_attempts": 3,
+        "json_parse_max_retries": 3
+      },
+      "preferences": {
+        "schema": "duplex_v2.ambient_preferences.v1",
+        "seed": 202611073005,
+        "slot": 0,
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "categories": {
+          "bed": [
+            "fan",
+            "rain",
+            "crowd",
+            "birds",
+            "wind",
+            "traffic"
+          ],
+          "event": [
+            "paper",
+            "doorbell",
+            "footsteps",
+            "keyboard",
+            "water_tap",
+            "door"
+          ]
+        },
+        "recordings": {
+          "bed:birds": [
+            "birds-fsd50k-eval-319512",
+            "birds-fsd50k-eval-57907",
+            "birds-fsd50k-eval-86343"
+          ],
+          "bed:crowd": [
+            "crowd-fsd50k-eval-121877",
+            "crowd-fsd50k-eval-185058",
+            "crowd-fsd50k-eval-340358"
+          ],
+          "bed:fan": [
+            "fan-fsd50k-eval-419427",
+            "fan-fsd50k-eval-415925",
+            "fan-fsd50k-eval-235362"
+          ],
+          "bed:rain": [
+            "rain-fsd50k-eval-238016",
+            "rain-fsd50k-eval-382582",
+            "rain-fsd50k-eval-21189"
+          ],
+          "bed:traffic": [
+            "traffic-fsd50k-eval-232686",
+            "traffic-fsd50k-eval-124020",
+            "traffic-fsd50k-eval-235541"
+          ],
+          "bed:wind": [
+            "wind-fsd50k-eval-113173",
+            "wind-fsd50k-eval-113175",
+            "wind-fsd50k-eval-113176"
+          ],
+          "event:door": [
+            "door-fsd50k-eval-71212",
+            "door-fsd50k-eval-209519",
+            "door-fsd50k-eval-119077"
+          ],
+          "event:doorbell": [
+            "doorbell-fsd50k-eval-332563",
+            "doorbell-fsd50k-eval-426594",
+            "doorbell-fsd50k-eval-348322"
+          ],
+          "event:footsteps": [
+            "footsteps-fsd50k-eval-392303",
+            "footsteps-fsd50k-eval-153104",
+            "footsteps-fsd50k-eval-272381"
+          ],
+          "event:keyboard": [
+            "keyboard-fsd50k-eval-399740",
+            "keyboard-fsd50k-eval-233057",
+            "keyboard-fsd50k-eval-411545"
+          ],
+          "event:paper": [
+            "paper-fsd50k-eval-82562",
+            "paper-fsd50k-eval-343098",
+            "paper-fsd50k-eval-121200"
+          ],
+          "event:water_tap": [
+            "water_tap-fsd50k-eval-402128",
+            "water_tap-fsd50k-eval-402127",
+            "water_tap-fsd50k-eval-232499"
+          ]
+        }
+      },
+      "control": {
+        "schema": "duplex_v2.soundscape_control.v2",
+        "seed": 2255728634,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "machine",
+          "third_party"
+        ]
+      },
+      "control_sha256": "97f9611cef15fba9f9f8d41215778e9bb4006a53c79a36e0b717b9b334b09cde",
+      "candidate_plan": {
+        "schema": "duplex_v2.soundscape_plan.v3",
+        "mode": "quiet",
+        "ambient_layers": [],
+        "environment_events": [],
+        "side_speech_eligibility": {
+          "third_party": {
+            "compatible": false,
+            "reason": "用户独自在活动室准备分享，当前故事中没有已建立的第三方在场。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "当前场景没有已建立的可发出语音提示的设备。",
+            "source": null
+          }
+        }
+      },
+      "base_environment_audio_sha256": "735767d56ce3b77ccb09be6d801aaa212b3f741c8349c7d36d426f66fc356763",
+      "aggregate_environment_audio": "活动室内整体安静，只有很轻的室内底噪，远处没有明显人声。近处说话声清晰稳定，背景音量基本不变。",
+      "draws": [],
+      "speech_selection": {
+        "requested": false,
+        "compatible_kinds": [],
+        "selected_kind": null,
+        "outcome": "not_requested",
+        "assessments": {
+          "third_party": {
+            "compatible": false,
+            "reason": "用户独自在活动室准备分享，当前故事中没有已建立的第三方在场。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "当前场景没有已建立的可发出语音提示的设备。",
+            "source": null
+          }
+        }
+      }
+    }
+  }
+}

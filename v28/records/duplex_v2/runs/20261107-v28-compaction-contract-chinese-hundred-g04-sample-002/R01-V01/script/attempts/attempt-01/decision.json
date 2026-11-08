@@ -1,0 +1,19 @@
+{
+  "decision": "repair",
+  "findings": [
+    {
+      "severity": "must_fix",
+      "path": "/rounds/3/user_utterance",
+      "problem": "用户把仅能确认“不记得出现过”的机械症状改成了确定不存在，改变了冻结事实的确定性。",
+      "evidence": "冻结情境为“也不记得出现过弹响、卡住或突然打软腿”，候选却说“也没有弹响、卡住、打软腿”；A004随后又据此说“没有肿胀或卡住”。",
+      "repair": "将这三项改为“不记得出现过”等保持不确定性的表述，并同步调整A004中关于卡住的概括，不要断言整周确定没有发生。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/rounds/3/assistant_utterance",
+      "problem": "助手提前使用了用户尚未披露的右小腿“此后未再发”状态。",
+      "evidence": "已听内容中U01只说右小腿紧绷“走十五分钟就没了”，U02至U04也未说明此后是否复发；“此后未再出现”只存在于隐藏的task_reference_data。A004却说“十五分钟消失且未再发”。",
+      "repair": "删除“且未再发”，仅保留已经听到的十五分钟后缓解；同时同步修改依赖该全文前缀的/backchannels/0/after_text。"
+    }
+  ]
+}

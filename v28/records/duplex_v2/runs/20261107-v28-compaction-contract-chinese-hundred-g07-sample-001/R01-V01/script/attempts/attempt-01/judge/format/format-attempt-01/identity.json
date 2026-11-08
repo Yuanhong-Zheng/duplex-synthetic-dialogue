@@ -1,0 +1,2064 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 8 轮，允许 7–8 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 旁语仅限第三方或机器，不包含用户说着说着转向旁人的模式；声音 profile 必须只描述声音。旁语不提供隐藏关键任务材料，不被助手当成正式用户新请求，不使助手停顿或另起回答。声景未支持此来源时不应凭空编人或设备。30%–70% 音量合规即可。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 和 voice_profile 必须逐字匹配对应源，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g07-sample-001-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 943192747,
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g07/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g07/relay-state",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D08",
+          "domain": "旅行、住宿与本地探索",
+          "scenario_id": "D08-S05",
+          "scenario": "旅行准备"
+        },
+        "task_style": "结构化整理",
+        "task_instance": {
+          "goal": "把我随后提供的出行日期、交通衔接、住宿入住要求、证件材料和个人限制整理成一份按时间先后排列的准备方案，区分必须提前完成、出发当天处理和到达后确认的事项，并标出信息不足或需要再次核对的环节。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "负责陪同父亲完成首次跨省自由行准备的家庭成员",
+          "task_familiarity": "low"
+        },
+        "voice_profile": "男性，四十多岁，音色温和偏厚，吐字清楚，语速中等，整体听感沉稳自然。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "neutral",
+          "directness": "balanced",
+          "emotional_expressiveness": "balanced",
+          "verbosity": "balanced",
+          "initiative": "low",
+          "caution": "medium",
+          "patience": "medium",
+          "behavioral_notes": [
+            "通常先提供一部分信息，等对方整理出结构后再补充遗漏内容。",
+            "表达不确定时会使用“我记得”“可能是”一类措辞，并愿意根据澄清调整说法。",
+            "希望说明具体但不过分冗长，遇到多个选项时倾向先听清区别再作决定。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "short",
+        "target_turns": 8,
+        "min_turns": 7,
+        "max_turns": 8
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v2",
+        "seed": 1297268149,
+        "mode": "layered",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "machine",
+          "third_party"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "现在是2026年11月7日晚上，用户在南京家中的书房整理两周后陪父亲去杭州旅行的资料，这是父亲第一次跨省自由行，也是用户第一次独自负责两人的全程衔接。往返火车票和两晚酒店已经预订，但车站接送、入住细节和随身材料还散落在不同页面与纸条上。用户把购票页面、酒店确认页、地图截图和父亲口述的身体限制放在手边，准备逐项朗读，而不是一次提供全部内容。行程定在11月20日至22日，去程需要赶周五早班车，因此从家到南京南站应预留多少时间是眼下最紧迫的未决问题。到达杭州东站后有地铁和出租车两种衔接思路，但地图截图可能已经过期，而且地铁方案包含一段对父亲偏长的步行。酒店页面写明14:00后入住，而列车上午就会抵达，行李能否提前寄存尚未得到酒店确认。用户已经检查过两人的居民身份证有效期，也知道酒店要求实际入住人出示证件原件，但还没有核对车票与酒店页面上的姓名是否逐字一致。父亲平时可以自行行走，不过连续步行约15分钟后膝盖容易不适，早晨动作也比用户慢，因此最低换乘时间未必适合他们。父亲每天午餐后服用一片处方药，旅行期间需要保持原有安排，但用户尚未决定药品、饮水和备用衣物分别放在哪件行李中。两人计划只带一个登机箱和两个随身包，以减少搬运行李的负担，同时也要避免把证件和药品放进不便随时取用的箱子里。返程在周日下午，退房时间与前往杭州东站的出发时间之间仍需安排，酒店能否延迟退房也没有确认。用户希望先把已知信息按时间串起来，再逐步补充遗漏，并清楚保留所有需要致电酒店、向车站工作人员询问或由本人再次查看页面才能确认的环节。",
+        "task_reference_data": [
+          "来自用户手边的铁路购票页面，当前可直接读取：去程为2026年11月20日G7605次，南京南站08:12开，杭州东站09:43到；页面提示开车前5分钟停止检票。",
+          "来自用户手边的返程购票页面，当前可直接读取：返程为2026年11月22日G7610次，杭州东站17:20开，南京南站18:52到。",
+          "来自用户保存的酒店确认页，当前可直接读取：杭州栖云酒店（武林广场店），入住日期为11月20日，退房日期为11月22日；标准入住时间14:00以后，标准退房时间12:00以前。",
+          "来自酒店确认页的入住提示，用户已读到：所有实际入住人均须出示本人有效居民身份证原件；页面没有写明能否在14:00前寄存行李，也没有写明能否延迟退房。",
+          "来自用户自行记录的出发估算，尚未按周五早高峰核实：从家乘出租车到南京南站通常约35至50分钟；父亲出门前洗漱、吃早餐和检查随身物品通常需要约70分钟。",
+          "来自用户两天前查看的地图截图，可能已过期：杭州东站到酒店的地铁方案约35分钟，出站后还需步行约900米；出租车方案截图显示约25至40分钟，费用与实时路况均未核实。",
+          "来自用户当天查看证件所得，当前已核对：用户的居民身份证有效期至2032年6月，父亲的居民身份证有效期至2027年9月；车票与酒店预订姓名是否和证件逐字一致尚未复核。",
+          "来自父亲近期亲口说明，用户已经记下：连续步行约15分钟后膝盖容易不适；每天午餐后按原医嘱服用一片处方药；可携带折叠手杖，但暂未决定是否申请车站重点旅客服务。",
+          "来自两人商定的行李安排，当前已知：全程携带一个登机箱和两个随身包；证件、车票信息、处方药和饮水需要放在途中容易取用的位置，具体分装尚未决定。"
+        ],
+        "environment_audio": "窗外持续有轻柔而均匀的雨声，主要从书房右侧窗户方向传来，偶尔随风略微增强。房间内近处的通风扇保持低沉稳定的运转声，音量不高，没有突发变化。",
+        "estimated_snr_db": 28,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "准备方案必须按时间先后组织，并明确区分提前完成、出发当天处理和到达后确认三类事项。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "尚未确认的寄存、延迟退房、交通耗时和车站协助信息必须保留为待核对项，不得当作已确定安排。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C03",
+            "text": "交通衔接和时间预留应考虑父亲早晨准备较慢及连续步行约15分钟后膝盖容易不适。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C04",
+            "text": "在不影响证件、药品随时取用的前提下，尽量维持一个登机箱和两个随身包的轻量行李安排。",
+            "kind": "soft"
+          }
+        ],
+        "safety_limits": [
+          {
+            "limit_id": "L01",
+            "text": "不得建议父亲为配合行程自行改变处方药的剂量或服用频次；若原医嘱与行程发生冲突，应由本人向医生或药师确认。",
+            "severity": "hard"
+          },
+          {
+            "limit_id": "L02",
+            "text": "行程衔接不应依赖奔跑、长距离快速步行或勉强搬运重物，以免加重父亲的膝盖不适。",
+            "severity": "advisory"
+          }
+        ],
+        "soundscape_plan": {
+          "mode": "layered",
+          "ambient_layers": [
+            {
+              "source_id": "AMB01",
+              "asset_id": "rain-fsd50k-eval-238016",
+              "reason": "适合作为住宅书房窗外持续雨声的基础底噪。"
+            },
+            {
+              "source_id": "AMB02",
+              "asset_id": "fan-fsd50k-eval-235362",
+              "reason": "适合作为书房内低音量、持续稳定的通风设备声。"
+            }
+          ],
+          "environment_events": [],
+          "schema": "duplex_v2.soundscape_plan.v3",
+          "side_speech_sources": [],
+          "side_speech_count": 0,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v2",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v2",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611073007,
+              "slot": 0,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "birds",
+                  "fan",
+                  "rain",
+                  "traffic",
+                  "crowd",
+                  "wind"
+                ],
+                "event": [
+                  "doorbell",
+                  "water_tap",
+                  "footsteps",
+                  "paper",
+                  "door",
+                  "keyboard"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-319512",
+                  "birds-fsd50k-eval-57907",
+                  "birds-fsd50k-eval-86343"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-185058",
+                  "crowd-fsd50k-eval-340358",
+                  "crowd-fsd50k-eval-121877"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-419427",
+                  "fan-fsd50k-eval-415925"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-21189",
+                  "rain-fsd50k-eval-382582"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-232686",
+                  "traffic-fsd50k-eval-124020",
+                  "traffic-fsd50k-eval-235541"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113176",
+                  "wind-fsd50k-eval-113173",
+                  "wind-fsd50k-eval-113175"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-71212",
+                  "door-fsd50k-eval-119077",
+                  "door-fsd50k-eval-209519"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-348322",
+                  "doorbell-fsd50k-eval-426594",
+                  "doorbell-fsd50k-eval-332563"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-272381",
+                  "footsteps-fsd50k-eval-392303",
+                  "footsteps-fsd50k-eval-153104"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-399740",
+                  "keyboard-fsd50k-eval-411545"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-343098",
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-82562"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-232499",
+                  "water_tap-fsd50k-eval-402127",
+                  "water_tap-fsd50k-eval-402128"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v2",
+              "seed": 1297268149,
+              "mode": "layered",
+              "discrete_event_target": 0,
+              "max_ambient_layers": 2,
+              "side_speech_requested": false,
+              "speech_kind_preferences": [
+                "machine",
+                "third_party"
+              ]
+            },
+            "control_sha256": "222f4a5decf1d5f9421bfff8e3269d72e7214b648ac53e7f3fcee8e0769bff4f",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v3",
+              "mode": "layered",
+              "ambient_layers": [
+                {
+                  "source_id": "AMB01",
+                  "candidates": [
+                    {
+                      "asset_id": "rain-fsd50k-eval-238016",
+                      "reason": "适合作为住宅书房窗外持续雨声的基础底噪。",
+                      "environment_audio": "右侧窗外传来连续、轻柔的雨声，强弱略有起伏。"
+                    },
+                    {
+                      "asset_id": "rain-fsd50k-eval-21189",
+                      "reason": "可替代呈现安静住宅窗边的均匀雨声。",
+                      "environment_audio": "窗外雨声保持均匀，偶尔随风稍微增强。"
+                    },
+                    {
+                      "asset_id": "rain-fsd50k-eval-382582",
+                      "reason": "与夜间在家整理旅行资料的室内场景相容。",
+                      "environment_audio": "隔着窗户可听到稳定而不响亮的连续雨声。"
+                    }
+                  ]
+                },
+                {
+                  "source_id": "AMB02",
+                  "candidates": [
+                    {
+                      "asset_id": "fan-fsd50k-eval-235362",
+                      "reason": "适合作为书房内低音量、持续稳定的通风设备声。",
+                      "environment_audio": "近处通风扇发出低沉稳定的运转声。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-419427",
+                      "reason": "可表现住宅室内轻微机械通风底噪。",
+                      "environment_audio": "房间内有轻微而连续的机械通风声，没有明显变化。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-415925",
+                      "reason": "与安静书房环境相容，且不会遮蔽主要语音。",
+                      "environment_audio": "书房近处持续传来音量较低的风扇运转声。"
+                    }
+                  ]
+                }
+              ],
+              "environment_events": [],
+              "side_speech_eligibility": {
+                "third_party": {
+                  "compatible": false,
+                  "reason": "故事只建立了用户独自在书房整理资料，父亲并未被描述为当前在场或可辨发声。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "当前场景只有无语音内容的通风设备，没有已建立的可辨机器播报来源。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "2e0e486b8ae45e6cb6354b6a4118d6146312123dd566b723842c2e4ae2531f3f",
+            "aggregate_environment_audio": "窗外持续有轻柔而均匀的雨声，主要从书房右侧窗户方向传来，偶尔随风略微增强。房间内近处的通风扇保持低沉稳定的运转声，音量不高，没有突发变化。 右侧窗外传来连续、轻柔的雨声，强弱略有起伏。 近处通风扇发出低沉稳定的运转声。",
+            "draws": [
+              {
+                "source_id": "AMB01",
+                "category": "rain",
+                "asset_id": "rain-fsd50k-eval-238016",
+                "eligible_categories": [
+                  "rain"
+                ],
+                "eligible_assets": [
+                  "rain-fsd50k-eval-21189",
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-382582"
+                ]
+              },
+              {
+                "source_id": "AMB02",
+                "category": "fan",
+                "asset_id": "fan-fsd50k-eval-235362",
+                "eligible_categories": [
+                  "fan"
+                ],
+                "eligible_assets": [
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-419427"
+                ]
+              }
+            ],
+            "speech_selection": {
+              "requested": false,
+              "compatible_kinds": [],
+              "selected_kind": null,
+              "outcome": "not_requested",
+              "assessments": {
+                "third_party": {
+                  "compatible": false,
+                  "reason": "故事只建立了用户独自在书房整理资料，父亲并未被描述为当前在场或可辨发声。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "当前场景只有无语音内容的通风设备，没有已建立的可辨机器播报来源。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v2",
+      "title": "陪父亲赴杭州旅行准备",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "我想把陪我父亲去杭州的准备按时间理一下。行程是十一月二十日到二十二日，先解决周五早上怎么赶南京南站；他早上动作慢。",
+          "assistant_utterance": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。",
+          "user_intent": "建立旅行整理任务并优先解决去程到站时间",
+          "assistant_intent": "收集计算出发时间所需的车次和耗时信息",
+          "semantic_goal": "确定去程时间规划需要哪些基础数据",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "去程是G7605，南京南八点十二分开，杭州东九点四十三分到，八点零七分停止检票。打车通常三十五到五十分钟，他洗漱、早餐和检查东西要七十分钟。",
+          "assistant_utterance": "先按未核实的上限五十分钟算，再加周五早高峰和父亲行动缓冲，建议六点十分前上车、七点二十分前到站；五点开始洗漱早餐。出发前一天再看路况。",
+          "user_intent": "提供去程列车、停止检票和出门耗时信息",
+          "assistant_intent": "基于保守耗时提出出发当天的初步时间节点",
+          "semantic_goal": "得到不会依赖最短车程的稳妥出发安排",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。",
+            "assistant_stop_after_text": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "对，就按五十分钟的上限算，别用三十五分钟，我怕周五早高峰再耽搁。",
+          "assistant_utterance": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，七点二十分前到站，给早高峰、进站和慢走留余量。前一晚再看路况；若预估超过五十分钟，就相应提前。",
+          "user_intent": "打断并明确要求采用较保守的车程估算",
+          "assistant_intent": "按上限重新给出清晰的起床、离家和到站节点",
+          "semantic_goal": "锁定考虑早高峰风险的去程时间表",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "先按未核实的上限五十分钟算，",
+            "assistant_stop_after_text": "先按未核实的上限五十分钟算，再加"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "到杭州后我两天前截了图：地铁约三十五分钟，但出站还要走九百米；出租车约二十五到四十分钟，费用和路况没核实。他走十五分钟膝盖就容易不舒服。酒店两点后入住，能不能先寄存还不知道。",
+          "assistant_utterance": "地铁加九百米步行不宜作为默认方案；先把出租车列为优先备选，但出发前重查路况和费用。提前致电酒店，确认十点左右能否寄存行李。",
+          "user_intent": "补充抵达杭州后的交通选择、步行限制和入住缺口",
+          "assistant_intent": "根据膝盖限制筛选衔接方案并标出待核对事项",
+          "semantic_goal": "形成抵达后的交通优先级和酒店确认任务",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，七点二十分前到站，给早高峰、进站和慢走留余量。前一晚再看路况；若预估超过五十分钟，就相应提前。",
+            "assistant_stop_after_text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，七点二十分前到站，给早高峰、进站和慢走留余量。前一晚再看路况；若预估超过五十分钟，就相应提前。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "酒店是栖云酒店武林广场店，二十日入住、二十二日退房，十二点前退房。两个人身份证原件都有效，但车票和酒店姓名还没逐字核对，延迟退房也没写。",
+          "assistant_utterance": "提前完成三项：逐字核对两张车票、酒店姓名与身份证；致电确认提前寄存和延迟退房；把答复记下。证件原件随身带，寄存和延迟退房都先保留为待确认。",
+          "user_intent": "补充酒店日期、退房规则和证件核对状态",
+          "assistant_intent": "整理入住前必须完成的核对与致电事项",
+          "semantic_goal": "明确证件姓名核对和酒店服务确认清单",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "地铁加九百米步行不宜作为默认方案；先把出租车列为优先备选，但出发前重查路况和费用。提前致电酒店，确认十点左右能否寄存行李。",
+            "assistant_stop_after_text": "地铁加九百米步行不宜作为默认方案；先把出租车列为优先备选，但出发前重查路况和费用。提前致电酒店，确认十点左右能否寄存行李。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U06",
+          "assistant_id": "A006",
+          "user_utterance": "行李就一个登机箱和两个随身包，证件、车票信息、药和水得随手能拿，我父亲午饭后按医嘱吃一片处方药。折叠手杖可以带，重点旅客服务还没决定要不要问。怎么分比较稳妥？",
+          "assistant_utterance": "证件和车票信息放你的随身包；父亲的药放他或你始终贴身的包，水也放随身包，服药保持原医嘱。备用衣物进登机箱，手杖放易取处，别把药和证件放进可能寄存的箱子。",
+          "user_intent": "补充行李规模、服药安排和辅助出行选项并询问分装",
+          "assistant_intent": "给出兼顾随时取用和轻量化的行李分配方案",
+          "semantic_goal": "确定证件、药品、饮水、衣物和手杖的稳妥放置方式",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A005",
+            "user_onset_after_text": "提前完成三项：逐字核对两张车票、酒店姓名与身份证；致电确认提前寄存和延迟退房；把答复记下。证件原件随身带，寄存和延迟退房都先保留为待确认。",
+            "assistant_stop_after_text": "提前完成三项：逐字核对两张车票、酒店姓名与身份证；致电确认提前寄存和延迟退房；把答复记下。证件原件随身带，寄存和延迟退房都先保留为待确认。"
+          },
+          "pause_cue": {
+            "after_text": "行李就一个登机箱和两个随身包，",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U07",
+          "assistant_id": "A007",
+          "user_utterance": "返程是二十二日G7610，杭州东十七点二十分开，南京南十八点五十二分到。中午十二点退房后到去车站之间怎么排？",
+          "assistant_utterance": "若延迟退房未确认，就按十二点退房：先寄存行李、附近午餐并按医嘱服药，下午取行李。去杭州东的交通和耗时当天复核，建议十五点四十分左右出发，避免依赖赶路；退房后能否寄存也要确认。",
+          "user_intent": "补充返程车次并询问退房后的时间衔接",
+          "assistant_intent": "安排退房、午餐服药、取行李和前往车站的顺序",
+          "semantic_goal": "形成不依赖延迟退房和匆忙赶路的返程方案",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A006",
+            "user_onset_after_text": "证件和车票信息放你的随身包；父亲的药放他或你始终贴身的包，水也放随身包，服药保持原医嘱。备用衣物进登机箱，手杖放易取处，别把药和证件放进可能寄存的箱子。",
+            "assistant_stop_after_text": "证件和车票信息放你的随身包；父亲的药放他或你始终贴身的包，水也放随身包，服药保持原医嘱。备用衣物进登机箱，手杖放易取处，别把药和证件放进可能寄存的箱子。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U08",
+          "assistant_id": "A008",
+          "user_utterance": "好，最后按提前完成、出发当天、到达后确认三段，给我完整顺一遍，并把所有没落实的地方标出来。",
+          "assistant_utterance": "提前完成：核对两人车票、酒店姓名与身份证原件；重查两地交通；致电确认提前寄存、退房后寄存、延迟退房和车站重点旅客服务；随身包放证件、车票信息、药和水，衣物进登机箱。出发当天：五点开始准备，六点十分前上车，七点二十分前到南京南，不奔跑。到达后：优先评估出租车，避免九百米长走；确认寄存。二十二日十二点前退房，午餐后按医嘱服药，取行李后约十五点四十分去杭州东。交通耗时、费用及酒店和车站答复均待复核。",
+          "user_intent": "要求按三阶段完整回读并集中标注未确认事项",
+          "assistant_intent": "汇总全部已知安排并清楚保留所有待核对环节",
+          "semantic_goal": "获得可直接照着执行和复核的时间顺序准备方案",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A007",
+            "user_onset_after_text": "若延迟退房未确认，就按十二点退房：先寄存行李、附近午餐并按医嘱服药，下午取行李。去杭州东的交通和耗时当天复核，建议十五点四十分左右出发，避免依赖赶路；退房后能否寄存也要确认。",
+            "assistant_stop_after_text": "若延迟退房未确认，就按十二点退房：先寄存行李、附近午餐并按医嘱服药，下午取行李。去杭州东的交通和耗时当天复核，建议十五点四十分左右出发，避免依赖赶路；退房后能否寄存也要确认。"
+          },
+          "pause_cue": null
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A003",
+          "after_text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，",
+          "text": "嗯，好"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A006",
+          "after_text": "证件和车票信息放你的随身包；父亲的药放他或你始终贴身的包，",
+          "text": "明白"
+        }
+      ],
+      "side_speech": [],
+      "environment_events": []
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把陪我父亲去杭州的准备按时间理一下。行程是十一月二十日到二十二日，先解决周五早上怎么赶南京南站；他早上动作慢。"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把陪我父亲去杭州的准备按时间理一下。行程是十一月二十日到二十二日，先解决周五早上怎么赶南京南站；他早上动作慢。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把陪我父亲去杭州的准备按时间理一下。行程是十一月二十日到二十二日，先解决周五早上怎么赶南京南站；他早上动作慢。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "去程是G7605，南京南八点十二分开，杭州东九点四十三分到，八点零七分停止检票。打车通常三十五到五十分钟，他洗漱、早餐和检查东西要七十分钟。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。",
+          "final_shared_played_prefix": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "先按未核实的上限五十分钟算，再加周五早高峰和父亲行动缓冲，建议六点十分前上车、七点二十分前到站；五点开始洗漱早餐。出发前一天再看路况。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把陪我父亲去杭州的准备按时间理一下。行程是十一月二十日到二十二日，先解决周五早上怎么赶南京南站；他早上动作慢。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "去程是G7605，南京南八点十二分开，杭州东九点四十三分到，八点零七分停止检票。打车通常三十五到五十分钟，他洗漱、早餐和检查东西要七十分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先按未核实的上限五十分钟算，"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把陪我父亲去杭州的准备按时间理一下。行程是十一月二十日到二十二日，先解决周五早上怎么赶南京南站；他早上动作慢。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "去程是G7605，南京南八点十二分开，杭州东九点四十三分到，八点零七分停止检票。打车通常三十五到五十分钟，他洗漱、早餐和检查东西要七十分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先按未核实的上限五十分钟算，再加"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "对，就按五十分钟的上限算，别用三十五分钟，我怕周五早高峰再耽搁。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "先按未核实的上限五十分钟算，",
+          "final_shared_played_prefix": "先按未核实的上限五十分钟算，再加",
+          "discarded_unheard_tail": "周五早高峰和父亲行动缓冲，建议六点十分前上车、七点二十分前到站；五点开始洗漱早餐。出发前一天再看路况。"
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，七点二十分前到站，给早高峰、进站和慢走留余量。前一晚再看路况；若预估超过五十分钟，就相应提前。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把陪我父亲去杭州的准备按时间理一下。行程是十一月二十日到二十二日，先解决周五早上怎么赶南京南站；他早上动作慢。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "去程是G7605，南京南八点十二分开，杭州东九点四十三分到，八点零七分停止检票。打车通常三十五到五十分钟，他洗漱、早餐和检查东西要七十分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先按未核实的上限五十分钟算，再加"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "对，就按五十分钟的上限算，别用三十五分钟，我怕周五早高峰再耽搁。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，七点二十分前到站，给早高峰、进站和慢走留余量。前一晚再看路况；若预估超过五十分钟，就相应提前。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把陪我父亲去杭州的准备按时间理一下。行程是十一月二十日到二十二日，先解决周五早上怎么赶南京南站；他早上动作慢。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "去程是G7605，南京南八点十二分开，杭州东九点四十三分到，八点零七分停止检票。打车通常三十五到五十分钟，他洗漱、早餐和检查东西要七十分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先按未核实的上限五十分钟算，再加"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "对，就按五十分钟的上限算，别用三十五分钟，我怕周五早高峰再耽搁。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，七点二十分前到站，给早高峰、进站和慢走留余量。前一晚再看路况；若预估超过五十分钟，就相应提前。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "到杭州后我两天前截了图：地铁约三十五分钟，但出站还要走九百米；出租车约二十五到四十分钟，费用和路况没核实。他走十五分钟膝盖就容易不舒服。酒店两点后入住，能不能先寄存还不知道。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，七点二十分前到站，给早高峰、进站和慢走留余量。前一晚再看路况；若预估超过五十分钟，就相应提前。",
+          "final_shared_played_prefix": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，七点二十分前到站，给早高峰、进站和慢走留余量。前一晚再看路况；若预估超过五十分钟，就相应提前。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A003",
+            "after_text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，",
+            "text": "嗯，好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "地铁加九百米步行不宜作为默认方案；先把出租车列为优先备选，但出发前重查路况和费用。提前致电酒店，确认十点左右能否寄存行李。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把陪我父亲去杭州的准备按时间理一下。行程是十一月二十日到二十二日，先解决周五早上怎么赶南京南站；他早上动作慢。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "去程是G7605，南京南八点十二分开，杭州东九点四十三分到，八点零七分停止检票。打车通常三十五到五十分钟，他洗漱、早餐和检查东西要七十分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先按未核实的上限五十分钟算，再加"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "对，就按五十分钟的上限算，别用三十五分钟，我怕周五早高峰再耽搁。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，七点二十分前到站，给早高峰、进站和慢走留余量。前一晚再看路况；若预估超过五十分钟，就相应提前。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "到杭州后我两天前截了图：地铁约三十五分钟，但出站还要走九百米；出租车约二十五到四十分钟，费用和路况没核实。他走十五分钟膝盖就容易不舒服。酒店两点后入住，能不能先寄存还不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "地铁加九百米步行不宜作为默认方案；先把出租车列为优先备选，但出发前重查路况和费用。提前致电酒店，确认十点左右能否寄存行李。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把陪我父亲去杭州的准备按时间理一下。行程是十一月二十日到二十二日，先解决周五早上怎么赶南京南站；他早上动作慢。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "去程是G7605，南京南八点十二分开，杭州东九点四十三分到，八点零七分停止检票。打车通常三十五到五十分钟，他洗漱、早餐和检查东西要七十分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先按未核实的上限五十分钟算，再加"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "对，就按五十分钟的上限算，别用三十五分钟，我怕周五早高峰再耽搁。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，七点二十分前到站，给早高峰、进站和慢走留余量。前一晚再看路况；若预估超过五十分钟，就相应提前。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "到杭州后我两天前截了图：地铁约三十五分钟，但出站还要走九百米；出租车约二十五到四十分钟，费用和路况没核实。他走十五分钟膝盖就容易不舒服。酒店两点后入住，能不能先寄存还不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "地铁加九百米步行不宜作为默认方案；先把出租车列为优先备选，但出发前重查路况和费用。提前致电酒店，确认十点左右能否寄存行李。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "酒店是栖云酒店武林广场店，二十日入住、二十二日退房，十二点前退房。两个人身份证原件都有效，但车票和酒店姓名还没逐字核对，延迟退房也没写。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "地铁加九百米步行不宜作为默认方案；先把出租车列为优先备选，但出发前重查路况和费用。提前致电酒店，确认十点左右能否寄存行李。",
+          "final_shared_played_prefix": "地铁加九百米步行不宜作为默认方案；先把出租车列为优先备选，但出发前重查路况和费用。提前致电酒店，确认十点左右能否寄存行李。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A003",
+            "after_text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，",
+            "text": "嗯，好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "提前完成三项：逐字核对两张车票、酒店姓名与身份证；致电确认提前寄存和延迟退房；把答复记下。证件原件随身带，寄存和延迟退房都先保留为待确认。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把陪我父亲去杭州的准备按时间理一下。行程是十一月二十日到二十二日，先解决周五早上怎么赶南京南站；他早上动作慢。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "去程是G7605，南京南八点十二分开，杭州东九点四十三分到，八点零七分停止检票。打车通常三十五到五十分钟，他洗漱、早餐和检查东西要七十分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先按未核实的上限五十分钟算，再加"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "对，就按五十分钟的上限算，别用三十五分钟，我怕周五早高峰再耽搁。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，七点二十分前到站，给早高峰、进站和慢走留余量。前一晚再看路况；若预估超过五十分钟，就相应提前。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "到杭州后我两天前截了图：地铁约三十五分钟，但出站还要走九百米；出租车约二十五到四十分钟，费用和路况没核实。他走十五分钟膝盖就容易不舒服。酒店两点后入住，能不能先寄存还不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "地铁加九百米步行不宜作为默认方案；先把出租车列为优先备选，但出发前重查路况和费用。提前致电酒店，确认十点左右能否寄存行李。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "酒店是栖云酒店武林广场店，二十日入住、二十二日退房，十二点前退房。两个人身份证原件都有效，但车票和酒店姓名还没逐字核对，延迟退房也没写。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "提前完成三项：逐字核对两张车票、酒店姓名与身份证；致电确认提前寄存和延迟退房；把答复记下。证件原件随身带，寄存和延迟退房都先保留为待确认。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把陪我父亲去杭州的准备按时间理一下。行程是十一月二十日到二十二日，先解决周五早上怎么赶南京南站；他早上动作慢。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "去程是G7605，南京南八点十二分开，杭州东九点四十三分到，八点零七分停止检票。打车通常三十五到五十分钟，他洗漱、早餐和检查东西要七十分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先按未核实的上限五十分钟算，再加"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "对，就按五十分钟的上限算，别用三十五分钟，我怕周五早高峰再耽搁。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，七点二十分前到站，给早高峰、进站和慢走留余量。前一晚再看路况；若预估超过五十分钟，就相应提前。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "到杭州后我两天前截了图：地铁约三十五分钟，但出站还要走九百米；出租车约二十五到四十分钟，费用和路况没核实。他走十五分钟膝盖就容易不舒服。酒店两点后入住，能不能先寄存还不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "地铁加九百米步行不宜作为默认方案；先把出租车列为优先备选，但出发前重查路况和费用。提前致电酒店，确认十点左右能否寄存行李。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "酒店是栖云酒店武林广场店，二十日入住、二十二日退房，十二点前退房。两个人身份证原件都有效，但车票和酒店姓名还没逐字核对，延迟退房也没写。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "提前完成三项：逐字核对两张车票、酒店姓名与身份证；致电确认提前寄存和延迟退房；把答复记下。证件原件随身带，寄存和延迟退房都先保留为待确认。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "行李就一个登机箱和两个随身包，证件、车票信息、药和水得随手能拿，我父亲午饭后按医嘱吃一片处方药。折叠手杖可以带，重点旅客服务还没决定要不要问。怎么分比较稳妥？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A005",
+          "at_user_onset_heard_prefix": "提前完成三项：逐字核对两张车票、酒店姓名与身份证；致电确认提前寄存和延迟退房；把答复记下。证件原件随身带，寄存和延迟退房都先保留为待确认。",
+          "final_shared_played_prefix": "提前完成三项：逐字核对两张车票、酒店姓名与身份证；致电确认提前寄存和延迟退房；把答复记下。证件原件随身带，寄存和延迟退房都先保留为待确认。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A003",
+            "after_text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，",
+            "text": "嗯，好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "证件和车票信息放你的随身包；父亲的药放他或你始终贴身的包，水也放随身包，服药保持原医嘱。备用衣物进登机箱，手杖放易取处，别把药和证件放进可能寄存的箱子。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把陪我父亲去杭州的准备按时间理一下。行程是十一月二十日到二十二日，先解决周五早上怎么赶南京南站；他早上动作慢。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "去程是G7605，南京南八点十二分开，杭州东九点四十三分到，八点零七分停止检票。打车通常三十五到五十分钟，他洗漱、早餐和检查东西要七十分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先按未核实的上限五十分钟算，再加"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "对，就按五十分钟的上限算，别用三十五分钟，我怕周五早高峰再耽搁。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，七点二十分前到站，给早高峰、进站和慢走留余量。前一晚再看路况；若预估超过五十分钟，就相应提前。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "到杭州后我两天前截了图：地铁约三十五分钟，但出站还要走九百米；出租车约二十五到四十分钟，费用和路况没核实。他走十五分钟膝盖就容易不舒服。酒店两点后入住，能不能先寄存还不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "地铁加九百米步行不宜作为默认方案；先把出租车列为优先备选，但出发前重查路况和费用。提前致电酒店，确认十点左右能否寄存行李。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "酒店是栖云酒店武林广场店，二十日入住、二十二日退房，十二点前退房。两个人身份证原件都有效，但车票和酒店姓名还没逐字核对，延迟退房也没写。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "提前完成三项：逐字核对两张车票、酒店姓名与身份证；致电确认提前寄存和延迟退房；把答复记下。证件原件随身带，寄存和延迟退房都先保留为待确认。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "行李就一个登机箱和两个随身包，证件、车票信息、药和水得随手能拿，我父亲午饭后按医嘱吃一片处方药。折叠手杖可以带，重点旅客服务还没决定要不要问。怎么分比较稳妥？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "证件和车票信息放你的随身包；父亲的药放他或你始终贴身的包，水也放随身包，服药保持原医嘱。备用衣物进登机箱，手杖放易取处，别把药和证件放进可能寄存的箱子。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把陪我父亲去杭州的准备按时间理一下。行程是十一月二十日到二十二日，先解决周五早上怎么赶南京南站；他早上动作慢。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "去程是G7605，南京南八点十二分开，杭州东九点四十三分到，八点零七分停止检票。打车通常三十五到五十分钟，他洗漱、早餐和检查东西要七十分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先按未核实的上限五十分钟算，再加"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "对，就按五十分钟的上限算，别用三十五分钟，我怕周五早高峰再耽搁。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，七点二十分前到站，给早高峰、进站和慢走留余量。前一晚再看路况；若预估超过五十分钟，就相应提前。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "到杭州后我两天前截了图：地铁约三十五分钟，但出站还要走九百米；出租车约二十五到四十分钟，费用和路况没核实。他走十五分钟膝盖就容易不舒服。酒店两点后入住，能不能先寄存还不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "地铁加九百米步行不宜作为默认方案；先把出租车列为优先备选，但出发前重查路况和费用。提前致电酒店，确认十点左右能否寄存行李。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "酒店是栖云酒店武林广场店，二十日入住、二十二日退房，十二点前退房。两个人身份证原件都有效，但车票和酒店姓名还没逐字核对，延迟退房也没写。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "提前完成三项：逐字核对两张车票、酒店姓名与身份证；致电确认提前寄存和延迟退房；把答复记下。证件原件随身带，寄存和延迟退房都先保留为待确认。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "行李就一个登机箱和两个随身包，证件、车票信息、药和水得随手能拿，我父亲午饭后按医嘱吃一片处方药。折叠手杖可以带，重点旅客服务还没决定要不要问。怎么分比较稳妥？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "证件和车票信息放你的随身包；父亲的药放他或你始终贴身的包，水也放随身包，服药保持原医嘱。备用衣物进登机箱，手杖放易取处，别把药和证件放进可能寄存的箱子。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "返程是二十二日G7610，杭州东十七点二十分开，南京南十八点五十二分到。中午十二点退房后到去车站之间怎么排？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A006",
+          "at_user_onset_heard_prefix": "证件和车票信息放你的随身包；父亲的药放他或你始终贴身的包，水也放随身包，服药保持原医嘱。备用衣物进登机箱，手杖放易取处，别把药和证件放进可能寄存的箱子。",
+          "final_shared_played_prefix": "证件和车票信息放你的随身包；父亲的药放他或你始终贴身的包，水也放随身包，服药保持原医嘱。备用衣物进登机箱，手杖放易取处，别把药和证件放进可能寄存的箱子。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A003",
+            "after_text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，",
+            "text": "嗯，好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "证件和车票信息放你的随身包；父亲的药放他或你始终贴身的包，",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "若延迟退房未确认，就按十二点退房：先寄存行李、附近午餐并按医嘱服药，下午取行李。去杭州东的交通和耗时当天复核，建议十五点四十分左右出发，避免依赖赶路；退房后能否寄存也要确认。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把陪我父亲去杭州的准备按时间理一下。行程是十一月二十日到二十二日，先解决周五早上怎么赶南京南站；他早上动作慢。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "去程是G7605，南京南八点十二分开，杭州东九点四十三分到，八点零七分停止检票。打车通常三十五到五十分钟，他洗漱、早餐和检查东西要七十分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先按未核实的上限五十分钟算，再加"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "对，就按五十分钟的上限算，别用三十五分钟，我怕周五早高峰再耽搁。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，七点二十分前到站，给早高峰、进站和慢走留余量。前一晚再看路况；若预估超过五十分钟，就相应提前。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "到杭州后我两天前截了图：地铁约三十五分钟，但出站还要走九百米；出租车约二十五到四十分钟，费用和路况没核实。他走十五分钟膝盖就容易不舒服。酒店两点后入住，能不能先寄存还不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "地铁加九百米步行不宜作为默认方案；先把出租车列为优先备选，但出发前重查路况和费用。提前致电酒店，确认十点左右能否寄存行李。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "酒店是栖云酒店武林广场店，二十日入住、二十二日退房，十二点前退房。两个人身份证原件都有效，但车票和酒店姓名还没逐字核对，延迟退房也没写。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "提前完成三项：逐字核对两张车票、酒店姓名与身份证；致电确认提前寄存和延迟退房；把答复记下。证件原件随身带，寄存和延迟退房都先保留为待确认。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "行李就一个登机箱和两个随身包，证件、车票信息、药和水得随手能拿，我父亲午饭后按医嘱吃一片处方药。折叠手杖可以带，重点旅客服务还没决定要不要问。怎么分比较稳妥？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "证件和车票信息放你的随身包；父亲的药放他或你始终贴身的包，水也放随身包，服药保持原医嘱。备用衣物进登机箱，手杖放易取处，别把药和证件放进可能寄存的箱子。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "返程是二十二日G7610，杭州东十七点二十分开，南京南十八点五十二分到。中午十二点退房后到去车站之间怎么排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "若延迟退房未确认，就按十二点退房：先寄存行李、附近午餐并按医嘱服药，下午取行李。去杭州东的交通和耗时当天复核，建议十五点四十分左右出发，避免依赖赶路；退房后能否寄存也要确认。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把陪我父亲去杭州的准备按时间理一下。行程是十一月二十日到二十二日，先解决周五早上怎么赶南京南站；他早上动作慢。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "去程是G7605，南京南八点十二分开，杭州东九点四十三分到，八点零七分停止检票。打车通常三十五到五十分钟，他洗漱、早餐和检查东西要七十分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先按未核实的上限五十分钟算，再加"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "对，就按五十分钟的上限算，别用三十五分钟，我怕周五早高峰再耽搁。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，七点二十分前到站，给早高峰、进站和慢走留余量。前一晚再看路况；若预估超过五十分钟，就相应提前。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "到杭州后我两天前截了图：地铁约三十五分钟，但出站还要走九百米；出租车约二十五到四十分钟，费用和路况没核实。他走十五分钟膝盖就容易不舒服。酒店两点后入住，能不能先寄存还不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "地铁加九百米步行不宜作为默认方案；先把出租车列为优先备选，但出发前重查路况和费用。提前致电酒店，确认十点左右能否寄存行李。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "酒店是栖云酒店武林广场店，二十日入住、二十二日退房，十二点前退房。两个人身份证原件都有效，但车票和酒店姓名还没逐字核对，延迟退房也没写。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "提前完成三项：逐字核对两张车票、酒店姓名与身份证；致电确认提前寄存和延迟退房；把答复记下。证件原件随身带，寄存和延迟退房都先保留为待确认。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "行李就一个登机箱和两个随身包，证件、车票信息、药和水得随手能拿，我父亲午饭后按医嘱吃一片处方药。折叠手杖可以带，重点旅客服务还没决定要不要问。怎么分比较稳妥？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "证件和车票信息放你的随身包；父亲的药放他或你始终贴身的包，水也放随身包，服药保持原医嘱。备用衣物进登机箱，手杖放易取处，别把药和证件放进可能寄存的箱子。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "返程是二十二日G7610，杭州东十七点二十分开，南京南十八点五十二分到。中午十二点退房后到去车站之间怎么排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "若延迟退房未确认，就按十二点退房：先寄存行李、附近午餐并按医嘱服药，下午取行李。去杭州东的交通和耗时当天复核，建议十五点四十分左右出发，避免依赖赶路；退房后能否寄存也要确认。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "好，最后按提前完成、出发当天、到达后确认三段，给我完整顺一遍，并把所有没落实的地方标出来。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A007",
+          "at_user_onset_heard_prefix": "若延迟退房未确认，就按十二点退房：先寄存行李、附近午餐并按医嘱服药，下午取行李。去杭州东的交通和耗时当天复核，建议十五点四十分左右出发，避免依赖赶路；退房后能否寄存也要确认。",
+          "final_shared_played_prefix": "若延迟退房未确认，就按十二点退房：先寄存行李、附近午餐并按医嘱服药，下午取行李。去杭州东的交通和耗时当天复核，建议十五点四十分左右出发，避免依赖赶路；退房后能否寄存也要确认。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A003",
+            "after_text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，",
+            "text": "嗯，好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "证件和车票信息放你的随身包；父亲的药放他或你始终贴身的包，",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "提前完成：核对两人车票、酒店姓名与身份证原件；重查两地交通；致电确认提前寄存、退房后寄存、延迟退房和车站重点旅客服务；随身包放证件、车票信息、药和水，衣物进登机箱。出发当天：五点开始准备，六点十分前上车，七点二十分前到南京南，不奔跑。到达后：优先评估出租车，避免九百米长走；确认寄存。二十二日十二点前退房，午餐后按医嘱服药，取行李后约十五点四十分去杭州东。交通耗时、费用及酒店和车站答复均待复核。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A003",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把陪我父亲去杭州的准备按时间理一下。行程是十一月二十日到二十二日，先解决周五早上怎么赶南京南站；他早上动作慢。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "去程是G7605，南京南八点十二分开，杭州东九点四十三分到，八点零七分停止检票。打车通常三十五到五十分钟，他洗漱、早餐和检查东西要七十分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先按未核实的上限五十分钟算，再加"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "对，就按五十分钟的上限算，别用三十五分钟，我怕周五早高峰再耽搁。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，"
+          }
+        ],
+        "at_event_onset_heard_prefix": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，",
+        "event_text": "嗯，好",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC02",
+        "kind": "backchannels",
+        "target_assistant_id": "A006",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把陪我父亲去杭州的准备按时间理一下。行程是十一月二十日到二十二日，先解决周五早上怎么赶南京南站；他早上动作慢。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先把去程钉住：请告诉我车次、开车和到达时间，以及从家到南京南站通常多久、父亲出门准备多久。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "去程是G7605，南京南八点十二分开，杭州东九点四十三分到，八点零七分停止检票。打车通常三十五到五十分钟，他洗漱、早餐和检查东西要七十分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先按未核实的上限五十分钟算，再加"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "对，就按五十分钟的上限算，别用三十五分钟，我怕周五早高峰再耽搁。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "按稳妥版：五点开始洗漱、早餐和检查，六点十分前上车离家，七点二十分前到站，给早高峰、进站和慢走留余量。前一晚再看路况；若预估超过五十分钟，就相应提前。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "到杭州后我两天前截了图：地铁约三十五分钟，但出站还要走九百米；出租车约二十五到四十分钟，费用和路况没核实。他走十五分钟膝盖就容易不舒服。酒店两点后入住，能不能先寄存还不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "地铁加九百米步行不宜作为默认方案；先把出租车列为优先备选，但出发前重查路况和费用。提前致电酒店，确认十点左右能否寄存行李。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "酒店是栖云酒店武林广场店，二十日入住、二十二日退房，十二点前退房。两个人身份证原件都有效，但车票和酒店姓名还没逐字核对，延迟退房也没写。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "提前完成三项：逐字核对两张车票、酒店姓名与身份证；致电确认提前寄存和延迟退房；把答复记下。证件原件随身带，寄存和延迟退房都先保留为待确认。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "行李就一个登机箱和两个随身包，证件、车票信息、药和水得随手能拿，我父亲午饭后按医嘱吃一片处方药。折叠手杖可以带，重点旅客服务还没决定要不要问。怎么分比较稳妥？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "证件和车票信息放你的随身包；父亲的药放他或你始终贴身的包，"
+          }
+        ],
+        "at_event_onset_heard_prefix": "证件和车票信息放你的随身包；父亲的药放他或你始终贴身的包，",
+        "event_text": "明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

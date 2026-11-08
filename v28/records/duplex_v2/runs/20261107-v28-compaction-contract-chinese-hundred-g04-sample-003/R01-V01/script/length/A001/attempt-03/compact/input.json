@@ -1,0 +1,1697 @@
+{
+  "frozen_source": {
+    "case_id": "R01-V01",
+    "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g04-sample-003-v2-stage2",
+    "language": "zh",
+    "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+    "script_execution_policy": {
+      "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+      "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+      "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+      "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+      "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+      "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+      "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+    },
+    "program_anchor_seed": 654804417,
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    },
+    "relay_configuration": {
+      "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g04/relay-policy.json",
+      "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g04/relay-state",
+      "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+      "policy": {
+        "schema": "duplex_v2.timeout_relay_policy.v3",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "backup": {
+          "profile": "lianyu",
+          "endpoint": "https://api.openbili.com/v1/chat/completions",
+          "model_map": {
+            "openai/gpt-5.6-sol": "gpt-5.6-sol",
+            "openai/gpt-5.6-luna": "gpt-5.6-luna"
+          },
+          "verification": {
+            "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+            "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+          }
+        },
+        "trigger": {
+          "max_retries": 5,
+          "http_statuses": [
+            502,
+            503,
+            504
+          ],
+          "error_types": [
+            "TimeoutError",
+            "HTTP2DeadlineExceeded",
+            "ConnectionResetError",
+            "ConnectionAbortedError",
+            "BrokenPipeError",
+            "RemoteDisconnected",
+            "IncompleteRead"
+          ],
+          "http2_transport_errors": "negotiated_h2_only",
+          "require_all_attempts": true
+        },
+        "max_relay_switches": 1
+      }
+    },
+    "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+    "script_repair_policy": {
+      "schema": "duplex_v2.script_repair_policy.v1",
+      "mode": "json_patch",
+      "patch_schema": "duplex_v2.script_patch.v1",
+      "json_parse_max_retries": 3,
+      "content_max_repairs": 5,
+      "length_compaction_max_attempts": 3,
+      "overlength_after_compaction": "fail_case",
+      "judge_scope": "complete_script_and_heard_context"
+    },
+    "text_output_token_policy": "omit",
+    "scene_task": {
+      "scene": {
+        "domain_id": "D26",
+        "domain": "翻译、口译与跨文化沟通",
+        "scenario_id": "D26-S02",
+        "scenario": "连续口译准备"
+      },
+      "task_style": "开放式互动",
+      "task_instance": {
+        "goal": "为即将参加的中英双语项目沟通会做连续口译准备：先通过一段带有数字、保留意见和委婉表达的模拟发言练习听辨与复述，再讨论如何在记忆不完整或遇到含糊说法时保持说话人的立场和语气，并形成一套适合会前快速热身的个人应对方法。"
+      }
+    },
+    "user_voice": {
+      "user_seed": {
+        "role_relation": "负责协调跨国软件项目会议的双语项目专员",
+        "task_familiarity": "medium"
+      },
+      "voice_profile": "女性，感知年龄三十多岁，音色清亮但不尖，吐字清楚，语速平稳，句尾常带有轻微上扬，整体听感亲切而有活力。",
+      "interaction_profile": {
+        "schema": "duplex_v2.interaction_profile.v1",
+        "formality": "neutral",
+        "directness": "balanced",
+        "emotional_expressiveness": "expressive",
+        "verbosity": "balanced",
+        "initiative": "low",
+        "caution": "medium",
+        "patience": "high",
+        "behavioral_notes": [
+          "通常先完整说明自己的困惑，再请对方给出建议，不太主动抢先设定讨论方向。",
+          "会用语气和简短感叹表达练习中的紧张、惊讶或满意，但仍能保持表达清楚。",
+          "遇到不确定的表述时会耐心听完，并通过复述或温和追问确认自己的理解。"
+        ]
+      }
+    },
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "short",
+      "target_turns": 7,
+      "min_turns": 6,
+      "max_turns": 8
+    },
+    "ambient_catalog": {
+      "schema": "duplex_v2.ambient_catalog.v1",
+      "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+      "assets": [
+        {
+          "asset_id": "fan-fsd50k-eval-419427",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 10.3909375
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-235362",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 11.0
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-415925",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 7.178
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-235541",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 29.045875
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-232686",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 10.3445
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-124020",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 24.78875
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-382582",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.9788125
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-21189",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.962
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-238016",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 11.32
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-185058",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 5.2114375
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-121877",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 11.696
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-340358",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 4.2745
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-82562",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 1.0094375
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-121200",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.83525
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-343098",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.796
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-153104",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.4691875
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-392303",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.6849375
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-272381",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.933375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-71212",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.3638125
+        },
+        {
+          "asset_id": "door-fsd50k-eval-119077",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.7944375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-209519",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 1.0398125
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-399740",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.322
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-233057",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.4700625
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-411545",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.5686875
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-232499",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 0.842
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402127",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402128",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-86343",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 7.5366875
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-57907",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.5773125
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-319512",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.755625
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113173",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 11.2184375
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113175",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.8773125
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113176",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.6341875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-348322",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 1.625
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-426594",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 0.3666875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-332563",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 4.0
+        }
+      ]
+    },
+    "ambient_control": {
+      "schema": "duplex_v2.soundscape_control.v2",
+      "seed": 1056813584,
+      "mode": "layered",
+      "discrete_event_target": 0,
+      "max_ambient_layers": 2,
+      "side_speech_requested": false,
+      "speech_kind_preferences": [
+        "third_party",
+        "machine"
+      ]
+    },
+    "situation_knowledge": {
+      "episode_situation": "周二下午五点，用户独自在公司一间小会议室里做会前准备，明天上午九点半将参加一次中英双语软件项目沟通会。她负责协调英国交付经理与中国工程团队之间的讨论，并需要在部分议程中承担连续口译。她平时能够处理常规项目更新，但对包含多个数字、保留意见和委婉措辞的长段发言把握不够稳定。上一次内部演练中，她记住了日期和比例，却把“计划可行但仍有顾虑”复述成了较为肯定的承诺，因此这次尤其担心改变说话人的立场。她已经准备好纸和笔，打算使用自己熟悉的箭头、问号和数字圈记法，但还没有形成应对记忆空缺的固定步骤。她手边没有会议发言稿，也不希望提前看到模拟材料的文字，以便先检验真实听辨和笔记效果。当前可用时间约二十五分钟，足以完成一次整段听辨复述、一次重点核对，并讨论含糊表达和记忆不完整时的处理方法。她希望练习既覆盖日期、人数、百分比等信息，也能区分建议、条件、保留意见与明确承诺。由于正式会议前留给她单独热身的时间通常只有五分钟，最后形成的方法必须简短、可口头执行，并适合在没有完整稿件的情况下使用。尚未解决的问题包括她在首次复述中最容易漏掉哪类信息、遇到含糊说法时应保留原有模糊度还是请求澄清，以及怎样避免在补救记忆空缺时擅自增强语气。",
+      "task_reference_data": [
+        "本次练习使用的英文模拟发言如下，内容为专门准备的虚构项目更新；用户开始时尚未看到文字，首次练习只会听到口头朗读，之后可要求分段重听或核对原文：Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+      ],
+      "environment_audio": "头顶约两米处的通风口持续发出低而稳定的送风声，音量基本不变。会议室内没有其他人声，近处语音清晰，房间轻微的封闭回响始终保持在背景。",
+      "estimated_snr_db": 31,
+      "constraints": [
+        {
+          "constraint_id": "C01",
+          "text": "首次听辨练习时不向用户展示模拟发言文字，先完成整段听取和复述，再进行核对。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C02",
+          "text": "复述和口译分析必须优先保留原发言中的数字、条件、保留意见及委婉程度，不把可能性改成确定承诺。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C03",
+          "text": "最终讨论出的个人热身方法应能在五分钟左右口头完成，并且不依赖完整会议稿件。",
+          "kind": "soft"
+        }
+      ],
+      "safety_limits": [],
+      "soundscape_plan": {
+        "mode": "layered",
+        "ambient_layers": [
+          {
+            "source_id": "AMB01",
+            "asset_id": "fan-fsd50k-eval-415925",
+            "reason": "稳定的室内机械送风声与小会议室已建立的通风背景相容。"
+          }
+        ],
+        "environment_events": [],
+        "schema": "duplex_v2.soundscape_plan.v3",
+        "side_speech_sources": [],
+        "side_speech_count": 0,
+        "sampling": {
+          "schema": "duplex_v2.ambient_draw.v2",
+          "policy": {
+            "schema": "duplex_v2.soundscape_policy.v2",
+            "quiet_probability": 0.5,
+            "discrete_targets_by_tier": {
+              "short": [
+                0,
+                1
+              ],
+              "medium": [
+                1,
+                2
+              ],
+              "long": [
+                2,
+                4
+              ]
+            },
+            "discrete_count_includes": [
+              "environment_events",
+              "side_speech"
+            ],
+            "max_ambient_layers": 2,
+            "gain_range": [
+              0.3,
+              0.7
+            ],
+            "speech_request_probability": 0.5,
+            "third_party_preference_probability": 0.8,
+            "speech_requires_existing_scene_source": true,
+            "environment_audio": "base_only",
+            "stage2_repair": "atomic_scoped_patch",
+            "stage2_max_judge_attempts": 3,
+            "json_parse_max_retries": 3
+          },
+          "preferences": {
+            "schema": "duplex_v2.ambient_preferences.v1",
+            "seed": 202611073004,
+            "slot": 2,
+            "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+            "categories": {
+              "bed": [
+                "crowd",
+                "wind",
+                "birds",
+                "fan",
+                "rain",
+                "traffic"
+              ],
+              "event": [
+                "footsteps",
+                "water_tap",
+                "door",
+                "doorbell",
+                "paper",
+                "keyboard"
+              ]
+            },
+            "recordings": {
+              "bed:birds": [
+                "birds-fsd50k-eval-319512",
+                "birds-fsd50k-eval-57907",
+                "birds-fsd50k-eval-86343"
+              ],
+              "bed:crowd": [
+                "crowd-fsd50k-eval-340358",
+                "crowd-fsd50k-eval-121877",
+                "crowd-fsd50k-eval-185058"
+              ],
+              "bed:fan": [
+                "fan-fsd50k-eval-415925",
+                "fan-fsd50k-eval-419427",
+                "fan-fsd50k-eval-235362"
+              ],
+              "bed:rain": [
+                "rain-fsd50k-eval-238016",
+                "rain-fsd50k-eval-382582",
+                "rain-fsd50k-eval-21189"
+              ],
+              "bed:traffic": [
+                "traffic-fsd50k-eval-232686",
+                "traffic-fsd50k-eval-235541",
+                "traffic-fsd50k-eval-124020"
+              ],
+              "bed:wind": [
+                "wind-fsd50k-eval-113173",
+                "wind-fsd50k-eval-113176",
+                "wind-fsd50k-eval-113175"
+              ],
+              "event:door": [
+                "door-fsd50k-eval-119077",
+                "door-fsd50k-eval-71212",
+                "door-fsd50k-eval-209519"
+              ],
+              "event:doorbell": [
+                "doorbell-fsd50k-eval-332563",
+                "doorbell-fsd50k-eval-426594",
+                "doorbell-fsd50k-eval-348322"
+              ],
+              "event:footsteps": [
+                "footsteps-fsd50k-eval-153104",
+                "footsteps-fsd50k-eval-392303",
+                "footsteps-fsd50k-eval-272381"
+              ],
+              "event:keyboard": [
+                "keyboard-fsd50k-eval-233057",
+                "keyboard-fsd50k-eval-411545",
+                "keyboard-fsd50k-eval-399740"
+              ],
+              "event:paper": [
+                "paper-fsd50k-eval-343098",
+                "paper-fsd50k-eval-82562",
+                "paper-fsd50k-eval-121200"
+              ],
+              "event:water_tap": [
+                "water_tap-fsd50k-eval-402128",
+                "water_tap-fsd50k-eval-232499",
+                "water_tap-fsd50k-eval-402127"
+              ]
+            }
+          },
+          "control": {
+            "schema": "duplex_v2.soundscape_control.v2",
+            "seed": 1056813584,
+            "mode": "layered",
+            "discrete_event_target": 0,
+            "max_ambient_layers": 2,
+            "side_speech_requested": false,
+            "speech_kind_preferences": [
+              "third_party",
+              "machine"
+            ]
+          },
+          "control_sha256": "ece12d25afee8483f4b267a516564ce691958ca6032e0ef6a6aff92caea27df4",
+          "candidate_plan": {
+            "schema": "duplex_v2.soundscape_plan.v3",
+            "mode": "layered",
+            "ambient_layers": [
+              {
+                "source_id": "AMB01",
+                "candidates": [
+                  {
+                    "asset_id": "fan-fsd50k-eval-415925",
+                    "reason": "稳定的室内机械送风声与小会议室已建立的通风背景相容。",
+                    "environment_audio": "头顶通风口传来持续、低沉且均匀的送风声。"
+                  },
+                  {
+                    "asset_id": "fan-fsd50k-eval-419427",
+                    "reason": "连续的风扇或通风录音适合作为安静办公空间的低强度底噪。",
+                    "environment_audio": "会议室上方保持着音量平稳的机械通风声。"
+                  },
+                  {
+                    "asset_id": "fan-fsd50k-eval-235362",
+                    "reason": "该录音属于稳定室内通风底噪，不会引入故事中未建立的事件或人物。",
+                    "environment_audio": "远高于说话位置的送风设备持续轻响，没有明显起伏。"
+                  }
+                ]
+              }
+            ],
+            "environment_events": [],
+            "side_speech_eligibility": {
+              "third_party": {
+                "compatible": false,
+                "reason": "用户独自在小会议室内，当前故事没有在场的第三方。",
+                "source": null
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "场景只建立了持续通风设备，没有可辨识的机器语音来源。",
+                "source": null
+              }
+            }
+          },
+          "base_environment_audio_sha256": "2e07ceba762481e33c9132a9aa03712dcdd7ad46ab3df9c68f4f098a12543a3c",
+          "aggregate_environment_audio": "头顶约两米处的通风口持续发出低而稳定的送风声，音量基本不变。会议室内没有其他人声，近处语音清晰，房间轻微的封闭回响始终保持在背景。 头顶通风口传来持续、低沉且均匀的送风声。",
+          "draws": [
+            {
+              "source_id": "AMB01",
+              "category": "fan",
+              "asset_id": "fan-fsd50k-eval-415925",
+              "eligible_categories": [
+                "fan"
+              ],
+              "eligible_assets": [
+                "fan-fsd50k-eval-235362",
+                "fan-fsd50k-eval-415925",
+                "fan-fsd50k-eval-419427"
+              ]
+            }
+          ],
+          "speech_selection": {
+            "requested": false,
+            "compatible_kinds": [],
+            "selected_kind": null,
+            "outcome": "not_requested",
+            "assessments": {
+              "third_party": {
+                "compatible": false,
+                "reason": "用户独自在小会议室内，当前故事没有在场的第三方。",
+                "source": null
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "场景只建立了持续通风设备，没有可辨识的机器语音来源。",
+                "source": null
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "content_approved_script": {
+    "schema_version": "duplex_v2.fixed_script.v2",
+    "title": "项目会议连续口译热身",
+    "rounds": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_utterance": "我想先盲听一遍模拟发言，练数字和保留语气。先别给我文字，我听完再复述。",
+        "assistant_utterance": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month.",
+        "user_intent": "请求开始不看文字的连续口译听辨练习",
+        "assistant_intent": "完整口头朗读模拟发言，保留数字、条件和委婉语气",
+        "semantic_goal": "通过纯听觉接收整段模拟项目更新后进行首次复述",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": null,
+        "pause_cue": null
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_utterance": "我先复述：如果迁移测试十二日前完成，第一阶段可能九月三十日就绪。试点是三个地区、二百四十人，缺陷率可低于百分之一点五。若要更快上线，会缩小首期范围，但不建议砍掉两周安全审查。总体可行，不过进度还不能算确定。",
+        "assistant_utterance": "数字都对。两处要修正：“could consider”只是“可以考虑”，不是“会”；你还漏了最大数据集结果未见，以及最后一个月人员配置的保留意见。",
+        "user_intent": "根据首次整段听辨复述项目更新",
+        "assistant_intent": "核对数字并指出情态增强及保留意见遗漏",
+        "semantic_goal": "识别首次复述中需要修正的情态和证据限制",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A001",
+          "user_onset_after_text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month.",
+          "assistant_stop_after_text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_utterance": "原来我又把选项说成决定了。请把涉及证据限制、缩小范围和最后保留意见的部分再读一遍，我只听不看文字。",
+        "assistant_utterance": "The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month.",
+        "user_intent": "请求针对遗漏和情态偏差进行重点重听",
+        "assistant_intent": "重读证据限制、可选方案和最终保留意见",
+        "semantic_goal": "再次听辨判断、建议和保留意见的强度差异",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A002",
+          "user_onset_after_text": "数字都对。两处要修正：“could consider”只是“可以考虑”，不是“会”；你还漏了最大数据集结果未见，以及最后一个月人员配置的保留意见。",
+          "assistant_stop_after_text": "数字都对。两处要修正：“could consider”只是“可以考虑”，不是“会”；你还漏了最大数据集结果未见，以及最后一个月人员配置的保留意见。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_utterance": "我理解了：低于百分之一点五是供应商的判断，而且缺最大数据集证据；缩小范围只是选项，安全审查是不建议削减；总体可行仍有人手方面的顾虑。这样强度对吗？",
+        "assistant_utterance": "对。你保住了“判断—证据限制”“可选方案—不建议”和“可行—仍有保留”三组关系。现在再完整复述一次，别把选项说成决定。",
+        "user_intent": "复述重点关系并确认情态强度是否准确",
+        "assistant_intent": "确认重点关系并提示进行第二次完整复述",
+        "semantic_goal": "在完整复述前校准判断、选项和保留意见的强度",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A003",
+          "user_onset_after_text": "The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month.",
+          "assistant_stop_after_text": "The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_utterance": "我再完整复述：按当前估计，若迁移测试十二日前完成，第一阶段可能九月三十日就绪。三地区试点二百四十人，但进度还不能算确定。供应商认为缺陷率可低于百分之一点五，不过最大数据集结果未出。若想加快，可考虑缩小首期范围，但不建议削减两周安全审查。总体可行，最后一个月人员配置仍有顾虑。",
+        "assistant_utterance": "这次数字和主要条件都对了，但试点部分还要补出“大体认可”或“基本可以接受”的有限态度。最大数据集结果尚未看到，最后一个月的人手仍有保留；这两点也不能被“总体可行”盖过去。",
+        "user_intent": "根据重点核对进行第二次完整复述",
+        "assistant_intent": "确认复述准确并强调不可遗漏的两项保留信息",
+        "semantic_goal": "完成保留原立场和情态强度的准确复述",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A004",
+          "user_onset_after_text": "对。你保住了“判断—证据限制”“可选方案—不建议”和“可行—仍有保留”三组关系。现在再完整复述一次，别把选项说成决定。",
+          "assistant_stop_after_text": "对。你保住了“判断—证据限制”“可选方案—不建议”和“可行—仍有保留”三组关系。现在再完整复述一次，别把选项说成决定。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_utterance": "等等，那如果现场只记得一半呢？我怕一说明不确定，反而给原话加了新的保留语气。怎么区分？",
+        "assistant_utterance": "已听清的情态照原强度译；刚才只能说“尚未看到结果”，不能说成“结果未出”。没听清的只在笔记里标问号，不替说话人添加弱化措辞；关键内容缺失就请求重复或澄清。若必须说明，只明确是译员未确认，不冒充原话。",
+        "user_intent": "打断追问如何区分原说话人的情态与译员自身的不确定",
+        "assistant_intent": "说明准确保留原情态、标记空缺及请求澄清的处理原则",
+        "semantic_goal": "形成不擅自增强或削弱原说话人语气的补救办法",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A005",
+          "user_onset_after_text": "这次数字和主要条件都对了，但试点部分还要补出“大体认可”或“基本可以接受”的有限态度。",
+          "assistant_stop_after_text": "这次数字和主要条件都对了，但试点部分还要补出“大体认可”或“基本可以接受”的有限态度。最"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_utterance": "这个思路清楚。最后帮我压成一个五分钟、没稿子也能做的口头热身流程吧。",
+        "assistant_utterance": "五分钟热身：一分钟画“数、条、态、疑”四栏；两分钟听一段，只记数字、条件箭头、情态词和问号；一分钟按原话强度复述；最后一分钟核对数字、条件、承诺强度和空缺。原话含糊就保留其模糊度；听辨或记忆有空缺就请求重复、澄清，必要时说明是译员未确认。",
+        "user_intent": "请求把练习经验整理成会前可执行的短流程",
+        "assistant_intent": "提供不依赖完整稿件的五分钟个人热身方法",
+        "semantic_goal": "获得可口头执行并能防止语气失真的会前方案",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A006",
+          "user_onset_after_text": "已听清的情态照原强度译；刚才只能说“尚未看到结果”，不能说成“结果未出”。没听清的只在笔记里标问号，不替说话人添加弱化措辞；关键内容缺失就请求重复或澄清。若必须说明，只明确是译员未确认，不冒充原话。",
+          "assistant_stop_after_text": "已听清的情态照原强度译；刚才只能说“尚未看到结果”，不能说成“结果未出”。没听清的只在笔记里标问号，不替说话人添加弱化措辞；关键内容缺失就请求重复或澄清。若必须说明，只明确是译员未确认，不冒充原话。"
+        },
+        "pause_cue": null
+      }
+    ],
+    "backchannels": [
+      {
+        "event_id": "BC01",
+        "target_assistant_id": "A001",
+        "after_text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th.",
+        "text": "嗯"
+      },
+      {
+        "event_id": "BC02",
+        "target_assistant_id": "A006",
+        "after_text": "已听清的情态照原强度译；",
+        "text": "明白"
+      }
+    ],
+    "side_speech": [],
+    "environment_events": []
+  },
+  "reconstructed_heard_context": [
+    {
+      "user_id": "U01",
+      "assistant_id": "A001",
+      "user_at_onset_history": [],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "我想先盲听一遍模拟发言，练数字和保留语气。先别给我文字，我听完再复述。"
+        }
+      ],
+      "boundary": null,
+      "prior_backchannel_onsets": [],
+      "assistant_candidate": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month.",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    },
+    {
+      "user_id": "U02",
+      "assistant_id": "A002",
+      "user_at_onset_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "我想先盲听一遍模拟发言，练数字和保留语气。先别给我文字，我听完再复述。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        }
+      ],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "我想先盲听一遍模拟发言，练数字和保留语气。先别给我文字，我听完再复述。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "我先复述：如果迁移测试十二日前完成，第一阶段可能九月三十日就绪。试点是三个地区、二百四十人，缺陷率可低于百分之一点五。若要更快上线，会缩小首期范围，但不建议砍掉两周安全审查。总体可行，不过进度还不能算确定。"
+        }
+      ],
+      "boundary": {
+        "target_assistant_id": "A001",
+        "at_user_onset_heard_prefix": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month.",
+        "final_shared_played_prefix": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month.",
+        "discarded_unheard_tail": ""
+      },
+      "prior_backchannel_onsets": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A001",
+          "after_text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th.",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        }
+      ],
+      "assistant_candidate": "数字都对。两处要修正：“could consider”只是“可以考虑”，不是“会”；你还漏了最大数据集结果未见，以及最后一个月人员配置的保留意见。",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    },
+    {
+      "user_id": "U03",
+      "assistant_id": "A003",
+      "user_at_onset_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "我想先盲听一遍模拟发言，练数字和保留语气。先别给我文字，我听完再复述。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "我先复述：如果迁移测试十二日前完成，第一阶段可能九月三十日就绪。试点是三个地区、二百四十人，缺陷率可低于百分之一点五。若要更快上线，会缩小首期范围，但不建议砍掉两周安全审查。总体可行，不过进度还不能算确定。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "数字都对。两处要修正：“could consider”只是“可以考虑”，不是“会”；你还漏了最大数据集结果未见，以及最后一个月人员配置的保留意见。"
+        }
+      ],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "我想先盲听一遍模拟发言，练数字和保留语气。先别给我文字，我听完再复述。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "我先复述：如果迁移测试十二日前完成，第一阶段可能九月三十日就绪。试点是三个地区、二百四十人，缺陷率可低于百分之一点五。若要更快上线，会缩小首期范围，但不建议砍掉两周安全审查。总体可行，不过进度还不能算确定。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "数字都对。两处要修正：“could consider”只是“可以考虑”，不是“会”；你还漏了最大数据集结果未见，以及最后一个月人员配置的保留意见。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "原来我又把选项说成决定了。请把涉及证据限制、缩小范围和最后保留意见的部分再读一遍，我只听不看文字。"
+        }
+      ],
+      "boundary": {
+        "target_assistant_id": "A002",
+        "at_user_onset_heard_prefix": "数字都对。两处要修正：“could consider”只是“可以考虑”，不是“会”；你还漏了最大数据集结果未见，以及最后一个月人员配置的保留意见。",
+        "final_shared_played_prefix": "数字都对。两处要修正：“could consider”只是“可以考虑”，不是“会”；你还漏了最大数据集结果未见，以及最后一个月人员配置的保留意见。",
+        "discarded_unheard_tail": ""
+      },
+      "prior_backchannel_onsets": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A001",
+          "after_text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th.",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        }
+      ],
+      "assistant_candidate": "The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month.",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    },
+    {
+      "user_id": "U04",
+      "assistant_id": "A004",
+      "user_at_onset_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "我想先盲听一遍模拟发言，练数字和保留语气。先别给我文字，我听完再复述。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "我先复述：如果迁移测试十二日前完成，第一阶段可能九月三十日就绪。试点是三个地区、二百四十人，缺陷率可低于百分之一点五。若要更快上线，会缩小首期范围，但不建议砍掉两周安全审查。总体可行，不过进度还不能算确定。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "数字都对。两处要修正：“could consider”只是“可以考虑”，不是“会”；你还漏了最大数据集结果未见，以及最后一个月人员配置的保留意见。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "原来我又把选项说成决定了。请把涉及证据限制、缩小范围和最后保留意见的部分再读一遍，我只听不看文字。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        }
+      ],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "我想先盲听一遍模拟发言，练数字和保留语气。先别给我文字，我听完再复述。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "我先复述：如果迁移测试十二日前完成，第一阶段可能九月三十日就绪。试点是三个地区、二百四十人，缺陷率可低于百分之一点五。若要更快上线，会缩小首期范围，但不建议砍掉两周安全审查。总体可行，不过进度还不能算确定。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "数字都对。两处要修正：“could consider”只是“可以考虑”，不是“会”；你还漏了最大数据集结果未见，以及最后一个月人员配置的保留意见。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "原来我又把选项说成决定了。请把涉及证据限制、缩小范围和最后保留意见的部分再读一遍，我只听不看文字。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "我理解了：低于百分之一点五是供应商的判断，而且缺最大数据集证据；缩小范围只是选项，安全审查是不建议削减；总体可行仍有人手方面的顾虑。这样强度对吗？"
+        }
+      ],
+      "boundary": {
+        "target_assistant_id": "A003",
+        "at_user_onset_heard_prefix": "The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month.",
+        "final_shared_played_prefix": "The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month.",
+        "discarded_unheard_tail": ""
+      },
+      "prior_backchannel_onsets": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A001",
+          "after_text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th.",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        }
+      ],
+      "assistant_candidate": "对。你保住了“判断—证据限制”“可选方案—不建议”和“可行—仍有保留”三组关系。现在再完整复述一次，别把选项说成决定。",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    },
+    {
+      "user_id": "U05",
+      "assistant_id": "A005",
+      "user_at_onset_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "我想先盲听一遍模拟发言，练数字和保留语气。先别给我文字，我听完再复述。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "我先复述：如果迁移测试十二日前完成，第一阶段可能九月三十日就绪。试点是三个地区、二百四十人，缺陷率可低于百分之一点五。若要更快上线，会缩小首期范围，但不建议砍掉两周安全审查。总体可行，不过进度还不能算确定。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "数字都对。两处要修正：“could consider”只是“可以考虑”，不是“会”；你还漏了最大数据集结果未见，以及最后一个月人员配置的保留意见。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "原来我又把选项说成决定了。请把涉及证据限制、缩小范围和最后保留意见的部分再读一遍，我只听不看文字。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "我理解了：低于百分之一点五是供应商的判断，而且缺最大数据集证据；缩小范围只是选项，安全审查是不建议削减；总体可行仍有人手方面的顾虑。这样强度对吗？"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "对。你保住了“判断—证据限制”“可选方案—不建议”和“可行—仍有保留”三组关系。现在再完整复述一次，别把选项说成决定。"
+        }
+      ],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "我想先盲听一遍模拟发言，练数字和保留语气。先别给我文字，我听完再复述。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "我先复述：如果迁移测试十二日前完成，第一阶段可能九月三十日就绪。试点是三个地区、二百四十人，缺陷率可低于百分之一点五。若要更快上线，会缩小首期范围，但不建议砍掉两周安全审查。总体可行，不过进度还不能算确定。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "数字都对。两处要修正：“could consider”只是“可以考虑”，不是“会”；你还漏了最大数据集结果未见，以及最后一个月人员配置的保留意见。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "原来我又把选项说成决定了。请把涉及证据限制、缩小范围和最后保留意见的部分再读一遍，我只听不看文字。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "我理解了：低于百分之一点五是供应商的判断，而且缺最大数据集证据；缩小范围只是选项，安全审查是不建议削减；总体可行仍有人手方面的顾虑。这样强度对吗？"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "对。你保住了“判断—证据限制”“可选方案—不建议”和“可行—仍有保留”三组关系。现在再完整复述一次，别把选项说成决定。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "我再完整复述：按当前估计，若迁移测试十二日前完成，第一阶段可能九月三十日就绪。三地区试点二百四十人，但进度还不能算确定。供应商认为缺陷率可低于百分之一点五，不过最大数据集结果未出。若想加快，可考虑缩小首期范围，但不建议削减两周安全审查。总体可行，最后一个月人员配置仍有顾虑。"
+        }
+      ],
+      "boundary": {
+        "target_assistant_id": "A004",
+        "at_user_onset_heard_prefix": "对。你保住了“判断—证据限制”“可选方案—不建议”和“可行—仍有保留”三组关系。现在再完整复述一次，别把选项说成决定。",
+        "final_shared_played_prefix": "对。你保住了“判断—证据限制”“可选方案—不建议”和“可行—仍有保留”三组关系。现在再完整复述一次，别把选项说成决定。",
+        "discarded_unheard_tail": ""
+      },
+      "prior_backchannel_onsets": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A001",
+          "after_text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th.",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        }
+      ],
+      "assistant_candidate": "这次数字和主要条件都对了，但试点部分还要补出“大体认可”或“基本可以接受”的有限态度。最大数据集结果尚未看到，最后一个月的人手仍有保留；这两点也不能被“总体可行”盖过去。",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    },
+    {
+      "user_id": "U06",
+      "assistant_id": "A006",
+      "user_at_onset_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "我想先盲听一遍模拟发言，练数字和保留语气。先别给我文字，我听完再复述。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "我先复述：如果迁移测试十二日前完成，第一阶段可能九月三十日就绪。试点是三个地区、二百四十人，缺陷率可低于百分之一点五。若要更快上线，会缩小首期范围，但不建议砍掉两周安全审查。总体可行，不过进度还不能算确定。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "数字都对。两处要修正：“could consider”只是“可以考虑”，不是“会”；你还漏了最大数据集结果未见，以及最后一个月人员配置的保留意见。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "原来我又把选项说成决定了。请把涉及证据限制、缩小范围和最后保留意见的部分再读一遍，我只听不看文字。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "我理解了：低于百分之一点五是供应商的判断，而且缺最大数据集证据；缩小范围只是选项，安全审查是不建议削减；总体可行仍有人手方面的顾虑。这样强度对吗？"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "对。你保住了“判断—证据限制”“可选方案—不建议”和“可行—仍有保留”三组关系。现在再完整复述一次，别把选项说成决定。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "我再完整复述：按当前估计，若迁移测试十二日前完成，第一阶段可能九月三十日就绪。三地区试点二百四十人，但进度还不能算确定。供应商认为缺陷率可低于百分之一点五，不过最大数据集结果未出。若想加快，可考虑缩小首期范围，但不建议削减两周安全审查。总体可行，最后一个月人员配置仍有顾虑。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "这次数字和主要条件都对了，但试点部分还要补出“大体认可”或“基本可以接受”的有限态度。"
+        }
+      ],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "我想先盲听一遍模拟发言，练数字和保留语气。先别给我文字，我听完再复述。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "我先复述：如果迁移测试十二日前完成，第一阶段可能九月三十日就绪。试点是三个地区、二百四十人，缺陷率可低于百分之一点五。若要更快上线，会缩小首期范围，但不建议砍掉两周安全审查。总体可行，不过进度还不能算确定。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "数字都对。两处要修正：“could consider”只是“可以考虑”，不是“会”；你还漏了最大数据集结果未见，以及最后一个月人员配置的保留意见。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "原来我又把选项说成决定了。请把涉及证据限制、缩小范围和最后保留意见的部分再读一遍，我只听不看文字。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "我理解了：低于百分之一点五是供应商的判断，而且缺最大数据集证据；缩小范围只是选项，安全审查是不建议削减；总体可行仍有人手方面的顾虑。这样强度对吗？"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "对。你保住了“判断—证据限制”“可选方案—不建议”和“可行—仍有保留”三组关系。现在再完整复述一次，别把选项说成决定。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "我再完整复述：按当前估计，若迁移测试十二日前完成，第一阶段可能九月三十日就绪。三地区试点二百四十人，但进度还不能算确定。供应商认为缺陷率可低于百分之一点五，不过最大数据集结果未出。若想加快，可考虑缩小首期范围，但不建议削减两周安全审查。总体可行，最后一个月人员配置仍有顾虑。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "这次数字和主要条件都对了，但试点部分还要补出“大体认可”或“基本可以接受”的有限态度。最"
+        },
+        {
+          "role": "user",
+          "id": "U06",
+          "text": "等等，那如果现场只记得一半呢？我怕一说明不确定，反而给原话加了新的保留语气。怎么区分？"
+        }
+      ],
+      "boundary": {
+        "target_assistant_id": "A005",
+        "at_user_onset_heard_prefix": "这次数字和主要条件都对了，但试点部分还要补出“大体认可”或“基本可以接受”的有限态度。",
+        "final_shared_played_prefix": "这次数字和主要条件都对了，但试点部分还要补出“大体认可”或“基本可以接受”的有限态度。最",
+        "discarded_unheard_tail": "大数据集结果尚未看到，最后一个月的人手仍有保留；这两点也不能被“总体可行”盖过去。"
+      },
+      "prior_backchannel_onsets": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A001",
+          "after_text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th.",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        }
+      ],
+      "assistant_candidate": "已听清的情态照原强度译；刚才只能说“尚未看到结果”，不能说成“结果未出”。没听清的只在笔记里标问号，不替说话人添加弱化措辞；关键内容缺失就请求重复或澄清。若必须说明，只明确是译员未确认，不冒充原话。",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    },
+    {
+      "user_id": "U07",
+      "assistant_id": "A007",
+      "user_at_onset_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "我想先盲听一遍模拟发言，练数字和保留语气。先别给我文字，我听完再复述。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "我先复述：如果迁移测试十二日前完成，第一阶段可能九月三十日就绪。试点是三个地区、二百四十人，缺陷率可低于百分之一点五。若要更快上线，会缩小首期范围，但不建议砍掉两周安全审查。总体可行，不过进度还不能算确定。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "数字都对。两处要修正：“could consider”只是“可以考虑”，不是“会”；你还漏了最大数据集结果未见，以及最后一个月人员配置的保留意见。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "原来我又把选项说成决定了。请把涉及证据限制、缩小范围和最后保留意见的部分再读一遍，我只听不看文字。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "我理解了：低于百分之一点五是供应商的判断，而且缺最大数据集证据；缩小范围只是选项，安全审查是不建议削减；总体可行仍有人手方面的顾虑。这样强度对吗？"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "对。你保住了“判断—证据限制”“可选方案—不建议”和“可行—仍有保留”三组关系。现在再完整复述一次，别把选项说成决定。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "我再完整复述：按当前估计，若迁移测试十二日前完成，第一阶段可能九月三十日就绪。三地区试点二百四十人，但进度还不能算确定。供应商认为缺陷率可低于百分之一点五，不过最大数据集结果未出。若想加快，可考虑缩小首期范围，但不建议削减两周安全审查。总体可行，最后一个月人员配置仍有顾虑。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "这次数字和主要条件都对了，但试点部分还要补出“大体认可”或“基本可以接受”的有限态度。最"
+        },
+        {
+          "role": "user",
+          "id": "U06",
+          "text": "等等，那如果现场只记得一半呢？我怕一说明不确定，反而给原话加了新的保留语气。怎么区分？"
+        },
+        {
+          "role": "assistant",
+          "id": "A006",
+          "text": "已听清的情态照原强度译；刚才只能说“尚未看到结果”，不能说成“结果未出”。没听清的只在笔记里标问号，不替说话人添加弱化措辞；关键内容缺失就请求重复或澄清。若必须说明，只明确是译员未确认，不冒充原话。"
+        }
+      ],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "我想先盲听一遍模拟发言，练数字和保留语气。先别给我文字，我听完再复述。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "我先复述：如果迁移测试十二日前完成，第一阶段可能九月三十日就绪。试点是三个地区、二百四十人，缺陷率可低于百分之一点五。若要更快上线，会缩小首期范围，但不建议砍掉两周安全审查。总体可行，不过进度还不能算确定。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "数字都对。两处要修正：“could consider”只是“可以考虑”，不是“会”；你还漏了最大数据集结果未见，以及最后一个月人员配置的保留意见。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "原来我又把选项说成决定了。请把涉及证据限制、缩小范围和最后保留意见的部分再读一遍，我只听不看文字。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month."
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "我理解了：低于百分之一点五是供应商的判断，而且缺最大数据集证据；缩小范围只是选项，安全审查是不建议削减；总体可行仍有人手方面的顾虑。这样强度对吗？"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "对。你保住了“判断—证据限制”“可选方案—不建议”和“可行—仍有保留”三组关系。现在再完整复述一次，别把选项说成决定。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "我再完整复述：按当前估计，若迁移测试十二日前完成，第一阶段可能九月三十日就绪。三地区试点二百四十人，但进度还不能算确定。供应商认为缺陷率可低于百分之一点五，不过最大数据集结果未出。若想加快，可考虑缩小首期范围，但不建议削减两周安全审查。总体可行，最后一个月人员配置仍有顾虑。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "这次数字和主要条件都对了，但试点部分还要补出“大体认可”或“基本可以接受”的有限态度。最"
+        },
+        {
+          "role": "user",
+          "id": "U06",
+          "text": "等等，那如果现场只记得一半呢？我怕一说明不确定，反而给原话加了新的保留语气。怎么区分？"
+        },
+        {
+          "role": "assistant",
+          "id": "A006",
+          "text": "已听清的情态照原强度译；刚才只能说“尚未看到结果”，不能说成“结果未出”。没听清的只在笔记里标问号，不替说话人添加弱化措辞；关键内容缺失就请求重复或澄清。若必须说明，只明确是译员未确认，不冒充原话。"
+        },
+        {
+          "role": "user",
+          "id": "U07",
+          "text": "这个思路清楚。最后帮我压成一个五分钟、没稿子也能做的口头热身流程吧。"
+        }
+      ],
+      "boundary": {
+        "target_assistant_id": "A006",
+        "at_user_onset_heard_prefix": "已听清的情态照原强度译；刚才只能说“尚未看到结果”，不能说成“结果未出”。没听清的只在笔记里标问号，不替说话人添加弱化措辞；关键内容缺失就请求重复或澄清。若必须说明，只明确是译员未确认，不冒充原话。",
+        "final_shared_played_prefix": "已听清的情态照原强度译；刚才只能说“尚未看到结果”，不能说成“结果未出”。没听清的只在笔记里标问号，不替说话人添加弱化措辞；关键内容缺失就请求重复或澄清。若必须说明，只明确是译员未确认，不冒充原话。",
+        "discarded_unheard_tail": ""
+      },
+      "prior_backchannel_onsets": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A001",
+          "after_text": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th.",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A006",
+          "after_text": "已听清的情态照原强度译；",
+          "text": "明白",
+          "completion_status": "not_known_before_tts"
+        }
+      ],
+      "assistant_candidate": "五分钟热身：一分钟画“数、条、态、疑”四栏；两分钟听一段，只记数字、条件箭头、情态词和问号；一分钟按原话强度复述；最后一分钟核对数字、条件、承诺强度和空缺。原话含糊就保留其模糊度；听辨或记忆有空缺就请求重复、澄清，必要时说明是译员未确认。",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    }
+  ],
+  "target_assistant_id": "A001",
+  "maximum_characters": 250,
+  "compaction_attempt": 3,
+  "previous_compaction_feedback": {
+    "findings": [
+      {
+        "severity": "must_fix",
+        "path": "/rounds/0/assistant_utterance",
+        "problem": "首次盲听没有朗读冻结的完整模拟发言，而是擅自压缩并改变了关键措辞，既削弱听辨任务，也造成后续复述含有未听到的具体信息。",
+        "evidence": "冻结 task_reference_data 指定首次口头朗读完整英文发言，其中包括“data migration test”“broadly comfortable”“I would not recommend cutting”“some reservations”。候选 A001 却改成“tests”“Broad acceptance”“I'd keep”“staffing is a concern”；其中建议和保留语气发生变化。随后 U02 复述“迁移测试”，但其实际听到的 A001 只说了“tests”，无法据此得知测试类型。",
+        "repair": "首次盲听改为忠实朗读冻结的完整英文模拟发言，不压缩或增强其情态；同步更新受影响的 T01、附和及后续精确前缀锚点，使 U02 的复述只依赖实际听到的内容。"
+      }
+    ],
+    "characters": 249,
+    "length_error": null
+  },
+  "compaction_output_contract": {
+    "policy": "four_fields_exact_readonly_echo_v1",
+    "required_fields": [
+      "assistant_utterance",
+      "next_user_timing",
+      "backchannels",
+      "side_speech"
+    ],
+    "program_preserved_script_fields": [
+      "environment_events"
+    ]
+  },
+  "anchor_dependencies": [
+    {
+      "target_id": "A001",
+      "path": "/rounds/1/timing/user_onset_after_text",
+      "value": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month.",
+      "owner": "program"
+    },
+    {
+      "target_id": "A001",
+      "path": "/rounds/1/timing/assistant_stop_after_text",
+      "value": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th. We are broadly comfortable with a pilot of 240 users across three regions, although I would hesitate to call the schedule firm. The vendor believes the defect rate can be kept below 1.5 percent; that said, we have not yet seen results from the largest dataset. If the steering group prefers a faster launch, we could consider reducing the initial scope, but I would not recommend cutting the two-week security review. Overall, I think the plan is workable, with some reservations around staffing in the final month.",
+      "owner": "program"
+    },
+    {
+      "target_id": "A001",
+      "path": "/backchannels/0/after_text",
+      "value": "Based on our current estimates, phase one could be ready by 30 September, provided the data migration test is completed by the 12th.",
+      "owner": "model"
+    }
+  ],
+  "prior_semantic_waivers": []
+}

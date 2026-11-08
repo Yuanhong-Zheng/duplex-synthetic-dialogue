@@ -1,0 +1,1447 @@
+{
+  "frozen_source": {
+    "case_id": "R01-V01",
+    "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g04-sample-010-v2-stage2",
+    "language": "zh",
+    "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+    "script_execution_policy": {
+      "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+      "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+      "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+      "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+      "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+      "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+      "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+    },
+    "program_anchor_seed": 1578936091,
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    },
+    "relay_configuration": {
+      "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g04/relay-policy.json",
+      "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g04/relay-state",
+      "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+      "policy": {
+        "schema": "duplex_v2.timeout_relay_policy.v3",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "backup": {
+          "profile": "lianyu",
+          "endpoint": "https://api.openbili.com/v1/chat/completions",
+          "model_map": {
+            "openai/gpt-5.6-sol": "gpt-5.6-sol",
+            "openai/gpt-5.6-luna": "gpt-5.6-luna"
+          },
+          "verification": {
+            "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+            "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+          }
+        },
+        "trigger": {
+          "max_retries": 5,
+          "http_statuses": [
+            502,
+            503,
+            504
+          ],
+          "error_types": [
+            "TimeoutError",
+            "HTTP2DeadlineExceeded",
+            "ConnectionResetError",
+            "ConnectionAbortedError",
+            "BrokenPipeError",
+            "RemoteDisconnected",
+            "IncompleteRead"
+          ],
+          "http2_transport_errors": "negotiated_h2_only",
+          "require_all_attempts": true
+        },
+        "max_relay_switches": 1
+      }
+    },
+    "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+    "script_repair_policy": {
+      "schema": "duplex_v2.script_repair_policy.v1",
+      "mode": "json_patch",
+      "patch_schema": "duplex_v2.script_patch.v1",
+      "json_parse_max_retries": 3,
+      "content_max_repairs": 5,
+      "length_compaction_max_attempts": 3,
+      "overlength_after_compaction": "fail_case",
+      "judge_scope": "complete_script_and_heard_context"
+    },
+    "text_output_token_policy": "omit",
+    "scene_task": {
+      "scene": {
+        "domain_id": "D19",
+        "domain": "媒体、娱乐与角色扮演",
+        "scenario_id": "D19-S03",
+        "scenario": "剧情回顾"
+      },
+      "task_style": "结构化整理",
+      "task_instance": {
+        "goal": "我会逐步提供一部连续剧中零散的观剧笔记、集数摘要和对关键场面的记忆，请将这些材料按故事实际发生顺序整合成一份完整剧情时间线；同时标出每个阶段涉及的主要人物、触发事件、重要转折和仍无法确定的时间或因果关系，区分明确发生的内容与我的推测，最后指出材料之间的矛盾和需要我补充核对的地方。"
+      }
+    },
+    "user_voice": {
+      "user_seed": {
+        "role_relation": "负责为剧评播客整理连续剧剧情资料的内容编辑",
+        "task_familiarity": "high"
+      },
+      "voice_profile": "男性，三十多岁，音色偏低而清晰，吐字稳重，整体语气有较明显的投入感；谈到剧情细节时语速会稍快，情绪起伏自然但不失克制。",
+      "interaction_profile": {
+        "schema": "duplex_v2.interaction_profile.v1",
+        "formality": "formal",
+        "directness": "balanced",
+        "emotional_expressiveness": "expressive",
+        "verbosity": "detailed",
+        "initiative": "low",
+        "caution": "high",
+        "patience": "high",
+        "behavioral_notes": [
+          "倾向于分段提供较完整的材料，并在表达前后补充限定条件和记忆来源。",
+          "对时间顺序、因果关系和不确定信息区分得很谨慎，常会主动说明哪些内容只是推测。",
+          "愿意耐心回应澄清，但希望对方先准确复述当前依据，再提出需要补充的部分。"
+        ]
+      }
+    },
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "long",
+      "target_turns": 21,
+      "min_turns": 20,
+      "max_turns": 22
+    },
+    "ambient_catalog": {
+      "schema": "duplex_v2.ambient_catalog.v1",
+      "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+      "assets": [
+        {
+          "asset_id": "fan-fsd50k-eval-419427",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 10.3909375
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-235362",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 11.0
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-415925",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 7.178
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-235541",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 29.045875
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-232686",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 10.3445
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-124020",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 24.78875
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-382582",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.9788125
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-21189",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.962
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-238016",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 11.32
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-185058",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 5.2114375
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-121877",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 11.696
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-340358",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 4.2745
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-82562",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 1.0094375
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-121200",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.83525
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-343098",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.796
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-153104",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.4691875
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-392303",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.6849375
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-272381",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.933375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-71212",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.3638125
+        },
+        {
+          "asset_id": "door-fsd50k-eval-119077",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.7944375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-209519",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 1.0398125
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-399740",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.322
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-233057",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.4700625
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-411545",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.5686875
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-232499",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 0.842
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402127",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402128",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-86343",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 7.5366875
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-57907",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.5773125
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-319512",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.755625
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113173",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 11.2184375
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113175",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.8773125
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113176",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.6341875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-348322",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 1.625
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-426594",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 0.3666875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-332563",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 4.0
+        }
+      ]
+    },
+    "ambient_control": {
+      "schema": "duplex_v2.soundscape_control.v2",
+      "seed": 2042817646,
+      "mode": "quiet",
+      "discrete_event_target": 0,
+      "max_ambient_layers": 2,
+      "side_speech_requested": false,
+      "speech_kind_preferences": [
+        "third_party",
+        "machine"
+      ]
+    },
+    "situation_knowledge": {
+      "episode_situation": "周三晚上九点，用户独自在成都家中的书房，准备为剧评播客整理十集悬疑连续剧《潮痕》的剧情资料，次日上午要参加选题复核。用户是这期节目的内容编辑，已经完整看过两遍，但第二遍结束已有三周，部分关键场面的先后顺序只能依靠笔记和记忆还原。剧集采用现在时调查、2008年旧事闪回和人物主观回忆交错的叙事方式，有些闪回没有日期字幕，结尾还从不同视角重复了早先场面。用户手边有一本按观看顺序记录的纸质笔记、十集官方简介的打印件，以及几张单独写下关键台词和画面线索的卡片。笔记中的“明确画面”“台词信息”和“个人推测”原本使用三种符号区分，但赶进度时有几页漏标，不能仅凭符号判断可信度。官方简介能够确认集数和部分事件，却有意回避真相，也有一处时间描述与剧中道具画面不一致。用户记得核心谜团围绕2008年的港口仓库火灾、沈舟失踪和一本蓝色账册展开，但几次证词及回忆可能并非客观事实。尤其需要厘清火灾前后的电话、信封和值班表分别在何时出现，以及沈岚、顾川、林默、赵慧和陈彦在各阶段掌握了什么信息。用户已经把当代调查与旧事材料大致分开，却尚未决定剧中重复镜头应算作新事件、补充视角，还是对早先记忆的修正。完整剧集文件留在工作室电脑上，今晚无法直接重看，因此当前只能依据手边文字和相对清楚的场面记忆进行整理。用户可以逐页朗读材料，也愿意在被指出矛盾后核对纸面原文，但希望每次核对都保留来源和确定性，不把合理推断写成既定事实。当前优先级是先建立一条可修订的事件骨架，再逐步补齐人物、触发事件和转折，最后集中列出冲突证据与仍需重看的场面。尚未解决的问题包括火灾的准确发生时间、蓝色账册何时转移、沈舟在火灾后是否仍然出现，以及赵慧隐瞒真相究竟是在保护谁。",
+      "task_reference_data": [
+        "用户手边的第一集官方简介打印件写明：2024年10月12日，调查记者沈岚因母亲赵慧去世回到海陵港，在遗物中发现一盘标有“2008.7.16”的微型录音带，并与少年时期的朋友顾川重逢；用户已读，日期和人物关系可直接核对。",
+        "用户纸质笔记的第二集页面记载：沈岚回忆哥哥沈舟在2008年港区夏祭当晚把一只牛皮纸信封交给顾川，并让他“天亮前别回三号码头”；该页没有标明这是客观闪回还是沈岚的主观回忆，用户已读但尚未核实场面性质。",
+        "第三集值班表道具的抄录卡写着：“海陵港三号仓，火警上报时间：2008年7月17日00:20；夜班调度：陈彦；巡检员：林默。”卡片来自用户暂停画面后的手抄，分钟数较清楚，但表格右下角似乎有涂改痕迹。",
+        "第三集官方简介打印件写明：“仓库火灾发生后，沈舟失踪，林默成为最后一个声称见过他的人。”同页没有给出具体钟点，也没有说明林默所说的见面是在起火前还是起火后；用户已读。",
+        "用户对第四集审讯场面的记忆卡记载：林默说自己在“火光起来以后”看见沈舟沿防波堤离开三号码头，但镜头切到顾川时出现明显迟疑；这是用户对台词和表演的记忆，尚未通过逐字记录核实。",
+        "第五集电话记录道具的抄录写着：“2008年7月16日23:48，三号仓办公室拨往顾家住宅，通话2分11秒。”画面没有显示通话双方姓名；用户确认号码去向来自随后角色的解释，但不能确定实际接听者。",
+        "第六集笔记记载：退休调度员陈彦承认自己事后重抄过夜班值班表，并声称是赵慧要求他删掉顾海生临时换班的记录；同页另有用户批注“陈彦可能在撒谎”，该批注属于推测，没有独立证据。",
+        "第七集录音带台词卡写着：“账册已经上船，别再去仓库找。”说话者声音被处理，剧中角色暂时认定为沈舟，但录音带标签日期只是手写的“2008.7.16”，剧集没有证明标签与录制时间一致。",
+        "第八集笔记记载：补充视角中，顾川在警铃响起前把沈舟的牛皮纸信封塞进渡轮储物柜，腕表近景约为23:40；用户同时注明该段服装与第二集闪回略有不同，不确定是连续性错误、主观记忆差异还是不同日期。",
+        "第九集官方简介写明“赵慧藏起蓝色账册，是为了保护沈舟”，但用户记得正片台词更接近“我只能先保住两个孩子”；“两个孩子”指沈舟与沈岚、沈舟与顾川，还是泛指三人的家庭关系，目前没有确定。",
+        "第十集笔记记载：警方取得的蓝色账册揭示港区长期伪造货运记录，陈彦被带走调查；结尾中沈岚在渡轮上看见一个背影与沈舟相似的人，但没有正脸或身份确认。用户将“沈舟仍活着”标成推测，而不是明确结局。",
+        "用户夹在第三集简介后的报纸道具抄录写着：“2008年7月18日讯，昨夜十一时许三号仓发生火灾。”如果“昨夜”按报纸日期理解，火灾应在7月17日23时左右，与值班表所写的7月17日00:20相差近一天；抄录中的报纸日期和措辞均可现场重读，但道具是否故意误导尚不确定。"
+      ],
+      "environment_audio": "书房整体安静，近处只有极轻且稳定的室内空气底噪，音量几乎没有起伏。门外和窗外均无清晰可辨的声源，停顿时能保留干净的近距离录音感。",
+      "estimated_snr_db": 36,
+      "constraints": [
+        {
+          "constraint_id": "C01",
+          "text": "时间线中的每项内容必须保留来源，并明确区分剧中直接呈现、角色陈述、用户记忆和用户推测。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C02",
+          "text": "没有可靠日期或因果证据的事件不得强行固定顺序，应标为区间、相对位置或未决关系。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C03",
+          "text": "整理应以故事实际发生顺序为主，集数与叙事呈现顺序仅作为来源索引。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C04",
+          "text": "同一事件的日期、证词或人物动机出现冲突时，必须并列保留不同版本并指出需要核对的原始场面。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C05",
+          "text": "优先先形成可修订的事件骨架，再补充人物、触发事件、转折及疑点，避免过早给出单一真相解释。",
+          "kind": "soft"
+        }
+      ],
+      "safety_limits": [],
+      "soundscape_plan": {
+        "mode": "quiet",
+        "ambient_layers": [],
+        "environment_events": [],
+        "schema": "duplex_v2.soundscape_plan.v3",
+        "side_speech_sources": [],
+        "side_speech_count": 0,
+        "sampling": {
+          "schema": "duplex_v2.ambient_draw.v2",
+          "policy": {
+            "schema": "duplex_v2.soundscape_policy.v2",
+            "quiet_probability": 0.5,
+            "discrete_targets_by_tier": {
+              "short": [
+                0,
+                1
+              ],
+              "medium": [
+                1,
+                2
+              ],
+              "long": [
+                2,
+                4
+              ]
+            },
+            "discrete_count_includes": [
+              "environment_events",
+              "side_speech"
+            ],
+            "max_ambient_layers": 2,
+            "gain_range": [
+              0.3,
+              0.7
+            ],
+            "speech_request_probability": 0.5,
+            "third_party_preference_probability": 0.8,
+            "speech_requires_existing_scene_source": true,
+            "environment_audio": "base_only",
+            "stage2_repair": "atomic_scoped_patch",
+            "stage2_max_judge_attempts": 3,
+            "json_parse_max_retries": 3
+          },
+          "preferences": {
+            "schema": "duplex_v2.ambient_preferences.v1",
+            "seed": 202611073004,
+            "slot": 9,
+            "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+            "categories": {
+              "bed": [
+                "wind",
+                "birds",
+                "fan",
+                "rain",
+                "traffic",
+                "crowd"
+              ],
+              "event": [
+                "water_tap",
+                "door",
+                "doorbell",
+                "paper",
+                "keyboard",
+                "footsteps"
+              ]
+            },
+            "recordings": {
+              "bed:birds": [
+                "birds-fsd50k-eval-57907",
+                "birds-fsd50k-eval-86343",
+                "birds-fsd50k-eval-319512"
+              ],
+              "bed:crowd": [
+                "crowd-fsd50k-eval-121877",
+                "crowd-fsd50k-eval-185058",
+                "crowd-fsd50k-eval-340358"
+              ],
+              "bed:fan": [
+                "fan-fsd50k-eval-419427",
+                "fan-fsd50k-eval-235362",
+                "fan-fsd50k-eval-415925"
+              ],
+              "bed:rain": [
+                "rain-fsd50k-eval-382582",
+                "rain-fsd50k-eval-21189",
+                "rain-fsd50k-eval-238016"
+              ],
+              "bed:traffic": [
+                "traffic-fsd50k-eval-235541",
+                "traffic-fsd50k-eval-124020",
+                "traffic-fsd50k-eval-232686"
+              ],
+              "bed:wind": [
+                "wind-fsd50k-eval-113176",
+                "wind-fsd50k-eval-113175",
+                "wind-fsd50k-eval-113173"
+              ],
+              "event:door": [
+                "door-fsd50k-eval-71212",
+                "door-fsd50k-eval-209519",
+                "door-fsd50k-eval-119077"
+              ],
+              "event:doorbell": [
+                "doorbell-fsd50k-eval-426594",
+                "doorbell-fsd50k-eval-348322",
+                "doorbell-fsd50k-eval-332563"
+              ],
+              "event:footsteps": [
+                "footsteps-fsd50k-eval-392303",
+                "footsteps-fsd50k-eval-272381",
+                "footsteps-fsd50k-eval-153104"
+              ],
+              "event:keyboard": [
+                "keyboard-fsd50k-eval-411545",
+                "keyboard-fsd50k-eval-399740",
+                "keyboard-fsd50k-eval-233057"
+              ],
+              "event:paper": [
+                "paper-fsd50k-eval-82562",
+                "paper-fsd50k-eval-121200",
+                "paper-fsd50k-eval-343098"
+              ],
+              "event:water_tap": [
+                "water_tap-fsd50k-eval-232499",
+                "water_tap-fsd50k-eval-402127",
+                "water_tap-fsd50k-eval-402128"
+              ]
+            }
+          },
+          "control": {
+            "schema": "duplex_v2.soundscape_control.v2",
+            "seed": 2042817646,
+            "mode": "quiet",
+            "discrete_event_target": 0,
+            "max_ambient_layers": 2,
+            "side_speech_requested": false,
+            "speech_kind_preferences": [
+              "third_party",
+              "machine"
+            ]
+          },
+          "control_sha256": "3205cf5360db3692e9c13dc0cde1d19c862383ca3b04eecd4b419a2b24d8b0ea",
+          "candidate_plan": {
+            "schema": "duplex_v2.soundscape_plan.v3",
+            "mode": "quiet",
+            "ambient_layers": [],
+            "environment_events": [],
+            "side_speech_eligibility": {
+              "third_party": {
+                "compatible": false,
+                "reason": "用户独自在书房整理资料，当前故事中没有在场的第三方。",
+                "source": null
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "当前场景没有建立会发出可辨语音的设备或系统。",
+                "source": null
+              }
+            }
+          },
+          "base_environment_audio_sha256": "b48acc846fa83d9dd721bab084aef1e2d669be5d700ec5a0940473d95777d133",
+          "aggregate_environment_audio": "书房整体安静，近处只有极轻且稳定的室内空气底噪，音量几乎没有起伏。门外和窗外均无清晰可辨的声源，停顿时能保留干净的近距离录音感。",
+          "draws": [],
+          "speech_selection": {
+            "requested": false,
+            "compatible_kinds": [],
+            "selected_kind": null,
+            "outcome": "not_requested",
+            "assessments": {
+              "third_party": {
+                "compatible": false,
+                "reason": "用户独自在书房整理资料，当前故事中没有在场的第三方。",
+                "source": null
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "当前场景没有建立会发出可辨语音的设备或系统。",
+                "source": null
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "schema_version": "duplex_v2.fixed_script.v2",
+  "owner_attempt": 2,
+  "previous_candidate": {
+    "schema_version": "duplex_v2.fixed_script.v2",
+    "title": "《潮痕》剧情时间线梳理",
+    "rounds": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_utterance": "我在整理十集悬疑剧《潮痕》的剧情时间线。材料有官方简介、观剧笔记和几张道具抄录，但叙事穿插了旧事闪回和主观回忆。我会分段提供，请先帮我搭一个能持续修订的骨架。",
+        "assistant_utterance": "可以。先按“时间位置、事件、人物、来源、确定性、冲突”建骨架；重复镜头暂记为补充视角或修正候选，不并成新事件。请先给我最稳的日期锚点。",
+        "user_intent": "说明整理目标、材料类型和分段提供方式",
+        "assistant_intent": "建立可修订的时间线框架并索取首个可靠锚点",
+        "semantic_goal": "确定整理方法，避免过早合并重复镜头或推定真相",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": null,
+        "pause_cue": null
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_utterance": "第一集官方简介写明，二〇二四年十月十二日，调查记者沈岚因母亲赵慧去世回到海陵港，在遗物中发现一盘标着二〇〇八年七月十六日的微型录音带，并与少年时期的朋友顾川重逢。",
+        "assistant_utterance": "首个确定锚点是二〇二四年十月十二日：沈岚返海陵港，因赵慧去世整理遗物，发现标注二〇〇八年七月十六日的录音带，并与顾川重逢。来源为第一集官方简介。",
+        "user_intent": "提供当代调查线的明确日期与开端事件",
+        "assistant_intent": "记录首个确定日期并保留官方简介来源",
+        "semantic_goal": "建立当代剧情的起始锚点",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A001",
+          "user_onset_after_text": "可以。先按“时间位置、事件、人物、来源、确定性、冲突”建骨架；重复镜头暂记为补充视角或修正候选，不并成新事件。请先给我最稳的日期锚点。",
+          "assistant_stop_after_text": "可以。先按“时间位置、事件、人物、来源、确定性、冲突”建骨架；重复镜头暂记为补充视角或修正候选，不并成新事件。请先给我最稳的日期锚点。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_utterance": "第二集笔记是旧事：港区夏祭当晚，沈岚回忆哥哥沈舟把一个牛皮纸信封交给顾川，还说“天亮前别回三号码头”。但那页没标清是客观闪回还是沈岚的主观回忆。",
+        "assistant_utterance": "先列入二〇〇八年旧事段：夏祭当晚，沈舟把牛皮纸信封交给顾川，并警告他天亮前别回三号码头。来源是第二集笔记；场面是否客观、与火灾的先后仍未定。",
+        "user_intent": "补充旧事中的信封交接并声明场面性质不明",
+        "assistant_intent": "将事件放入旧事段，同时保留来源和叙事性质疑点",
+        "semantic_goal": "记录信封交接而不把主观回忆当成客观事实",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A002",
+          "user_onset_after_text": "首个确定锚点是二〇二四年十月十二日：沈岚返海陵港，因赵慧去世整理遗物，发现标注二〇〇八年七月十六日的录音带，并与顾川重逢。来源为第一集官方简介。",
+          "assistant_stop_after_text": "首个确定锚点是二〇二四年十月十二日：沈岚返海陵港，因赵慧去世整理遗物，发现标注二〇〇八年七月十六日的录音带，并与顾川重逢。来源为第一集官方简介。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_utterance": "对，但“天亮前别回”只能提供一个相对范围，不能据此认定交信封一定发生在起火前。",
+        "assistant_utterance": "明白。信封交接暂定位为“夏祭当晚、天亮前”，不据此断定发生在起火前；同时标注沈岚主观回忆的可能性。",
+        "user_intent": "打断并收紧信封事件的时间推断",
+        "assistant_intent": "修正事件定位，删除未经证实的火灾前结论",
+        "semantic_goal": "只保留有依据的相对时间，不制造确定先后",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A003",
+          "user_onset_after_text": "先列入二〇〇八年旧事段：夏祭当晚，",
+          "assistant_stop_after_text": "先列入二〇〇八年旧事段：夏祭当晚，沈舟"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_utterance": "第三集值班表的抄录卡写着：海陵港三号仓，火警上报时间二〇〇八年七月十七日零点二十分；夜班调度陈彦，巡检员林默。分钟数比较清楚，不过表格右下角像有涂改。",
+        "assistant_utterance": "新增道具锚点：三号仓火警上报为二〇〇八年七月十七日零点二十分；陈彦值夜班调度，林默任巡检员。来源是第三集值班表抄录，分钟较清楚，但表格疑有涂改。",
+        "user_intent": "提供火警时间、值班人员及道具涂改迹象",
+        "assistant_intent": "建立火警道具锚点并标注其潜在可靠性问题",
+        "semantic_goal": "加入旧事时间轴的关键钟点和当班人物",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A004",
+          "user_onset_after_text": "明白。信封交接暂定位为“夏祭当晚、天亮前”，不据此断定发生在起火前；同时标注沈岚主观回忆的可能性。",
+          "assistant_stop_after_text": "明白。信封交接暂定位为“夏祭当晚、天亮前”，不据此断定发生在起火前；同时标注沈岚主观回忆的可能性。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_utterance": "同一集官方简介只说，仓库火灾发生后沈舟失踪，林默成为最后一个声称见过他的人。它没给具体钟点，也没说林默见他是在起火前还是起火后。",
+        "assistant_utterance": "可确定的是官方叙述把沈舟失踪置于火灾之后，并称林默是最后一个声称见过他的人；见面究竟在起火前还是起火后，保留未决。",
+        "user_intent": "补充官方简介对失踪与最后目击者的表述",
+        "assistant_intent": "提取可确定关系并保留目击时间未决",
+        "semantic_goal": "把失踪置于火灾后，但不擅自定位最后目击",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A005",
+          "user_onset_after_text": "新增道具锚点：三号仓火警上报为二〇〇八年七月十七日零点二十分；陈彦值夜班调度，林默任巡检员。来源是第三集值班表抄录，分钟较清楚，但表格疑有涂改。",
+          "assistant_stop_after_text": "新增道具锚点：三号仓火警上报为二〇〇八年七月十七日零点二十分；陈彦值夜班调度，林默任巡检员。来源是第三集值班表抄录，分钟较清楚，但表格疑有涂改。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_utterance": "第四集审讯场面，我记得林默说自己在“火光起来以后”看见沈舟沿防波堤离开三号码头。镜头切到顾川时，他有明显迟疑。不过这是我的台词和表演记忆，还没逐字核对。",
+        "assistant_utterance": "这条只记为林默的角色陈述加你的场面记忆：他称火光出现后看见沈舟离开；顾川的迟疑属于表演线索，不能单独证明证词虚假。",
+        "user_intent": "提供林默证词和顾川反应，并限定为未核实记忆",
+        "assistant_intent": "区分角色陈述、用户记忆和表演线索的证明力",
+        "semantic_goal": "保留火后目击版本但不认定证词真假",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A006",
+          "user_onset_after_text": "可确定的是官方叙述把沈舟失踪置于火灾之后，并称林默是最后一个声称见过他的人；见面究竟在起火前还是起火后，保留未决。",
+          "assistant_stop_after_text": "可确定的是官方叙述把沈舟失踪置于火灾之后，并称林默是最后一个声称见过他的人；见面究竟在起火前还是起火后，保留未决。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_utterance": "第五集电话记录道具显示，二〇〇八年七月十六日二十三点四十八分，三号仓办公室拨往顾家住宅，通话两分十一秒。画面没写双方姓名，号码去向是后面角色解释的。",
+        "assistant_utterance": "电话可明确记为二〇〇八年七月十六日二十三点四十八分，三号仓办公室拨往顾家住宅，持续两分十一秒；通话双方身份均未由道具直接证明。",
+        "user_intent": "提供电话道具的时间、去向和信息边界",
+        "assistant_intent": "记录电话事件并区分道具直示与角色解释",
+        "semantic_goal": "把电话插入时间线但不指定通话双方",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A007",
+          "user_onset_after_text": "这条只记为林默的角色陈述加你的场面记忆：他称火光出现后看见沈舟离开；顾川的迟疑属于表演线索，不能单独证明证词虚假。",
+          "assistant_stop_after_text": "这条只记为林默的角色陈述加你的场面记忆：他称火光出现后看见沈舟离开；顾川的迟疑属于表演线索，不能单独证明证词虚假。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_utterance": "这里先停一下，别顺着去写成沈舟打给顾川。拨打者和实际接听者都不知道。",
+        "assistant_utterance": "对。只保留拨出地点、号码去向、时间和时长；“沈舟打给顾川”不进入事实层，实际接听者列为待核对。",
+        "user_intent": "打断并阻止对通话双方作无依据推断",
+        "assistant_intent": "确认信息边界并明确列出待核对项",
+        "semantic_goal": "排除未经证实的通话人物身份",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A008",
+          "user_onset_after_text": "电话可明确记为二〇〇八年七月十六日二十三点四十八分，",
+          "assistant_stop_after_text": "电话可明确记为二〇〇八年七月十六日二十三点四十八分，三"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_utterance": "第六集里，退休调度员陈彦承认自己事后重抄过夜班值班表，还说是赵慧要求他删掉顾海生临时换班的记录。我旁边批了“陈彦可能在撒谎”，但那只是个人推测。",
+        "assistant_utterance": "第六集形成一次证据修正：陈彦承认事后重抄值班表，并指称赵慧要求删去顾海生临时换班。前者是自认，后者仍是陈彦单方说法；“他撒谎”只列你的推测。",
+        "user_intent": "补充值班表被重抄及删改指控，并分离个人推测",
+        "assistant_intent": "区分陈彦自认、单方指控和用户推测",
+        "semantic_goal": "更新值班表可信度而不直接判定陈彦撒谎",
+        "act_ref": "A04",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A009",
+          "user_onset_after_text": "对。只保留拨出地点、号码去向、时间和时长；“沈舟打给顾川”不进入事实层，实际接听者列为待核对。",
+          "assistant_stop_after_text": "对。只保留拨出地点、号码去向、时间和时长；“沈舟打给顾川”不进入事实层，实际接听者列为待核对。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U11",
+        "assistant_id": "A011",
+        "user_utterance": "第七集录音带里有一句：“账册已经上船，别再去仓库找。”声音经过处理，剧中人物暂时认定是沈舟。带子标签只手写了二〇〇八年七月十六日，剧情没证明标签就是录制日期。",
+        "assistant_utterance": "录音内容可作为当代调查获得的线索：“账册已经上船，别再去仓库找。”剧中暂把处理后的声音认作沈舟；标签日期与真实录制时间应分开记录。",
+        "user_intent": "提供录音内容、暂定说话者及标签日期限制",
+        "assistant_intent": "记录录音线索并分离说话者认定与录制时间",
+        "semantic_goal": "加入账册上船线索而不固定其发生日期",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A010",
+          "user_onset_after_text": "第六集形成一次证据修正：陈彦承认事后重抄值班表，并指称赵慧要求删去顾海生临时换班。前者是自认，后者仍是陈彦单方说法；“他撒谎”只列你的推测。",
+          "assistant_stop_after_text": "第六集形成一次证据修正：陈彦承认事后重抄值班表，并指称赵慧要求删去顾海生临时换班。前者是自认，后者仍是陈彦单方说法；“他撒谎”只列你的推测。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U12",
+        "assistant_id": "A012",
+        "user_utterance": "还有，标签只能证明有人这样写过，不能证明录音当天制作；处理后的声音也未必真是沈舟。",
+        "assistant_utterance": "收到。标签只证明有人手写了二〇〇八年七月十六日，不证明录音当日制作；说话者也仅是剧中暂定为沈舟。",
+        "user_intent": "打断并进一步限定标签与说话者的证据效力",
+        "assistant_intent": "收紧录音条目的确定性表述",
+        "semantic_goal": "避免把手写标签和角色认定升级为事实",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A011",
+          "user_onset_after_text": "录音内容可作为当代调查获得的线索：“账册已经上船，别再去仓库找。”",
+          "assistant_stop_after_text": "录音内容可作为当代调查获得的线索：“账册已经上船，别再去仓库找。”剧中"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U13",
+        "assistant_id": "A013",
+        "user_utterance": "第八集重复了信封场面，但换成补充视角：顾川在警铃响起前把沈舟的牛皮纸信封塞进渡轮储物柜，腕表近景大约是二十三点四十分。",
+        "assistant_utterance": "这段优先作为第二集信封交接的补充视角：警铃前，顾川把信封放入渡轮储物柜，腕表约二十三点四十分。时间来自画面近景，但“同一晚”仍需服装差异检验。",
+        "user_intent": "提供重复场面的新增动作和腕表时间",
+        "assistant_intent": "将其暂列为补充视角并保留同一晚的待验证状态",
+        "semantic_goal": "把信封存放事件加入骨架但不强行与交接合并",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A012",
+          "user_onset_after_text": "收到。标签只证明有人手写了二〇〇八年七月十六日，不证明录音当日制作；说话者也仅是剧中暂定为沈舟。",
+          "assistant_stop_after_text": "收到。标签只证明有人手写了二〇〇八年七月十六日，不证明录音当日制作；说话者也仅是剧中暂定为沈舟。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U14",
+        "assistant_id": "A014",
+        "user_utterance": "不过第八集这段的服装和第二集略有不同。我现在不能判断是连续性错误、主观记忆差异，还是其实发生在另一天。",
+        "assistant_utterance": "那就并列三种解释：连续性错误、主观记忆差异、另一个日期。现阶段不把两段强行合并，只标记“可能是同次交接的后续”。",
+        "user_intent": "指出重复场面的服装冲突并提出多个解释候选",
+        "assistant_intent": "并列保留解释，不固定两段场面的同一性",
+        "semantic_goal": "维持信封交接与存放之间的可修订关系",
+        "act_ref": "A05",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A013",
+          "user_onset_after_text": "这段优先作为第二集信封交接的补充视角：警铃前，顾川把信封放入渡轮储物柜，腕表约二十三点四十分。时间来自画面近景，但“同一晚”仍需服装差异检验。",
+          "assistant_stop_after_text": "这段优先作为第二集信封交接的补充视角：警铃前，顾川把信封放入渡轮储物柜，腕表约二十三点四十分。时间来自画面近景，但“同一晚”仍需服装差异检验。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U15",
+        "assistant_id": "A015",
+        "user_utterance": "第九集官方简介写“赵慧藏起蓝色账册，是为了保护沈舟”。但我记得正片更接近“我只能先保住两个孩子”，所以保护对象和动机可能没简介写得那么单一。",
+        "assistant_utterance": "官方简介给出“赵慧为保护沈舟而藏账册”；正片记忆中的“先保住两个孩子”却扩大了对象范围。应以正片原句为待复核核心，不先锁定她的动机。",
+        "user_intent": "提出官方简介与正片记忆对赵慧动机的差异",
+        "assistant_intent": "并列两种表述并将正片原句列为复核重点",
+        "semantic_goal": "避免把赵慧的保护对象单一化",
+        "act_ref": "A05",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A014",
+          "user_onset_after_text": "那就并列三种解释：连续性错误、主观记忆差异、另一个日期。现阶段不把两段强行合并，只标记“可能是同次交接的后续”。",
+          "assistant_stop_after_text": "那就并列三种解释：连续性错误、主观记忆差异、另一个日期。现阶段不把两段强行合并，只标记“可能是同次交接的后续”。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U16",
+        "assistant_id": "A016",
+        "user_utterance": "“两个孩子”至少有三种可能：沈舟和沈岚、沈舟和顾川，或者泛指这几个孩子及其家庭关系。现在都不能定。",
+        "assistant_utterance": "三种对象解释都保留：沈舟与沈岚、沈舟与顾川，或对三人家庭关系的泛指。它们都是解释候选，不是已发生事实。",
+        "user_intent": "打断并明确列出保护对象的解释候选",
+        "assistant_intent": "分类记录候选解释并标明其非事实属性",
+        "semantic_goal": "完整保留“两个孩子”的歧义",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A015",
+          "user_onset_after_text": "官方简介给出“赵慧为保护沈舟而藏账册”；",
+          "assistant_stop_after_text": "官方简介给出“赵慧为保护沈舟而藏账册”；正片记"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U17",
+        "assistant_id": "A017",
+        "user_utterance": "第十集能确定的是，警方拿到蓝色账册，查出港区长期伪造货运记录，陈彦被带走调查。结尾沈岚在渡轮上看到一个很像沈舟的背影，但没露脸，也没人确认身份。",
+        "assistant_utterance": "结局确定层只有：警方取得账册，账册揭出长期伪造货运记录，陈彦被带走调查。渡轮背影与沈舟相似但未确认，因此“沈舟仍活着”维持为推测。",
+        "user_intent": "提供结局中的确定结果和开放式背影镜头",
+        "assistant_intent": "区分结局事实与沈舟生还推测",
+        "semantic_goal": "记录调查结果，同时保留开放结局的不确定性",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A016",
+          "user_onset_after_text": "三种对象解释都保留：沈舟与沈岚、沈舟与顾川，或对三人家庭关系的泛指。它们都是解释候选，不是已发生事实。",
+          "assistant_stop_after_text": "三种对象解释都保留：沈舟与沈岚、沈舟与顾川，或对三人家庭关系的泛指。它们都是解释候选，不是已发生事实。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U18",
+        "assistant_id": "A018",
+        "user_utterance": "还有一张报纸道具抄录：二〇〇八年七月十八日讯，昨夜十一时许三号仓发生火灾；我核过日期和措辞，但不知道它是不是故意误导。这样算下来，就和值班表的七月十七日零点二十分差了将近一天。",
+        "assistant_utterance": "这是核心日期冲突：报纸若按七月十八日的“昨夜”理解，指向七月十七日二十三时许；值班表则是七月十七日零点二十分，相差近一天。两版并列，需重看报纸和值班表原画面。",
+        "user_intent": "补充报纸道具并指出其与值班表的时间冲突",
+        "assistant_intent": "并列计算两种火灾时间并指定复核原始画面",
+        "semantic_goal": "建立火灾日期的核心矛盾项",
+        "act_ref": "A05",
+        "timing_refs": [
+          "T01",
+          "T02"
+        ],
+        "timing": {
+          "target_assistant_id": "A017",
+          "user_onset_after_text": "结局确定层只有：警方取得账册，账册揭出长期伪造货运记录，陈彦被带走调查。渡轮背影与沈舟相似但未确认，因此“沈舟仍活着”维持为推测。",
+          "assistant_stop_after_text": "结局确定层只有：警方取得账册，账册揭出长期伪造货运记录，陈彦被带走调查。渡轮背影与沈舟相似但未确认，因此“沈舟仍活着”维持为推测。"
+        },
+        "pause_cue": {
+          "after_text": "还有一张报纸道具抄录：二〇〇八年七月十八日讯，昨夜十一时许三号仓发生火灾；",
+          "duration_ms": 650
+        }
+      },
+      {
+        "user_id": "U19",
+        "assistant_id": "A019",
+        "user_utterance": "先把二〇〇八年的事件按目前依据完整串一次吧。能确定先后的就排列，不能确定的请明确留空，不要替我选火灾时间版本。",
+        "assistant_utterance": "旧事骨架如下：一，夏祭当晚信封交接，具体日期未定；二，约二十三点四十分顾川或将信封存入渡轮柜；三，二十三点四十八分三号仓致电顾家；四，火警可能是十七日零点二十分，也可能是当日二十三时许；五，火光后林默声称见沈舟离开；六，火灾后沈舟失踪。录音、账册上船及赵慧藏账册暂无法嵌入精确位置。",
+        "user_intent": "要求汇总旧事骨架并保留所有未决顺序",
+        "assistant_intent": "按故事内时间整理旧事事件和冲突版本",
+        "semantic_goal": "形成不强行消解矛盾的二〇〇八年可修订时间线",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A018",
+          "user_onset_after_text": "这是核心日期冲突：报纸若按七月十八日的“昨夜”理解，指向七月十七日二十三时许；值班表则是七月十七日零点二十分，相差近一天。两版并列，需重看报纸和值班表原画面。",
+          "assistant_stop_after_text": "这是核心日期冲突：报纸若按七月十八日的“昨夜”理解，指向七月十七日二十三时许；值班表则是七月十七日零点二十分，相差近一天。两版并列，需重看报纸和值班表原画面。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U20",
+        "assistant_id": "A020",
+        "user_utterance": "这个骨架可以。再补当代调查线，并概括沈岚、顾川、林默、陈彦和赵慧各自目前能确认掌握或做过什么，不确定动机仍然单列。",
+        "assistant_utterance": "当代线是：十月十二日赵慧去世后，沈岚返港发现录音带并重逢顾川；调查逐步暴露值班表重抄、换班删除和账册去向；最终警方取得账册，陈彦被调查。人物信息上，沈岚掌握遗物与调查成果；顾川早年经手信封；林默提供争议目击；陈彦改表；赵慧藏账册，但动机未定。",
+        "user_intent": "要求补齐当代线和主要人物的信息状态",
+        "assistant_intent": "汇总当代调查进程及人物已知行为",
+        "semantic_goal": "将事件骨架扩展为人物与信息变化概览",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A019",
+          "user_onset_after_text": "旧事骨架如下：一，夏祭当晚信封交接，具体日期未定；二，约二十三点四十分顾川或将信封存入渡轮柜；三，二十三点四十八分三号仓致电顾家；四，火警可能是十七日零点二十分，也可能是当日二十三时许；五，火光后林默声称见沈舟离开；六，火灾后沈舟失踪。录音、账册上船及赵慧藏账册暂无法嵌入精确位置。",
+          "assistant_stop_after_text": "旧事骨架如下：一，夏祭当晚信封交接，具体日期未定；二，约二十三点四十分顾川或将信封存入渡轮柜；三，二十三点四十八分三号仓致电顾家；四，火警可能是十七日零点二十分，也可能是当日二十三时许；五，火光后林默声称见沈舟离开；六，火灾后沈舟失踪。录音、账册上船及赵慧藏账册暂无法嵌入精确位置。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U21",
+        "assistant_id": "A021",
+        "user_utterance": "最后请把材料之间的矛盾和明天复核前最需要补看的原始场面集中列出来，并明确哪些结论现在绝对不能写死。",
+        "assistant_utterance": "复核清单：一，报纸与值班表的火灾日期；二，第二集闪回是否主观；三，第八集服装差异及腕表读数；四，电话实际拨打者、接听者；五，林默原话与顾川迟疑镜头；六，录音标签、录制时间和说话者；七，账册转移、赵慧藏匿的先后与“两个孩子”所指；八，结尾背影身份。现有材料不能确认沈舟火后生还，也不能确认赵慧究竟保护谁。",
+        "user_intent": "要求集中输出冲突、复核项目和禁止写死的结论",
+        "assistant_intent": "形成最终核对清单并划定当前结论边界",
+        "semantic_goal": "为次日复核提供可执行的补看重点",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A020",
+          "user_onset_after_text": "当代线是：十月十二日赵慧去世后，沈岚返港发现录音带并重逢顾川；调查逐步暴露值班表重抄、换班删除和账册去向；最终警方取得账册，陈彦被调查。人物信息上，沈岚掌握遗物与调查成果；顾川早年经手信封；林默提供争议目击；陈彦改表；赵慧藏账册，但动机未定。",
+          "assistant_stop_after_text": "当代线是：十月十二日赵慧去世后，沈岚返港发现录音带并重逢顾川；调查逐步暴露值班表重抄、换班删除和账册去向；最终警方取得账册，陈彦被调查。人物信息上，沈岚掌握遗物与调查成果；顾川早年经手信封；林默提供争议目击；陈彦改表；赵慧藏账册，但动机未定。"
+        },
+        "pause_cue": null
+      }
+    ],
+    "backchannels": [
+      {
+        "event_id": "BC01",
+        "target_assistant_id": "A002",
+        "after_text": "首个确定锚点是二〇二四年十月十二日：",
+        "text": "嗯"
+      },
+      {
+        "event_id": "BC02",
+        "target_assistant_id": "A005",
+        "after_text": "新增道具锚点：三号仓火警上报为二〇〇八年七月十七日零点二十分；",
+        "text": "明白"
+      },
+      {
+        "event_id": "BC03",
+        "target_assistant_id": "A007",
+        "after_text": "这条只记为林默的角色陈述加你的场面记忆：他称火光出现后看见沈舟离开；",
+        "text": "对"
+      },
+      {
+        "event_id": "BC04",
+        "target_assistant_id": "A010",
+        "after_text": "第六集形成一次证据修正：陈彦承认事后重抄值班表，并指称赵慧要求删去顾海生临时换班。",
+        "text": "嗯"
+      },
+      {
+        "event_id": "BC05",
+        "target_assistant_id": "A013",
+        "after_text": "这段优先作为第二集信封交接的补充视角：警铃前，顾川把信封放入渡轮储物柜，腕表约二十三点四十分。",
+        "text": "好"
+      },
+      {
+        "event_id": "BC06",
+        "target_assistant_id": "A017",
+        "after_text": "结局确定层只有：警方取得账册，账册揭出长期伪造货运记录，陈彦被带走调查。",
+        "text": "对"
+      },
+      {
+        "event_id": "BC07",
+        "target_assistant_id": "A019",
+        "after_text": "旧事骨架如下：一，夏祭当晚信封交接，具体日期未定；二，约二十三点四十分顾川或将信封存入渡轮柜；三，二十三点四十八分三号仓致电顾家；",
+        "text": "嗯，继续"
+      }
+    ],
+    "side_speech": [],
+    "environment_events": []
+  },
+  "findings": [
+    {
+      "severity": "must_fix",
+      "path": "/rounds/12/assistant_utterance",
+      "problem": "助手提前泄露了用户尚未说出的服装差异。",
+      "evidence": "U13只提供了补充视角、储物柜和腕表约二十三点四十分；A013却说“‘同一晚’仍需服装差异检验”。服装不同直到下一轮U14才由用户披露，属于当轮assistant_before_reply_history中不可见的隐藏事实。",
+      "repair": "删除服装差异相关表述，只依据U13记录动作、腕表读数及是否同一事件尚未确定。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/rounds/3/assistant_utterance",
+      "problem": "把台词中的返回期限误写成了信封交接的时间范围。",
+      "evidence": "U03原话是沈舟交信封后说“天亮前别回三号码头”，“天亮前”修饰的是别返回；A004却将“信封交接暂定位为‘夏祭当晚、天亮前’”，错误地把期限附着到交接事件。",
+      "repair": "保留“夏祭当晚”作为交接的粗略位置；将“天亮前”仅标为沈舟要求顾川不要返回码头的期限，并继续注明不能据此推出交接与起火的先后。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/rounds/18/assistant_utterance",
+      "problem": "旧事汇总既丢失逐项来源，又用编号强排了尚不能确定的事件顺序，并混淆了火警上报时间与报纸所称起火时间。",
+      "evidence": "A019依次编号“信封交接—二十三点四十分存信封—二十三点四十八分电话”，但此前已确认交接日期未定，存放场面还可能是另一天，不能据编号确定三者顺序；同时“火警可能是……二十三时许”把值班表的“火警上报时间零点二十分”和报纸的“发生火灾二十三时许”当成同一字段。该汇总也没有保留第二集笔记、第八集画面、第五集道具、值班表、报纸、角色陈述等来源。",
+      "repair": "仅排列有可靠日期或相对关系的节点；把交接和存放列为未决位置或条件分支，逐项保留来源与确定性，并分别表述值班表的上报时间版本和报纸的起火时间版本。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/rounds/19/assistant_utterance",
+      "problem": "人物概括把不同证据层级压成了可确认事实，且可能把赵慧死亡日期写成十月十二日。",
+      "evidence": "A020直接写“顾川早年经手信封；林默提供争议目击；陈彦改表；赵慧藏账册”，但顾川经手来自性质未定的回忆/补充视角，林默目击是未逐字核对的角色陈述，陈彦改表是其自认，赵慧藏账册来自官方简介；来源层级均被省略。“十月十二日赵慧去世后”也容易表述为赵慧当日去世，而已知日期明确锚定的是沈岚返港。",
+      "repair": "按人物分别标明官方简介、角色自认或陈述、用户记忆及未决性质；将十月十二日明确绑定沈岚返港，不为赵慧死亡补写具体日期。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/rounds/20/assistant_utterance",
+      "problem": "没有完整回应“哪些结论绝对不能写死”，只明确列出了其中两项。",
+      "evidence": "A021末尾仅说不能确认“沈舟火后生还”和“赵慧究竟保护谁”，但同一回复前面的复核项还表明火灾准确时间、电话双方、录音日期与说话者、两段信封场面是否同一事件、林默目击是否可靠、结尾背影身份等均不能写死。",
+      "repair": "不增加新事实，将清单中现有未决项集中明确标为当前禁止定论的结论，并继续保留各自需要复核的原始场面。"
+    }
+  ],
+  "anchor_dependencies": [
+    {
+      "target_id": "A003",
+      "path": "/rounds/3/timing/user_onset_after_text",
+      "value": "先列入二〇〇八年旧事段：夏祭当晚，",
+      "owner": "model"
+    },
+    {
+      "target_id": "A003",
+      "path": "/rounds/3/timing/assistant_stop_after_text",
+      "value": "先列入二〇〇八年旧事段：夏祭当晚，沈舟",
+      "owner": "program"
+    },
+    {
+      "target_id": "A004",
+      "path": "/rounds/4/timing/user_onset_after_text",
+      "value": "明白。信封交接暂定位为“夏祭当晚、天亮前”，不据此断定发生在起火前；同时标注沈岚主观回忆的可能性。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A004",
+      "path": "/rounds/4/timing/assistant_stop_after_text",
+      "value": "明白。信封交接暂定位为“夏祭当晚、天亮前”，不据此断定发生在起火前；同时标注沈岚主观回忆的可能性。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A012",
+      "path": "/rounds/12/timing/user_onset_after_text",
+      "value": "收到。标签只证明有人手写了二〇〇八年七月十六日，不证明录音当日制作；说话者也仅是剧中暂定为沈舟。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A012",
+      "path": "/rounds/12/timing/assistant_stop_after_text",
+      "value": "收到。标签只证明有人手写了二〇〇八年七月十六日，不证明录音当日制作；说话者也仅是剧中暂定为沈舟。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A013",
+      "path": "/rounds/13/timing/user_onset_after_text",
+      "value": "这段优先作为第二集信封交接的补充视角：警铃前，顾川把信封放入渡轮储物柜，腕表约二十三点四十分。时间来自画面近景，但“同一晚”仍需服装差异检验。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A013",
+      "path": "/rounds/13/timing/assistant_stop_after_text",
+      "value": "这段优先作为第二集信封交接的补充视角：警铃前，顾川把信封放入渡轮储物柜，腕表约二十三点四十分。时间来自画面近景，但“同一晚”仍需服装差异检验。",
+      "owner": "program"
+    },
+    {
+      "target_id": "U18",
+      "path": "/rounds/17/pause_cue/after_text",
+      "value": "还有一张报纸道具抄录：二〇〇八年七月十八日讯，昨夜十一时许三号仓发生火灾；",
+      "owner": "model"
+    },
+    {
+      "target_id": "A018",
+      "path": "/rounds/18/timing/user_onset_after_text",
+      "value": "这是核心日期冲突：报纸若按七月十八日的“昨夜”理解，指向七月十七日二十三时许；值班表则是七月十七日零点二十分，相差近一天。两版并列，需重看报纸和值班表原画面。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A018",
+      "path": "/rounds/18/timing/assistant_stop_after_text",
+      "value": "这是核心日期冲突：报纸若按七月十八日的“昨夜”理解，指向七月十七日二十三时许；值班表则是七月十七日零点二十分，相差近一天。两版并列，需重看报纸和值班表原画面。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A019",
+      "path": "/rounds/19/timing/user_onset_after_text",
+      "value": "旧事骨架如下：一，夏祭当晚信封交接，具体日期未定；二，约二十三点四十分顾川或将信封存入渡轮柜；三，二十三点四十八分三号仓致电顾家；四，火警可能是十七日零点二十分，也可能是当日二十三时许；五，火光后林默声称见沈舟离开；六，火灾后沈舟失踪。录音、账册上船及赵慧藏账册暂无法嵌入精确位置。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A019",
+      "path": "/rounds/19/timing/assistant_stop_after_text",
+      "value": "旧事骨架如下：一，夏祭当晚信封交接，具体日期未定；二，约二十三点四十分顾川或将信封存入渡轮柜；三，二十三点四十八分三号仓致电顾家；四，火警可能是十七日零点二十分，也可能是当日二十三时许；五，火光后林默声称见沈舟离开；六，火灾后沈舟失踪。录音、账册上船及赵慧藏账册暂无法嵌入精确位置。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A020",
+      "path": "/rounds/20/timing/user_onset_after_text",
+      "value": "当代线是：十月十二日赵慧去世后，沈岚返港发现录音带并重逢顾川；调查逐步暴露值班表重抄、换班删除和账册去向；最终警方取得账册，陈彦被调查。人物信息上，沈岚掌握遗物与调查成果；顾川早年经手信封；林默提供争议目击；陈彦改表；赵慧藏账册，但动机未定。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A020",
+      "path": "/rounds/20/timing/assistant_stop_after_text",
+      "value": "当代线是：十月十二日赵慧去世后，沈岚返港发现录音带并重逢顾川；调查逐步暴露值班表重抄、换班删除和账册去向；最终警方取得账册，陈彦被调查。人物信息上，沈岚掌握遗物与调查成果；顾川早年经手信封；林默提供争议目击；陈彦改表；赵慧藏账册，但动机未定。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A013",
+      "path": "/backchannels/4/after_text",
+      "value": "这段优先作为第二集信封交接的补充视角：警铃前，顾川把信封放入渡轮储物柜，腕表约二十三点四十分。",
+      "owner": "model"
+    },
+    {
+      "target_id": "A019",
+      "path": "/backchannels/6/after_text",
+      "value": "旧事骨架如下：一，夏祭当晚信封交接，具体日期未定；二，约二十三点四十分顾川或将信封存入渡轮柜；三，二十三点四十八分三号仓致电顾家；",
+      "owner": "model"
+    }
+  ],
+  "base_sha256": "9368614d3746ce40edb67a7509b7273c14c578ac5b9c345f5718033ad48b36aa"
+}

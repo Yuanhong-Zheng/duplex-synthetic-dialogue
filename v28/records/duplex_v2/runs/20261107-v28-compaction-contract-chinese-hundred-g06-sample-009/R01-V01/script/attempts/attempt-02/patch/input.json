@@ -1,0 +1,1811 @@
+{
+  "frozen_source": {
+    "case_id": "R01-V01",
+    "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g06-sample-009-v2-stage2",
+    "language": "zh",
+    "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+    "script_execution_policy": {
+      "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+      "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+      "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+      "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+      "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+      "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+      "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+    },
+    "program_anchor_seed": 1809907492,
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    },
+    "relay_configuration": {
+      "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g06/relay-policy.json",
+      "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g06/relay-state",
+      "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+      "policy": {
+        "schema": "duplex_v2.timeout_relay_policy.v3",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "backup": {
+          "profile": "lianyu",
+          "endpoint": "https://api.openbili.com/v1/chat/completions",
+          "model_map": {
+            "openai/gpt-5.6-sol": "gpt-5.6-sol",
+            "openai/gpt-5.6-luna": "gpt-5.6-luna"
+          },
+          "verification": {
+            "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+            "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+          }
+        },
+        "trigger": {
+          "max_retries": 5,
+          "http_statuses": [
+            502,
+            503,
+            504
+          ],
+          "error_types": [
+            "TimeoutError",
+            "HTTP2DeadlineExceeded",
+            "ConnectionResetError",
+            "ConnectionAbortedError",
+            "BrokenPipeError",
+            "RemoteDisconnected",
+            "IncompleteRead"
+          ],
+          "http2_transport_errors": "negotiated_h2_only",
+          "require_all_attempts": true
+        },
+        "max_relay_switches": 1
+      }
+    },
+    "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+    "script_repair_policy": {
+      "schema": "duplex_v2.script_repair_policy.v1",
+      "mode": "json_patch",
+      "patch_schema": "duplex_v2.script_patch.v1",
+      "json_parse_max_retries": 3,
+      "content_max_repairs": 5,
+      "length_compaction_max_attempts": 3,
+      "overlength_after_compaction": "fail_case",
+      "judge_scope": "complete_script_and_heard_context"
+    },
+    "text_output_token_policy": "omit",
+    "scene_task": {
+      "scene": {
+        "domain_id": "D20",
+        "domain": "现场观察、视觉辅助与无障碍沟通",
+        "scenario_id": "D20-S03",
+        "scenario": "屏幕内容讲解"
+      },
+      "task_style": "常识问答",
+      "task_instance": {
+        "goal": "弄清手机应用界面中常见控件的作用和状态提示，尤其想分辨按钮、开关、复选框、下拉菜单与标签页各自通常如何呈现，以及遇到不确定的图标或排列时可以按什么顺序判断其含义。"
+      }
+    },
+    "user_voice": {
+      "user_seed": {
+        "role_relation": "经常使用手机办理日常事务、但不熟悉界面设计术语的普通用户",
+        "task_familiarity": "low"
+      },
+      "voice_profile": "女性，感知年龄约四十多岁，音色柔和偏低，吐字清楚，语速平稳，整体听感克制而耐心。",
+      "interaction_profile": {
+        "schema": "duplex_v2.interaction_profile.v1",
+        "formality": "casual",
+        "directness": "balanced",
+        "emotional_expressiveness": "reserved",
+        "verbosity": "brief",
+        "initiative": "medium",
+        "caution": "medium",
+        "patience": "high",
+        "behavioral_notes": [
+          "通常先提出一个概括问题，再根据解释逐步补充自己不确定的地方。",
+          "表达简短克制，遇到术语会直接请求换一种更容易理解的说法。",
+          "愿意听完分步骤说明，确认理解时多用简短回应。"
+        ]
+      }
+    },
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "long",
+      "target_turns": 22,
+      "min_turns": 21,
+      "max_turns": 23
+    },
+    "ambient_catalog": {
+      "schema": "duplex_v2.ambient_catalog.v1",
+      "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+      "assets": [
+        {
+          "asset_id": "fan-fsd50k-eval-419427",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 10.3909375
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-235362",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 11.0
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-415925",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 7.178
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-235541",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 29.045875
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-232686",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 10.3445
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-124020",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 24.78875
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-382582",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.9788125
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-21189",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.962
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-238016",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 11.32
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-185058",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 5.2114375
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-121877",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 11.696
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-340358",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 4.2745
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-82562",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 1.0094375
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-121200",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.83525
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-343098",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.796
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-153104",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.4691875
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-392303",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.6849375
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-272381",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.933375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-71212",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.3638125
+        },
+        {
+          "asset_id": "door-fsd50k-eval-119077",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.7944375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-209519",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 1.0398125
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-399740",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.322
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-233057",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.4700625
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-411545",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.5686875
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-232499",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 0.842
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402127",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402128",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-86343",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 7.5366875
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-57907",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.5773125
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-319512",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.755625
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113173",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 11.2184375
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113175",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.8773125
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113176",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.6341875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-348322",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 1.625
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-426594",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 0.3666875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-332563",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 4.0
+        }
+      ]
+    },
+    "ambient_control": {
+      "schema": "duplex_v2.soundscape_control.v2",
+      "seed": 704000375,
+      "mode": "layered",
+      "discrete_event_target": 2,
+      "max_ambient_layers": 2,
+      "side_speech_requested": false,
+      "speech_kind_preferences": [
+        "third_party",
+        "machine"
+      ]
+    },
+    "situation_knowledge": {
+      "episode_situation": "周六晚上，用户独自在家中餐桌旁使用手机，窗外下着雨，桌边的小风扇持续运转，公寓走廊偶尔传来脚步声。她最近在缴费、设置通知和填写表单时，常把外形相近的控件混在一起，因此现在想先弄懂按钮、开关、复选框、下拉菜单和标签页的基本区别。她已在纸上记下这些名称，并特别留意控件能否点击、是否显示当前状态、操作后会不会立即生效以及是否还藏有选项。手机在手边，但没有共享具体画面；她可以按需口述文字、图标和排列，希望用通俗说法逐项理解，并形成面对陌生图标时先看文字、位置、状态与操作风险的判断顺序。",
+      "task_reference_data": [],
+      "environment_audio": "左侧约两米处的小风扇发出稳定而低沉的转动声，音量基本不变。窗外连续雨声隔着玻璃传入，偶有稍密的雨点轻敲窗面。",
+      "estimated_snr_db": 27,
+      "constraints": [
+        {
+          "constraint_id": "C01",
+          "text": "讲解需覆盖按钮、开关、复选框、下拉菜单与标签页的典型外观、主要作用和常见状态提示。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C02",
+          "text": "遇到界面设计术语时，优先换成日常用语并配合简短例子说明。",
+          "kind": "soft"
+        },
+        {
+          "constraint_id": "C03",
+          "text": "判断陌生控件时不能只依赖颜色或单个图标，应结合附近文字、所在位置、状态变化和操作后果。",
+          "kind": "hard"
+        }
+      ],
+      "safety_limits": [
+        {
+          "limit_id": "L01",
+          "text": "若陌生控件可能触发付款、提交、删除、授权或退出，不应仅为试探含义而直接点击，应先核对标签、提示和返回路径。",
+          "severity": "advisory"
+        }
+      ],
+      "soundscape_plan": {
+        "mode": "layered",
+        "ambient_layers": [
+          {
+            "source_id": "AMB01",
+            "asset_id": "fan-fsd50k-eval-235362",
+            "reason": "与用户在家中餐桌旁且有小风扇持续运转的场景一致。"
+          },
+          {
+            "source_id": "AMB02",
+            "asset_id": "rain-fsd50k-eval-382582",
+            "reason": "与故事中窗外持续下雨的住宅环境一致。"
+          }
+        ],
+        "environment_events": [
+          {
+            "source_id": "ENV01",
+            "asset_id": "paper-fsd50k-eval-343098",
+            "reason": "用户已在桌上准备手写控件名称的纸张，短暂翻动纸张符合当前活动。"
+          },
+          {
+            "source_id": "ENV02",
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "reason": "故事已建立公寓走廊偶尔有脚步声，短段脚步事件与场景一致。"
+          }
+        ],
+        "schema": "duplex_v2.soundscape_plan.v3",
+        "side_speech_sources": [],
+        "side_speech_count": 0,
+        "sampling": {
+          "schema": "duplex_v2.ambient_draw.v2",
+          "policy": {
+            "schema": "duplex_v2.soundscape_policy.v2",
+            "quiet_probability": 0.5,
+            "discrete_targets_by_tier": {
+              "short": [
+                0,
+                1
+              ],
+              "medium": [
+                1,
+                2
+              ],
+              "long": [
+                2,
+                4
+              ]
+            },
+            "discrete_count_includes": [
+              "environment_events",
+              "side_speech"
+            ],
+            "max_ambient_layers": 2,
+            "gain_range": [
+              0.3,
+              0.7
+            ],
+            "speech_request_probability": 0.5,
+            "third_party_preference_probability": 0.8,
+            "speech_requires_existing_scene_source": true,
+            "environment_audio": "base_only",
+            "stage2_repair": "atomic_scoped_patch",
+            "stage2_max_judge_attempts": 3,
+            "json_parse_max_retries": 3
+          },
+          "preferences": {
+            "schema": "duplex_v2.ambient_preferences.v1",
+            "seed": 202611073006,
+            "slot": 8,
+            "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+            "categories": {
+              "bed": [
+                "wind",
+                "traffic",
+                "crowd",
+                "fan",
+                "birds",
+                "rain"
+              ],
+              "event": [
+                "doorbell",
+                "keyboard",
+                "door",
+                "water_tap",
+                "footsteps",
+                "paper"
+              ]
+            },
+            "recordings": {
+              "bed:birds": [
+                "birds-fsd50k-eval-57907",
+                "birds-fsd50k-eval-86343",
+                "birds-fsd50k-eval-319512"
+              ],
+              "bed:crowd": [
+                "crowd-fsd50k-eval-185058",
+                "crowd-fsd50k-eval-340358",
+                "crowd-fsd50k-eval-121877"
+              ],
+              "bed:fan": [
+                "fan-fsd50k-eval-235362",
+                "fan-fsd50k-eval-415925",
+                "fan-fsd50k-eval-419427"
+              ],
+              "bed:rain": [
+                "rain-fsd50k-eval-382582",
+                "rain-fsd50k-eval-238016",
+                "rain-fsd50k-eval-21189"
+              ],
+              "bed:traffic": [
+                "traffic-fsd50k-eval-232686",
+                "traffic-fsd50k-eval-235541",
+                "traffic-fsd50k-eval-124020"
+              ],
+              "bed:wind": [
+                "wind-fsd50k-eval-113175",
+                "wind-fsd50k-eval-113176",
+                "wind-fsd50k-eval-113173"
+              ],
+              "event:door": [
+                "door-fsd50k-eval-119077",
+                "door-fsd50k-eval-71212",
+                "door-fsd50k-eval-209519"
+              ],
+              "event:doorbell": [
+                "doorbell-fsd50k-eval-332563",
+                "doorbell-fsd50k-eval-426594",
+                "doorbell-fsd50k-eval-348322"
+              ],
+              "event:footsteps": [
+                "footsteps-fsd50k-eval-272381",
+                "footsteps-fsd50k-eval-392303",
+                "footsteps-fsd50k-eval-153104"
+              ],
+              "event:keyboard": [
+                "keyboard-fsd50k-eval-233057",
+                "keyboard-fsd50k-eval-399740",
+                "keyboard-fsd50k-eval-411545"
+              ],
+              "event:paper": [
+                "paper-fsd50k-eval-343098",
+                "paper-fsd50k-eval-82562",
+                "paper-fsd50k-eval-121200"
+              ],
+              "event:water_tap": [
+                "water_tap-fsd50k-eval-232499",
+                "water_tap-fsd50k-eval-402127",
+                "water_tap-fsd50k-eval-402128"
+              ]
+            }
+          },
+          "control": {
+            "schema": "duplex_v2.soundscape_control.v2",
+            "seed": 704000375,
+            "mode": "layered",
+            "discrete_event_target": 2,
+            "max_ambient_layers": 2,
+            "side_speech_requested": false,
+            "speech_kind_preferences": [
+              "third_party",
+              "machine"
+            ]
+          },
+          "control_sha256": "314a254b4a1f61268c07a3cf9b187fdc46888dc68d7bc78f22a0cf864aa7fd96",
+          "candidate_plan": {
+            "schema": "duplex_v2.soundscape_plan.v3",
+            "mode": "layered",
+            "ambient_layers": [
+              {
+                "source_id": "AMB01",
+                "candidates": [
+                  {
+                    "asset_id": "fan-fsd50k-eval-235362",
+                    "reason": "与用户在家中餐桌旁且有小风扇持续运转的场景一致。",
+                    "environment_audio": "左侧约两米处传来稳定、低沉的机械风扇声。"
+                  },
+                  {
+                    "asset_id": "fan-fsd50k-eval-419427",
+                    "reason": "可作为室内小风扇的另一段稳定底噪录音。",
+                    "environment_audio": "桌边风扇持续转动，声音平稳且不过分突出。"
+                  },
+                  {
+                    "asset_id": "fan-fsd50k-eval-415925",
+                    "reason": "录音内容符合安静住宅内连续通风声的基础声景。",
+                    "environment_audio": "近处传来均匀的风扇运转声，音量变化很小。"
+                  }
+                ]
+              },
+              {
+                "source_id": "AMB02",
+                "candidates": [
+                  {
+                    "asset_id": "rain-fsd50k-eval-382582",
+                    "reason": "与故事中窗外持续下雨的住宅环境一致。",
+                    "environment_audio": "窗外雨声隔着玻璃连续传入，整体轻柔稳定。"
+                  },
+                  {
+                    "asset_id": "rain-fsd50k-eval-238016",
+                    "reason": "可呈现室内听到的连续雨声，不会改变任务事实。",
+                    "environment_audio": "雨点在窗外连成稳定底声，偶尔略微变密。"
+                  },
+                  {
+                    "asset_id": "rain-fsd50k-eval-21189",
+                    "reason": "适合作为晚间住宅窗外雨声的备选录音。",
+                    "environment_audio": "较远的连续雨声从窗户方向传来，音量保持较低。"
+                  }
+                ]
+              }
+            ],
+            "environment_events": [
+              {
+                "source_id": "ENV01",
+                "candidates": [
+                  {
+                    "asset_id": "paper-fsd50k-eval-343098",
+                    "reason": "用户已在桌上准备手写控件名称的纸张，短暂翻动纸张符合当前活动。",
+                    "environment_audio": "近处响起一次短促的纸张翻动声。"
+                  },
+                  {
+                    "asset_id": "paper-fsd50k-eval-82562",
+                    "reason": "可表现用户查看或挪动手边笔记时产生的完整纸张声。",
+                    "environment_audio": "桌面方向传来一阵轻微的纸张挪动声。"
+                  },
+                  {
+                    "asset_id": "paper-fsd50k-eval-121200",
+                    "reason": "与用户边听边查看纸质笔记的室内场景相容。",
+                    "environment_audio": "手边纸页被轻轻翻动一次，随后恢复安静。"
+                  }
+                ]
+              },
+              {
+                "source_id": "ENV02",
+                "candidates": [
+                  {
+                    "asset_id": "footsteps-fsd50k-eval-272381",
+                    "reason": "故事已建立公寓走廊偶尔有脚步声，短段脚步事件与场景一致。",
+                    "environment_audio": "门外走廊传来一小段由近及远的脚步声。"
+                  },
+                  {
+                    "asset_id": "footsteps-fsd50k-eval-392303",
+                    "reason": "可作为隔门听见的另一段短暂走廊脚步声。",
+                    "environment_audio": "右后方门外响起几步略显沉闷的脚步声，很快消失。"
+                  },
+                  {
+                    "asset_id": "footsteps-fsd50k-eval-153104",
+                    "reason": "录音适合表现住宅走廊中偶然经过的脚步，不引入可辨识人物。",
+                    "environment_audio": "隔着房门传来短暂而模糊的脚步声，音量先升后降。"
+                  }
+                ]
+              }
+            ],
+            "side_speech_eligibility": {
+              "third_party": {
+                "compatible": false,
+                "reason": "用户独自在家，走廊脚步不构成已建立的可辨识第三方说话来源。",
+                "source": null
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "场景中的风扇只能产生机械底噪，没有已建立的语音设备。",
+                "source": null
+              }
+            }
+          },
+          "base_environment_audio_sha256": "139df69a949a09a4fdcd285787ae4f81f7dc30a8a2b50abcc0eaef25adf447fa",
+          "aggregate_environment_audio": "左侧约两米处的小风扇发出稳定而低沉的转动声，音量基本不变。窗外连续雨声隔着玻璃传入，偶有稍密的雨点轻敲窗面。 左侧约两米处传来稳定、低沉的机械风扇声。 窗外雨声隔着玻璃连续传入，整体轻柔稳定。 近处响起一次短促的纸张翻动声。 门外走廊传来一小段由近及远的脚步声。",
+          "draws": [
+            {
+              "source_id": "AMB01",
+              "category": "fan",
+              "asset_id": "fan-fsd50k-eval-235362",
+              "eligible_categories": [
+                "fan"
+              ],
+              "eligible_assets": [
+                "fan-fsd50k-eval-235362",
+                "fan-fsd50k-eval-415925",
+                "fan-fsd50k-eval-419427"
+              ]
+            },
+            {
+              "source_id": "AMB02",
+              "category": "rain",
+              "asset_id": "rain-fsd50k-eval-382582",
+              "eligible_categories": [
+                "rain"
+              ],
+              "eligible_assets": [
+                "rain-fsd50k-eval-21189",
+                "rain-fsd50k-eval-238016",
+                "rain-fsd50k-eval-382582"
+              ]
+            },
+            {
+              "source_id": "ENV01",
+              "category": "paper",
+              "asset_id": "paper-fsd50k-eval-343098",
+              "eligible_categories": [
+                "paper"
+              ],
+              "eligible_assets": [
+                "paper-fsd50k-eval-121200",
+                "paper-fsd50k-eval-343098",
+                "paper-fsd50k-eval-82562"
+              ]
+            },
+            {
+              "source_id": "ENV02",
+              "category": "footsteps",
+              "asset_id": "footsteps-fsd50k-eval-272381",
+              "eligible_categories": [
+                "footsteps"
+              ],
+              "eligible_assets": [
+                "footsteps-fsd50k-eval-153104",
+                "footsteps-fsd50k-eval-272381",
+                "footsteps-fsd50k-eval-392303"
+              ]
+            }
+          ],
+          "speech_selection": {
+            "requested": false,
+            "compatible_kinds": [],
+            "selected_kind": null,
+            "outcome": "not_requested",
+            "assessments": {
+              "third_party": {
+                "compatible": false,
+                "reason": "用户独自在家，走廊脚步不构成已建立的可辨识第三方说话来源。",
+                "source": null
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "场景中的风扇只能产生机械底噪，没有已建立的语音设备。",
+                "source": null
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "schema_version": "duplex_v2.fixed_script.v2",
+  "owner_attempt": 2,
+  "previous_candidate": {
+    "schema_version": "duplex_v2.fixed_script.v2",
+    "title": "手机常见控件辨认与安全判断",
+    "rounds": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_utterance": "我总把手机里的按钮、开关这些弄混，能不能用简单的话给我讲讲？",
+        "assistant_utterance": "可以。先抓住三个问题：它长什么样、点了做什么、会不会显示当前状态。我们再把按钮、开关、复选框、下拉菜单和标签页逐个分清。",
+        "user_intent": "提出概括问题，希望系统理解常见手机控件",
+        "assistant_intent": "建立通俗的判断框架并说明后续讲解范围",
+        "semantic_goal": "获得区分五类常见控件的入门思路",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": null,
+        "pause_cue": null
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_utterance": "那先说按钮吧，它一般是什么样？",
+        "assistant_utterance": "按钮通常是点一下就做一件事。它可能是带文字的圆角方块，也可能只是一个图标，比如“保存”“下一步”或返回箭头。",
+        "user_intent": "追问按钮的典型外观和作用",
+        "assistant_intent": "说明按钮用于触发单次动作并给出常见外观",
+        "semantic_goal": "能从外形和文字初步识别按钮",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A001",
+          "user_onset_after_text": "可以。先抓住三个问题：它长什么样、点了做什么、会不会显示当前状态。我们再把按钮、开关、复选框、下拉菜单和标签页逐个分清。",
+          "assistant_stop_after_text": "可以。先抓住三个问题：它长什么样、点了做什么、会不会显示当前状态。我们再把按钮、开关、复选框、下拉菜单和标签页逐个分清。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_utterance": "有的按钮看着发灰，那是什么意思？",
+        "assistant_utterance": "这叫禁用状态，就是控件还在，但当前条件不允许操作。常见提示是整体变灰、文字变淡，点了也不响应。",
+        "user_intent": "询问发灰按钮所表达的状态",
+        "assistant_intent": "解释按钮不可用状态及其常见视觉提示",
+        "semantic_goal": "理解发灰通常表示当前不能操作",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A002",
+          "user_onset_after_text": "按钮通常是点一下就做一件事。它可能是带文字的圆角方块，也可能只是一个图标，比如“保存”“下一步”或返回箭头。",
+          "assistant_stop_after_text": "按钮通常是点一下就做一件事。它可能是带文字的圆角方块，也可能只是一个图标，比如“保存”“下一步”或返回箭头。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_utterance": "等等，“禁用”这个词我不太懂，换个说法。",
+        "assistant_utterance": "就是“现在还不能点”。例如信息没填完整时，“下一步”会变淡；等必填内容补齐，它才恢复成能点的样子。",
+        "user_intent": "打断术语解释并要求改用日常说法",
+        "assistant_intent": "用通俗表达重新解释按钮暂时不可操作的状态",
+        "semantic_goal": "不依赖设计术语理解发灰按钮",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A003",
+          "user_onset_after_text": "这叫禁用状态，",
+          "assistant_stop_after_text": "这叫禁用状态，就是控"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_utterance": "明白了。开关又怎么看？",
+        "assistant_utterance": "开关像一条短轨道里放着一个小圆点，用来控制某项功能开或关。圆点会左右移动，旁边常写着“通知”“定位”之类的名称。",
+        "user_intent": "转而询问开关的外观和用途",
+        "assistant_intent": "说明开关控制二选一状态及其典型外观",
+        "semantic_goal": "能识别控制功能开关的控件",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A004",
+          "user_onset_after_text": "就是“现在还不能点”。例如信息没填完整时，“下一步”会变淡；等必填内容补齐，它才恢复成能点的样子。",
+          "assistant_stop_after_text": "就是“现在还不能点”。例如信息没填完整时，“下一步”会变淡；等必填内容补齐，它才恢复成能点的样子。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_utterance": "怎么知道它现在是开着还是关着？",
+        "assistant_utterance": "先看圆点在哪一端，再看旁边有没有“开”“关”文字。颜色只能当辅助，因为不同应用用色不同；有些开关打开后还会立即生效。",
+        "user_intent": "追问开关当前状态的判断方式",
+        "assistant_intent": "给出结合位置、文字和颜色判断开关状态的方法",
+        "semantic_goal": "可靠辨认开关当前是开还是关",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A005",
+          "user_onset_after_text": "开关像一条短轨道里放着一个小圆点，用来控制某项功能开或关。圆点会左右移动，旁边常写着“通知”“定位”之类的名称。",
+          "assistant_stop_after_text": "开关像一条短轨道里放着一个小圆点，用来控制某项功能开或关。圆点会左右移动，旁边常写着“通知”“定位”之类的名称。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_utterance": "复选框是不是也表示开和关？",
+        "assistant_utterance": "复选框多用于一组选项里分别勾选，每项前面常有小方框；勾上会出现对号，通常要再点提交或保存才统一生效。",
+        "user_intent": "询问复选框是否等同于开关",
+        "assistant_intent": "解释复选框的典型用途、外观和生效方式",
+        "semantic_goal": "初步理解复选框与开关并不相同",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A006",
+          "user_onset_after_text": "先看圆点在哪一端，再看旁边有没有“开”“关”文字。颜色只能当辅助，因为不同应用用色不同；有些开关打开后还会立即生效。",
+          "assistant_stop_after_text": "先看圆点在哪一端，再看旁边有没有“开”“关”文字。颜色只能当辅助，因为不同应用用色不同；有些开关打开后还会立即生效。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_utterance": "那它和开关最关键的区别是什么？",
+        "assistant_utterance": "开关是在一个功能的两种状态间切换，常常点完就生效；复选框是把一个或多个选项选出来，常常还要点“确定”或“提交”。",
+        "user_intent": "打断细节并要求直接比较复选框与开关",
+        "assistant_intent": "从用途和生效时机概括两者的核心区别",
+        "semantic_goal": "用最关键特征区分开关和复选框",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A007",
+          "user_onset_after_text": "复选框多用于一组选项里分别勾选，",
+          "assistant_stop_after_text": "复选框多用于一组选项里分别勾选，每"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_utterance": "复选框除了对号，还有别的状态吗？",
+        "assistant_utterance": "常见的是空框和带对号的框。有时还会出现一条短横线，表示一组子选项只选中了一部分，不等于全部选中。",
+        "user_intent": "追问复选框可能显示的其他状态",
+        "assistant_intent": "补充未选、已选和部分选中的状态提示",
+        "semantic_goal": "看懂复选框的常见状态标记",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A008",
+          "user_onset_after_text": "开关是在一个功能的两种状态间切换，常常点完就生效；复选框是把一个或多个选项选出来，常常还要点“确定”或“提交”。",
+          "assistant_stop_after_text": "开关是在一个功能的两种状态间切换，常常点完就生效；复选框是把一个或多个选项选出来，常常还要点“确定”或“提交”。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_utterance": "下拉菜单呢，我纸上也记了这个名字，它是做什么的？",
+        "assistant_utterance": "它把多个备选项先收起来，只显示当前选择或提示文字。点开后会展开一列内容，比如省份、月份或付款方式，再从中选一项。",
+        "user_intent": "查看笔记后询问下拉菜单的作用",
+        "assistant_intent": "说明下拉菜单会隐藏并展开一组选项",
+        "semantic_goal": "理解下拉菜单用于从隐藏列表中选择",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01",
+          "T02"
+        ],
+        "timing": {
+          "target_assistant_id": "A009",
+          "user_onset_after_text": "常见的是空框和带对号的框。有时还会出现一条短横线，表示一组子选项只选中了一部分，不等于全部选中。",
+          "assistant_stop_after_text": "常见的是空框和带对号的框。有时还会出现一条短横线，表示一组子选项只选中了一部分，不等于全部选中。"
+        },
+        "pause_cue": {
+          "after_text": "下拉菜单呢，",
+          "duration_ms": 650
+        }
+      },
+      {
+        "user_id": "U11",
+        "assistant_id": "A011",
+        "user_utterance": "没点开以前，怎么知道里面还藏着选项？",
+        "assistant_utterance": "常见线索是文字右边有向下的小箭头，或者整行像一个可点的框。还要看附近提示，例如“请选择”；不能只凭箭头判断。",
+        "user_intent": "追问未展开时识别下拉菜单的线索",
+        "assistant_intent": "提供图标、外框和附近文字相结合的判断方法",
+        "semantic_goal": "在操作前判断某处是否藏有选项",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A010",
+          "user_onset_after_text": "它把多个备选项先收起来，只显示当前选择或提示文字。点开后会展开一列内容，比如省份、月份或付款方式，再从中选一项。",
+          "assistant_stop_after_text": "它把多个备选项先收起来，只显示当前选择或提示文字。点开后会展开一列内容，比如省份、月份或付款方式，再从中选一项。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U12",
+        "assistant_id": "A012",
+        "user_utterance": "标签页又是什么？",
+        "assistant_utterance": "标签页像一本本子的几个页签，点不同名称就在同一块区域换内容。当前页通常有下划线、加粗或明显标记，其他页仍能看见。",
+        "user_intent": "询问标签页的外观、作用和状态",
+        "assistant_intent": "解释标签页切换内容及当前页的常见提示",
+        "semantic_goal": "理解标签页如何呈现和标记当前页面",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A011",
+          "user_onset_after_text": "常见线索是文字右边有向下的小箭头，或者整行像一个可点的框。还要看附近提示，例如“请选择”；不能只凭箭头判断。",
+          "assistant_stop_after_text": "常见线索是文字右边有向下的小箭头，或者整行像一个可点的框。还要看附近提示，例如“请选择”；不能只凭箭头判断。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U13",
+        "assistant_id": "A013",
+        "user_utterance": "“同一块区域换内容”还是有点抽象，举个简单例子。",
+        "assistant_utterance": "比如账单页面上方有“待缴”和“已缴”。点“待缴”，下面显示未付款账单；点“已缴”，下面换成付款记录，上方两个名称一直都在。",
+        "user_intent": "打断抽象解释并要求通俗例子",
+        "assistant_intent": "用账单页面示例具象说明标签页切换",
+        "semantic_goal": "通过生活化例子理解标签页",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A012",
+          "user_onset_after_text": "标签页像一本本子的几个页签，点不同名称就在同一块区域换内容，",
+          "assistant_stop_after_text": "标签页像一本本子的几个页签，点不同名称就在同一块区域换内容，一般"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U14",
+        "assistant_id": "A014",
+        "user_utterance": "手机底下并排的“首页”“我的”，也算标签页吗？",
+        "assistant_utterance": "作用很接近，都是在几个主要区域间切换。底部那排更常叫底部导航；被选中的一项通常会变亮、加粗，或同时显示文字和图标。",
+        "user_intent": "把底部并排入口与标签页进行类比",
+        "assistant_intent": "说明底部导航与标签页的相似点和常用称呼",
+        "semantic_goal": "理解底部导航的切换作用和选中状态",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A013",
+          "user_onset_after_text": "比如账单页面上方有“待缴”和“已缴”。点“待缴”，下面显示未付款账单；点“已缴”，下面换成付款记录，上方两个名称一直都在。",
+          "assistant_stop_after_text": "比如账单页面上方有“待缴”和“已缴”。点“待缴”，下面显示未付款账单；点“已缴”，下面换成付款记录，上方两个名称一直都在。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U15",
+        "assistant_id": "A015",
+        "user_utterance": "这么看，是不是认准颜色就行了？",
+        "assistant_utterance": "不够稳妥。颜色会随应用和主题变化，还可能不明显。要把颜色和文字、位置、形状、选中标记以及操作后的变化一起看。",
+        "user_intent": "试探能否只依赖颜色识别控件状态",
+        "assistant_intent": "纠正单凭颜色判断的做法并补充可靠线索",
+        "semantic_goal": "避免只靠颜色识别控件和状态",
+        "act_ref": "A05",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A014",
+          "user_onset_after_text": "作用很接近，都是在几个主要区域间切换。底部那排更常叫底部导航；被选中的一项通常会变亮、加粗，或同时显示文字和图标。",
+          "assistant_stop_after_text": "作用很接近，都是在几个主要区域间切换。底部那排更常叫底部导航；被选中的一项通常会变亮、加粗，或同时显示文字和图标。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U16",
+        "assistant_id": "A016",
+        "user_utterance": "要是碰到完全不认识的图标，我应该按什么顺序判断？",
+        "assistant_utterance": "先读图标旁边和页面标题的文字，再看它在顶部、内容区还是底部；接着找当前状态提示，最后判断点击会不会付款、提交、删除或授权。",
+        "user_intent": "请求形成判断陌生图标的固定顺序",
+        "assistant_intent": "给出从文字、位置、状态到操作后果的判断流程",
+        "semantic_goal": "掌握面对陌生控件时的逐步判断方法",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01",
+          "T02"
+        ],
+        "timing": {
+          "target_assistant_id": "A015",
+          "user_onset_after_text": "不够稳妥。颜色会随应用和主题变化，还可能不明显。要把颜色和文字、位置、形状、选中标记以及操作后的变化一起看。",
+          "assistant_stop_after_text": "不够稳妥。颜色会随应用和主题变化，还可能不明显。要把颜色和文字、位置、形状、选中标记以及操作后的变化一起看。"
+        },
+        "pause_cue": {
+          "after_text": "要是碰到完全不认识的图标，",
+          "duration_ms": 650
+        }
+      },
+      {
+        "user_id": "U17",
+        "assistant_id": "A017",
+        "user_utterance": "如果还是拿不准，能不能先点一下试试？",
+        "assistant_utterance": "看到付款、提交、删除、授权或退出时，先别拿它试点。先核对标签和弹窗提示，确认能否取消或返回；普通页面切换风险较低，也要留意变化。",
+        "user_intent": "询问是否可以通过试点来确认控件含义",
+        "assistant_intent": "区分高风险与低风险操作并给出试探前的安全原则",
+        "semantic_goal": "知道哪些陌生控件不应随意点击",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A016",
+          "user_onset_after_text": "先读图标旁边和页面标题的文字，再看它在顶部、内容区还是底部；接着找当前状态提示，最后判断点击会不会付款、提交、删除或授权。",
+          "assistant_stop_after_text": "先读图标旁边和页面标题的文字，再看它在顶部、内容区还是底部；接着找当前状态提示，最后判断点击会不会付款、提交、删除或授权。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U18",
+        "assistant_id": "A018",
+        "user_utterance": "那如果只是想弄清删除图标，也不能直接试，对吧？",
+        "assistant_utterance": "对。先看图标旁的对象名称、页面标题和是否有说明；若必须点，也要先确认后面有明确的确认步骤或撤销办法，不能把它当普通测试。",
+        "user_intent": "打断风险清单并确认删除图标不可随意试点",
+        "assistant_intent": "明确删除操作的核对要求和可撤销条件",
+        "semantic_goal": "形成对删除类控件的谨慎操作习惯",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A017",
+          "user_onset_after_text": "看到付款、提交、删除，",
+          "assistant_stop_after_text": "看到付款、提交、删除、授权"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U19",
+        "assistant_id": "A019",
+        "user_utterance": "有些状态我看不出颜色变化，还有别的办法吗？",
+        "assistant_utterance": "可以找文字状态、对号、圆点位置、下划线或加粗。也可使用手机的屏幕朗读功能，让它读出“已选中”“开关已关闭”这类状态。",
+        "user_intent": "寻求不依赖颜色辨认状态的方法",
+        "assistant_intent": "补充视觉标记和屏幕朗读等辅助线索",
+        "semantic_goal": "能通过多种提示确认控件状态",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A018",
+          "user_onset_after_text": "对。先看图标旁的对象名称、页面标题和是否有说明；若必须点，也要先确认后面有明确的确认步骤或撤销办法，不能把它当普通测试。",
+          "assistant_stop_after_text": "对。先看图标旁的对象名称、页面标题和是否有说明；若必须点，也要先确认后面有明确的确认步骤或撤销办法，不能把它当普通测试。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U20",
+        "assistant_id": "A020",
+        "user_utterance": "比如右上角有三个点，旁边没写字，我该怎么想？",
+        "assistant_utterance": "三个点常表示“更多”，但不能只凭图标下结论。先看页面标题和它所在的位置，再判断展开的内容是否可能包含删除、分享、设置等操作。",
+        "user_intent": "提供陌生图标例子并请求应用判断流程",
+        "assistant_intent": "示范如何结合图标、位置和潜在后果进行判断",
+        "semantic_goal": "会分析右上角三个点这类无文字图标",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A019",
+          "user_onset_after_text": "可以找文字状态、对号、圆点位置、下划线或加粗。也可使用手机的屏幕朗读功能，让它读出“已选中”“开关已关闭”这类状态。",
+          "assistant_stop_after_text": "可以找文字状态、对号、圆点位置、下划线或加粗。也可使用手机的屏幕朗读功能，让它读出“已选中”“开关已关闭”这类状态。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U21",
+        "assistant_id": "A021",
+        "user_utterance": "那我先看点开前的页面信息，确定不是只认三个点。",
+        "assistant_utterance": "对。重点是先结合页面标题、附近内容和所在位置推测用途；若可能牵涉敏感操作，就先找说明或返回办法，不靠图标形状猜完就点。",
+        "user_intent": "打断并确认不能仅凭三个点图标判断",
+        "assistant_intent": "巩固结合上下文和风险判断的操作原则",
+        "semantic_goal": "确认陌生图标应先看页面上下文",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A020",
+          "user_onset_after_text": "三个点常表示“更多”，但不能只凭图标下结论。",
+          "assistant_stop_after_text": "三个点常表示“更多”，但不能只凭图标下结论。先看"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U22",
+        "assistant_id": "A022",
+        "user_utterance": "好，最后帮我把这五种和判断顺序简短归拢一下。",
+        "assistant_utterance": "按钮是点一下办一件事；开关控制开或关；复选框勾选一个或多个项目；下拉菜单展开隐藏选项；标签页切换同一区域的内容。陌生控件先看文字，再看位置和状态，最后判断操作后果；涉及付款、提交、删除、授权或退出，别直接试点。",
+        "user_intent": "请求简短回顾五类控件和判断流程",
+        "assistant_intent": "完整归纳控件区别、状态判断顺序和风险提醒",
+        "semantic_goal": "形成便于记忆和实际使用的总结",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A021",
+          "user_onset_after_text": "对。重点是先结合页面标题、附近内容和所在位置推测用途；若可能牵涉敏感操作，就先找说明或返回办法，不靠图标形状猜完就点。",
+          "assistant_stop_after_text": "对。重点是先结合页面标题、附近内容和所在位置推测用途；若可能牵涉敏感操作，就先找说明或返回办法，不靠图标形状猜完就点。"
+        },
+        "pause_cue": null
+      }
+    ],
+    "backchannels": [
+      {
+        "event_id": "BC01",
+        "target_assistant_id": "A002",
+        "after_text": "按钮通常是点一下就做一件事。",
+        "text": "嗯"
+      },
+      {
+        "event_id": "BC02",
+        "target_assistant_id": "A005",
+        "after_text": "开关像一条短轨道里放着一个小圆点，用来控制某项功能开或关。",
+        "text": "明白"
+      },
+      {
+        "event_id": "BC03",
+        "target_assistant_id": "A006",
+        "after_text": "先看圆点在哪一端，再看旁边有没有“开”“关”文字。",
+        "text": "嗯"
+      },
+      {
+        "event_id": "BC04",
+        "target_assistant_id": "A009",
+        "after_text": "常见的是空框和带对号的框。",
+        "text": "好"
+      },
+      {
+        "event_id": "BC05",
+        "target_assistant_id": "A011",
+        "after_text": "常见线索是文字右边有向下的小箭头，或者整行像一个可点的框。",
+        "text": "嗯"
+      },
+      {
+        "event_id": "BC06",
+        "target_assistant_id": "A014",
+        "after_text": "作用很接近，都是在几个主要区域间切换。",
+        "text": "明白"
+      },
+      {
+        "event_id": "BC07",
+        "target_assistant_id": "A016",
+        "after_text": "先读图标旁边和页面标题的文字，再看它在顶部、内容区还是底部；",
+        "text": "嗯"
+      },
+      {
+        "event_id": "BC08",
+        "target_assistant_id": "A019",
+        "after_text": "可以找文字状态、对号、圆点位置、下划线或加粗。",
+        "text": "好"
+      }
+    ],
+    "side_speech": [],
+    "environment_events": [
+      {
+        "event_id": "ENV01",
+        "source_id": "ENV01",
+        "target_audio_id": "U10",
+        "placement_fraction": 0.42
+      },
+      {
+        "event_id": "ENV02",
+        "source_id": "ENV02",
+        "target_audio_id": "A017",
+        "placement_fraction": 0.24
+      }
+    ]
+  },
+  "findings": [
+    {
+      "severity": "must_fix",
+      "path": "/",
+      "problem": "Deterministic schema/anchor validation failed",
+      "evidence": "/rounds/12/timing/user_onset_after_text: must be an exact nonempty full prefix\n/rounds/12/timing/assistant_stop_after_text: must be an exact nonempty full prefix\n/rounds/17/timing/user_onset_after_text: must be an exact nonempty full prefix",
+      "repair": "Correct only the listed structural or exact-prefix errors, preserving the frozen facts."
+    }
+  ],
+  "anchor_dependencies": [
+    {
+      "target_id": "A001",
+      "path": "/rounds/1/timing/user_onset_after_text",
+      "value": "可以。先抓住三个问题：它长什么样、点了做什么、会不会显示当前状态。我们再把按钮、开关、复选框、下拉菜单和标签页逐个分清。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A001",
+      "path": "/rounds/1/timing/assistant_stop_after_text",
+      "value": "可以。先抓住三个问题：它长什么样、点了做什么、会不会显示当前状态。我们再把按钮、开关、复选框、下拉菜单和标签页逐个分清。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A002",
+      "path": "/rounds/2/timing/user_onset_after_text",
+      "value": "按钮通常是点一下就做一件事。它可能是带文字的圆角方块，也可能只是一个图标，比如“保存”“下一步”或返回箭头。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A002",
+      "path": "/rounds/2/timing/assistant_stop_after_text",
+      "value": "按钮通常是点一下就做一件事。它可能是带文字的圆角方块，也可能只是一个图标，比如“保存”“下一步”或返回箭头。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A003",
+      "path": "/rounds/3/timing/user_onset_after_text",
+      "value": "这叫禁用状态，",
+      "owner": "model"
+    },
+    {
+      "target_id": "A003",
+      "path": "/rounds/3/timing/assistant_stop_after_text",
+      "value": "这叫禁用状态，就是控",
+      "owner": "program"
+    },
+    {
+      "target_id": "A004",
+      "path": "/rounds/4/timing/user_onset_after_text",
+      "value": "就是“现在还不能点”。例如信息没填完整时，“下一步”会变淡；等必填内容补齐，它才恢复成能点的样子。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A004",
+      "path": "/rounds/4/timing/assistant_stop_after_text",
+      "value": "就是“现在还不能点”。例如信息没填完整时，“下一步”会变淡；等必填内容补齐，它才恢复成能点的样子。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A005",
+      "path": "/rounds/5/timing/user_onset_after_text",
+      "value": "开关像一条短轨道里放着一个小圆点，用来控制某项功能开或关。圆点会左右移动，旁边常写着“通知”“定位”之类的名称。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A005",
+      "path": "/rounds/5/timing/assistant_stop_after_text",
+      "value": "开关像一条短轨道里放着一个小圆点，用来控制某项功能开或关。圆点会左右移动，旁边常写着“通知”“定位”之类的名称。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A006",
+      "path": "/rounds/6/timing/user_onset_after_text",
+      "value": "先看圆点在哪一端，再看旁边有没有“开”“关”文字。颜色只能当辅助，因为不同应用用色不同；有些开关打开后还会立即生效。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A006",
+      "path": "/rounds/6/timing/assistant_stop_after_text",
+      "value": "先看圆点在哪一端，再看旁边有没有“开”“关”文字。颜色只能当辅助，因为不同应用用色不同；有些开关打开后还会立即生效。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A007",
+      "path": "/rounds/7/timing/user_onset_after_text",
+      "value": "复选框多用于一组选项里分别勾选，",
+      "owner": "model"
+    },
+    {
+      "target_id": "A007",
+      "path": "/rounds/7/timing/assistant_stop_after_text",
+      "value": "复选框多用于一组选项里分别勾选，每",
+      "owner": "program"
+    },
+    {
+      "target_id": "A008",
+      "path": "/rounds/8/timing/user_onset_after_text",
+      "value": "开关是在一个功能的两种状态间切换，常常点完就生效；复选框是把一个或多个选项选出来，常常还要点“确定”或“提交”。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A008",
+      "path": "/rounds/8/timing/assistant_stop_after_text",
+      "value": "开关是在一个功能的两种状态间切换，常常点完就生效；复选框是把一个或多个选项选出来，常常还要点“确定”或“提交”。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A009",
+      "path": "/rounds/9/timing/user_onset_after_text",
+      "value": "常见的是空框和带对号的框。有时还会出现一条短横线，表示一组子选项只选中了一部分，不等于全部选中。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A009",
+      "path": "/rounds/9/timing/assistant_stop_after_text",
+      "value": "常见的是空框和带对号的框。有时还会出现一条短横线，表示一组子选项只选中了一部分，不等于全部选中。",
+      "owner": "program"
+    },
+    {
+      "target_id": "U10",
+      "path": "/rounds/9/pause_cue/after_text",
+      "value": "下拉菜单呢，",
+      "owner": "model"
+    },
+    {
+      "target_id": "A010",
+      "path": "/rounds/10/timing/user_onset_after_text",
+      "value": "它把多个备选项先收起来，只显示当前选择或提示文字。点开后会展开一列内容，比如省份、月份或付款方式，再从中选一项。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A010",
+      "path": "/rounds/10/timing/assistant_stop_after_text",
+      "value": "它把多个备选项先收起来，只显示当前选择或提示文字。点开后会展开一列内容，比如省份、月份或付款方式，再从中选一项。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A011",
+      "path": "/rounds/11/timing/user_onset_after_text",
+      "value": "常见线索是文字右边有向下的小箭头，或者整行像一个可点的框。还要看附近提示，例如“请选择”；不能只凭箭头判断。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A011",
+      "path": "/rounds/11/timing/assistant_stop_after_text",
+      "value": "常见线索是文字右边有向下的小箭头，或者整行像一个可点的框。还要看附近提示，例如“请选择”；不能只凭箭头判断。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A012",
+      "path": "/rounds/12/timing/user_onset_after_text",
+      "value": "标签页像一本本子的几个页签，点不同名称就在同一块区域换内容，",
+      "owner": "model"
+    },
+    {
+      "target_id": "A012",
+      "path": "/rounds/12/timing/assistant_stop_after_text",
+      "value": "标签页像一本本子的几个页签，点不同名称就在同一块区域换内容，一般",
+      "owner": "program"
+    },
+    {
+      "target_id": "A013",
+      "path": "/rounds/13/timing/user_onset_after_text",
+      "value": "比如账单页面上方有“待缴”和“已缴”。点“待缴”，下面显示未付款账单；点“已缴”，下面换成付款记录，上方两个名称一直都在。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A013",
+      "path": "/rounds/13/timing/assistant_stop_after_text",
+      "value": "比如账单页面上方有“待缴”和“已缴”。点“待缴”，下面显示未付款账单；点“已缴”，下面换成付款记录，上方两个名称一直都在。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A014",
+      "path": "/rounds/14/timing/user_onset_after_text",
+      "value": "作用很接近，都是在几个主要区域间切换。底部那排更常叫底部导航；被选中的一项通常会变亮、加粗，或同时显示文字和图标。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A014",
+      "path": "/rounds/14/timing/assistant_stop_after_text",
+      "value": "作用很接近，都是在几个主要区域间切换。底部那排更常叫底部导航；被选中的一项通常会变亮、加粗，或同时显示文字和图标。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A015",
+      "path": "/rounds/15/timing/user_onset_after_text",
+      "value": "不够稳妥。颜色会随应用和主题变化，还可能不明显。要把颜色和文字、位置、形状、选中标记以及操作后的变化一起看。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A015",
+      "path": "/rounds/15/timing/assistant_stop_after_text",
+      "value": "不够稳妥。颜色会随应用和主题变化，还可能不明显。要把颜色和文字、位置、形状、选中标记以及操作后的变化一起看。",
+      "owner": "program"
+    },
+    {
+      "target_id": "U16",
+      "path": "/rounds/15/pause_cue/after_text",
+      "value": "要是碰到完全不认识的图标，",
+      "owner": "model"
+    },
+    {
+      "target_id": "A016",
+      "path": "/rounds/16/timing/user_onset_after_text",
+      "value": "先读图标旁边和页面标题的文字，再看它在顶部、内容区还是底部；接着找当前状态提示，最后判断点击会不会付款、提交、删除或授权。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A016",
+      "path": "/rounds/16/timing/assistant_stop_after_text",
+      "value": "先读图标旁边和页面标题的文字，再看它在顶部、内容区还是底部；接着找当前状态提示，最后判断点击会不会付款、提交、删除或授权。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A017",
+      "path": "/rounds/17/timing/user_onset_after_text",
+      "value": "看到付款、提交、删除，",
+      "owner": "model"
+    },
+    {
+      "target_id": "A017",
+      "path": "/rounds/17/timing/assistant_stop_after_text",
+      "value": "看到付款、提交、删除、授权",
+      "owner": "program"
+    },
+    {
+      "target_id": "A018",
+      "path": "/rounds/18/timing/user_onset_after_text",
+      "value": "对。先看图标旁的对象名称、页面标题和是否有说明；若必须点，也要先确认后面有明确的确认步骤或撤销办法，不能把它当普通测试。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A018",
+      "path": "/rounds/18/timing/assistant_stop_after_text",
+      "value": "对。先看图标旁的对象名称、页面标题和是否有说明；若必须点，也要先确认后面有明确的确认步骤或撤销办法，不能把它当普通测试。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A019",
+      "path": "/rounds/19/timing/user_onset_after_text",
+      "value": "可以找文字状态、对号、圆点位置、下划线或加粗。也可使用手机的屏幕朗读功能，让它读出“已选中”“开关已关闭”这类状态。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A019",
+      "path": "/rounds/19/timing/assistant_stop_after_text",
+      "value": "可以找文字状态、对号、圆点位置、下划线或加粗。也可使用手机的屏幕朗读功能，让它读出“已选中”“开关已关闭”这类状态。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A020",
+      "path": "/rounds/20/timing/user_onset_after_text",
+      "value": "三个点常表示“更多”，但不能只凭图标下结论。",
+      "owner": "model"
+    },
+    {
+      "target_id": "A020",
+      "path": "/rounds/20/timing/assistant_stop_after_text",
+      "value": "三个点常表示“更多”，但不能只凭图标下结论。先看",
+      "owner": "program"
+    },
+    {
+      "target_id": "A021",
+      "path": "/rounds/21/timing/user_onset_after_text",
+      "value": "对。重点是先结合页面标题、附近内容和所在位置推测用途；若可能牵涉敏感操作，就先找说明或返回办法，不靠图标形状猜完就点。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A021",
+      "path": "/rounds/21/timing/assistant_stop_after_text",
+      "value": "对。重点是先结合页面标题、附近内容和所在位置推测用途；若可能牵涉敏感操作，就先找说明或返回办法，不靠图标形状猜完就点。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A002",
+      "path": "/backchannels/0/after_text",
+      "value": "按钮通常是点一下就做一件事。",
+      "owner": "model"
+    },
+    {
+      "target_id": "A005",
+      "path": "/backchannels/1/after_text",
+      "value": "开关像一条短轨道里放着一个小圆点，用来控制某项功能开或关。",
+      "owner": "model"
+    },
+    {
+      "target_id": "A006",
+      "path": "/backchannels/2/after_text",
+      "value": "先看圆点在哪一端，再看旁边有没有“开”“关”文字。",
+      "owner": "model"
+    },
+    {
+      "target_id": "A009",
+      "path": "/backchannels/3/after_text",
+      "value": "常见的是空框和带对号的框。",
+      "owner": "model"
+    },
+    {
+      "target_id": "A011",
+      "path": "/backchannels/4/after_text",
+      "value": "常见线索是文字右边有向下的小箭头，或者整行像一个可点的框。",
+      "owner": "model"
+    },
+    {
+      "target_id": "A014",
+      "path": "/backchannels/5/after_text",
+      "value": "作用很接近，都是在几个主要区域间切换。",
+      "owner": "model"
+    },
+    {
+      "target_id": "A016",
+      "path": "/backchannels/6/after_text",
+      "value": "先读图标旁边和页面标题的文字，再看它在顶部、内容区还是底部；",
+      "owner": "model"
+    },
+    {
+      "target_id": "A019",
+      "path": "/backchannels/7/after_text",
+      "value": "可以找文字状态、对号、圆点位置、下划线或加粗。",
+      "owner": "model"
+    }
+  ],
+  "base_sha256": "ffb36e1799f234435e05c357691518a6ee1460a33b220cd1f61e08dd4bfd5010"
+}

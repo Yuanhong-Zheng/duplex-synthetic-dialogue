@@ -1,0 +1,217 @@
+{
+  "schema": "duplex_v2.audio_manifest.v1",
+  "identity_sha256": "eea475b3b772a458de5a91d21f205d690f100a14889ccd4090ce347598924e53",
+  "seed": 3967404162,
+  "qwen_options": {
+    "engine": "vllm_omni",
+    "service_url": "http://127.0.0.1:18766",
+    "health_timeout_seconds": 1800,
+    "health_policy": "cached_gateway_health_long_wait_v1",
+    "engine_identity": {
+      "vllm": "0.28.0+cu129",
+      "vllm_omni": "0.28.0",
+      "dtype": "bfloat16",
+      "dependency_versions": {
+        "torch": "2.13.0+cu129",
+        "vllm": "0.28.0+cu129",
+        "vllm-omni": "0.28.0",
+        "transformers": "5.14.1",
+        "tokenizers": "0.22.2"
+      },
+      "max_inflight_per_gpu": 8,
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "speech_source_revision": "v27",
+      "model_config_sha256": "b4f01752d15a488abde3e1ab44723ae4f4b9e68a4037257b098b3737893cc1f9",
+      "deploy_config_sha256": "faaf35e2136c852e7d8f2d9706ecc41a88054ccbe0ccf7e1a9244fc008b9f063",
+      "reference_preparation": {
+        "policy": "validated_reference_fast_path_singleflight_gpu_pool_v1",
+        "workers": 2,
+        "gpus": [
+          0,
+          1
+        ],
+        "cache": "reference_settings_manifest_and_audio_sha256",
+        "singleflight": "per_reference_key_with_retained_failures"
+      }
+    }
+  },
+  "voices": {
+    "user": {
+      "schema": "duplex-runtime.qwen3-voice-plan.v1",
+      "voice_profile": "女性，感知年龄为二十多岁，音色清亮而偏细，吐字清楚，语速平稳，整体听感专注克制，情绪起伏会自然地体现在语气中。",
+      "voice_profile_sha256": "ca2ea8d6af788cd8cfbc0dd2699c8503d539d6462db2a0ae0481e410bb59782f",
+      "identity_sha256": "983362fc87bf4f7ee11bfff0cbbeeb50786ee8c3cfa50500823cbe0c4dc6d7ff",
+      "settings": {
+        "backend": "qwen3",
+        "endpoint": "local://qwen3-tts",
+        "model": "Qwen3-TTS-12Hz-1.7B-Base",
+        "voice_id": "qwen3-profile-983362fc87bf4f7e",
+        "sample_rate": 16000,
+        "subtitle_type": "word",
+        "seed": 3967404162,
+        "language": "Chinese",
+        "voice_profile": "女性，感知年龄为二十多岁，音色清亮而偏细，吐字清楚，语速平稳，整体听感专注克制，情绪起伏会自然地体现在语气中。",
+        "reference_text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。",
+        "reference_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G06-N005-R01-V01/R01-V01/audio/voices/user-reference",
+        "instruct": ""
+      },
+      "mapping": {
+        "voice_id": "qwen3-profile-983362fc87bf4f7e",
+        "reason": "由冻结的 Stage 1 声音画像生成固定参考音频，再由 Base 复用同一参考合成整条对话。"
+      },
+      "source": "frozen_stage1_voice_profile",
+      "fixed_for_whole_episode": true
+    },
+    "assistant": {
+      "settings": {
+        "backend": "qwen3",
+        "endpoint": "local://qwen3-tts",
+        "model": "Qwen3-TTS-12Hz-1.7B-Base",
+        "voice_id": "Serena",
+        "sample_rate": 16000,
+        "subtitle_type": "word",
+        "seed": 3967404162,
+        "language": "Chinese",
+        "voice_profile": null,
+        "reference_text": "我们先把已经确认的情况理清楚，再一步一步处理。需要补充的信息，可以接着告诉我。",
+        "reference_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261107-v28-reference-parallel-audio/fresh-batch-shared-assistant-reference/ac9cfa7b3cf77221ad8bf9f7f244ecb3d2dba752b00f51b216804b9380575b32",
+        "instruct": "",
+        "reference_preset": "Serena",
+        "reference_audio": null,
+        "reference_audio_sha256": null,
+        "reference_seed": 20261102,
+        "non_streaming_mode": true
+      },
+      "source": "shared_fixed_Serena_reference",
+      "fixed_for_whole_episode": true
+    },
+    "side_speech": {}
+  },
+  "mode": "exact_program_stop_recompile_existing_verified_TTS",
+  "tts_backend": "qwen3",
+  "clip_concurrency": 16,
+  "pool_capacity": 64,
+  "gap_ms": 240,
+  "runtime_text_model_calls": 0,
+  "api_wait_advances_synthetic_clock": false,
+  "native_realtime_latency_measured": false,
+  "native_server_cancellation": false,
+  "alignment_source": "qwen3_forced_aligner_0.6b_posthoc",
+  "background_audio_is_context": false,
+  "full_assistant_synthesized_before_prefix_crop": true,
+  "status": "completed",
+  "anchor_boundary_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+  "language": "zh",
+  "assistant_reference_root": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261107-v28-reference-parallel-audio/fresh-batch-shared-assistant-reference",
+  "backchannel_alignment_failure_policy": "warn_and_omit_exhausted_alignment_v1",
+  "speech_onset_policy": "cpu_vad_t03_outer_silence_preroll30ms_same_prefix_speech_start_calibration_v1",
+  "ambient_plan_sha256": "df979d39ac872715ba84ad00aa3060f2ac6a6f2354363bcfecf19a31547e9125",
+  "parent_audio_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G06-N005-R01-V01/R01-V01/audio",
+  "parent_artifact_sha256": {
+    "manifest.json": "f950ab141d24a9f7395f8a777eead26b544706a654e68d1c8285479cfc1e5acf",
+    "assets.json": "9328d1ea302300094faccd37ca900d8bdbb8a5913794e31db9711b06a894a4d3",
+    "frozen-script.json": "035351cbd5250d3a9dae68060f0d1fcf88c5d64f7eff2a017aad9c125403780e",
+    "result.json": "ed68d7b8438f0aae28cb96b9b36913377eb583112ab74a15dd5159c607fb0ce1"
+  },
+  "reused_tts_root": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G06-N005-R01-V01/R01-V01/audio/tts",
+  "new_tts_requests": 0,
+  "tts_assets_read_only": true,
+  "exact_stop_selection": {
+    "schema": "duplex_v2.exact_audio_stop_selection.v1",
+    "parent_script_sha256": "6f6c44a0169f5e9bf4ff076d02bd2dcbd2aab40da5936d20d50f66b6d9f5ac09",
+    "selected_script_sha256": "406babb660267b4deb845be63185eb2f146ceb96ba1376b2bcfb520fe7a7f2f6",
+    "changes": [
+      {
+        "round_index": 10,
+        "path": "/rounds/10/timing/assistant_stop_after_text",
+        "user_id": "U11",
+        "target_assistant_id": "A010",
+        "onset": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后",
+        "before": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后；“看下",
+        "after": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后；“看",
+        "units": 1,
+        "end_frame": 218880,
+        "actual_heard_prefix": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后；“看",
+        "punctuation_warning": null
+      }
+    ],
+    "observations": [
+      {
+        "user_id": "U11",
+        "original_error": "U11 stop: character 67 falls inside an alignment span; available surrounding boundaries are 66 and 68; no boundary was moved",
+        "checked": []
+      }
+    ],
+    "selection_max_attempts": 1,
+    "judge_max_attempts": 1,
+    "new_tts_requests": 0,
+    "parent_artifacts_sha256": {
+      "manifest.json": "f950ab141d24a9f7395f8a777eead26b544706a654e68d1c8285479cfc1e5acf",
+      "assets.json": "9328d1ea302300094faccd37ca900d8bdbb8a5913794e31db9711b06a894a4d3",
+      "frozen-script.json": "035351cbd5250d3a9dae68060f0d1fcf88c5d64f7eff2a017aad9c125403780e",
+      "result.json": "ed68d7b8438f0aae28cb96b9b36913377eb583112ab74a15dd5159c607fb0ce1"
+    },
+    "parent_script_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g06-sample-005/R01-V01/script",
+    "parent_script_artifacts_sha256": {
+      "script.json": "035351cbd5250d3a9dae68060f0d1fcf88c5d64f7eff2a017aad9c125403780e",
+      "source.json": "8a2751fa0abe7124b1f0f341d34457daa8a3bf526be1b6f9962ef9fe66cbe520",
+      "summary.json": "847c99de65afc49ba40c52bc229a92171f8f9462c6d86db002aa15c8087ed31e",
+      "length_report.json": "cc8b3718ea8cb31ce461c57582a0094956459b7420e9d37b44e569559c2e8e28"
+    },
+    "review": {
+      "decision_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G06-N005-R01-V01/R01-V01/exact-stop-recovery/decision.json",
+      "decision_sha256": "00122b1da82e0feb15f7eef602a1aa560770c18ac348f629e7833d3734fdf372",
+      "candidate_script_sha256": "406babb660267b4deb845be63185eb2f146ceb96ba1376b2bcfb520fe7a7f2f6",
+      "source_sha256": "ead15ace6244a225250353adcafb9c3f0f59697002179fc538d16af008e4eb90"
+    }
+  },
+  "planned_text_boundaries_exact": false,
+  "spoken_anchor_boundaries_exact": true,
+  "anchor_boundary_warnings": [
+    {
+      "code": "unspoken_punctuation_attached_to_aligned_word",
+      "label": "U04 onset",
+      "planned_prefix": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺",
+      "actual_heard_prefix": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，",
+      "planned_end_char": 67,
+      "actual_end_char": 68,
+      "actual_end_frame": 259840,
+      "attached_unspoken_text": "，",
+      "planned_text_boundary_exact": false,
+      "spoken_boundary_exact": true,
+      "script_modified": false,
+      "word_boundary_moved": false
+    },
+    {
+      "code": "unspoken_punctuation_attached_to_aligned_word",
+      "label": "U08 onset",
+      "planned_prefix": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设",
+      "actual_heard_prefix": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，",
+      "planned_end_char": 63,
+      "actual_end_char": 64,
+      "actual_end_frame": 234240,
+      "attached_unspoken_text": "，",
+      "planned_text_boundary_exact": false,
+      "spoken_boundary_exact": true,
+      "script_modified": false,
+      "word_boundary_moved": false
+    },
+    {
+      "code": "unspoken_punctuation_attached_to_aligned_word",
+      "label": "U11 onset",
+      "planned_prefix": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后",
+      "actual_heard_prefix": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后；“",
+      "planned_end_char": 63,
+      "actual_end_char": 65,
+      "actual_end_frame": 208640,
+      "attached_unspoken_text": "；“",
+      "planned_text_boundary_exact": false,
+      "spoken_boundary_exact": true,
+      "script_modified": false,
+      "word_boundary_moved": false
+    }
+  ]
+}

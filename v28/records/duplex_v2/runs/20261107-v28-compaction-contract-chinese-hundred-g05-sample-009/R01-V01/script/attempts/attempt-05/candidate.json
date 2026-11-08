@@ -1,0 +1,294 @@
+{
+  "schema_version": "duplex_v2.fixed_script.v2",
+  "title": "父亲手机号转移至新机 eSIM 核对清单",
+  "rounds": [
+    {
+      "user_id": "U01",
+      "assistant_id": "A001",
+      "user_utterance": "我在帮我爸把旧手机的号码转到新手机 eSIM，已经试了两次都失败。你帮我按四部分整理个核对清单，别让我把旧号码弄停了。",
+      "assistant_utterance": "可以。先从准备条件开始：请读营业厅写的前提，再说新旧手机型号、系统和当前线路状态；我会把已确认、已尝试、提示原文和待核实项分开记。",
+      "user_intent": "提出整理 eSIM 换机核对清单的任务，并强调优先保住旧线路",
+      "assistant_intent": "确认整理方式并引导用户先提供准备条件和设备状态",
+      "semantic_goal": "建立按四部分整理且区分信息类别的任务框架",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": null,
+      "pause_cue": null
+    },
+    {
+      "user_id": "U02",
+      "assistant_id": "A002",
+      "user_utterance": "说明写新机要支持 eSIM、连稳定无线网、装可用的最新系统，还得实名人验证。新机是 iPhone 16，iOS 18.1，连着家里无线网，蓝牙开着，运营商锁显示无 SIM 限制，现在没有可用套餐。",
+      "assistant_utterance": "已确认：新机是 iPhone 16，iOS 18.1，连着无线网络、蓝牙开启、无 SIM 限制，当前无套餐；说明要求支持 eSIM、使用可用的最新系统并由实名人验证。“18.1 是否为可用最新版本”先列待核实。请补旧机。",
+      "user_intent": "口述营业厅准备条件和新手机当前状态",
+      "assistant_intent": "区分已确认状态与尚待核实的系统版本条件，并追问旧机状态",
+      "semantic_goal": "完成准备条件中新机部分的记录",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A001",
+        "user_onset_after_text": "可以。先从准备条件开始：请读营业厅写的前提，再说新旧手机型号、系统和当前线路状态；我会把已确认、已尝试、提示原文和待核实项分开记。",
+        "assistant_stop_after_text": "可以。先从准备条件开始：请读营业厅写的前提，再说新旧手机型号、系统和当前线路状态；我会把已确认、已尝试、提示原文和待核实项分开记。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U03",
+      "assistant_id": "A003",
+      "user_utterance": "旧机是 iPhone 11，iOS 17.7.1，里面是一张实体 SIM，没有 eSIM。六点五十五分还能拨出电话，现在也有海岚通信信号。",
+      "assistant_utterance": "先定保护线：新机四项测试全部通过前，不拔旧机实体 SIM，不删线路，也不恢复出厂设置。现在请按顺序说你试过的第一种方法和屏幕原话。",
+      "user_intent": "补充旧手机、实体 SIM 和现有服务状态",
+      "assistant_intent": "记录旧线路仍可用并先确立保护措施，再引导披露首次尝试",
+      "semantic_goal": "确认旧服务仍正常并把保留旧线设为后续操作前提",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A002",
+        "user_onset_after_text": "已确认：新机是 iPhone 16，iOS 18.1，连着无线网络、蓝牙开启、无 SIM 限制，当前无套餐；说明要求支持 eSIM、使用可用的最新系统并由实名人验证。“18.1 是否为可用最新版本”先列待核实。请补旧机。",
+        "assistant_stop_after_text": "已确认：新机是 iPhone 16，iOS 18.1，连着无线网络、蓝牙开启、无 SIM 限制，当前无套餐；说明要求支持 eSIM、使用可用的最新系统并由实名人验证。“18.1 是否为可用最新版本”先列待核实。请补旧机。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U04",
+      "assistant_id": "A004",
+      "user_utterance": "旧线我不会动。我先说第一次：两部手机靠近，蓝牙都开着，我选了“从附近的 iPhone 转移”，结果提示“无法转移此号码。请联系运营商以确认此号码是否符合转移条件。”",
+      "assistant_utterance": "第一次尝试已记为“从附近的 iPhone 转移”：两机靠近、蓝牙开启；提示原文是“无法转移此号码。请联系运营商以确认此号码是否符合转移条件。”同一 Apple 账户当时确认过吗？",
+      "user_intent": "打断后直接说明首次转移方式及提示原文",
+      "assistant_intent": "记录首次尝试、保留提示原文并追问 Apple 账户条件",
+      "semantic_goal": "把快速转移失败与当时设备条件对应起来",
+      "act_ref": "A02",
+      "timing_refs": [
+        "T03"
+      ],
+      "timing": {
+        "target_assistant_id": "A003",
+        "user_onset_after_text": "先定保护线：新机四项测试全部通过前，不拔旧机实体 SIM，不删线路，也不恢复出厂设置。",
+        "assistant_stop_after_text": "先定保护线：新机四项测试全部通过前，不拔旧机实体 SIM，不删线路，也不恢复出厂设置。现"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U05",
+      "assistant_id": "A005",
+      "user_utterance": "同一 Apple 账户我真不确定。后来我又扫了营业厅二维码，提示“无法激活 eSIM。请联系运营商以获得协助。”新机还是没线路。",
+      "assistant_utterance": "先分开记：附近转移失败不等于二维码失效；二维码扫描后也没有可用线路。接下来请读纸袋上的生成时间、有效期和下载次数说明。",
+      "user_intent": "说明 Apple 账户未确认，并补充第二次二维码尝试及结果",
+      "assistant_intent": "区分两种失败方式，避免误判二维码状态，并索取标签信息",
+      "semantic_goal": "记录二维码激活失败和新机仍无线路的事实",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A004",
+        "user_onset_after_text": "第一次尝试已记为“从附近的 iPhone 转移”：两机靠近、蓝牙开启；提示原文是“无法转移此号码。请联系运营商以确认此号码是否符合转移条件。”同一 Apple 账户当时确认过吗？",
+        "assistant_stop_after_text": "第一次尝试已记为“从附近的 iPhone 转移”：两机靠近、蓝牙开启；提示原文是“无法转移此号码。请联系运营商以确认此号码是否符合转移条件。”同一 Apple 账户当时确认过吗？"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U06",
+      "assistant_id": "A006",
+      "user_utterance": "等等，标签就在这儿：生成时间是今天十八点三十六分，二十四小时内有效，仅限成功下载一次。可它没写刚才失败算不算用掉了，我有点急。",
+      "assistant_utterance": "标签可确认：十八点三十六分生成，二十四小时内有效，仅限成功下载一次；但扫描失败是否占资格仍未知。先不要再次扫码。请读说明背面的异常处理。",
+      "user_intent": "打断并读取二维码标签，同时表达对下载资格的担忧",
+      "assistant_intent": "记录标签事实，将下载资格列为未知并阻止盲目重扫",
+      "semantic_goal": "明确二维码有效期规则和失败后资格仍待核实",
+      "act_ref": "A02",
+      "timing_refs": [
+        "T03"
+      ],
+      "timing": {
+        "target_assistant_id": "A005",
+        "user_onset_after_text": "先分开记：附近转移失败不等于二维码失效；二维码扫描后也没有可用线路。",
+        "assistant_stop_after_text": "先分开记：附近转移失败不等于二维码失效；二维码扫描后也没有可用线路。接下来"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U07",
+      "assistant_id": "A007",
+      "user_utterance": "背面写：无法下载就确认无线网和系统版本，重启手机，再核对申请登记的 EID、IMEI2 跟新手机显示的是不是一致。二维码过期或者被使用，就得重新申请。",
+      "assistant_utterance": "异常处理先记四步：确认无线网络和系统、重启新机、核对申请登记的 EID 与 IMEI2、二维码过期或被使用则重新申请。请再说实名验证、服务密码和账户状态。",
+      "user_intent": "读取说明背面的异常处理内容",
+      "assistant_intent": "整理异常步骤并转向身份验证和账户条件",
+      "semantic_goal": "建立异常排查的操作依据",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A006",
+        "user_onset_after_text": "标签可确认：十八点三十六分生成，二十四小时内有效，仅限成功下载一次；但扫描失败是否占资格仍未知。先不要再次扫码。请读说明背面的异常处理。",
+        "assistant_stop_after_text": "标签可确认：十八点三十六分生成，二十四小时内有效，仅限成功下载一次；但扫描失败是否占资格仍未知。先不要再次扫码。请读说明背面的异常处理。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U08",
+      "assistant_id": "A008",
+      "user_utterance": "我爸是实名人，身份证在手边，服务密码记不住，账户欠不欠费也还没查，登记的 EID 和 IMEI2 也不知道准不准。",
+      "assistant_utterance": "实名条件具备，但服务密码、欠费、登记 EID、IMEI2 和二维码状态都待核实。换卡、重发或账户验证须由父亲授权；可向运营商确认替代验证方式。请读正面安装步骤。",
+      "user_intent": "补充实名人、证件、服务密码及账户和设备标识的未知状态",
+      "assistant_intent": "明确已具备与待核实条件，并强调需实名人授权",
+      "semantic_goal": "完成账户验证和设备标识待办项的归类",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01",
+        "T02"
+      ],
+      "timing": {
+        "target_assistant_id": "A007",
+        "user_onset_after_text": "异常处理先记四步：确认无线网络和系统、重启新机、核对申请登记的 EID 与 IMEI2、二维码过期或被使用则重新申请。请再说实名验证、服务密码和账户状态。",
+        "assistant_stop_after_text": "异常处理先记四步：确认无线网络和系统、重启新机、核对申请登记的 EID 与 IMEI2、二维码过期或被使用则重新申请。请再说实名验证、服务密码和账户状态。"
+      },
+      "pause_cue": {
+        "after_text": "我爸是实名人，身份证在手边，服务密码记不住，",
+        "duration_ms": 650
+      }
+    },
+    {
+      "user_id": "U09",
+      "assistant_id": "A009",
+      "user_utterance": "正面是进“设置—蜂窝网络—添加 eSIM—使用二维码”，扫完按提示下载。下载完成后给线路命名，再选默认语音和蜂窝数据线路。",
+      "assistant_utterance": "安装顺序已记：设置—蜂窝网络—添加 eSIM—使用二维码，下载后命名线路，再选择默认语音和蜂窝数据。实际重试前，先核实二维码、EID 和 IMEI2；现在请读线路确认部分。",
+      "user_intent": "读取二维码安装和默认线路设置步骤",
+      "assistant_intent": "整理安装顺序并把重试置于关键条件核实之后",
+      "semantic_goal": "形成安装启用部分的有序步骤",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A008",
+        "user_onset_after_text": "实名条件具备，但服务密码、欠费、登记 EID、IMEI2 和二维码状态都待核实。换卡、重发或账户验证须由父亲授权；可向运营商确认替代验证方式。请读正面安装步骤。",
+        "assistant_stop_after_text": "实名条件具备，但服务密码、欠费、登记 EID、IMEI2 和二维码状态都待核实。换卡、重发或账户验证须由父亲授权；可向运营商确认替代验证方式。请读正面安装步骤。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U10",
+      "assistant_id": "A010",
+      "user_utterance": "线路确认写的是启用后测拨出电话、接入电话、短信接收，还有关掉无线网以后测蜂窝数据。全部正常前不要停用原线路。",
+      "assistant_utterance": "线路确认以四项实测为准：拨出、接入、收短信、关闭无线网络后的蜂窝数据。看到下载或激活字样，都不能当作成功；四项完成前继续保留旧线。",
+      "user_intent": "读取线路启用后的四项测试和保留原线路要求",
+      "assistant_intent": "确立线路成功标准并排除仅凭界面提示判定成功",
+      "semantic_goal": "完成线路确认部分的验收标准",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A009",
+        "user_onset_after_text": "安装顺序已记：设置—蜂窝网络—添加 eSIM—使用二维码，下载后命名线路，再选择默认语音和蜂窝数据。实际重试前，先核实二维码、EID 和 IMEI2；现在请读线路确认部分。",
+        "assistant_stop_after_text": "安装顺序已记：设置—蜂窝网络—添加 eSIM—使用二维码，下载后命名线路，再选择默认语音和蜂窝数据。实际重试前，先核实二维码、EID 和 IMEI2；现在请读线路确认部分。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U11",
+      "assistant_id": "A011",
+      "user_utterance": "可现在新机根本没有可用线路，第二张截图也没错误代码，所以这次肯定不能算成功，对吧？",
+      "assistant_utterance": "对，只能记为“二维码扫描后激活失败”，不能记为已启用；原文是“无法激活 eSIM。请联系运营商以获得协助。”，且无错误代码、无可用线路。还要确认有没有备用号码。",
+      "user_intent": "依据当前无线路和无错误代码，质疑是否能算启用成功",
+      "assistant_intent": "确认此次不算成功，准确记录失败状态并追问备用线路",
+      "semantic_goal": "防止把短暂激活流程误判为线路启用",
+      "act_ref": "A05",
+      "timing_refs": [
+        "T03"
+      ],
+      "timing": {
+        "target_assistant_id": "A010",
+        "user_onset_after_text": "线路确认以四项实测为准：拨出、接入、收短信、关闭无线网络后的蜂窝数据。",
+        "assistant_stop_after_text": "线路确认以四项实测为准：拨出、接入、收短信、关闭无线网络后的蜂窝数据。看到下"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U12",
+      "assistant_id": "A012",
+      "user_utterance": "没有备用号码，我爸平时接电话和收验证码就靠这一个。那现在还缺哪些确认项？",
+      "assistant_utterance": "剩余待核实：号码能否开通 eSIM、iOS 18.1 是否为可用最新版本、二维码是否仍有效、登记 EID 和 IMEI2 是否一致、账户是否欠费、两机是否同一 Apple 账户，以及服务密码的替代验证方式。没有备用线，更要暂停重试并保住旧线。",
+      "user_intent": "说明没有备用线路并询问全部剩余待核实事项",
+      "assistant_intent": "汇总未决条件，并基于无备用线再次限定重试风险",
+      "semantic_goal": "形成完整的待核实事项集合",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A011",
+        "user_onset_after_text": "对，只能记为“二维码扫描后激活失败”，不能记为已启用；原文是“无法激活 eSIM。请联系运营商以获得协助。”，且无错误代码、无可用线路。还要确认有没有备用号码。",
+        "assistant_stop_after_text": "对，只能记为“二维码扫描后激活失败”，不能记为已启用；原文是“无法激活 eSIM。请联系运营商以获得协助。”，且无错误代码、无可用线路。还要确认有没有备用号码。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U13",
+      "assistant_id": "A013",
+      "user_utterance": "行，你现在按准备条件、安装启用、线路确认、异常排查，给我完整回读一遍，尽量短。",
+      "assistant_utterance": "一、准备：已确认新机联网、无 SIM 限制且无套餐，旧机实体 SIM 有信号，父亲和证件在场；待核实 eSIM 资格、系统版本、欠费、EID/IMEI2、同一 Apple 账户及替代验证。二维码今日十八点三十六分生成，二十四小时有效，仅限成功下载一次；失败是否占资格待核实。二、安装：核实后进“设置—蜂窝网络—添加 eSIM—使用二维码”，下载后命名并选默认语音、数据；先勿重扫。三、确认：实测拨出、接入、短信、关无线网后的数据，四项全过才算成功。四、排查：已尝试①附近转移，提示原文“无法转移此号码。请联系运营商以确认此号码是否符合转移条件。”②扫码，提示原文“无法激活 eSIM。请联系运营商以获得协助。”，无错误代码、无可用线路；重启并核对网络、系统、EID/IMEI2，二维码过期或已用须经父亲授权后重新申请。此前不拔旧 SIM、不删线、不重置。",
+      "user_intent": "要求按指定四部分完整且简短地回读最终清单",
+      "assistant_intent": "输出依序排列、区分确认项与待核实项并保护旧线路的最终清单",
+      "semantic_goal": "获得可边看手机边逐项核对的定稿清单",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A012",
+        "user_onset_after_text": "剩余待核实：号码能否开通 eSIM、iOS 18.1 是否为可用最新版本、二维码是否仍有效、登记 EID 和 IMEI2 是否一致、账户是否欠费、两机是否同一 Apple 账户，以及服务密码的替代验证方式。没有备用线，更要暂停重试并保住旧线。",
+        "assistant_stop_after_text": "剩余待核实：号码能否开通 eSIM、iOS 18.1 是否为可用最新版本、二维码是否仍有效、登记 EID 和 IMEI2 是否一致、账户是否欠费、两机是否同一 Apple 账户，以及服务密码的替代验证方式。没有备用线，更要暂停重试并保住旧线。"
+      },
+      "pause_cue": null
+    }
+  ],
+  "backchannels": [
+    {
+      "event_id": "BC01",
+      "target_assistant_id": "A002",
+      "after_text": "已确认：新机是 iPhone 16，iOS 18.1，连着无线网络、蓝牙开启、无 SIM 限制，当前无套餐；",
+      "text": "嗯"
+    },
+    {
+      "event_id": "BC02",
+      "target_assistant_id": "A004",
+      "after_text": "第一次尝试已记为“从附近的 iPhone 转移”：两机靠近、蓝牙开启；",
+      "text": "对"
+    },
+    {
+      "event_id": "BC03",
+      "target_assistant_id": "A007",
+      "after_text": "异常处理先记四步：确认无线网络和系统、重启新机、",
+      "text": "嗯，明白"
+    },
+    {
+      "event_id": "BC04",
+      "target_assistant_id": "A009",
+      "after_text": "安装顺序已记：设置—蜂窝网络—添加 eSIM—使用二维码，下载后命名线路，再选择默认语音和蜂窝数据。",
+      "text": "好"
+    }
+  ],
+  "side_speech": [],
+  "environment_events": [
+    {
+      "event_id": "ENV01",
+      "source_id": "ENV01",
+      "target_audio_id": "U02",
+      "placement_fraction": 0.28
+    },
+    {
+      "event_id": "ENV02",
+      "source_id": "ENV02",
+      "target_audio_id": "A012",
+      "placement_fraction": 0.52
+    }
+  ]
+}

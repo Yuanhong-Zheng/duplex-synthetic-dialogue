@@ -1,0 +1,109 @@
+{
+  "scenario": {
+    "domain_id": "D12",
+    "domain": "通信、网络与订阅服务",
+    "domain_definition": "tau-Voice 的 telecom、IHBench 的通信服务和 Azure contact center 场景直接覆盖套餐、账单和故障咨询。",
+    "scenario_id": "D12-S06",
+    "scenario": "数字订阅方案",
+    "requested_examples_per_style": 5,
+    "existing_example_task_seeds": [],
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "medium",
+      "target_turns": 12,
+      "min_turns": 11,
+      "max_turns": 13
+    },
+    "dialogue_length_instruction": "本条完整对话目标为 12 个主轮，允许 11–13 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    }
+  },
+  "current_example_tasks": {
+    "开放式互动": [
+      "弄清数字订阅常见的计费模式、自动续费和试用期规则各自有哪些利弊。",
+      "来一轮模拟订阅服务沟通，练习如何礼貌地询问隐藏费用、取消条件和续费安排。",
+      "共同设计一个理想的数字订阅组合，讨论怎样在便利性、内容丰富度与长期负担之间取舍。",
+      "想通过问答挑战判断不同订阅宣传中哪些表述可能代表限制条件或额外成本。",
+      "讨论数字订阅服务通常如何使用个人数据，以及用户可以从哪些方面评估隐私风险。"
+    ],
+    "结构化整理": [
+      "把随后提供的多个数字订阅方案按功能、收费方式、续费规则、取消条件和适用人群整理成对照清单。",
+      "根据接下来给出的订阅记录，归并重复项目，区分正在使用、暂时停用和可能遗忘的服务，并列出需要核对的条目。",
+      "按照随后提供的功能需求、预算限制和使用频率筛选订阅方案，再排出优先顺序。",
+      "把现有订阅、试用期结束点和续费安排整理成一份便于检查的时间线，并标注相互冲突的事项。",
+      "核对用户提供的账单明细与订阅条款，整理出费用项目、计费周期、优惠变化和需要进一步确认的差异。"
+    ],
+    "混合型": [
+      "先形成数字订阅选择的通用评估框架，再将其应用于随后提供的具体候选，结合总成本、使用频率、锁定程度和取消便利性判断哪种选择更合适。",
+      "先梳理家庭订阅分配的一般原则，再依据随后提供的成员需求和套餐候选，制定分配内容、控制重复订阅并保留弹性的方案。",
+      "先总结试用期和自动续费条款的通用审查框架，再据此判断随后提供的具体条款哪些值得接受、确认或避开。",
+      "先建立保留、降级、暂停或取消订阅的通用判断框架，再应用于随后提供的个人使用情况和替代方案，调整订阅安排。",
+      "先建立兼顾未来变化、隐私偏好与预算优先级的通用组合规划框架，再用随后提供的现有订阅和备选服务制定可随情况调整的订阅组合。"
+    ]
+  },
+  "judge_findings": [
+    {
+      "severity": "must_fix",
+      "path": "/example_tasks/混合型/2",
+      "problem": "混合型五条任务全部沿用“先建立或总结通用框架，再应用于随后材料”的相同叙述骨架，形成表达入口塌缩。",
+      "evidence": "先总结试用期和自动续费条款的通用审查框架，再据此判断随后提供的具体条款哪些值得接受、确认或避开。",
+      "repair": "改用从具体决策疑问或待审条款切入的表达，同时保留通用框架与后续材料判断两个环节。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/example_tasks/混合型/3",
+      "problem": "该条继续重复同组统一的“先……再……”知识获取与应用骨架。",
+      "evidence": "先建立保留、降级、暂停或取消订阅的通用判断框架，再应用于随后提供的个人使用情况和替代方案，调整订阅安排。",
+      "repair": "改为以订阅调整决策或材料分析需求开场，并在后文自然引入通用判断原则。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/example_tasks/混合型/4",
+      "problem": "该条继续重复同组统一的“先……再……”叙述入口，使五条混合型任务的互动方式表达过度一致。",
+      "evidence": "先建立兼顾未来变化、隐私偏好与预算优先级的通用组合规划框架，再用随后提供的现有订阅和备选服务制定可随情况调整的订阅组合。",
+      "repair": "换成由组合规划目标或后续材料中的取舍问题切入，仍明确包含通用原则和材料应用。"
+    }
+  ],
+  "repair_targets": [
+    {
+      "path": "/example_tasks/混合型/2",
+      "current_value": "先总结试用期和自动续费条款的通用审查框架，再据此判断随后提供的具体条款哪些值得接受、确认或避开。"
+    },
+    {
+      "path": "/example_tasks/混合型/3",
+      "current_value": "先建立保留、降级、暂停或取消订阅的通用判断框架，再应用于随后提供的个人使用情况和替代方案，调整订阅安排。"
+    },
+    {
+      "path": "/example_tasks/混合型/4",
+      "current_value": "先建立兼顾未来变化、隐私偏好与预算优先级的通用组合规划框架，再用随后提供的现有订阅和备选服务制定可随情况调整的订阅组合。"
+    }
+  ]
+}

@@ -1,0 +1,2286 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 9 轮，允许 9–10 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 旁语仅限第三方或机器，不包含用户说着说着转向旁人的模式；声音 profile 必须只描述声音。旁语不提供隐藏关键任务材料，不被助手当成正式用户新请求，不使助手停顿或另起回答。声景未支持此来源时不应凭空编人或设备。30%–70% 音量合规即可。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 和 voice_profile 必须逐字匹配对应源，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g03-sample-007-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 2065185707,
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g03/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g03/relay-state",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D13",
+          "domain": "金融、银行与保险",
+          "scenario_id": "D13-S04",
+          "scenario": "支付转账流程解释"
+        },
+        "task_style": "混合型",
+        "task_instance": {
+          "goal": "在准备支付一笔供应商定金时，结合我随后提供的收款方要求、可用支付渠道、操作记录和到账时限，先理解各渠道的基本流程与风险控制要点，再判断目前信息是否足以安全付款，并明确下一步应核对、等待或停止操作的理由。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "负责小型餐饮店日常采购和供应商付款的店主",
+          "task_familiarity": "low"
+        },
+        "voice_profile": "男性，四十至五十多岁，音色略厚实并带一点自然沙哑感，语速中等，吐字清楚，整体听起来稳重但不算特别有把握。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "casual",
+          "directness": "balanced",
+          "emotional_expressiveness": "balanced",
+          "verbosity": "balanced",
+          "initiative": "high",
+          "caution": "high",
+          "patience": "medium",
+          "behavioral_notes": [
+            "会主动补充背景和已知信息，但通常先确认自己是否理解了关键区别。",
+            "遇到不确定之处会明确说出疑虑，并倾向于要求把判断依据讲得具体一些。",
+            "表达总体自然克制，听到新的风险点时会短暂迟疑或调整原先的说法。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "medium",
+        "target_turns": 9,
+        "min_turns": 9,
+        "max_turns": 10
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v2",
+        "seed": 2092121571,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "third_party",
+          "machine"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "2026年11月10日周二下午两点四十分，用户独自在餐饮店二楼的小办公室里，准备支付一笔商用冷藏柜的供应商定金，以便对方安排次日即11月11日发货。供应商海岚餐饮设备有限公司已经合作过一次，但这次负责联络的是新业务员郑璟，用户只通过聊天和一次简短通话接触过他。报价单要求支付18600元定金，而郑璟刚发来的收款要求改成向其个人银行卡转账，并称公司账户正在办理年度资料更新。用户记得上一次货款是付到供应商的公司账户，因此对这次账户变化和催款语气都有疑虑。对方表示当天即11月10日下午四点半前收到定金才能保留现货，但用户还没有从原来认识的供应商联系人处确认这一时限。报价编号中虽含“20261107”，现有材料并未把该数字明确标注为报价日期，不能仅凭编号推定其出具时间。用户已经找出本次报价单、上次采购合同、旧付款记录和新业务员发来的收款信息，并把两个可用渠道停在尚未确认付款的页面。一个渠道是店铺的企业手机银行，另一个是用户个人支付应用中的银行卡转账功能；两个渠道在收款人显示、限额和付款凭证方面并不完全相同。用户对日常扫码采购较熟悉，却没有独立处理过供应商临时变更收款账户的情况，也不确定银行页面显示姓名一致是否足以证明收款授权。旧联系人电话刚才无人接听，新业务员则建议改用聊天中发送的新号码联系财务，这让用户更加谨慎。用户希望先弄清不同转账渠道通常会经过哪些确认步骤、哪些页面信息只能证明账户存在，以及哪些信息能支持收款方确由供应商授权。当前没有必须立即完成付款的经营中断风险，但若错过对方所称的11月10日16:30截止时间，冷藏柜可能无法按原计划于11月11日发货。尚未解决的问题包括个人账户是否获得公司书面授权、旧对公账户是否仍可使用、所谓现货保留期限是否真实，以及付款页面最终显示的信息能否与现有材料相互印证。",
+        "task_reference_data": [
+          "用户手边的本次电子报价单已读：报价编号HL-20261107-26，供货方为“海岚餐饮设备有限公司”，商用冷藏柜总价62000元，定金比例30%，对应金额18600元；报价单写明“定金到账后安排出库”，但未列个人代收账户。",
+          "新业务员郑璟在聊天中发来的要求已读：请在今天16:30前向户名“郑璟”的银行卡支付18600元，开户行显示为宁波银行杭州城西支行，并解释公司账户正在办理年度资料更新；消息没有附公司盖章授权书。",
+          "用户手边的上次采购合同已读：签约供货方同为“海岚餐饮设备有限公司”，合同中的收款户名也是该公司，开户行为招商银行杭州分行营业部；合同未写明员工可以个人账户代收货款。",
+          "店铺2026年3月18日的旧付款记录可现场读取：曾向户名“海岚餐饮设备有限公司”的招商银行账户支付12400元，付款附言为“制冰机尾款”，记录中没有郑璟的姓名。",
+          "企业手机银行转账页面可现场读取：当前录入金额为18600元，页面支持填写银行卡号、户名和付款用途；用户尚未进入最终确认页，因此还没有看到系统对户名与账号是否匹配的提示。",
+          "个人支付应用的银行卡转账说明页已读：该渠道单笔上限20000元，到账前会显示收款人姓名的部分字符，电子凭证记录实际收款账户；用户尚未扫描郑璟发来的收款码，也未确认码内账户与文字消息是否一致。",
+          "用户手机中的联络记录可现场核对：上次合作联系人林茹的原号码为13760428195，今天14:27拨打后无人接听；郑璟随后提供的所谓财务号码为15931746280，该号码此前没有出现在合同、报价单或旧聊天记录中。",
+          "郑璟发来的发货说明已读：若16:30前收到定金，可称次日上午安排车辆发货；该说明仅出现在聊天消息中，报价单没有写现货锁定截止时间或逾期处理条款。"
+        ],
+        "environment_audio": "店铺二楼办公室保持安静，近处只有很轻的室内底噪。门外和楼下没有持续可辨的人声或机器声，整体音量稳定，语音十分清楚。",
+        "estimated_snr_db": 35,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "本次待判断的定金金额固定为18600元，不能通过改变金额来回避对收款授权的核验。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "现阶段只能依据用户手边材料和随后能够自行读取或向已知联系人核实的信息进行判断，不能把未经核实的新号码或聊天说法视为既定事实。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C03",
+            "text": "付款渠道仅在企业手机银行与个人支付应用的银行卡转账功能之间比较，不引入用户当前没有的其他渠道。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C04",
+            "text": "应分别说明账户技术匹配、收款主体身份和供应商授权之间的区别，再决定核对、等待或停止操作。",
+            "kind": "soft"
+          }
+        ],
+        "safety_limits": [
+          {
+            "limit_id": "L01",
+            "text": "在个人收款账户未通过供应商既有可信联系方式或正式书面授权核实前，不得确认或提交这笔转账。",
+            "severity": "hard"
+          },
+          {
+            "limit_id": "L02",
+            "text": "若付款页面显示的户名、银行卡信息或金额与已核实材料不一致，应立即停止操作，不以测试转账替代核验。",
+            "severity": "hard"
+          },
+          {
+            "limit_id": "L03",
+            "text": "不得向任何联系人透露短信验证码、支付密码、动态口令，或接受远程控制和代操作要求。",
+            "severity": "critical"
+          }
+        ],
+        "soundscape_plan": {
+          "mode": "quiet",
+          "ambient_layers": [],
+          "environment_events": [],
+          "schema": "duplex_v2.soundscape_plan.v3",
+          "side_speech_sources": [],
+          "side_speech_count": 0,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v2",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v2",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611073003,
+              "slot": 6,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "traffic",
+                  "rain",
+                  "wind",
+                  "crowd",
+                  "fan",
+                  "birds"
+                ],
+                "event": [
+                  "keyboard",
+                  "paper",
+                  "doorbell",
+                  "door",
+                  "footsteps",
+                  "water_tap"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-319512",
+                  "birds-fsd50k-eval-86343",
+                  "birds-fsd50k-eval-57907"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-121877",
+                  "crowd-fsd50k-eval-340358",
+                  "crowd-fsd50k-eval-185058"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-419427"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-21189",
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-382582"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-124020",
+                  "traffic-fsd50k-eval-235541",
+                  "traffic-fsd50k-eval-232686"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113176",
+                  "wind-fsd50k-eval-113175",
+                  "wind-fsd50k-eval-113173"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-209519",
+                  "door-fsd50k-eval-71212",
+                  "door-fsd50k-eval-119077"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-426594",
+                  "doorbell-fsd50k-eval-348322",
+                  "doorbell-fsd50k-eval-332563"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-392303",
+                  "footsteps-fsd50k-eval-272381",
+                  "footsteps-fsd50k-eval-153104"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-399740",
+                  "keyboard-fsd50k-eval-411545"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-82562",
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-343098"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-232499",
+                  "water_tap-fsd50k-eval-402128",
+                  "water_tap-fsd50k-eval-402127"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v2",
+              "seed": 2092121571,
+              "mode": "quiet",
+              "discrete_event_target": 0,
+              "max_ambient_layers": 2,
+              "side_speech_requested": false,
+              "speech_kind_preferences": [
+                "third_party",
+                "machine"
+              ]
+            },
+            "control_sha256": "e8a409eb506cc5d8e65aa6be5ea5a2e41f0a56be263bc7fb6b6593b0fcc484d4",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v3",
+              "mode": "quiet",
+              "ambient_layers": [],
+              "environment_events": [],
+              "side_speech_eligibility": {
+                "third_party": {
+                  "compatible": false,
+                  "reason": "用户独自在办公室，当前故事中没有已在场且可辨识的第三方。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "当前场景没有已建立的语音播报设备或其他合理的机器旁语来源。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "1ee3e68c62f353305c142fd4876ac0f05283e38b09f86ee9efba57e1ae41e005",
+            "aggregate_environment_audio": "店铺二楼办公室保持安静，近处只有很轻的室内底噪。门外和楼下没有持续可辨的人声或机器声，整体音量稳定，语音十分清楚。",
+            "draws": [],
+            "speech_selection": {
+              "requested": false,
+              "compatible_kinds": [],
+              "selected_kind": null,
+              "outcome": "not_requested",
+              "assessments": {
+                "third_party": {
+                  "compatible": false,
+                  "reason": "用户独自在办公室，当前故事中没有已在场且可辨识的第三方。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "当前场景没有已建立的语音播报设备或其他合理的机器旁语来源。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v2",
+      "title": "供应商临时改用个人账户收取定金",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？",
+          "assistant_utterance": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。",
+          "user_intent": "先了解两个可用转账渠道的基本流程和风险控制差异",
+          "assistant_intent": "说明两个渠道的一般确认步骤，并区分账户匹配与供应商授权",
+          "semantic_goal": "建立判断临时变更收款账户是否安全的基础框架",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "这次是海岚餐饮设备有限公司，定金一万八千六百元。新业务员郑璟让我今天四点半前转到他个人银行卡，说公司账户在更新；可我上次明明付的是公司账户。这种情况，页面姓名对上能不能付？",
+          "assistant_utterance": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。页面即使显示“郑璟”，也只说明输入信息可能匹配，不能证明海岚公司授权他收款。现在不要确认或提交，应先核验授权和时限。",
+          "user_intent": "披露个人代收和限时催款情况，询问姓名匹配能否作为付款依据",
+          "assistant_intent": "识别账户变更风险，明确姓名匹配不能证明公司授权并要求暂停付款",
+          "semantic_goal": "判断当前个人账户是否已具备安全付款条件",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。",
+            "assistant_stop_after_text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "先停一下，正是个人账户和催款让我不踏实。我手上还有旧合同、旧付款记录和这次报价单：旧的收款户名都是海岚公司，这次报价单也没写郑璟可以代收，更没有盖章授权。",
+          "assistant_utterance": "旧合同和付款记录只能支持海岚原对公账户曾被使用；本次报价单未写郑璟可代收，也没有盖章授权，因此不支持个人代收。现有证据不足以安全付款，必须补到公司正式授权，或经原有可信联系人确认。",
+          "user_intent": "打断风险说明并补充旧交易材料及授权缺失情况",
+          "assistant_intent": "评估现有材料的证明范围，指出个人代收授权仍然缺失",
+          "semantic_goal": "确认旧记录和报价单能否支持向郑璟个人账户付款",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。",
+            "assistant_stop_after_text": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。页面"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "我再把两个页面说清楚。企业手机银行已填一万八千六百元，还没到最终确认；个人应用单笔上限两万元，只会显示姓名的一部分，我也没扫他发的码。哪边更能留证、也更稳妥？",
+          "assistant_utterance": "从你目前看到的信息，还不能比较哪边的凭证更完整；可先查看各自的凭证说明，但不要为此进入确认或扫码。无论留痕如何，都补不了授权缺口，部分姓名显示也不能确认收款主体。授权未核实前，两边都不应确认或提交。",
+          "user_intent": "补充两个渠道的当前页面状态并比较留证能力和安全性",
+          "assistant_intent": "比较渠道凭证差异，同时说明两者都无法替代收款授权核验",
+          "semantic_goal": "确定是否存在一个当前可以安全使用的付款渠道",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；本次报价单未写郑璟可代收，也没有盖章授权，因此不支持个人代收。现有证据不足以安全付款，必须补到公司正式授权，或经原有可信联系人确认。",
+            "assistant_stop_after_text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；本次报价单未写郑璟可代收，也没有盖章授权，因此不支持个人代收。现有证据不足以安全付款，必须补到公司正式授权，或经原有可信联系人确认。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "旧联系人林茹的原号码我两点二十七分打过，没人接，郑璟又让我打一个以前没见过的新号码，说是财务。我该打这个新号码核实，还是继续等林茹？",
+          "assistant_utterance": "先不要把新号码当成财务官方渠道。继续通过旧合同、旧聊天或已保存的原联系人回拨核实，要求确认个人账户、卡号、金额一万八千六百元及收款期限；最好再取得公司盖章或可验证的书面授权。",
+          "user_intent": "说明可信联系人暂未接听和新财务号码来源，询问应采用哪条核实路径",
+          "assistant_intent": "排除未经验证的新号码，给出基于既有可信联系方式的核实要求",
+          "semantic_goal": "选择不会被聊天中陌生号码误导的核验方式",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "从你目前看到的信息，还不能比较哪边的凭证更完整；可先查看各自的凭证说明，但不要为此进入确认或扫码。无论留痕如何，都补不了授权缺口，部分姓名显示也不能确认收款主体。授权未核实前，两边都不应确认或提交。",
+            "assistant_stop_after_text": "从你目前看到的信息，还不能比较哪边的凭证更完整；可先查看各自的凭证说明，但不要为此进入确认或扫码。无论留痕如何，都补不了授权缺口，部分姓名显示也不能确认收款主体。授权未核实前，两边都不应确认或提交。"
+          },
+          "pause_cue": {
+            "after_text": "旧联系人林茹的原号码我两点二十七分打过，没人接，",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U06",
+          "assistant_id": "A006",
+          "user_utterance": "报价编号是HL-20261107-26，报价只写“定金到账后安排出库”。郑璟另在聊天里说四点半前到账，明早才能发货。编号里的日期和他的时限，能当成依据吗？",
+          "assistant_utterance": "不能。编号中的数字没有被明确标注为报价日期，不能据此推定出具时间；四点半到账时限和次日上午发货也只来自聊天，报价单没有相应条款。它们都应由既有可信联系人或正式文件再次确认。",
+          "user_intent": "核实报价编号和聊天中的付款发货时限能否作为可靠依据",
+          "assistant_intent": "说明不能从编号推断日期，并区分聊天承诺与正式文件条款",
+          "semantic_goal": "判断限时付款压力是否已经得到可信材料支持",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A005",
+            "user_onset_after_text": "先不要把新号码当成财务官方渠道。继续通过旧合同、旧聊天或已保存的原联系人回拨核实，要求确认个人账户、卡号、金额一万八千六百元及收款期限；最好再取得公司盖章或可验证的书面授权。",
+            "assistant_stop_after_text": "先不要把新号码当成财务官方渠道。继续通过旧合同、旧聊天或已保存的原联系人回拨核实，要求确认个人账户、卡号、金额一万八千六百元及收款期限；最好再取得公司盖章或可验证的书面授权。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U07",
+          "assistant_id": "A007",
+          "user_utterance": "那在等核实期间，我能不能只点进最终确认页看看姓名是否匹配，但不输验证码、不提交？个人应用的码要不要先扫出来比一下？",
+          "assistant_utterance": "不建议为查看提示继续推进，也不要先扫未经核实的收款码。现有材料已经足以暂停；等授权来源可信后，再核对户名、卡号、开户行、金额和用途，任何一项不一致都应立即退出，不能用小额试转代替核验。",
+          "user_intent": "询问能否在不提交付款的前提下继续查看页面或扫描收款码",
+          "assistant_intent": "阻止不必要的流程推进和扫码，说明何时及如何核对付款字段",
+          "semantic_goal": "明确等待核实期间哪些页面操作应停止",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A006",
+            "user_onset_after_text": "不能。编号中的数字没有被明确标注为报价日期，不能据此推定出具时间；四点半到账时限和次日上午发货也只来自聊天，报价单没有相应条款。它们都应由既有可信联系人或正式文件再次确认。",
+            "assistant_stop_after_text": "不能。编号中的数字没有被明确标注为报价日期，不能据此推定出具时间；四点半到账时限和次日上午发货也只来自聊天，报价单没有相应条款。它们都应由既有可信联系人或正式文件再次确认。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U08",
+          "assistant_id": "A008",
+          "user_utterance": "好，那我不往下点。要是林茹用原号码回电，口头确认郑璟可以代收就够了吗？我还该让她具体确认哪些内容？",
+          "assistant_utterance": "原号码回电能增强可信度，但个人代收属于重大变更，最好仍取得可验证的公司书面授权。让她明确确认收款人郑璟、完整卡号及开户行、金额一万八千六百元、付款用途、旧对公账户是否停用，以及四点半和发货安排是否真实。",
+          "user_intent": "打断后确认停止操作，并追问可信联系人应核实的具体项目",
+          "assistant_intent": "界定电话确认的证明强度，并给出账户变更和时限的核实内容",
+          "semantic_goal": "形成足以验证个人代收授权的具体核对范围",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A007",
+            "user_onset_after_text": "不建议为查看提示继续推进，也不要先扫未经核实的收款码。",
+            "assistant_stop_after_text": "不建议为查看提示继续推进，也不要先扫未经核实的收款码。现有"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U09",
+          "assistant_id": "A009",
+          "user_utterance": "明白。我现在的决定是两边都不确认、不扫码，也不联系那个新财务号码；等林茹回电并拿到公司书面授权，再逐项核对。最后帮我定一句：如果四点半前仍核实不到，是继续等还是为了保货先付？",
+          "assistant_utterance": "继续等，并停止这笔付款，不能为了保货绕过授权核验。未取得可信确认和正式授权前，姓名匹配、聊天催款和发货承诺都不足以放款；即使错过四点半，也应先保护资金安全，再与供应商重新确认库存和发货安排。",
+          "user_intent": "汇总停止操作的决定，并要求明确截止时间前无法核实时的最终行动",
+          "assistant_intent": "作出不付款的最终判断，并说明资金安全优先于未经核实的保货时限",
+          "semantic_goal": "确定四点半前核验未完成时应继续等待并停止付款",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A008",
+            "user_onset_after_text": "原号码回电能增强可信度，但个人代收属于重大变更，最好仍取得可验证的公司书面授权。让她明确确认收款人郑璟、完整卡号及开户行、金额一万八千六百元、付款用途、旧对公账户是否停用，以及四点半和发货安排是否真实。",
+            "assistant_stop_after_text": "原号码回电能增强可信度，但个人代收属于重大变更，最好仍取得可验证的公司书面授权。让她明确确认收款人郑璟、完整卡号及开户行、金额一万八千六百元、付款用途、旧对公账户是否停用，以及四点半和发货安排是否真实。"
+          },
+          "pause_cue": null
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A001",
+          "after_text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；",
+          "text": "嗯，明白"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A003",
+          "after_text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；",
+          "text": "对"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A005",
+          "after_text": "先不要把新号码当成财务官方渠道。",
+          "text": "好"
+        }
+      ],
+      "side_speech": [],
+      "environment_events": []
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "这次是海岚餐饮设备有限公司，定金一万八千六百元。新业务员郑璟让我今天四点半前转到他个人银行卡，说公司账户在更新；可我上次明明付的是公司账户。这种情况，页面姓名对上能不能付？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。",
+          "final_shared_played_prefix": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A001",
+            "after_text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。页面即使显示“郑璟”，也只说明输入信息可能匹配，不能证明海岚公司授权他收款。现在不要确认或提交，应先核验授权和时限。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "这次是海岚餐饮设备有限公司，定金一万八千六百元。新业务员郑璟让我今天四点半前转到他个人银行卡，说公司账户在更新；可我上次明明付的是公司账户。这种情况，页面姓名对上能不能付？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "这次是海岚餐饮设备有限公司，定金一万八千六百元。新业务员郑璟让我今天四点半前转到他个人银行卡，说公司账户在更新；可我上次明明付的是公司账户。这种情况，页面姓名对上能不能付？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。页面"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，正是个人账户和催款让我不踏实。我手上还有旧合同、旧付款记录和这次报价单：旧的收款户名都是海岚公司，这次报价单也没写郑璟可以代收，更没有盖章授权。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。",
+          "final_shared_played_prefix": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。页面",
+          "discarded_unheard_tail": "即使显示“郑璟”，也只说明输入信息可能匹配，不能证明海岚公司授权他收款。现在不要确认或提交，应先核验授权和时限。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A001",
+            "after_text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "旧合同和付款记录只能支持海岚原对公账户曾被使用；本次报价单未写郑璟可代收，也没有盖章授权，因此不支持个人代收。现有证据不足以安全付款，必须补到公司正式授权，或经原有可信联系人确认。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "这次是海岚餐饮设备有限公司，定金一万八千六百元。新业务员郑璟让我今天四点半前转到他个人银行卡，说公司账户在更新；可我上次明明付的是公司账户。这种情况，页面姓名对上能不能付？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。页面"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，正是个人账户和催款让我不踏实。我手上还有旧合同、旧付款记录和这次报价单：旧的收款户名都是海岚公司，这次报价单也没写郑璟可以代收，更没有盖章授权。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；本次报价单未写郑璟可代收，也没有盖章授权，因此不支持个人代收。现有证据不足以安全付款，必须补到公司正式授权，或经原有可信联系人确认。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "这次是海岚餐饮设备有限公司，定金一万八千六百元。新业务员郑璟让我今天四点半前转到他个人银行卡，说公司账户在更新；可我上次明明付的是公司账户。这种情况，页面姓名对上能不能付？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。页面"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，正是个人账户和催款让我不踏实。我手上还有旧合同、旧付款记录和这次报价单：旧的收款户名都是海岚公司，这次报价单也没写郑璟可以代收，更没有盖章授权。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；本次报价单未写郑璟可代收，也没有盖章授权，因此不支持个人代收。现有证据不足以安全付款，必须补到公司正式授权，或经原有可信联系人确认。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我再把两个页面说清楚。企业手机银行已填一万八千六百元，还没到最终确认；个人应用单笔上限两万元，只会显示姓名的一部分，我也没扫他发的码。哪边更能留证、也更稳妥？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "旧合同和付款记录只能支持海岚原对公账户曾被使用；本次报价单未写郑璟可代收，也没有盖章授权，因此不支持个人代收。现有证据不足以安全付款，必须补到公司正式授权，或经原有可信联系人确认。",
+          "final_shared_played_prefix": "旧合同和付款记录只能支持海岚原对公账户曾被使用；本次报价单未写郑璟可代收，也没有盖章授权，因此不支持个人代收。现有证据不足以安全付款，必须补到公司正式授权，或经原有可信联系人确认。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A001",
+            "after_text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A003",
+            "after_text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "从你目前看到的信息，还不能比较哪边的凭证更完整；可先查看各自的凭证说明，但不要为此进入确认或扫码。无论留痕如何，都补不了授权缺口，部分姓名显示也不能确认收款主体。授权未核实前，两边都不应确认或提交。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "这次是海岚餐饮设备有限公司，定金一万八千六百元。新业务员郑璟让我今天四点半前转到他个人银行卡，说公司账户在更新；可我上次明明付的是公司账户。这种情况，页面姓名对上能不能付？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。页面"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，正是个人账户和催款让我不踏实。我手上还有旧合同、旧付款记录和这次报价单：旧的收款户名都是海岚公司，这次报价单也没写郑璟可以代收，更没有盖章授权。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；本次报价单未写郑璟可代收，也没有盖章授权，因此不支持个人代收。现有证据不足以安全付款，必须补到公司正式授权，或经原有可信联系人确认。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我再把两个页面说清楚。企业手机银行已填一万八千六百元，还没到最终确认；个人应用单笔上限两万元，只会显示姓名的一部分，我也没扫他发的码。哪边更能留证、也更稳妥？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "从你目前看到的信息，还不能比较哪边的凭证更完整；可先查看各自的凭证说明，但不要为此进入确认或扫码。无论留痕如何，都补不了授权缺口，部分姓名显示也不能确认收款主体。授权未核实前，两边都不应确认或提交。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "这次是海岚餐饮设备有限公司，定金一万八千六百元。新业务员郑璟让我今天四点半前转到他个人银行卡，说公司账户在更新；可我上次明明付的是公司账户。这种情况，页面姓名对上能不能付？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。页面"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，正是个人账户和催款让我不踏实。我手上还有旧合同、旧付款记录和这次报价单：旧的收款户名都是海岚公司，这次报价单也没写郑璟可以代收，更没有盖章授权。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；本次报价单未写郑璟可代收，也没有盖章授权，因此不支持个人代收。现有证据不足以安全付款，必须补到公司正式授权，或经原有可信联系人确认。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我再把两个页面说清楚。企业手机银行已填一万八千六百元，还没到最终确认；个人应用单笔上限两万元，只会显示姓名的一部分，我也没扫他发的码。哪边更能留证、也更稳妥？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "从你目前看到的信息，还不能比较哪边的凭证更完整；可先查看各自的凭证说明，但不要为此进入确认或扫码。无论留痕如何，都补不了授权缺口，部分姓名显示也不能确认收款主体。授权未核实前，两边都不应确认或提交。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "旧联系人林茹的原号码我两点二十七分打过，没人接，郑璟又让我打一个以前没见过的新号码，说是财务。我该打这个新号码核实，还是继续等林茹？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "从你目前看到的信息，还不能比较哪边的凭证更完整；可先查看各自的凭证说明，但不要为此进入确认或扫码。无论留痕如何，都补不了授权缺口，部分姓名显示也不能确认收款主体。授权未核实前，两边都不应确认或提交。",
+          "final_shared_played_prefix": "从你目前看到的信息，还不能比较哪边的凭证更完整；可先查看各自的凭证说明，但不要为此进入确认或扫码。无论留痕如何，都补不了授权缺口，部分姓名显示也不能确认收款主体。授权未核实前，两边都不应确认或提交。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A001",
+            "after_text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A003",
+            "after_text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "先不要把新号码当成财务官方渠道。继续通过旧合同、旧聊天或已保存的原联系人回拨核实，要求确认个人账户、卡号、金额一万八千六百元及收款期限；最好再取得公司盖章或可验证的书面授权。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "这次是海岚餐饮设备有限公司，定金一万八千六百元。新业务员郑璟让我今天四点半前转到他个人银行卡，说公司账户在更新；可我上次明明付的是公司账户。这种情况，页面姓名对上能不能付？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。页面"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，正是个人账户和催款让我不踏实。我手上还有旧合同、旧付款记录和这次报价单：旧的收款户名都是海岚公司，这次报价单也没写郑璟可以代收，更没有盖章授权。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；本次报价单未写郑璟可代收，也没有盖章授权，因此不支持个人代收。现有证据不足以安全付款，必须补到公司正式授权，或经原有可信联系人确认。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我再把两个页面说清楚。企业手机银行已填一万八千六百元，还没到最终确认；个人应用单笔上限两万元，只会显示姓名的一部分，我也没扫他发的码。哪边更能留证、也更稳妥？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "从你目前看到的信息，还不能比较哪边的凭证更完整；可先查看各自的凭证说明，但不要为此进入确认或扫码。无论留痕如何，都补不了授权缺口，部分姓名显示也不能确认收款主体。授权未核实前，两边都不应确认或提交。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "旧联系人林茹的原号码我两点二十七分打过，没人接，郑璟又让我打一个以前没见过的新号码，说是财务。我该打这个新号码核实，还是继续等林茹？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "先不要把新号码当成财务官方渠道。继续通过旧合同、旧聊天或已保存的原联系人回拨核实，要求确认个人账户、卡号、金额一万八千六百元及收款期限；最好再取得公司盖章或可验证的书面授权。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "这次是海岚餐饮设备有限公司，定金一万八千六百元。新业务员郑璟让我今天四点半前转到他个人银行卡，说公司账户在更新；可我上次明明付的是公司账户。这种情况，页面姓名对上能不能付？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。页面"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，正是个人账户和催款让我不踏实。我手上还有旧合同、旧付款记录和这次报价单：旧的收款户名都是海岚公司，这次报价单也没写郑璟可以代收，更没有盖章授权。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；本次报价单未写郑璟可代收，也没有盖章授权，因此不支持个人代收。现有证据不足以安全付款，必须补到公司正式授权，或经原有可信联系人确认。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我再把两个页面说清楚。企业手机银行已填一万八千六百元，还没到最终确认；个人应用单笔上限两万元，只会显示姓名的一部分，我也没扫他发的码。哪边更能留证、也更稳妥？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "从你目前看到的信息，还不能比较哪边的凭证更完整；可先查看各自的凭证说明，但不要为此进入确认或扫码。无论留痕如何，都补不了授权缺口，部分姓名显示也不能确认收款主体。授权未核实前，两边都不应确认或提交。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "旧联系人林茹的原号码我两点二十七分打过，没人接，郑璟又让我打一个以前没见过的新号码，说是财务。我该打这个新号码核实，还是继续等林茹？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "先不要把新号码当成财务官方渠道。继续通过旧合同、旧聊天或已保存的原联系人回拨核实，要求确认个人账户、卡号、金额一万八千六百元及收款期限；最好再取得公司盖章或可验证的书面授权。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "报价编号是HL-20261107-26，报价只写“定金到账后安排出库”。郑璟另在聊天里说四点半前到账，明早才能发货。编号里的日期和他的时限，能当成依据吗？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A005",
+          "at_user_onset_heard_prefix": "先不要把新号码当成财务官方渠道。继续通过旧合同、旧聊天或已保存的原联系人回拨核实，要求确认个人账户、卡号、金额一万八千六百元及收款期限；最好再取得公司盖章或可验证的书面授权。",
+          "final_shared_played_prefix": "先不要把新号码当成财务官方渠道。继续通过旧合同、旧聊天或已保存的原联系人回拨核实，要求确认个人账户、卡号、金额一万八千六百元及收款期限；最好再取得公司盖章或可验证的书面授权。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A001",
+            "after_text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A003",
+            "after_text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A005",
+            "after_text": "先不要把新号码当成财务官方渠道。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "不能。编号中的数字没有被明确标注为报价日期，不能据此推定出具时间；四点半到账时限和次日上午发货也只来自聊天，报价单没有相应条款。它们都应由既有可信联系人或正式文件再次确认。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "这次是海岚餐饮设备有限公司，定金一万八千六百元。新业务员郑璟让我今天四点半前转到他个人银行卡，说公司账户在更新；可我上次明明付的是公司账户。这种情况，页面姓名对上能不能付？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。页面"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，正是个人账户和催款让我不踏实。我手上还有旧合同、旧付款记录和这次报价单：旧的收款户名都是海岚公司，这次报价单也没写郑璟可以代收，更没有盖章授权。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；本次报价单未写郑璟可代收，也没有盖章授权，因此不支持个人代收。现有证据不足以安全付款，必须补到公司正式授权，或经原有可信联系人确认。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我再把两个页面说清楚。企业手机银行已填一万八千六百元，还没到最终确认；个人应用单笔上限两万元，只会显示姓名的一部分，我也没扫他发的码。哪边更能留证、也更稳妥？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "从你目前看到的信息，还不能比较哪边的凭证更完整；可先查看各自的凭证说明，但不要为此进入确认或扫码。无论留痕如何，都补不了授权缺口，部分姓名显示也不能确认收款主体。授权未核实前，两边都不应确认或提交。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "旧联系人林茹的原号码我两点二十七分打过，没人接，郑璟又让我打一个以前没见过的新号码，说是财务。我该打这个新号码核实，还是继续等林茹？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "先不要把新号码当成财务官方渠道。继续通过旧合同、旧聊天或已保存的原联系人回拨核实，要求确认个人账户、卡号、金额一万八千六百元及收款期限；最好再取得公司盖章或可验证的书面授权。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "报价编号是HL-20261107-26，报价只写“定金到账后安排出库”。郑璟另在聊天里说四点半前到账，明早才能发货。编号里的日期和他的时限，能当成依据吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "不能。编号中的数字没有被明确标注为报价日期，不能据此推定出具时间；四点半到账时限和次日上午发货也只来自聊天，报价单没有相应条款。它们都应由既有可信联系人或正式文件再次确认。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "这次是海岚餐饮设备有限公司，定金一万八千六百元。新业务员郑璟让我今天四点半前转到他个人银行卡，说公司账户在更新；可我上次明明付的是公司账户。这种情况，页面姓名对上能不能付？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。页面"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，正是个人账户和催款让我不踏实。我手上还有旧合同、旧付款记录和这次报价单：旧的收款户名都是海岚公司，这次报价单也没写郑璟可以代收，更没有盖章授权。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；本次报价单未写郑璟可代收，也没有盖章授权，因此不支持个人代收。现有证据不足以安全付款，必须补到公司正式授权，或经原有可信联系人确认。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我再把两个页面说清楚。企业手机银行已填一万八千六百元，还没到最终确认；个人应用单笔上限两万元，只会显示姓名的一部分，我也没扫他发的码。哪边更能留证、也更稳妥？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "从你目前看到的信息，还不能比较哪边的凭证更完整；可先查看各自的凭证说明，但不要为此进入确认或扫码。无论留痕如何，都补不了授权缺口，部分姓名显示也不能确认收款主体。授权未核实前，两边都不应确认或提交。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "旧联系人林茹的原号码我两点二十七分打过，没人接，郑璟又让我打一个以前没见过的新号码，说是财务。我该打这个新号码核实，还是继续等林茹？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "先不要把新号码当成财务官方渠道。继续通过旧合同、旧聊天或已保存的原联系人回拨核实，要求确认个人账户、卡号、金额一万八千六百元及收款期限；最好再取得公司盖章或可验证的书面授权。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "报价编号是HL-20261107-26，报价只写“定金到账后安排出库”。郑璟另在聊天里说四点半前到账，明早才能发货。编号里的日期和他的时限，能当成依据吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "不能。编号中的数字没有被明确标注为报价日期，不能据此推定出具时间；四点半到账时限和次日上午发货也只来自聊天，报价单没有相应条款。它们都应由既有可信联系人或正式文件再次确认。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那在等核实期间，我能不能只点进最终确认页看看姓名是否匹配，但不输验证码、不提交？个人应用的码要不要先扫出来比一下？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A006",
+          "at_user_onset_heard_prefix": "不能。编号中的数字没有被明确标注为报价日期，不能据此推定出具时间；四点半到账时限和次日上午发货也只来自聊天，报价单没有相应条款。它们都应由既有可信联系人或正式文件再次确认。",
+          "final_shared_played_prefix": "不能。编号中的数字没有被明确标注为报价日期，不能据此推定出具时间；四点半到账时限和次日上午发货也只来自聊天，报价单没有相应条款。它们都应由既有可信联系人或正式文件再次确认。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A001",
+            "after_text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A003",
+            "after_text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A005",
+            "after_text": "先不要把新号码当成财务官方渠道。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "不建议为查看提示继续推进，也不要先扫未经核实的收款码。现有材料已经足以暂停；等授权来源可信后，再核对户名、卡号、开户行、金额和用途，任何一项不一致都应立即退出，不能用小额试转代替核验。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "这次是海岚餐饮设备有限公司，定金一万八千六百元。新业务员郑璟让我今天四点半前转到他个人银行卡，说公司账户在更新；可我上次明明付的是公司账户。这种情况，页面姓名对上能不能付？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。页面"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，正是个人账户和催款让我不踏实。我手上还有旧合同、旧付款记录和这次报价单：旧的收款户名都是海岚公司，这次报价单也没写郑璟可以代收，更没有盖章授权。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；本次报价单未写郑璟可代收，也没有盖章授权，因此不支持个人代收。现有证据不足以安全付款，必须补到公司正式授权，或经原有可信联系人确认。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我再把两个页面说清楚。企业手机银行已填一万八千六百元，还没到最终确认；个人应用单笔上限两万元，只会显示姓名的一部分，我也没扫他发的码。哪边更能留证、也更稳妥？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "从你目前看到的信息，还不能比较哪边的凭证更完整；可先查看各自的凭证说明，但不要为此进入确认或扫码。无论留痕如何，都补不了授权缺口，部分姓名显示也不能确认收款主体。授权未核实前，两边都不应确认或提交。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "旧联系人林茹的原号码我两点二十七分打过，没人接，郑璟又让我打一个以前没见过的新号码，说是财务。我该打这个新号码核实，还是继续等林茹？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "先不要把新号码当成财务官方渠道。继续通过旧合同、旧聊天或已保存的原联系人回拨核实，要求确认个人账户、卡号、金额一万八千六百元及收款期限；最好再取得公司盖章或可验证的书面授权。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "报价编号是HL-20261107-26，报价只写“定金到账后安排出库”。郑璟另在聊天里说四点半前到账，明早才能发货。编号里的日期和他的时限，能当成依据吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "不能。编号中的数字没有被明确标注为报价日期，不能据此推定出具时间；四点半到账时限和次日上午发货也只来自聊天，报价单没有相应条款。它们都应由既有可信联系人或正式文件再次确认。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那在等核实期间，我能不能只点进最终确认页看看姓名是否匹配，但不输验证码、不提交？个人应用的码要不要先扫出来比一下？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "不建议为查看提示继续推进，也不要先扫未经核实的收款码。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "这次是海岚餐饮设备有限公司，定金一万八千六百元。新业务员郑璟让我今天四点半前转到他个人银行卡，说公司账户在更新；可我上次明明付的是公司账户。这种情况，页面姓名对上能不能付？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。页面"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，正是个人账户和催款让我不踏实。我手上还有旧合同、旧付款记录和这次报价单：旧的收款户名都是海岚公司，这次报价单也没写郑璟可以代收，更没有盖章授权。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；本次报价单未写郑璟可代收，也没有盖章授权，因此不支持个人代收。现有证据不足以安全付款，必须补到公司正式授权，或经原有可信联系人确认。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我再把两个页面说清楚。企业手机银行已填一万八千六百元，还没到最终确认；个人应用单笔上限两万元，只会显示姓名的一部分，我也没扫他发的码。哪边更能留证、也更稳妥？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "从你目前看到的信息，还不能比较哪边的凭证更完整；可先查看各自的凭证说明，但不要为此进入确认或扫码。无论留痕如何，都补不了授权缺口，部分姓名显示也不能确认收款主体。授权未核实前，两边都不应确认或提交。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "旧联系人林茹的原号码我两点二十七分打过，没人接，郑璟又让我打一个以前没见过的新号码，说是财务。我该打这个新号码核实，还是继续等林茹？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "先不要把新号码当成财务官方渠道。继续通过旧合同、旧聊天或已保存的原联系人回拨核实，要求确认个人账户、卡号、金额一万八千六百元及收款期限；最好再取得公司盖章或可验证的书面授权。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "报价编号是HL-20261107-26，报价只写“定金到账后安排出库”。郑璟另在聊天里说四点半前到账，明早才能发货。编号里的日期和他的时限，能当成依据吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "不能。编号中的数字没有被明确标注为报价日期，不能据此推定出具时间；四点半到账时限和次日上午发货也只来自聊天，报价单没有相应条款。它们都应由既有可信联系人或正式文件再次确认。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那在等核实期间，我能不能只点进最终确认页看看姓名是否匹配，但不输验证码、不提交？个人应用的码要不要先扫出来比一下？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "不建议为查看提示继续推进，也不要先扫未经核实的收款码。现有"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "好，那我不往下点。要是林茹用原号码回电，口头确认郑璟可以代收就够了吗？我还该让她具体确认哪些内容？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A007",
+          "at_user_onset_heard_prefix": "不建议为查看提示继续推进，也不要先扫未经核实的收款码。",
+          "final_shared_played_prefix": "不建议为查看提示继续推进，也不要先扫未经核实的收款码。现有",
+          "discarded_unheard_tail": "材料已经足以暂停；等授权来源可信后，再核对户名、卡号、开户行、金额和用途，任何一项不一致都应立即退出，不能用小额试转代替核验。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A001",
+            "after_text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A003",
+            "after_text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A005",
+            "after_text": "先不要把新号码当成财务官方渠道。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "原号码回电能增强可信度，但个人代收属于重大变更，最好仍取得可验证的公司书面授权。让她明确确认收款人郑璟、完整卡号及开户行、金额一万八千六百元、付款用途、旧对公账户是否停用，以及四点半和发货安排是否真实。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "这次是海岚餐饮设备有限公司，定金一万八千六百元。新业务员郑璟让我今天四点半前转到他个人银行卡，说公司账户在更新；可我上次明明付的是公司账户。这种情况，页面姓名对上能不能付？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。页面"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，正是个人账户和催款让我不踏实。我手上还有旧合同、旧付款记录和这次报价单：旧的收款户名都是海岚公司，这次报价单也没写郑璟可以代收，更没有盖章授权。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；本次报价单未写郑璟可代收，也没有盖章授权，因此不支持个人代收。现有证据不足以安全付款，必须补到公司正式授权，或经原有可信联系人确认。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我再把两个页面说清楚。企业手机银行已填一万八千六百元，还没到最终确认；个人应用单笔上限两万元，只会显示姓名的一部分，我也没扫他发的码。哪边更能留证、也更稳妥？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "从你目前看到的信息，还不能比较哪边的凭证更完整；可先查看各自的凭证说明，但不要为此进入确认或扫码。无论留痕如何，都补不了授权缺口，部分姓名显示也不能确认收款主体。授权未核实前，两边都不应确认或提交。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "旧联系人林茹的原号码我两点二十七分打过，没人接，郑璟又让我打一个以前没见过的新号码，说是财务。我该打这个新号码核实，还是继续等林茹？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "先不要把新号码当成财务官方渠道。继续通过旧合同、旧聊天或已保存的原联系人回拨核实，要求确认个人账户、卡号、金额一万八千六百元及收款期限；最好再取得公司盖章或可验证的书面授权。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "报价编号是HL-20261107-26，报价只写“定金到账后安排出库”。郑璟另在聊天里说四点半前到账，明早才能发货。编号里的日期和他的时限，能当成依据吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "不能。编号中的数字没有被明确标注为报价日期，不能据此推定出具时间；四点半到账时限和次日上午发货也只来自聊天，报价单没有相应条款。它们都应由既有可信联系人或正式文件再次确认。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那在等核实期间，我能不能只点进最终确认页看看姓名是否匹配，但不输验证码、不提交？个人应用的码要不要先扫出来比一下？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "不建议为查看提示继续推进，也不要先扫未经核实的收款码。现有"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "好，那我不往下点。要是林茹用原号码回电，口头确认郑璟可以代收就够了吗？我还该让她具体确认哪些内容？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "原号码回电能增强可信度，但个人代收属于重大变更，最好仍取得可验证的公司书面授权。让她明确确认收款人郑璟、完整卡号及开户行、金额一万八千六百元、付款用途、旧对公账户是否停用，以及四点半和发货安排是否真实。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "这次是海岚餐饮设备有限公司，定金一万八千六百元。新业务员郑璟让我今天四点半前转到他个人银行卡，说公司账户在更新；可我上次明明付的是公司账户。这种情况，页面姓名对上能不能付？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。页面"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，正是个人账户和催款让我不踏实。我手上还有旧合同、旧付款记录和这次报价单：旧的收款户名都是海岚公司，这次报价单也没写郑璟可以代收，更没有盖章授权。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；本次报价单未写郑璟可代收，也没有盖章授权，因此不支持个人代收。现有证据不足以安全付款，必须补到公司正式授权，或经原有可信联系人确认。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我再把两个页面说清楚。企业手机银行已填一万八千六百元，还没到最终确认；个人应用单笔上限两万元，只会显示姓名的一部分，我也没扫他发的码。哪边更能留证、也更稳妥？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "从你目前看到的信息，还不能比较哪边的凭证更完整；可先查看各自的凭证说明，但不要为此进入确认或扫码。无论留痕如何，都补不了授权缺口，部分姓名显示也不能确认收款主体。授权未核实前，两边都不应确认或提交。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "旧联系人林茹的原号码我两点二十七分打过，没人接，郑璟又让我打一个以前没见过的新号码，说是财务。我该打这个新号码核实，还是继续等林茹？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "先不要把新号码当成财务官方渠道。继续通过旧合同、旧聊天或已保存的原联系人回拨核实，要求确认个人账户、卡号、金额一万八千六百元及收款期限；最好再取得公司盖章或可验证的书面授权。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "报价编号是HL-20261107-26，报价只写“定金到账后安排出库”。郑璟另在聊天里说四点半前到账，明早才能发货。编号里的日期和他的时限，能当成依据吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "不能。编号中的数字没有被明确标注为报价日期，不能据此推定出具时间；四点半到账时限和次日上午发货也只来自聊天，报价单没有相应条款。它们都应由既有可信联系人或正式文件再次确认。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那在等核实期间，我能不能只点进最终确认页看看姓名是否匹配，但不输验证码、不提交？个人应用的码要不要先扫出来比一下？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "不建议为查看提示继续推进，也不要先扫未经核实的收款码。现有"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "好，那我不往下点。要是林茹用原号码回电，口头确认郑璟可以代收就够了吗？我还该让她具体确认哪些内容？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "原号码回电能增强可信度，但个人代收属于重大变更，最好仍取得可验证的公司书面授权。让她明确确认收款人郑璟、完整卡号及开户行、金额一万八千六百元、付款用途、旧对公账户是否停用，以及四点半和发货安排是否真实。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "明白。我现在的决定是两边都不确认、不扫码，也不联系那个新财务号码；等林茹回电并拿到公司书面授权，再逐项核对。最后帮我定一句：如果四点半前仍核实不到，是继续等还是为了保货先付？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A008",
+          "at_user_onset_heard_prefix": "原号码回电能增强可信度，但个人代收属于重大变更，最好仍取得可验证的公司书面授权。让她明确确认收款人郑璟、完整卡号及开户行、金额一万八千六百元、付款用途、旧对公账户是否停用，以及四点半和发货安排是否真实。",
+          "final_shared_played_prefix": "原号码回电能增强可信度，但个人代收属于重大变更，最好仍取得可验证的公司书面授权。让她明确确认收款人郑璟、完整卡号及开户行、金额一万八千六百元、付款用途、旧对公账户是否停用，以及四点半和发货安排是否真实。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A001",
+            "after_text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A003",
+            "after_text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A005",
+            "after_text": "先不要把新号码当成财务官方渠道。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "继续等，并停止这笔付款，不能为了保货绕过授权核验。未取得可信确认和正式授权前，姓名匹配、聊天催款和发货承诺都不足以放款；即使错过四点半，也应先保护资金安全，再与供应商重新确认库存和发货安排。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A001",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；"
+          }
+        ],
+        "at_event_onset_heard_prefix": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；",
+        "event_text": "嗯，明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC02",
+        "kind": "backchannels",
+        "target_assistant_id": "A003",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "这次是海岚餐饮设备有限公司，定金一万八千六百元。新业务员郑璟让我今天四点半前转到他个人银行卡，说公司账户在更新；可我上次明明付的是公司账户。这种情况，页面姓名对上能不能付？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。页面"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，正是个人账户和催款让我不踏实。我手上还有旧合同、旧付款记录和这次报价单：旧的收款户名都是海岚公司，这次报价单也没写郑璟可以代收，更没有盖章授权。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；"
+          }
+        ],
+        "at_event_onset_heard_prefix": "旧合同和付款记录只能支持海岚原对公账户曾被使用；",
+        "event_text": "对",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC03",
+        "kind": "backchannels",
+        "target_assistant_id": "A005",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我正要给供应商付一笔设备定金，但收款方式有变化。您先跟我说说，企业手机银行和个人支付应用转银行卡，一般各走什么步骤，分别要防什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "企业手机银行通常要录入账号、户名、金额和用途，再做身份验证；个人支付应用通常要录入或选择收款账户、核对姓名提示和金额，再验证确认并留存凭证。两者都可能核对账户，但页面匹配不等于供应商授权，付款前还要核实收款主体和变更依据。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "这次是海岚餐饮设备有限公司，定金一万八千六百元。新业务员郑璟让我今天四点半前转到他个人银行卡，说公司账户在更新；可我上次明明付的是公司账户。这种情况，页面姓名对上能不能付？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "个人账户与以往对公账户不同，又只有聊天解释和催款时限，风险已经明显升高。页面"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，正是个人账户和催款让我不踏实。我手上还有旧合同、旧付款记录和这次报价单：旧的收款户名都是海岚公司，这次报价单也没写郑璟可以代收，更没有盖章授权。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "旧合同和付款记录只能支持海岚原对公账户曾被使用；本次报价单未写郑璟可代收，也没有盖章授权，因此不支持个人代收。现有证据不足以安全付款，必须补到公司正式授权，或经原有可信联系人确认。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我再把两个页面说清楚。企业手机银行已填一万八千六百元，还没到最终确认；个人应用单笔上限两万元，只会显示姓名的一部分，我也没扫他发的码。哪边更能留证、也更稳妥？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "从你目前看到的信息，还不能比较哪边的凭证更完整；可先查看各自的凭证说明，但不要为此进入确认或扫码。无论留痕如何，都补不了授权缺口，部分姓名显示也不能确认收款主体。授权未核实前，两边都不应确认或提交。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "旧联系人林茹的原号码我两点二十七分打过，没人接，郑璟又让我打一个以前没见过的新号码，说是财务。我该打这个新号码核实，还是继续等林茹？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "先不要把新号码当成财务官方渠道。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "先不要把新号码当成财务官方渠道。",
+        "event_text": "好",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

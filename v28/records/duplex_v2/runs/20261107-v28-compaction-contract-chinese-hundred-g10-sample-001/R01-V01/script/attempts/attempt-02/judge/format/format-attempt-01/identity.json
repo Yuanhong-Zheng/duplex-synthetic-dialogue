@@ -1,0 +1,1462 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 5 轮，允许 5–6 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 旁语仅限第三方或机器，不包含用户说着说着转向旁人的模式；声音 profile 必须只描述声音。旁语不提供隐藏关键任务材料，不被助手当成正式用户新请求，不使助手停顿或另起回答。声景未支持此来源时不应凭空编人或设备。30%–70% 音量合规即可。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 和 voice_profile 必须逐字匹配对应源，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g10-sample-001-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 2191110359,
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g10/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g10/relay-state",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D11",
+          "domain": "软件、设备与信息技术支持",
+          "scenario_id": "D11-S08",
+          "scenario": "信息安全与隐私说明"
+        },
+        "task_style": "混合型",
+        "task_instance": {
+          "goal": "在准备使用一款新上线的家庭健康管理应用时，结合数据最小化、权限必要性、第三方共享和用户撤回控制等通用原则，逐项判断用户随后提供的权限请求与隐私说明哪些可以接受、哪些需要进一步核实，并形成是否继续使用及应先调整哪些设置的审慎决定。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "负责为家人筛选日常健康管理应用的家庭信息安全负责人",
+          "task_familiarity": "medium"
+        },
+        "voice_profile": "女性，四十多岁，音色清晰偏沉稳，语速中等，吐字认真，带有轻微的谨慎感和适度情绪起伏。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "formal",
+          "directness": "balanced",
+          "emotional_expressiveness": "balanced",
+          "verbosity": "detailed",
+          "initiative": "high",
+          "caution": "high",
+          "patience": "low",
+          "behavioral_notes": [
+            "通常会主动补充判断所需的背景，并希望把不同依据逐项说清楚。",
+            "遇到表述含糊或缺少条件时会及时要求澄清，但会保持礼貌和克制。",
+            "表达较为完整，倾向于比较多个选项后再确认结论，不轻易接受未经说明的推断。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "short",
+        "target_turns": 5,
+        "min_turns": 5,
+        "max_turns": 6
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v2",
+        "seed": 413728997,
+        "mode": "layered",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "third_party",
+          "machine"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "周六晚上八点半，用户独自在家中的书房，准备评估刚上线的家庭健康管理应用“家康日记”。她平时负责替家人筛选需要接触健康信息的应用，这次计划先用自己的账号试用，再决定是否为父亲和配偶建立家庭档案。父亲希望记录血压并查看用药提醒，配偶目前只需要提醒功能，两人都没有要求步数统计、位置服务或社交邀请。用户已经下载安装应用，但停在注册前的隐私确认页，尚未输入姓名、手机号或任何健康记录，也没有授予系统权限。应用介绍称可以手动记录血压和血糖、设置本地提醒、同步部分蓝牙健康设备，并在获得授权后建立家庭共享组。用户手边有手机上的权限说明、隐私政策和第三方信息共享清单，可以逐段朗读核对，也能查看系统权限开关是否允许稍后单独调整。她注意到注册页把隐私政策同意与多项可选功能放得很近，担心一次确认会造成超出实际用途的数据收集。她尤其需要区分手动记录和提醒所必需的权限，以及只对步数、设备同步、附近服务或邀请家人有用的权限。隐私政策提到了向外部服务商提供部分信息，但数据字段、必要性和关闭后的处理方式并非每处都写得明确。用户目前没有独立安全审计报告，也没有联系开发者取得补充解释，因此含糊条款只能被标为待核实，不能按有利于应用的方向推断。她希望优先保留手动记录和提醒能力，如果蓝牙同步必须扩大授权范围，也可以暂时不用自动同步。父亲虽同意试用血压记录功能，但尚未同意将可识别健康数据交给未说明清楚的第三方；配偶也只同意接收提醒，没有同意上传通讯录或位置。当前未决问题包括哪些权限可以拒绝后继续使用核心功能、第三方实际接收哪些健康相关字段，以及撤回同意、删除账号和备份清除是否能真正终止后续处理。",
+        "task_reference_data": [
+          "来自“家康日记”应用商店介绍页，用户已读：核心功能包括手动记录血压和血糖、用药提醒、家庭共享及兼容设备同步；介绍页没有说明手动记录是否必须开放传感器权限。",
+          "来自注册前的权限说明页，用户当前可现场读取：“身体活动权限用于自动统计步数和活动趋势，可在系统设置中关闭”；页面未明确拒绝后是否影响手动记录与提醒。",
+          "来自注册前的权限说明页，用户当前可现场读取：“附近设备权限用于发现并连接兼容的蓝牙血压计和手环”；用户现阶段可以接受暂不使用自动同步。",
+          "来自注册前的权限说明页，用户当前可现场读取：“通讯录权限用于快速邀请家人并识别已注册联系人”；页面没有提供仅手动输入邀请信息的替代方式说明。",
+          "来自注册前的权限说明页，用户当前可现场读取：“精确位置用于展示附近健康服务并优化紧急协助体验”；应用介绍未把附近服务或紧急协助列为手动记录和提醒的前置条件。",
+          "来自隐私政策的第三方共享章节，版本日期为2026年10月28日，用户已读：“为保障稳定运行和分析产品使用情况，可能向受托服务商提供设备标识、网络日志、功能使用记录及必要的业务数据”；其中“必要的业务数据”没有列明是否包含血压、血糖或用药记录。",
+          "来自应用内第三方信息共享清单，用户可现场读取：列有“云衡统计服务”，用途为崩溃分析和性能统计，所列数据包括设备型号、操作系统版本、应用版本、崩溃日志和匿名化使用事件；清单未说明匿名化方法，也未明确是否排除健康记录内容。",
+          "来自隐私政策的用户控制章节，用户已读：“可在设置中撤回部分授权，撤回不影响此前基于授权完成的处理；账号注销申请将在15个工作日内完成，备份数据可能因安全与灾备需要保留不超过90日”；该章节没有说明备份保留期间是否仍会用于分析。",
+          "来自用户手机的系统权限页面，用户已查看：身体活动、附近设备、通讯录和位置权限都可以分别设为不允许；通知权限也可单独调整，不要求与上述四项同时开启。"
+        ],
+        "environment_audio": "右侧约一米处的台式风扇持续发出低沉均匀的转动声，音量基本稳定。窗外有一层轻柔而连续的雨声，偶尔随风略微增强，但不遮住近距离说话。",
+        "estimated_snr_db": 27,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "评估应以手动健康记录和用药提醒为当前核心用途，步数统计、附近服务、通讯录邀请和自动设备同步均不是现阶段必需功能。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "每项权限和隐私条款需要分别判断为可接受、可暂缓或需要进一步核实，不能因应用提供家庭健康功能而整体授权。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C03",
+            "text": "对于“必要的业务数据”、匿名化方法和备份期用途等未明确事项，不得自行推定其不包含健康数据。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C04",
+            "text": "最终决定应优先考虑先关闭非必要权限、以最少数据试用核心功能，再判断是否值得继续使用。",
+            "kind": "soft"
+          }
+        ],
+        "safety_limits": [
+          {
+            "limit_id": "L01",
+            "text": "在第三方共享范围尚未澄清且相关家人未明确同意前，不应上传或建立包含其可识别健康记录的家庭档案。",
+            "severity": "hard"
+          }
+        ],
+        "soundscape_plan": {
+          "mode": "layered",
+          "ambient_layers": [
+            {
+              "source_id": "AMB01",
+              "asset_id": "fan-fsd50k-eval-415925",
+              "reason": "适合作为家庭书房内稳定、低干扰的台式风扇底噪。"
+            },
+            {
+              "source_id": "AMB02",
+              "asset_id": "rain-fsd50k-eval-238016",
+              "reason": "适合作为隔窗可闻的连续雨声，与夜间家庭书房环境相容。"
+            }
+          ],
+          "environment_events": [],
+          "schema": "duplex_v2.soundscape_plan.v3",
+          "side_speech_sources": [],
+          "side_speech_count": 0,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v2",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v2",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611073010,
+              "slot": 0,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "fan",
+                  "traffic",
+                  "wind",
+                  "birds",
+                  "rain",
+                  "crowd"
+                ],
+                "event": [
+                  "keyboard",
+                  "door",
+                  "footsteps",
+                  "paper",
+                  "doorbell",
+                  "water_tap"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-57907",
+                  "birds-fsd50k-eval-319512",
+                  "birds-fsd50k-eval-86343"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-185058",
+                  "crowd-fsd50k-eval-121877",
+                  "crowd-fsd50k-eval-340358"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-419427"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-21189",
+                  "rain-fsd50k-eval-382582"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-232686",
+                  "traffic-fsd50k-eval-235541",
+                  "traffic-fsd50k-eval-124020"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113175",
+                  "wind-fsd50k-eval-113176",
+                  "wind-fsd50k-eval-113173"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-71212",
+                  "door-fsd50k-eval-119077",
+                  "door-fsd50k-eval-209519"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-332563",
+                  "doorbell-fsd50k-eval-426594",
+                  "doorbell-fsd50k-eval-348322"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-392303",
+                  "footsteps-fsd50k-eval-272381",
+                  "footsteps-fsd50k-eval-153104"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-411545",
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-399740"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-82562",
+                  "paper-fsd50k-eval-343098",
+                  "paper-fsd50k-eval-121200"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-402127",
+                  "water_tap-fsd50k-eval-402128",
+                  "water_tap-fsd50k-eval-232499"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v2",
+              "seed": 413728997,
+              "mode": "layered",
+              "discrete_event_target": 0,
+              "max_ambient_layers": 2,
+              "side_speech_requested": false,
+              "speech_kind_preferences": [
+                "third_party",
+                "machine"
+              ]
+            },
+            "control_sha256": "f547a14a472303bfd5dbf0965d424d82fa36f972036d3b6f04ea10ffd25a11ad",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v3",
+              "mode": "layered",
+              "ambient_layers": [
+                {
+                  "source_id": "AMB01",
+                  "candidates": [
+                    {
+                      "asset_id": "fan-fsd50k-eval-415925",
+                      "reason": "适合作为家庭书房内稳定、低干扰的台式风扇底噪。",
+                      "environment_audio": "近处持续而均匀的机械风扇声，音量较低。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-235362",
+                      "reason": "可表现室内持续运转的风扇或通风设备，与当前书房场景相容。",
+                      "environment_audio": "右侧近处传来稳定的低沉风扇转动声。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-419427",
+                      "reason": "可替代呈现不明显起伏的家庭室内机械通风底色。",
+                      "environment_audio": "一米左右距离有连续、轻微的机械送风声。"
+                    }
+                  ]
+                },
+                {
+                  "source_id": "AMB02",
+                  "candidates": [
+                    {
+                      "asset_id": "rain-fsd50k-eval-238016",
+                      "reason": "适合作为隔窗可闻的连续雨声，与夜间家庭书房环境相容。",
+                      "environment_audio": "窗外雨声连续柔和，隔着玻璃显得较远。"
+                    },
+                    {
+                      "asset_id": "rain-fsd50k-eval-21189",
+                      "reason": "可提供低强度、稳定的窗外雨声，不影响近距离语音交流。",
+                      "environment_audio": "远处有均匀的细雨声，偶尔略有增强。"
+                    },
+                    {
+                      "asset_id": "rain-fsd50k-eval-382582",
+                      "reason": "可替代呈现住宅窗外持续降雨的基础环境底色。",
+                      "environment_audio": "窗外传来轻柔连续的降雨声，整体音量较低。"
+                    }
+                  ]
+                }
+              ],
+              "environment_events": [],
+              "side_speech_eligibility": {
+                "third_party": {
+                  "compatible": false,
+                  "reason": "用户独自在书房，当前故事没有已建立且在场的第三方。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "手机应用仅用于显示材料，当前场景没有已建立的语音播报设备或机器旁语来源。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "502a245519c948b91810551f944e3a9a4c7655608f690f606e52a53314321f06",
+            "aggregate_environment_audio": "右侧约一米处的台式风扇持续发出低沉均匀的转动声，音量基本稳定。窗外有一层轻柔而连续的雨声，偶尔随风略微增强，但不遮住近距离说话。 近处持续而均匀的机械风扇声，音量较低。 窗外雨声连续柔和，隔着玻璃显得较远。",
+            "draws": [
+              {
+                "source_id": "AMB01",
+                "category": "fan",
+                "asset_id": "fan-fsd50k-eval-415925",
+                "eligible_categories": [
+                  "fan"
+                ],
+                "eligible_assets": [
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-419427"
+                ]
+              },
+              {
+                "source_id": "AMB02",
+                "category": "rain",
+                "asset_id": "rain-fsd50k-eval-238016",
+                "eligible_categories": [
+                  "rain"
+                ],
+                "eligible_assets": [
+                  "rain-fsd50k-eval-21189",
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-382582"
+                ]
+              }
+            ],
+            "speech_selection": {
+              "requested": false,
+              "compatible_kinds": [],
+              "selected_kind": null,
+              "outcome": "not_requested",
+              "assessments": {
+                "third_party": {
+                  "compatible": false,
+                  "reason": "用户独自在书房，当前故事没有已建立且在场的第三方。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "手机应用仅用于显示材料，当前场景没有已建立的语音播报设备或机器旁语来源。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v2",
+      "title": "家庭健康应用权限与隐私评估",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "我准备试用家康日记，目前只需要手动记录血压和设置用药提醒。页面说身体活动权限用于统计步数，附近设备权限用于连接蓝牙血压计和手环。这两项现在有必要开吗？",
+          "assistant_utterance": "身体活动和附近设备都可暂缓：前者只为步数，后者只为蓝牙连接，与你当前的手动记录和提醒无直接必要性。先拒绝；若应用因此阻止核心功能，再把这种捆绑列为待核实，不要直接放开。",
+          "user_intent": "说明当前核心用途并核对身体活动与附近设备权限的必要性",
+          "assistant_intent": "分别判断两项权限可暂缓，并说明拒绝后核心功能异常时的处理原则",
+          "semantic_goal": "确认不启用步数统计和蓝牙同步时应如何设置权限",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "还有通讯录用于快速邀请家人，精确位置用于附近健康服务和紧急协助。系统里这两项和通知权限都能单独开关，家人目前也没要邀请或位置服务。怎么判断？",
+          "assistant_utterance": "通讯录和精确位置都可暂缓，前者只服务快速邀请，后者用于附近服务；它们都不是手动记录和提醒的前置条件。通知权限可为用药提醒单独开启。",
+          "user_intent": "补充通讯录、位置和通知权限的用途及可分开设置情况",
+          "assistant_intent": "区分非必要权限与提醒所需通知权限并给出设置建议",
+          "semantic_goal": "确定通讯录、位置和通知权限是否应分别开启",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "身体活动和附近设备都可暂缓：前者只为步数，后者只为蓝牙连接，与你当前的手动记录和提醒无直接必要性。先拒绝；若应用因此阻止核心功能，再把这种捆绑列为待核实，不要直接放开。",
+            "assistant_stop_after_text": "身体活动和附近设备都可暂缓：前者只为步数，后者只为蓝牙连接，与你当前的手动记录和提醒无直接必要性。先拒绝；若应用因此阻止核心功能，再把这种捆绑列为待核实，不要直接放开。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "这两项先都关掉，不用展开。隐私政策又说可能向服务商提供设备标识、网络日志、功能使用记录和必要的业务数据，但没解释最后一项是否包括血压、血糖或用药记录。",
+          "assistant_utterance": "“必要的业务数据”范围不明，必须标为待核实，不能默认排除血压、血糖或用药记录。在澄清前，不要上传家人的可识别健康数据，也不要建立家庭档案。",
+          "user_intent": "打断权限说明并转而核实第三方共享中的含糊数据范围",
+          "assistant_intent": "将含糊共享条款判为待核实，并明确家人健康数据的保护边界",
+          "semantic_goal": "判断第三方共享说明是否足以支持录入家人的健康信息",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "通讯录和精确位置都可暂缓，",
+            "assistant_stop_after_text": "通讯录和精确位置都可暂缓，前者只"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "第三方清单列的云衡统计服务只写了设备型号、系统版本、应用版本、崩溃日志和匿名化使用事件，没说明匿名化方法，也没明确排除健康记录；另外，撤回只说不影响此前处理，注销十五个工作日，备份最多留九十日，且没说留存期是否继续分析。这几项怎么分？",
+          "assistant_utterance": "已列明的设备与版本信息可视为有条件可接受，但匿名化方法、是否排除健康记录仍需核实。政策说明可撤回部分授权、注销申请十五个工作日内完成、备份最长保留九十日；但可撤回范围、注销后是否停止后续处理及备份期用途仍待核实。",
+          "user_intent": "补充第三方清单及撤回、注销和备份条款并要求逐项分类",
+          "assistant_intent": "区分可有条件接受的技术数据、已有控制机制和仍需核实的缺口",
+          "semantic_goal": "形成对统计服务、匿名化、撤回、注销和备份处理的分类结论",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "“必要的业务数据”范围不明，必须标为待核实，不能默认排除血压、血糖或用药记录。在澄清前，不要上传家人的可识别健康数据，也不要建立家庭档案。",
+            "assistant_stop_after_text": "“必要的业务数据”范围不明，必须标为待核实，不能默认排除血压、血糖或用药记录。在澄清前，不要上传家人的可识别健康数据，也不要建立家庭档案。"
+          },
+          "pause_cue": {
+            "after_text": "第三方清单列的云衡统计服务只写了设备型号、系统版本、应用版本、崩溃日志和匿名化使用事件，没说明匿名化方法，也没明确排除健康记录；",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "那请给我一个明确决定：现在是否继续试用，先调整哪些设置，什么条件没弄清前不能给家人正式使用？",
+          "assistant_utterance": "可以做最小化试用：仅开通知，关闭身体活动、附近设备、通讯录和位置，用非敏感测试内容验证手动记录与提醒。第三方健康数据范围、匿名化方式，以及撤回、注销和备份清除后是否停止处理未澄清前，不录入家人真实记录，也不建家庭档案。",
+          "user_intent": "要求汇总是否继续试用、优先设置和家人使用前提",
+          "assistant_intent": "给出最小数据试用方案及不得录入家人健康数据的明确条件",
+          "semantic_goal": "获得可执行的审慎试用决定和设置顺序",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "已列明的设备与版本信息可视为有条件可接受，但匿名化方法、是否排除健康记录仍需核实。政策说明可撤回部分授权、注销申请十五个工作日内完成、备份最长保留九十日；但可撤回范围、注销后是否停止后续处理及备份期用途仍待核实。",
+            "assistant_stop_after_text": "已列明的设备与版本信息可视为有条件可接受，但匿名化方法、是否排除健康记录仍需核实。政策说明可撤回部分授权、注销申请十五个工作日内完成、备份最长保留九十日；但可撤回范围、注销后是否停止后续处理及备份期用途仍待核实。"
+          },
+          "pause_cue": null
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A003",
+          "after_text": "“必要的业务数据”范围不明，必须标为待核实，不能默认排除血压、血糖或用药记录。",
+          "text": "嗯，明白"
+        }
+      ],
+      "side_speech": [],
+      "environment_events": []
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我准备试用家康日记，目前只需要手动记录血压和设置用药提醒。页面说身体活动权限用于统计步数，附近设备权限用于连接蓝牙血压计和手环。这两项现在有必要开吗？"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "身体活动和附近设备都可暂缓：前者只为步数，后者只为蓝牙连接，与你当前的手动记录和提醒无直接必要性。先拒绝；若应用因此阻止核心功能，再把这种捆绑列为待核实，不要直接放开。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我准备试用家康日记，目前只需要手动记录血压和设置用药提醒。页面说身体活动权限用于统计步数，附近设备权限用于连接蓝牙血压计和手环。这两项现在有必要开吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "身体活动和附近设备都可暂缓：前者只为步数，后者只为蓝牙连接，与你当前的手动记录和提醒无直接必要性。先拒绝；若应用因此阻止核心功能，再把这种捆绑列为待核实，不要直接放开。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我准备试用家康日记，目前只需要手动记录血压和设置用药提醒。页面说身体活动权限用于统计步数，附近设备权限用于连接蓝牙血压计和手环。这两项现在有必要开吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "身体活动和附近设备都可暂缓：前者只为步数，后者只为蓝牙连接，与你当前的手动记录和提醒无直接必要性。先拒绝；若应用因此阻止核心功能，再把这种捆绑列为待核实，不要直接放开。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "还有通讯录用于快速邀请家人，精确位置用于附近健康服务和紧急协助。系统里这两项和通知权限都能单独开关，家人目前也没要邀请或位置服务。怎么判断？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "身体活动和附近设备都可暂缓：前者只为步数，后者只为蓝牙连接，与你当前的手动记录和提醒无直接必要性。先拒绝；若应用因此阻止核心功能，再把这种捆绑列为待核实，不要直接放开。",
+          "final_shared_played_prefix": "身体活动和附近设备都可暂缓：前者只为步数，后者只为蓝牙连接，与你当前的手动记录和提醒无直接必要性。先拒绝；若应用因此阻止核心功能，再把这种捆绑列为待核实，不要直接放开。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "通讯录和精确位置都可暂缓，前者只服务快速邀请，后者用于附近服务；它们都不是手动记录和提醒的前置条件。通知权限可为用药提醒单独开启。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我准备试用家康日记，目前只需要手动记录血压和设置用药提醒。页面说身体活动权限用于统计步数，附近设备权限用于连接蓝牙血压计和手环。这两项现在有必要开吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "身体活动和附近设备都可暂缓：前者只为步数，后者只为蓝牙连接，与你当前的手动记录和提醒无直接必要性。先拒绝；若应用因此阻止核心功能，再把这种捆绑列为待核实，不要直接放开。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "还有通讯录用于快速邀请家人，精确位置用于附近健康服务和紧急协助。系统里这两项和通知权限都能单独开关，家人目前也没要邀请或位置服务。怎么判断？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "通讯录和精确位置都可暂缓，"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我准备试用家康日记，目前只需要手动记录血压和设置用药提醒。页面说身体活动权限用于统计步数，附近设备权限用于连接蓝牙血压计和手环。这两项现在有必要开吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "身体活动和附近设备都可暂缓：前者只为步数，后者只为蓝牙连接，与你当前的手动记录和提醒无直接必要性。先拒绝；若应用因此阻止核心功能，再把这种捆绑列为待核实，不要直接放开。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "还有通讯录用于快速邀请家人，精确位置用于附近健康服务和紧急协助。系统里这两项和通知权限都能单独开关，家人目前也没要邀请或位置服务。怎么判断？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "通讯录和精确位置都可暂缓，前者只"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这两项先都关掉，不用展开。隐私政策又说可能向服务商提供设备标识、网络日志、功能使用记录和必要的业务数据，但没解释最后一项是否包括血压、血糖或用药记录。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "通讯录和精确位置都可暂缓，",
+          "final_shared_played_prefix": "通讯录和精确位置都可暂缓，前者只",
+          "discarded_unheard_tail": "服务快速邀请，后者用于附近服务；它们都不是手动记录和提醒的前置条件。通知权限可为用药提醒单独开启。"
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "“必要的业务数据”范围不明，必须标为待核实，不能默认排除血压、血糖或用药记录。在澄清前，不要上传家人的可识别健康数据，也不要建立家庭档案。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我准备试用家康日记，目前只需要手动记录血压和设置用药提醒。页面说身体活动权限用于统计步数，附近设备权限用于连接蓝牙血压计和手环。这两项现在有必要开吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "身体活动和附近设备都可暂缓：前者只为步数，后者只为蓝牙连接，与你当前的手动记录和提醒无直接必要性。先拒绝；若应用因此阻止核心功能，再把这种捆绑列为待核实，不要直接放开。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "还有通讯录用于快速邀请家人，精确位置用于附近健康服务和紧急协助。系统里这两项和通知权限都能单独开关，家人目前也没要邀请或位置服务。怎么判断？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "通讯录和精确位置都可暂缓，前者只"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这两项先都关掉，不用展开。隐私政策又说可能向服务商提供设备标识、网络日志、功能使用记录和必要的业务数据，但没解释最后一项是否包括血压、血糖或用药记录。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "“必要的业务数据”范围不明，必须标为待核实，不能默认排除血压、血糖或用药记录。在澄清前，不要上传家人的可识别健康数据，也不要建立家庭档案。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我准备试用家康日记，目前只需要手动记录血压和设置用药提醒。页面说身体活动权限用于统计步数，附近设备权限用于连接蓝牙血压计和手环。这两项现在有必要开吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "身体活动和附近设备都可暂缓：前者只为步数，后者只为蓝牙连接，与你当前的手动记录和提醒无直接必要性。先拒绝；若应用因此阻止核心功能，再把这种捆绑列为待核实，不要直接放开。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "还有通讯录用于快速邀请家人，精确位置用于附近健康服务和紧急协助。系统里这两项和通知权限都能单独开关，家人目前也没要邀请或位置服务。怎么判断？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "通讯录和精确位置都可暂缓，前者只"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这两项先都关掉，不用展开。隐私政策又说可能向服务商提供设备标识、网络日志、功能使用记录和必要的业务数据，但没解释最后一项是否包括血压、血糖或用药记录。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "“必要的业务数据”范围不明，必须标为待核实，不能默认排除血压、血糖或用药记录。在澄清前，不要上传家人的可识别健康数据，也不要建立家庭档案。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "第三方清单列的云衡统计服务只写了设备型号、系统版本、应用版本、崩溃日志和匿名化使用事件，没说明匿名化方法，也没明确排除健康记录；另外，撤回只说不影响此前处理，注销十五个工作日，备份最多留九十日，且没说留存期是否继续分析。这几项怎么分？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "“必要的业务数据”范围不明，必须标为待核实，不能默认排除血压、血糖或用药记录。在澄清前，不要上传家人的可识别健康数据，也不要建立家庭档案。",
+          "final_shared_played_prefix": "“必要的业务数据”范围不明，必须标为待核实，不能默认排除血压、血糖或用药记录。在澄清前，不要上传家人的可识别健康数据，也不要建立家庭档案。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A003",
+            "after_text": "“必要的业务数据”范围不明，必须标为待核实，不能默认排除血压、血糖或用药记录。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "已列明的设备与版本信息可视为有条件可接受，但匿名化方法、是否排除健康记录仍需核实。政策说明可撤回部分授权、注销申请十五个工作日内完成、备份最长保留九十日；但可撤回范围、注销后是否停止后续处理及备份期用途仍待核实。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我准备试用家康日记，目前只需要手动记录血压和设置用药提醒。页面说身体活动权限用于统计步数，附近设备权限用于连接蓝牙血压计和手环。这两项现在有必要开吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "身体活动和附近设备都可暂缓：前者只为步数，后者只为蓝牙连接，与你当前的手动记录和提醒无直接必要性。先拒绝；若应用因此阻止核心功能，再把这种捆绑列为待核实，不要直接放开。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "还有通讯录用于快速邀请家人，精确位置用于附近健康服务和紧急协助。系统里这两项和通知权限都能单独开关，家人目前也没要邀请或位置服务。怎么判断？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "通讯录和精确位置都可暂缓，前者只"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这两项先都关掉，不用展开。隐私政策又说可能向服务商提供设备标识、网络日志、功能使用记录和必要的业务数据，但没解释最后一项是否包括血压、血糖或用药记录。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "“必要的业务数据”范围不明，必须标为待核实，不能默认排除血压、血糖或用药记录。在澄清前，不要上传家人的可识别健康数据，也不要建立家庭档案。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "第三方清单列的云衡统计服务只写了设备型号、系统版本、应用版本、崩溃日志和匿名化使用事件，没说明匿名化方法，也没明确排除健康记录；另外，撤回只说不影响此前处理，注销十五个工作日，备份最多留九十日，且没说留存期是否继续分析。这几项怎么分？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "已列明的设备与版本信息可视为有条件可接受，但匿名化方法、是否排除健康记录仍需核实。政策说明可撤回部分授权、注销申请十五个工作日内完成、备份最长保留九十日；但可撤回范围、注销后是否停止后续处理及备份期用途仍待核实。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我准备试用家康日记，目前只需要手动记录血压和设置用药提醒。页面说身体活动权限用于统计步数，附近设备权限用于连接蓝牙血压计和手环。这两项现在有必要开吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "身体活动和附近设备都可暂缓：前者只为步数，后者只为蓝牙连接，与你当前的手动记录和提醒无直接必要性。先拒绝；若应用因此阻止核心功能，再把这种捆绑列为待核实，不要直接放开。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "还有通讯录用于快速邀请家人，精确位置用于附近健康服务和紧急协助。系统里这两项和通知权限都能单独开关，家人目前也没要邀请或位置服务。怎么判断？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "通讯录和精确位置都可暂缓，前者只"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这两项先都关掉，不用展开。隐私政策又说可能向服务商提供设备标识、网络日志、功能使用记录和必要的业务数据，但没解释最后一项是否包括血压、血糖或用药记录。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "“必要的业务数据”范围不明，必须标为待核实，不能默认排除血压、血糖或用药记录。在澄清前，不要上传家人的可识别健康数据，也不要建立家庭档案。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "第三方清单列的云衡统计服务只写了设备型号、系统版本、应用版本、崩溃日志和匿名化使用事件，没说明匿名化方法，也没明确排除健康记录；另外，撤回只说不影响此前处理，注销十五个工作日，备份最多留九十日，且没说留存期是否继续分析。这几项怎么分？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "已列明的设备与版本信息可视为有条件可接受，但匿名化方法、是否排除健康记录仍需核实。政策说明可撤回部分授权、注销申请十五个工作日内完成、备份最长保留九十日；但可撤回范围、注销后是否停止后续处理及备份期用途仍待核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那请给我一个明确决定：现在是否继续试用，先调整哪些设置，什么条件没弄清前不能给家人正式使用？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "已列明的设备与版本信息可视为有条件可接受，但匿名化方法、是否排除健康记录仍需核实。政策说明可撤回部分授权、注销申请十五个工作日内完成、备份最长保留九十日；但可撤回范围、注销后是否停止后续处理及备份期用途仍待核实。",
+          "final_shared_played_prefix": "已列明的设备与版本信息可视为有条件可接受，但匿名化方法、是否排除健康记录仍需核实。政策说明可撤回部分授权、注销申请十五个工作日内完成、备份最长保留九十日；但可撤回范围、注销后是否停止后续处理及备份期用途仍待核实。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A003",
+            "after_text": "“必要的业务数据”范围不明，必须标为待核实，不能默认排除血压、血糖或用药记录。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可以做最小化试用：仅开通知，关闭身体活动、附近设备、通讯录和位置，用非敏感测试内容验证手动记录与提醒。第三方健康数据范围、匿名化方式，以及撤回、注销和备份清除后是否停止处理未澄清前，不录入家人真实记录，也不建家庭档案。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A003",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我准备试用家康日记，目前只需要手动记录血压和设置用药提醒。页面说身体活动权限用于统计步数，附近设备权限用于连接蓝牙血压计和手环。这两项现在有必要开吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "身体活动和附近设备都可暂缓：前者只为步数，后者只为蓝牙连接，与你当前的手动记录和提醒无直接必要性。先拒绝；若应用因此阻止核心功能，再把这种捆绑列为待核实，不要直接放开。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "还有通讯录用于快速邀请家人，精确位置用于附近健康服务和紧急协助。系统里这两项和通知权限都能单独开关，家人目前也没要邀请或位置服务。怎么判断？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "通讯录和精确位置都可暂缓，前者只"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这两项先都关掉，不用展开。隐私政策又说可能向服务商提供设备标识、网络日志、功能使用记录和必要的业务数据，但没解释最后一项是否包括血压、血糖或用药记录。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "“必要的业务数据”范围不明，必须标为待核实，不能默认排除血压、血糖或用药记录。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "“必要的业务数据”范围不明，必须标为待核实，不能默认排除血压、血糖或用药记录。",
+        "event_text": "嗯，明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

@@ -1,0 +1,119 @@
+{
+  "episode_situation": "一个下雨的晚上，用户独自坐在合住公寓的客厅里，窗边雨声持续，循环扇低档运转，手边摊着一本准备记录要点的空白笔记本。刚才两人亲密接触时，伴侣突然表示不舒服并明确说不想继续，用户随即停下；伴侣随后希望先独处，现在正在卧室休息。用户没有追问原因，也还不知道这种不舒服是身体疼痛、紧张、情绪触发还是其他感受，因此担心自己接下来的关心会不会无意中形成压力。用户现在想先弄清当下应如何简短回应、怎样在不逼问的情况下确认安全与需要，之后再了解如何选择合适时机讨论边界、持续同意，以及在对方愿意的前提下考虑医疗或心理支持。",
+  "task_reference_data": [],
+  "environment_audio": "近处的循环扇保持低沉而稳定的运转声，音量没有明显起伏。窗外连续的雨声从右侧传来，偶尔稍密，但整体低于说话声。",
+  "estimated_snr_db": 27,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "伴侣目前明确希望先独处，非紧急的进一步讨论应等待对方愿意回应，不能以解释原因或安抚用户为条件。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "优先梳理当下可采用的简短回应和确认顺序，再讨论事后沟通及其他支持选择。",
+      "kind": "soft"
+    }
+  ],
+  "safety_limits": [
+    {
+      "limit_id": "L01",
+      "text": "同意必须是自愿、明确且持续的；对方表示停止、不想继续、沉默僵住或无法清楚回应时，都不得继续亲密接触或尝试说服。",
+      "severity": "hard"
+    },
+    {
+      "limit_id": "L02",
+      "text": "如果出现剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常或其他即时危险迹象，应优先寻求当地紧急医疗帮助。",
+      "severity": "critical"
+    },
+    {
+      "limit_id": "L03",
+      "text": "若不适持续、反复出现，或涉及创伤反应，可在伴侣自主选择和同意的前提下讨论医疗、心理或性健康专业支持。",
+      "severity": "advisory"
+    }
+  ],
+  "soundscape_plan": {
+    "schema": "duplex_v2.soundscape_plan.v3",
+    "mode": "layered",
+    "ambient_layers": [
+      {
+        "source_id": "AMB01",
+        "candidates": [
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "reason": "稳定的室内机械风声与客厅低档循环扇相符。",
+            "environment_audio": "近处循环扇以较低音量稳定运转。"
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "reason": "连续且平稳的风扇底噪适合安静的居家客厅。",
+            "environment_audio": "近处传来均匀、低沉的循环扇声。"
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "reason": "真实机械通风声可表现故事中已开启的循环扇。",
+            "environment_audio": "循环扇持续低速运行，没有明显音量变化。"
+          }
+        ]
+      },
+      {
+        "source_id": "AMB02",
+        "candidates": [
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "reason": "连续雨声与下雨夜晚及窗边声源一致。",
+            "environment_audio": "右侧窗外传来连续而柔和的雨声。"
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "reason": "稳定的窗外雨声适合作为安静住宅内的远景底噪。",
+            "environment_audio": "窗外雨声持续落下，整体低于室内说话声。"
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "reason": "真实连续雨声与当前居家夜间环境兼容。",
+            "environment_audio": "右侧远处保持细密、连续的降雨声。"
+          }
+        ]
+      }
+    ],
+    "environment_events": [
+      {
+        "source_id": "ENV01",
+        "candidates": [
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "reason": "用户手边已有打开的笔记本，短暂翻动纸页符合当前场景。",
+            "environment_audio": "近处响起一次短促的笔记本纸页翻动声。"
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "reason": "轻微纸张活动可由用户记录或调整空白笔记本产生。",
+            "environment_audio": "桌面方向传来一次轻柔的纸页拨动声。"
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "reason": "简短纸张声与已建立的笔记本资源相容，不引入新人物或设备。",
+            "environment_audio": "近处出现一次很短的纸页摩擦声。"
+          }
+        ]
+      }
+    ],
+    "side_speech_eligibility": {
+      "third_party": {
+        "compatible": true,
+        "reason": "伴侣已在当前故事中明确位于同一公寓的卧室内，具备合理的可辨旁语来源。",
+        "source": {
+          "speaker": "third_party",
+          "voice_profile": "自然、轻声、清晰的成年普通话声音",
+          "description": "当前正在卧室休息的伴侣"
+        }
+      },
+      "machine": {
+        "compatible": false,
+        "reason": "当前场景没有建立任何会发出语音的设备。",
+        "source": null
+      }
+    }
+  }
+}

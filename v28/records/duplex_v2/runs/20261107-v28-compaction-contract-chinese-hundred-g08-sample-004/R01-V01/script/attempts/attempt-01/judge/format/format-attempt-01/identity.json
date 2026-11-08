@@ -1,0 +1,2520 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 10 轮，允许 9–11 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 旁语仅限第三方或机器，不包含用户说着说着转向旁人的模式；声音 profile 必须只描述声音。旁语不提供隐藏关键任务材料，不被助手当成正式用户新请求，不使助手停顿或另起回答。声景未支持此来源时不应凭空编人或设备。30%–70% 音量合规即可。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 和 voice_profile 必须逐字匹配对应源，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g08-sample-004-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 3077163027,
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g08/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g08/relay-state",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D08",
+          "domain": "旅行、住宿与本地探索",
+          "scenario_id": "D08-S08",
+          "scenario": "签证行李与机场信息"
+        },
+        "task_style": "常识问答",
+        "task_instance": {
+          "goal": "弄清楚第一次坐国际航班时机场安检通常会经历哪些步骤，哪些随身物品需要提前单独取出，以及如果安检报警或要求复检时应如何配合和判断情况。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "准备独自带孩子出境旅行的社区活动组织者",
+          "task_familiarity": "low"
+        },
+        "voice_profile": "女性，四十至五十多岁，音色清亮但略带紧绷感，吐字清楚，语速偏快，情绪起伏较明显，遇到不确定处会显得有些焦急。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "formal",
+          "directness": "balanced",
+          "emotional_expressiveness": "expressive",
+          "verbosity": "brief",
+          "initiative": "medium",
+          "caution": "high",
+          "patience": "low",
+          "behavioral_notes": [
+            "会用较短的句子逐项确认自己的理解，发现说法不够明确时会立即追问。",
+            "表达疑惑时情绪外露，容易用反问或强调语气指出自己最担心的细节。",
+            "倾向先听结论，再补充一个具体边界问题来确认是否适用于自己的情况。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "medium",
+        "target_turns": 10,
+        "min_turns": 9,
+        "max_turns": 11
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v2",
+        "seed": 1244457329,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "machine",
+          "third_party"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "出发前一周的晚上，用户独自在家整理第一次国际旅行的准备事项，同行的是自己正在上小学的孩子。她还没有正式装箱，只先放在桌边一台笔记本电脑、一台儿童平板、常用药和几个小容量洗护瓶，孩子此时已在相邻房间休息。她知道机场安检可能要求取出电子设备和液体，却分不清哪些是普遍做法、哪些会因机场或航线而异，也担心独自照看孩子时遇到报警、开包检查或复检会慌乱。她现在希望先按进入安检、整理物品、通过检查和配合复检的顺序弄清通常流程，并确认遇到不明确指令时应怎样询问和配合。",
+        "task_reference_data": [],
+        "environment_audio": "室内非常安静，近处只有轻微而稳定的房间底噪。相邻房间没有可辨认的人声或活动声。",
+        "estimated_snr_db": 34,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "需要明确区分国际机场安检的常见流程与可能因机场、国家或现场要求而变化的具体规定。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "说明应兼顾用户独自照看一名小学生通过安检时的实际操作顺序。",
+            "kind": "soft"
+          }
+        ],
+        "safety_limits": [
+          {
+            "limit_id": "L01",
+            "text": "现场安检人员的指令和出发机场公布的规定优先；不得尝试绕过检查、隐瞒受限物品或擅自取回正在复检的行李。",
+            "severity": "hard"
+          }
+        ],
+        "soundscape_plan": {
+          "mode": "quiet",
+          "ambient_layers": [],
+          "environment_events": [],
+          "schema": "duplex_v2.soundscape_plan.v3",
+          "side_speech_sources": [],
+          "side_speech_count": 0,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v2",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v2",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611073008,
+              "slot": 3,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "birds",
+                  "traffic",
+                  "fan",
+                  "wind",
+                  "rain",
+                  "crowd"
+                ],
+                "event": [
+                  "water_tap",
+                  "doorbell",
+                  "door",
+                  "footsteps",
+                  "paper",
+                  "keyboard"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-319512",
+                  "birds-fsd50k-eval-86343",
+                  "birds-fsd50k-eval-57907"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-121877",
+                  "crowd-fsd50k-eval-340358",
+                  "crowd-fsd50k-eval-185058"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-419427",
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-235362"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-382582",
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-21189"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-232686",
+                  "traffic-fsd50k-eval-124020",
+                  "traffic-fsd50k-eval-235541"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113175",
+                  "wind-fsd50k-eval-113173",
+                  "wind-fsd50k-eval-113176"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-71212",
+                  "door-fsd50k-eval-119077",
+                  "door-fsd50k-eval-209519"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-426594",
+                  "doorbell-fsd50k-eval-348322",
+                  "doorbell-fsd50k-eval-332563"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-153104",
+                  "footsteps-fsd50k-eval-392303",
+                  "footsteps-fsd50k-eval-272381"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-399740",
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-411545"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-82562",
+                  "paper-fsd50k-eval-343098"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-232499",
+                  "water_tap-fsd50k-eval-402128",
+                  "water_tap-fsd50k-eval-402127"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v2",
+              "seed": 1244457329,
+              "mode": "quiet",
+              "discrete_event_target": 0,
+              "max_ambient_layers": 2,
+              "side_speech_requested": false,
+              "speech_kind_preferences": [
+                "machine",
+                "third_party"
+              ]
+            },
+            "control_sha256": "bea6484423dce78caf0be74210698894afda449e449cbddc53d1cfb26d19c29a",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v3",
+              "mode": "quiet",
+              "ambient_layers": [],
+              "environment_events": [],
+              "side_speech_eligibility": {
+                "third_party": {
+                  "compatible": false,
+                  "reason": "孩子正在相邻房间休息，当前没有合理的可辨第三方旁语来源。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "当前安静室内场景未建立会发出语音的设备。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "ee045427f872a3ab07290b71201c3f41086a137ca2ad6b34486dd7a6c0017e55",
+            "aggregate_environment_audio": "室内非常安静，近处只有轻微而稳定的房间底噪。相邻房间没有可辨认的人声或活动声。",
+            "draws": [],
+            "speech_selection": {
+              "requested": false,
+              "compatible_kinds": [],
+              "selected_kind": null,
+              "outcome": "not_requested",
+              "assessments": {
+                "third_party": {
+                  "compatible": false,
+                  "reason": "孩子正在相邻房间休息，当前没有合理的可辨第三方旁语来源。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "当前安静室内场景未建立会发出语音的设备。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v2",
+      "title": "带孩子通过国际机场安检",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "第一次坐国际航班，进安检后通常按什么顺序走？",
+          "assistant_utterance": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。",
+          "user_intent": "了解国际机场安检的一般流程顺序",
+          "assistant_intent": "概述常见安检步骤并说明现场规定优先",
+          "semantic_goal": "建立从核验到取回行李的整体流程",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "我独自带一个小学生，过安检时怎么安排才不容易乱？",
+          "assistant_utterance": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。",
+          "user_intent": "补充独自带孩子的情况并询问操作顺序",
+          "assistant_intent": "给出兼顾孩子看护和物品整理的实用顺序",
+          "semantic_goal": "降低同时照看孩子和整理行李时的混乱风险",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。",
+            "assistant_stop_after_text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "电子设备我有笔记本电脑和儿童平板，哪些要提前拿出来？",
+          "assistant_utterance": "笔记本电脑通常要单独放进托盘；儿童平板是否取出，各机场和设备尺寸要求不同，看到标牌或听现场指令再做。",
+          "user_intent": "披露携带的电子设备并确认取出要求",
+          "assistant_intent": "区分笔记本的常见做法与平板可能变化的规则",
+          "semantic_goal": "明确两类电子设备是否需要单独过检",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。",
+            "assistant_stop_after_text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "等一下，儿童平板也一定要单独拿出来吗？",
+          "assistant_utterance": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。",
+          "user_intent": "打断并追问儿童平板是否必然需要取出",
+          "assistant_intent": "明确平板要求并非统一并给出现场确认办法",
+          "semantic_goal": "避免把笔记本的规则机械套用于儿童平板",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "笔记本电脑通常要单独放进托盘；",
+            "assistant_stop_after_text": "笔记本电脑通常要单独放进托盘；儿童"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "液体我最怕弄错。常用药和几个小洗护瓶，具体怎么放？",
+          "assistant_utterance": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；药品可能有例外，但机场规定不同，液体药应主动说明。",
+          "user_intent": "披露液体和药品并询问打包方式",
+          "assistant_intent": "说明常见液体限制、单独取出方式及药品例外",
+          "semantic_goal": "正确整理小容量洗护品和随身药品",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。",
+            "assistant_stop_after_text": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。"
+          },
+          "pause_cue": {
+            "after_text": "液体我最怕弄错。",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U06",
+          "assistant_id": "A006",
+          "user_utterance": "药是不是最好保留原包装，还要带什么证明吗？",
+          "assistant_utterance": "最好保留原包装和清晰标签。处方药或用量较多时，可随身带处方或医生说明；液体药提前申报。目的地的药品入境限制还要另行核对。",
+          "user_intent": "确认药品包装和证明材料",
+          "assistant_intent": "说明药品携带的稳妥准备及安检与入境规则的区别",
+          "semantic_goal": "减少药品在安检或入境环节产生疑问的风险",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A005",
+            "user_onset_after_text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；药品可能有例外，但机场规定不同，液体药应主动说明。",
+            "assistant_stop_after_text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；药品可能有例外，但机场规定不同，液体药应主动说明。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U07",
+          "assistant_id": "A007",
+          "user_utterance": "如果机器报警，或者工作人员让我复检，我第一步该做什么？",
+          "assistant_utterance": "报警不等于有问题。先停下，听工作人员指引；常见是再次通过、手持探测、擦拭检测或开包查看，未获允许不要碰行李。",
+          "user_intent": "询问报警或复检时的首要应对方式",
+          "assistant_intent": "解释常见复检形式并强调服从指令和不要擅动行李",
+          "semantic_goal": "在触发复检时保持镇定并正确配合",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A006",
+            "user_onset_after_text": "最好保留原包装和清晰标签。处方药或用量较多时，可随身带处方或医生说明；液体药提前申报。目的地的药品入境限制还要另行核对。",
+            "assistant_stop_after_text": "最好保留原包装和清晰标签。处方药或用量较多时，可随身带处方或医生说明；液体药提前申报。目的地的药品入境限制还要另行核对。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U08",
+          "assistant_id": "A008",
+          "user_utterance": "等等，如果他们在检查我，孩子怎么办？我最担心这个。",
+          "assistant_utterance": "立刻说明你是独自带孩子，请工作人员让孩子留在你看得见的位置。不要自行追过去或离开检查点，先确认孩子该站哪里，再配合复检。",
+          "user_intent": "打断并提出复检期间孩子看护的紧迫顾虑",
+          "assistant_intent": "提供复检时兼顾孩子安全且不违背安检指令的做法",
+          "semantic_goal": "确保复检期间孩子始终处于可控和可见范围",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A007",
+            "user_onset_after_text": "报警不等于有问题。先停下，听工作人员指引；",
+            "assistant_stop_after_text": "报警不等于有问题。先停下，听工作人员指引；常"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U09",
+          "assistant_id": "A009",
+          "user_utterance": "那怎么判断只是例行复检，还是事情比较严重？",
+          "assistant_utterance": "仅凭报警不能判断严重。再次扫描、擦拭或开包多属例行复检；若人员明确说物品受限、要扣留或需进一步处置，再按其说明处理。",
+          "user_intent": "询问如何区分例行复检和较严重情况",
+          "assistant_intent": "给出可观察的判断依据并避免用户自行猜测",
+          "semantic_goal": "准确理解复检性质并采取相称的配合方式",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A008",
+            "user_onset_after_text": "立刻说明你是独自带孩子，请工作人员让孩子留在你看得见的位置。不要自行追过去或离开检查点，先确认孩子该站哪里，再配合复检。",
+            "assistant_stop_after_text": "立刻说明你是独自带孩子，请工作人员让孩子留在你看得见的位置。不要自行追过去或离开检查点，先确认孩子该站哪里，再配合复检。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U10",
+          "assistant_id": "A010",
+          "user_utterance": "明白了。现场指令听不清时，我该怎么问？再帮我简短收个尾。",
+          "assistant_utterance": "可以说：“抱歉，我独自带孩子，请您再说一遍，并告诉我先取出什么、孩子站哪里。”记住：先看标牌，按指令摆放，复检时停下说明，不擅自碰或取回行李。",
+          "user_intent": "索要现场澄清用语并要求简要总结",
+          "assistant_intent": "提供可直接使用的询问句并归纳关键行动原则",
+          "semantic_goal": "能够在听不清指令时有效询问并记住核心流程",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A009",
+            "user_onset_after_text": "仅凭报警不能判断严重。再次扫描、擦拭或开包多属例行复检；若人员明确说物品受限、要扣留或需进一步处置，再按其说明处理。",
+            "assistant_stop_after_text": "仅凭报警不能判断严重。再次扫描、擦拭或开包多属例行复检；若人员明确说物品受限、要扣留或需进一步处置，再按其说明处理。"
+          },
+          "pause_cue": null
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "你先让孩子站在自己前侧，自己负责证件和托盘；",
+          "text": "好"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A005",
+          "after_text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；",
+          "text": "嗯"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A009",
+          "after_text": "仅凭报警不能判断严重。再次扫描、擦拭或开包多属例行复检；",
+          "text": "明白"
+        }
+      ],
+      "side_speech": [],
+      "environment_events": []
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。",
+          "final_shared_played_prefix": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "电子设备我有笔记本电脑和儿童平板，哪些要提前拿出来？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。",
+          "final_shared_played_prefix": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "你先让孩子站在自己前侧，自己负责证件和托盘；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "笔记本电脑通常要单独放进托盘；儿童平板是否取出，各机场和设备尺寸要求不同，看到标牌或听现场指令再做。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "电子设备我有笔记本电脑和儿童平板，哪些要提前拿出来？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "笔记本电脑通常要单独放进托盘；"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "电子设备我有笔记本电脑和儿童平板，哪些要提前拿出来？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "笔记本电脑通常要单独放进托盘；儿童"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，儿童平板也一定要单独拿出来吗？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "笔记本电脑通常要单独放进托盘；",
+          "final_shared_played_prefix": "笔记本电脑通常要单独放进托盘；儿童",
+          "discarded_unheard_tail": "平板是否取出，各机场和设备尺寸要求不同，看到标牌或听现场指令再做。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "你先让孩子站在自己前侧，自己负责证件和托盘；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "电子设备我有笔记本电脑和儿童平板，哪些要提前拿出来？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "笔记本电脑通常要单独放进托盘；儿童"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，儿童平板也一定要单独拿出来吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "电子设备我有笔记本电脑和儿童平板，哪些要提前拿出来？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "笔记本电脑通常要单独放进托盘；儿童"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，儿童平板也一定要单独拿出来吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "液体我最怕弄错。常用药和几个小洗护瓶，具体怎么放？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。",
+          "final_shared_played_prefix": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "你先让孩子站在自己前侧，自己负责证件和托盘；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；药品可能有例外，但机场规定不同，液体药应主动说明。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "电子设备我有笔记本电脑和儿童平板，哪些要提前拿出来？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "笔记本电脑通常要单独放进托盘；儿童"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，儿童平板也一定要单独拿出来吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "液体我最怕弄错。常用药和几个小洗护瓶，具体怎么放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；药品可能有例外，但机场规定不同，液体药应主动说明。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "电子设备我有笔记本电脑和儿童平板，哪些要提前拿出来？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "笔记本电脑通常要单独放进托盘；儿童"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，儿童平板也一定要单独拿出来吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "液体我最怕弄错。常用药和几个小洗护瓶，具体怎么放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；药品可能有例外，但机场规定不同，液体药应主动说明。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "药是不是最好保留原包装，还要带什么证明吗？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A005",
+          "at_user_onset_heard_prefix": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；药品可能有例外，但机场规定不同，液体药应主动说明。",
+          "final_shared_played_prefix": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；药品可能有例外，但机场规定不同，液体药应主动说明。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "你先让孩子站在自己前侧，自己负责证件和托盘；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "最好保留原包装和清晰标签。处方药或用量较多时，可随身带处方或医生说明；液体药提前申报。目的地的药品入境限制还要另行核对。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "电子设备我有笔记本电脑和儿童平板，哪些要提前拿出来？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "笔记本电脑通常要单独放进托盘；儿童"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，儿童平板也一定要单独拿出来吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "液体我最怕弄错。常用药和几个小洗护瓶，具体怎么放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；药品可能有例外，但机场规定不同，液体药应主动说明。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "药是不是最好保留原包装，还要带什么证明吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "最好保留原包装和清晰标签。处方药或用量较多时，可随身带处方或医生说明；液体药提前申报。目的地的药品入境限制还要另行核对。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "电子设备我有笔记本电脑和儿童平板，哪些要提前拿出来？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "笔记本电脑通常要单独放进托盘；儿童"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，儿童平板也一定要单独拿出来吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "液体我最怕弄错。常用药和几个小洗护瓶，具体怎么放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；药品可能有例外，但机场规定不同，液体药应主动说明。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "药是不是最好保留原包装，还要带什么证明吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "最好保留原包装和清晰标签。处方药或用量较多时，可随身带处方或医生说明；液体药提前申报。目的地的药品入境限制还要另行核对。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "如果机器报警，或者工作人员让我复检，我第一步该做什么？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A006",
+          "at_user_onset_heard_prefix": "最好保留原包装和清晰标签。处方药或用量较多时，可随身带处方或医生说明；液体药提前申报。目的地的药品入境限制还要另行核对。",
+          "final_shared_played_prefix": "最好保留原包装和清晰标签。处方药或用量较多时，可随身带处方或医生说明；液体药提前申报。目的地的药品入境限制还要另行核对。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "你先让孩子站在自己前侧，自己负责证件和托盘；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "报警不等于有问题。先停下，听工作人员指引；常见是再次通过、手持探测、擦拭检测或开包查看，未获允许不要碰行李。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "电子设备我有笔记本电脑和儿童平板，哪些要提前拿出来？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "笔记本电脑通常要单独放进托盘；儿童"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，儿童平板也一定要单独拿出来吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "液体我最怕弄错。常用药和几个小洗护瓶，具体怎么放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；药品可能有例外，但机场规定不同，液体药应主动说明。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "药是不是最好保留原包装，还要带什么证明吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "最好保留原包装和清晰标签。处方药或用量较多时，可随身带处方或医生说明；液体药提前申报。目的地的药品入境限制还要另行核对。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "如果机器报警，或者工作人员让我复检，我第一步该做什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "报警不等于有问题。先停下，听工作人员指引；"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "电子设备我有笔记本电脑和儿童平板，哪些要提前拿出来？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "笔记本电脑通常要单独放进托盘；儿童"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，儿童平板也一定要单独拿出来吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "液体我最怕弄错。常用药和几个小洗护瓶，具体怎么放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；药品可能有例外，但机场规定不同，液体药应主动说明。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "药是不是最好保留原包装，还要带什么证明吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "最好保留原包装和清晰标签。处方药或用量较多时，可随身带处方或医生说明；液体药提前申报。目的地的药品入境限制还要另行核对。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "如果机器报警，或者工作人员让我复检，我第一步该做什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "报警不等于有问题。先停下，听工作人员指引；常"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "等等，如果他们在检查我，孩子怎么办？我最担心这个。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A007",
+          "at_user_onset_heard_prefix": "报警不等于有问题。先停下，听工作人员指引；",
+          "final_shared_played_prefix": "报警不等于有问题。先停下，听工作人员指引；常",
+          "discarded_unheard_tail": "见是再次通过、手持探测、擦拭检测或开包查看，未获允许不要碰行李。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "你先让孩子站在自己前侧，自己负责证件和托盘；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "立刻说明你是独自带孩子，请工作人员让孩子留在你看得见的位置。不要自行追过去或离开检查点，先确认孩子该站哪里，再配合复检。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "电子设备我有笔记本电脑和儿童平板，哪些要提前拿出来？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "笔记本电脑通常要单独放进托盘；儿童"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，儿童平板也一定要单独拿出来吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "液体我最怕弄错。常用药和几个小洗护瓶，具体怎么放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；药品可能有例外，但机场规定不同，液体药应主动说明。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "药是不是最好保留原包装，还要带什么证明吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "最好保留原包装和清晰标签。处方药或用量较多时，可随身带处方或医生说明；液体药提前申报。目的地的药品入境限制还要另行核对。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "如果机器报警，或者工作人员让我复检，我第一步该做什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "报警不等于有问题。先停下，听工作人员指引；常"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "等等，如果他们在检查我，孩子怎么办？我最担心这个。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "立刻说明你是独自带孩子，请工作人员让孩子留在你看得见的位置。不要自行追过去或离开检查点，先确认孩子该站哪里，再配合复检。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "电子设备我有笔记本电脑和儿童平板，哪些要提前拿出来？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "笔记本电脑通常要单独放进托盘；儿童"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，儿童平板也一定要单独拿出来吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "液体我最怕弄错。常用药和几个小洗护瓶，具体怎么放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；药品可能有例外，但机场规定不同，液体药应主动说明。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "药是不是最好保留原包装，还要带什么证明吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "最好保留原包装和清晰标签。处方药或用量较多时，可随身带处方或医生说明；液体药提前申报。目的地的药品入境限制还要另行核对。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "如果机器报警，或者工作人员让我复检，我第一步该做什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "报警不等于有问题。先停下，听工作人员指引；常"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "等等，如果他们在检查我，孩子怎么办？我最担心这个。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "立刻说明你是独自带孩子，请工作人员让孩子留在你看得见的位置。不要自行追过去或离开检查点，先确认孩子该站哪里，再配合复检。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "那怎么判断只是例行复检，还是事情比较严重？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A008",
+          "at_user_onset_heard_prefix": "立刻说明你是独自带孩子，请工作人员让孩子留在你看得见的位置。不要自行追过去或离开检查点，先确认孩子该站哪里，再配合复检。",
+          "final_shared_played_prefix": "立刻说明你是独自带孩子，请工作人员让孩子留在你看得见的位置。不要自行追过去或离开检查点，先确认孩子该站哪里，再配合复检。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "你先让孩子站在自己前侧，自己负责证件和托盘；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "仅凭报警不能判断严重。再次扫描、擦拭或开包多属例行复检；若人员明确说物品受限、要扣留或需进一步处置，再按其说明处理。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "电子设备我有笔记本电脑和儿童平板，哪些要提前拿出来？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "笔记本电脑通常要单独放进托盘；儿童"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，儿童平板也一定要单独拿出来吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "液体我最怕弄错。常用药和几个小洗护瓶，具体怎么放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；药品可能有例外，但机场规定不同，液体药应主动说明。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "药是不是最好保留原包装，还要带什么证明吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "最好保留原包装和清晰标签。处方药或用量较多时，可随身带处方或医生说明；液体药提前申报。目的地的药品入境限制还要另行核对。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "如果机器报警，或者工作人员让我复检，我第一步该做什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "报警不等于有问题。先停下，听工作人员指引；常"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "等等，如果他们在检查我，孩子怎么办？我最担心这个。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "立刻说明你是独自带孩子，请工作人员让孩子留在你看得见的位置。不要自行追过去或离开检查点，先确认孩子该站哪里，再配合复检。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "那怎么判断只是例行复检，还是事情比较严重？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "仅凭报警不能判断严重。再次扫描、擦拭或开包多属例行复检；若人员明确说物品受限、要扣留或需进一步处置，再按其说明处理。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "电子设备我有笔记本电脑和儿童平板，哪些要提前拿出来？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "笔记本电脑通常要单独放进托盘；儿童"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，儿童平板也一定要单独拿出来吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "液体我最怕弄错。常用药和几个小洗护瓶，具体怎么放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；药品可能有例外，但机场规定不同，液体药应主动说明。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "药是不是最好保留原包装，还要带什么证明吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "最好保留原包装和清晰标签。处方药或用量较多时，可随身带处方或医生说明；液体药提前申报。目的地的药品入境限制还要另行核对。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "如果机器报警，或者工作人员让我复检，我第一步该做什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "报警不等于有问题。先停下，听工作人员指引；常"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "等等，如果他们在检查我，孩子怎么办？我最担心这个。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "立刻说明你是独自带孩子，请工作人员让孩子留在你看得见的位置。不要自行追过去或离开检查点，先确认孩子该站哪里，再配合复检。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "那怎么判断只是例行复检，还是事情比较严重？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "仅凭报警不能判断严重。再次扫描、擦拭或开包多属例行复检；若人员明确说物品受限、要扣留或需进一步处置，再按其说明处理。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "明白了。现场指令听不清时，我该怎么问？再帮我简短收个尾。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A009",
+          "at_user_onset_heard_prefix": "仅凭报警不能判断严重。再次扫描、擦拭或开包多属例行复检；若人员明确说物品受限、要扣留或需进一步处置，再按其说明处理。",
+          "final_shared_played_prefix": "仅凭报警不能判断严重。再次扫描、擦拭或开包多属例行复检；若人员明确说物品受限、要扣留或需进一步处置，再按其说明处理。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "你先让孩子站在自己前侧，自己负责证件和托盘；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A009",
+            "after_text": "仅凭报警不能判断严重。再次扫描、擦拭或开包多属例行复检；",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可以说：“抱歉，我独自带孩子，请您再说一遍，并告诉我先取出什么、孩子站哪里。”记住：先看标牌，按指令摆放，复检时停下说明，不擅自碰或取回行李。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A002",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "你先让孩子站在自己前侧，自己负责证件和托盘；"
+          }
+        ],
+        "at_event_onset_heard_prefix": "你先让孩子站在自己前侧，自己负责证件和托盘；",
+        "event_text": "好",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC02",
+        "kind": "backchannels",
+        "target_assistant_id": "A005",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "电子设备我有笔记本电脑和儿童平板，哪些要提前拿出来？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "笔记本电脑通常要单独放进托盘；儿童"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，儿童平板也一定要单独拿出来吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "液体我最怕弄错。常用药和几个小洗护瓶，具体怎么放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；"
+          }
+        ],
+        "at_event_onset_heard_prefix": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；",
+        "event_text": "嗯",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC03",
+        "kind": "backchannels",
+        "target_assistant_id": "A009",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "第一次坐国际航班，进安检后通常按什么顺序走？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "通常先核验证件和登机凭证，再把随身物品放入托盘，按要求取出部分物品，随后通过人身检查，确认放行后再收好行李。具体要求以出发机场和现场指令为准。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我独自带一个小学生，过安检时怎么安排才不容易乱？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "你先让孩子站在自己前侧，自己负责证件和托盘；先收好散落小物，再取电子设备和行李，确认孩子始终在视线内。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "电子设备我有笔记本电脑和儿童平板，哪些要提前拿出来？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "笔记本电脑通常要单独放进托盘；儿童"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，儿童平板也一定要单独拿出来吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "不一定。有些机场要求较大的电子设备都单独取出，有些使用新设备后可留在包内。到传送带前先看标牌，不清楚就直接问工作人员。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "液体我最怕弄错。常用药和几个小洗护瓶，具体怎么放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "常见做法是每个液体容器不超过一百毫升，集中装入透明可封口袋并单独取出；药品可能有例外，但机场规定不同，液体药应主动说明。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "药是不是最好保留原包装，还要带什么证明吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "最好保留原包装和清晰标签。处方药或用量较多时，可随身带处方或医生说明；液体药提前申报。目的地的药品入境限制还要另行核对。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "如果机器报警，或者工作人员让我复检，我第一步该做什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "报警不等于有问题。先停下，听工作人员指引；常"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "等等，如果他们在检查我，孩子怎么办？我最担心这个。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "立刻说明你是独自带孩子，请工作人员让孩子留在你看得见的位置。不要自行追过去或离开检查点，先确认孩子该站哪里，再配合复检。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "那怎么判断只是例行复检，还是事情比较严重？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "仅凭报警不能判断严重。再次扫描、擦拭或开包多属例行复检；"
+          }
+        ],
+        "at_event_onset_heard_prefix": "仅凭报警不能判断严重。再次扫描、擦拭或开包多属例行复检；",
+        "event_text": "明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

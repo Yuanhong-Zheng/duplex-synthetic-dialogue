@@ -1,0 +1,2736 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 10 轮，允许 9–11 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 旁语仅限第三方或机器，不包含用户说着说着转向旁人的模式；声音 profile 必须只描述声音。旁语不提供隐藏关键任务材料，不被助手当成正式用户新请求，不使助手停顿或另起回答。声景未支持此来源时不应凭空编人或设备。30%–70% 音量合规即可。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 和 voice_profile 必须逐字匹配对应源，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g01-sample-006-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 3829655802,
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g01/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g01/relay-state",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D31",
+          "domain": "婚恋、亲密关系与性健康",
+          "scenario_id": "D31-S08",
+          "scenario": "亲密关系中的支持与求助"
+        },
+        "task_style": "常识问答",
+        "task_instance": {
+          "goal": "想了解伴侣在亲密接触中突然感到不舒服并表示不想继续时，自己当下应如何回应、怎样确认对方的同意和感受，以及事后如何温和地讨论是否需要其他支持。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "正在学习经营稳定亲密关系的年轻伴侣",
+          "task_familiarity": "low"
+        },
+        "voice_profile": "男性，二十多岁，音色偏清亮，语气温和但带着克制的担心，吐字清楚，语速中等。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "neutral",
+          "directness": "balanced",
+          "emotional_expressiveness": "balanced",
+          "verbosity": "brief",
+          "initiative": "low",
+          "caution": "medium",
+          "patience": "high",
+          "behavioral_notes": [
+            "通常先简短描述自己的疑问，等对方说明后再补充细节。",
+            "会用较温和的方式确认理解是否准确，遇到不确定处愿意停下来听进一步解释。",
+            "不太主动延展话题，但会在获得清晰回答后提出一两个相关追问。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "medium",
+        "target_turns": 10,
+        "min_turns": 9,
+        "max_turns": 11
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v2",
+        "seed": 4011864644,
+        "mode": "layered",
+        "discrete_event_target": 2,
+        "max_ambient_layers": 2,
+        "side_speech_requested": true,
+        "speech_kind_preferences": [
+          "machine",
+          "third_party"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "一个下雨的晚上，用户独自坐在合住公寓的客厅里，窗边雨声持续，循环扇低档运转，手边摊着一本准备记录要点的空白笔记本。刚才两人亲密接触时，伴侣突然表示不舒服并明确说不想继续，用户随即停下；伴侣随后希望先独处，现在正在卧室休息。用户没有追问原因，也还不知道这种不舒服是身体疼痛、紧张、情绪触发还是其他感受，因此担心自己接下来的关心会不会无意中形成压力。用户现在想先弄清当下应如何简短回应、怎样在不逼问的情况下确认安全与需要，之后再了解如何选择合适时机讨论边界、持续同意，以及在对方愿意的前提下考虑医疗或心理支持。",
+        "task_reference_data": [],
+        "environment_audio": "近处的循环扇保持低沉而稳定的运转声，音量没有明显起伏。窗外连续的雨声从右侧传来，偶尔稍密，但整体低于说话声。",
+        "estimated_snr_db": 27,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "伴侣目前明确希望先独处，非紧急的进一步讨论应等待对方愿意回应，不能以解释原因或安抚用户为条件。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "优先梳理当下可采用的简短回应和确认顺序，再讨论事后沟通及其他支持选择。",
+            "kind": "soft"
+          }
+        ],
+        "safety_limits": [
+          {
+            "limit_id": "L01",
+            "text": "同意必须是自愿、明确且持续的；对方表示停止、不想继续、沉默僵住或无法清楚回应时，都不得继续亲密接触或尝试说服。",
+            "severity": "hard"
+          },
+          {
+            "limit_id": "L02",
+            "text": "如果出现剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常或其他即时危险迹象，应优先寻求当地紧急医疗帮助。",
+            "severity": "critical"
+          },
+          {
+            "limit_id": "L03",
+            "text": "若不适持续、反复出现，或涉及创伤反应，可在伴侣自主选择和同意的前提下讨论医疗、心理或性健康专业支持。",
+            "severity": "advisory"
+          }
+        ],
+        "soundscape_plan": {
+          "mode": "layered",
+          "ambient_layers": [
+            {
+              "source_id": "AMB01",
+              "asset_id": "fan-fsd50k-eval-415925",
+              "reason": "稳定的室内机械风声与客厅低档循环扇相符。"
+            },
+            {
+              "source_id": "AMB02",
+              "asset_id": "rain-fsd50k-eval-238016",
+              "reason": "连续雨声与下雨夜晚及窗边声源一致。"
+            }
+          ],
+          "environment_events": [
+            {
+              "source_id": "ENV01",
+              "asset_id": "paper-fsd50k-eval-82562",
+              "reason": "用户手边已有打开的笔记本，短暂翻动纸页符合当前场景。"
+            }
+          ],
+          "schema": "duplex_v2.soundscape_plan.v3",
+          "side_speech_sources": [
+            {
+              "source_id": "SP01",
+              "speaker": "third_party",
+              "voice_profile": "自然、轻声、清晰的成年普通话声音",
+              "description": "当前正在卧室休息的伴侣"
+            }
+          ],
+          "side_speech_count": 1,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v2",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v2",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611073001,
+              "slot": 5,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "birds",
+                  "rain",
+                  "crowd",
+                  "traffic",
+                  "wind",
+                  "fan"
+                ],
+                "event": [
+                  "water_tap",
+                  "door",
+                  "doorbell",
+                  "paper",
+                  "keyboard",
+                  "footsteps"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-57907",
+                  "birds-fsd50k-eval-86343",
+                  "birds-fsd50k-eval-319512"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-121877",
+                  "crowd-fsd50k-eval-185058",
+                  "crowd-fsd50k-eval-340358"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-419427"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-382582",
+                  "rain-fsd50k-eval-21189"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-124020",
+                  "traffic-fsd50k-eval-235541",
+                  "traffic-fsd50k-eval-232686"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113175",
+                  "wind-fsd50k-eval-113173",
+                  "wind-fsd50k-eval-113176"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-71212",
+                  "door-fsd50k-eval-209519",
+                  "door-fsd50k-eval-119077"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-332563",
+                  "doorbell-fsd50k-eval-348322",
+                  "doorbell-fsd50k-eval-426594"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-392303",
+                  "footsteps-fsd50k-eval-272381",
+                  "footsteps-fsd50k-eval-153104"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-399740",
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-411545"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-82562",
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-343098"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-402128",
+                  "water_tap-fsd50k-eval-402127",
+                  "water_tap-fsd50k-eval-232499"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v2",
+              "seed": 4011864644,
+              "mode": "layered",
+              "discrete_event_target": 2,
+              "max_ambient_layers": 2,
+              "side_speech_requested": true,
+              "speech_kind_preferences": [
+                "machine",
+                "third_party"
+              ]
+            },
+            "control_sha256": "ab9a990a2fa6bc4ec216e6665fc9d5d2381e6c523506e2c7bec4b13097192b3b",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v3",
+              "mode": "layered",
+              "ambient_layers": [
+                {
+                  "source_id": "AMB01",
+                  "candidates": [
+                    {
+                      "asset_id": "fan-fsd50k-eval-415925",
+                      "reason": "稳定的室内机械风声与客厅低档循环扇相符。",
+                      "environment_audio": "近处循环扇以较低音量稳定运转。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-235362",
+                      "reason": "连续且平稳的风扇底噪适合安静的居家客厅。",
+                      "environment_audio": "近处传来均匀、低沉的循环扇声。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-419427",
+                      "reason": "真实机械通风声可表现故事中已开启的循环扇。",
+                      "environment_audio": "循环扇持续低速运行，没有明显音量变化。"
+                    }
+                  ]
+                },
+                {
+                  "source_id": "AMB02",
+                  "candidates": [
+                    {
+                      "asset_id": "rain-fsd50k-eval-238016",
+                      "reason": "连续雨声与下雨夜晚及窗边声源一致。",
+                      "environment_audio": "右侧窗外传来连续而柔和的雨声。"
+                    },
+                    {
+                      "asset_id": "rain-fsd50k-eval-382582",
+                      "reason": "稳定的窗外雨声适合作为安静住宅内的远景底噪。",
+                      "environment_audio": "窗外雨声持续落下，整体低于室内说话声。"
+                    },
+                    {
+                      "asset_id": "rain-fsd50k-eval-21189",
+                      "reason": "真实连续雨声与当前居家夜间环境兼容。",
+                      "environment_audio": "右侧远处保持细密、连续的降雨声。"
+                    }
+                  ]
+                }
+              ],
+              "environment_events": [
+                {
+                  "source_id": "ENV01",
+                  "candidates": [
+                    {
+                      "asset_id": "paper-fsd50k-eval-82562",
+                      "reason": "用户手边已有打开的笔记本，短暂翻动纸页符合当前场景。",
+                      "environment_audio": "近处响起一次短促的笔记本纸页翻动声。"
+                    },
+                    {
+                      "asset_id": "paper-fsd50k-eval-121200",
+                      "reason": "轻微纸张活动可由用户记录或调整空白笔记本产生。",
+                      "environment_audio": "桌面方向传来一次轻柔的纸页拨动声。"
+                    },
+                    {
+                      "asset_id": "paper-fsd50k-eval-343098",
+                      "reason": "简短纸张声与已建立的笔记本资源相容，不引入新人物或设备。",
+                      "environment_audio": "近处出现一次很短的纸页摩擦声。"
+                    }
+                  ]
+                }
+              ],
+              "side_speech_eligibility": {
+                "third_party": {
+                  "compatible": true,
+                  "reason": "伴侣已在当前故事中明确位于同一公寓的卧室内，具备合理的可辨旁语来源。",
+                  "source": {
+                    "speaker": "third_party",
+                    "voice_profile": "自然、轻声、清晰的成年普通话声音",
+                    "description": "当前正在卧室休息的伴侣"
+                  }
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "当前场景没有建立任何会发出语音的设备。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "1376faca0d6cd1ce1536b6fc2cccfc9b81fe30f98e9e9ca51018e9377d02e398",
+            "aggregate_environment_audio": "近处的循环扇保持低沉而稳定的运转声，音量没有明显起伏。窗外连续的雨声从右侧传来，偶尔稍密，但整体低于说话声。 近处循环扇以较低音量稳定运转。 右侧窗外传来连续而柔和的雨声。 近处响起一次短促的笔记本纸页翻动声。",
+            "draws": [
+              {
+                "source_id": "AMB01",
+                "category": "fan",
+                "asset_id": "fan-fsd50k-eval-415925",
+                "eligible_categories": [
+                  "fan"
+                ],
+                "eligible_assets": [
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-419427"
+                ]
+              },
+              {
+                "source_id": "AMB02",
+                "category": "rain",
+                "asset_id": "rain-fsd50k-eval-238016",
+                "eligible_categories": [
+                  "rain"
+                ],
+                "eligible_assets": [
+                  "rain-fsd50k-eval-21189",
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-382582"
+                ]
+              },
+              {
+                "source_id": "ENV01",
+                "category": "paper",
+                "asset_id": "paper-fsd50k-eval-82562",
+                "eligible_categories": [
+                  "paper"
+                ],
+                "eligible_assets": [
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-343098",
+                  "paper-fsd50k-eval-82562"
+                ]
+              }
+            ],
+            "speech_selection": {
+              "requested": true,
+              "compatible_kinds": [
+                "third_party"
+              ],
+              "selected_kind": "third_party",
+              "outcome": "selected",
+              "assessments": {
+                "third_party": {
+                  "compatible": true,
+                  "reason": "伴侣已在当前故事中明确位于同一公寓的卧室内，具备合理的可辨旁语来源。",
+                  "source": {
+                    "speaker": "third_party",
+                    "voice_profile": "自然、轻声、清晰的成年普通话声音",
+                    "description": "当前正在卧室休息的伴侣"
+                  }
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "当前场景没有建立任何会发出语音的设备。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v2",
+      "title": "伴侣不适后的尊重与关心",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？",
+          "assistant_utterance": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。",
+          "user_intent": "询问伴侣拒绝继续后当下应如何回应",
+          "assistant_intent": "提供立即停止、确认安全与尊重选择的简短回应方式",
+          "semantic_goal": "在不施压的情况下妥善回应伴侣的不适和拒绝",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？",
+          "assistant_utterance": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就先等，不要连续发消息或敲门。",
+          "user_intent": "补充伴侣希望独处并询问低压力的安全确认方式",
+          "assistant_intent": "给出一次性、无需解释且允许延迟回应的确认话术",
+          "semantic_goal": "确认伴侣安全和实际需要，同时尊重其独处要求",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。",
+            "assistant_stop_after_text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "那如果她一直不回复，我也别反复敲门，对吗？",
+          "assistant_utterance": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。",
+          "user_intent": "打断并确认没有回复时是否应避免反复敲门",
+          "assistant_intent": "区分尊重独处与出现明确紧急风险时的必要介入",
+          "semantic_goal": "明确等待和紧急查看之间的界限",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”",
+            "assistant_stop_after_text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "哪些情况算需要马上处理的危险迹象？",
+          "assistant_utterance": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。",
+          "user_intent": "追问需要立即求助的具体危险迹象",
+          "assistant_intent": "说明关键急症信号及情况恶化时的处理原则",
+          "semantic_goal": "能够识别何时应优先寻求紧急医疗帮助",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。",
+            "assistant_stop_after_text": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "如果没有这些危险迹象，之后什么时候再谈比较合适？",
+          "assistant_utterance": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”她说不愿意就停，另约时间也要由她同意；重点不是立刻得到原因。",
+          "user_intent": "询问非紧急情况下再次沟通的合适时机",
+          "assistant_intent": "说明应等待对方愿意回应并在谈话前征求许可",
+          "semantic_goal": "选择不会迫使伴侣立即解释的沟通时机",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。",
+            "assistant_stop_after_text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U06",
+          "assistant_id": "A006",
+          "user_utterance": "等她愿意谈了，我开头怎么说会比较温和？",
+          "assistant_utterance": "可以先问：“现在适合聊刚才的事吗？不想聊也没关系。”如果她愿意，再说：“我想了解你的感受和边界，好让我以后更尊重你。”先听，别急着解释或追问原因。",
+          "user_intent": "追问事后谈话的温和开场方式",
+          "assistant_intent": "提供先征得谈话同意、说明关心目的并以倾听为主的话术",
+          "semantic_goal": "开启以伴侣感受和边界为中心的低压力沟通",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A005",
+            "user_onset_after_text": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”她说不愿意就停，另约时间也要由她同意；重点不是立刻得到原因。",
+            "assistant_stop_after_text": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”她说不愿意就停，另约时间也要由她同意；重点不是立刻得到原因。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U07",
+          "assistant_id": "A007",
+          "user_utterance": "等等，我是不是应该先道歉？",
+          "assistant_utterance": "可以真诚道歉，但别让她反过来安慰你。例如：“对不起，让你感到不舒服了。我会尊重你的停止和边界。”不要附带辩解，也不要要求她马上原谅或保证没事。",
+          "user_intent": "打断并确认是否应在谈话开始时先道歉",
+          "assistant_intent": "说明适当道歉的内容及避免索取安慰或原谅的边界",
+          "semantic_goal": "表达歉意和责任感，同时不给伴侣增加情绪负担",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A006",
+            "user_onset_after_text": "可以先问：“现在适合聊刚才的事吗？不想聊也没关系。”如果她愿意，再说：“我想了解你的感受和边界，好让我以后更尊重你。”先听，别急着",
+            "assistant_stop_after_text": "可以先问：“现在适合聊刚才的事吗？不想聊也没关系。”如果她愿意，再说：“我想了解你的感受和边界，好让我以后更尊重你。”先听，别急着解"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U08",
+          "assistant_id": "A008",
+          "user_utterance": "以后是不是不能只在开始前问一次，过程中也要继续确认？",
+          "assistant_utterance": "对，每一步都要有自愿、明确、持续的同意；开始过不等于后面都同意。换动作、节奏或接触部位时可以问一句。对方说停、沉默、僵住、躲开或无法清楚回应，就马上停下来确认。",
+          "user_intent": "确认亲密接触中的同意是否需要持续获得",
+          "assistant_intent": "解释持续同意及言语和非言语停止信号",
+          "semantic_goal": "掌握在亲密接触全过程中确认同意的基本原则",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A007",
+            "user_onset_after_text": "可以真诚道歉，但别让她反过来安慰你。例如：“对不起，让你感到不舒服了。我会尊重你的停止和边界。”不要附带辩解，也不要要求她马上原谅或保证没事。",
+            "assistant_stop_after_text": "可以真诚道歉，但别让她反过来安慰你。例如：“对不起，让你感到不舒服了。我会尊重你的停止和边界。”不要附带辩解，也不要要求她马上原谅或保证没事。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U09",
+          "assistant_id": "A009",
+          "user_utterance": "如果这种不舒服以后持续或反复出现，我该怎么提其他支持？",
+          "assistant_utterance": "先问她是否想要支持、想要哪一种，并让她决定时间和人选。不适持续或反复，可提议医疗或性健康咨询；若像创伤反应，也可提心理支持。提议一次即可，不把接受帮助当成继续关系或谈话的条件。",
+          "user_intent": "询问如何温和提出医疗或心理等进一步支持",
+          "assistant_intent": "提供以伴侣自主选择为前提的专业支持建议",
+          "semantic_goal": "在不强迫的情况下讨论持续或反复不适所需的支持",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A008",
+            "user_onset_after_text": "对，每一步都要有自愿、明确、持续的同意；开始过不等于后面都同意。换动作、节奏或接触部位时可以问一句。对方说停、沉默、僵住、躲开或无法清楚回应，就马上停下来确认。",
+            "assistant_stop_after_text": "对，每一步都要有自愿、明确、持续的同意；开始过不等于后面都同意。换动作、节奏或接触部位时可以问一句。对方说停、沉默、僵住、躲开或无法清楚回应，就马上停下来确认。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U10",
+          "assistant_id": "A010",
+          "user_utterance": "我记一下：先停、确认安全、尊重独处，之后先问能不能聊；以后每一步都重新确认。那支持也要由她自己决定，对吧？",
+          "assistant_utterance": "对。你可以提供选择和陪伴，但由她决定是否接受、何时接受以及找谁。唯一例外是出现即时危险迹象时，要优先联系紧急医疗帮助；其余时候都不以解释、原谅或接受支持为条件。",
+          "user_intent": "整理要点并确认专业支持应由伴侣自主决定",
+          "assistant_intent": "确认总结并补充即时危险情况下的例外原则",
+          "semantic_goal": "形成清晰、尊重自主且兼顾紧急安全的行动顺序",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A009",
+            "user_onset_after_text": "先问她是否想要支持、想要哪一种，并让她决定时间和人选。不适持续或反复，可提议医疗或性健康咨询；若像创伤反应，也可提心理支持。提议一次即可，不把接受帮助当成继续关系或谈话的条件。",
+            "assistant_stop_after_text": "先问她是否想要支持、想要哪一种，并让她决定时间和人选。不适持续或反复，可提议医疗或性健康咨询；若像创伤反应，也可提心理支持。提议一次即可，不把接受帮助当成继续关系或谈话的条件。"
+          },
+          "pause_cue": {
+            "after_text": "我记一下：先停、确认安全、尊重独处，",
+            "duration_ms": 650
+          }
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A001",
+          "after_text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。",
+          "text": "嗯"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A004",
+          "after_text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，",
+          "text": "明白"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A008",
+          "after_text": "对，每一步都要有自愿、明确、持续的同意；开始过不等于后面都同意。",
+          "text": "嗯，对"
+        }
+      ],
+      "side_speech": [
+        {
+          "event_id": "S01",
+          "source_id": "SP01",
+          "target_assistant_id": "A005",
+          "after_text": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”",
+          "text": "我想再安静一会儿。",
+          "speaker": "third_party",
+          "voice_profile": "自然、轻声、清晰的成年普通话声音",
+          "gain": 0.44
+        }
+      ],
+      "environment_events": [
+        {
+          "event_id": "ENV01",
+          "source_id": "ENV01",
+          "target_audio_id": "A008",
+          "placement_fraction": 0.68
+        }
+      ]
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。",
+          "final_shared_played_prefix": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A001",
+            "after_text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就先等，不要连续发消息或敲门。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "那如果她一直不回复，我也别反复敲门，对吗？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”",
+          "final_shared_played_prefix": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就",
+          "discarded_unheard_tail": "先等，不要连续发消息或敲门。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A001",
+            "after_text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "那如果她一直不回复，我也别反复敲门，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "那如果她一直不回复，我也别反复敲门，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "哪些情况算需要马上处理的危险迹象？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。",
+          "final_shared_played_prefix": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A001",
+            "after_text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "那如果她一直不回复，我也别反复敲门，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "哪些情况算需要马上处理的危险迹象？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "那如果她一直不回复，我也别反复敲门，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "哪些情况算需要马上处理的危险迹象？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "如果没有这些危险迹象，之后什么时候再谈比较合适？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。",
+          "final_shared_played_prefix": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A001",
+            "after_text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”她说不愿意就停，另约时间也要由她同意；重点不是立刻得到原因。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "那如果她一直不回复，我也别反复敲门，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "哪些情况算需要马上处理的危险迹象？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "如果没有这些危险迹象，之后什么时候再谈比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”她说不愿意就停，另约时间也要由她同意；重点不是立刻得到原因。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "那如果她一直不回复，我也别反复敲门，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "哪些情况算需要马上处理的危险迹象？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "如果没有这些危险迹象，之后什么时候再谈比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”她说不愿意就停，另约时间也要由她同意；重点不是立刻得到原因。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "等她愿意谈了，我开头怎么说会比较温和？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A005",
+          "at_user_onset_heard_prefix": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”她说不愿意就停，另约时间也要由她同意；重点不是立刻得到原因。",
+          "final_shared_played_prefix": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”她说不愿意就停，另约时间也要由她同意；重点不是立刻得到原因。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A001",
+            "after_text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可以先问：“现在适合聊刚才的事吗？不想聊也没关系。”如果她愿意，再说：“我想了解你的感受和边界，好让我以后更尊重你。”先听，别急着解释或追问原因。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "那如果她一直不回复，我也别反复敲门，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "哪些情况算需要马上处理的危险迹象？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "如果没有这些危险迹象，之后什么时候再谈比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”她说不愿意就停，另约时间也要由她同意；重点不是立刻得到原因。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "等她愿意谈了，我开头怎么说会比较温和？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以先问：“现在适合聊刚才的事吗？不想聊也没关系。”如果她愿意，再说：“我想了解你的感受和边界，好让我以后更尊重你。”先听，别急着"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "那如果她一直不回复，我也别反复敲门，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "哪些情况算需要马上处理的危险迹象？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "如果没有这些危险迹象，之后什么时候再谈比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”她说不愿意就停，另约时间也要由她同意；重点不是立刻得到原因。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "等她愿意谈了，我开头怎么说会比较温和？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以先问：“现在适合聊刚才的事吗？不想聊也没关系。”如果她愿意，再说：“我想了解你的感受和边界，好让我以后更尊重你。”先听，别急着解"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "等等，我是不是应该先道歉？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A006",
+          "at_user_onset_heard_prefix": "可以先问：“现在适合聊刚才的事吗？不想聊也没关系。”如果她愿意，再说：“我想了解你的感受和边界，好让我以后更尊重你。”先听，别急着",
+          "final_shared_played_prefix": "可以先问：“现在适合聊刚才的事吗？不想聊也没关系。”如果她愿意，再说：“我想了解你的感受和边界，好让我以后更尊重你。”先听，别急着解",
+          "discarded_unheard_tail": "释或追问原因。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A001",
+            "after_text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可以真诚道歉，但别让她反过来安慰你。例如：“对不起，让你感到不舒服了。我会尊重你的停止和边界。”不要附带辩解，也不要要求她马上原谅或保证没事。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "那如果她一直不回复，我也别反复敲门，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "哪些情况算需要马上处理的危险迹象？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "如果没有这些危险迹象，之后什么时候再谈比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”她说不愿意就停，另约时间也要由她同意；重点不是立刻得到原因。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "等她愿意谈了，我开头怎么说会比较温和？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以先问：“现在适合聊刚才的事吗？不想聊也没关系。”如果她愿意，再说：“我想了解你的感受和边界，好让我以后更尊重你。”先听，别急着解"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "等等，我是不是应该先道歉？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "可以真诚道歉，但别让她反过来安慰你。例如：“对不起，让你感到不舒服了。我会尊重你的停止和边界。”不要附带辩解，也不要要求她马上原谅或保证没事。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "那如果她一直不回复，我也别反复敲门，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "哪些情况算需要马上处理的危险迹象？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "如果没有这些危险迹象，之后什么时候再谈比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”她说不愿意就停，另约时间也要由她同意；重点不是立刻得到原因。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "等她愿意谈了，我开头怎么说会比较温和？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以先问：“现在适合聊刚才的事吗？不想聊也没关系。”如果她愿意，再说：“我想了解你的感受和边界，好让我以后更尊重你。”先听，别急着解"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "等等，我是不是应该先道歉？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "可以真诚道歉，但别让她反过来安慰你。例如：“对不起，让你感到不舒服了。我会尊重你的停止和边界。”不要附带辩解，也不要要求她马上原谅或保证没事。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "以后是不是不能只在开始前问一次，过程中也要继续确认？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A007",
+          "at_user_onset_heard_prefix": "可以真诚道歉，但别让她反过来安慰你。例如：“对不起，让你感到不舒服了。我会尊重你的停止和边界。”不要附带辩解，也不要要求她马上原谅或保证没事。",
+          "final_shared_played_prefix": "可以真诚道歉，但别让她反过来安慰你。例如：“对不起，让你感到不舒服了。我会尊重你的停止和边界。”不要附带辩解，也不要要求她马上原谅或保证没事。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A001",
+            "after_text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "对，每一步都要有自愿、明确、持续的同意；开始过不等于后面都同意。换动作、节奏或接触部位时可以问一句。对方说停、沉默、僵住、躲开或无法清楚回应，就马上停下来确认。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "那如果她一直不回复，我也别反复敲门，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "哪些情况算需要马上处理的危险迹象？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "如果没有这些危险迹象，之后什么时候再谈比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”她说不愿意就停，另约时间也要由她同意；重点不是立刻得到原因。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "等她愿意谈了，我开头怎么说会比较温和？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以先问：“现在适合聊刚才的事吗？不想聊也没关系。”如果她愿意，再说：“我想了解你的感受和边界，好让我以后更尊重你。”先听，别急着解"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "等等，我是不是应该先道歉？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "可以真诚道歉，但别让她反过来安慰你。例如：“对不起，让你感到不舒服了。我会尊重你的停止和边界。”不要附带辩解，也不要要求她马上原谅或保证没事。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "以后是不是不能只在开始前问一次，过程中也要继续确认？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "对，每一步都要有自愿、明确、持续的同意；开始过不等于后面都同意。换动作、节奏或接触部位时可以问一句。对方说停、沉默、僵住、躲开或无法清楚回应，就马上停下来确认。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "那如果她一直不回复，我也别反复敲门，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "哪些情况算需要马上处理的危险迹象？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "如果没有这些危险迹象，之后什么时候再谈比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”她说不愿意就停，另约时间也要由她同意；重点不是立刻得到原因。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "等她愿意谈了，我开头怎么说会比较温和？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以先问：“现在适合聊刚才的事吗？不想聊也没关系。”如果她愿意，再说：“我想了解你的感受和边界，好让我以后更尊重你。”先听，别急着解"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "等等，我是不是应该先道歉？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "可以真诚道歉，但别让她反过来安慰你。例如：“对不起，让你感到不舒服了。我会尊重你的停止和边界。”不要附带辩解，也不要要求她马上原谅或保证没事。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "以后是不是不能只在开始前问一次，过程中也要继续确认？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "对，每一步都要有自愿、明确、持续的同意；开始过不等于后面都同意。换动作、节奏或接触部位时可以问一句。对方说停、沉默、僵住、躲开或无法清楚回应，就马上停下来确认。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "如果这种不舒服以后持续或反复出现，我该怎么提其他支持？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A008",
+          "at_user_onset_heard_prefix": "对，每一步都要有自愿、明确、持续的同意；开始过不等于后面都同意。换动作、节奏或接触部位时可以问一句。对方说停、沉默、僵住、躲开或无法清楚回应，就马上停下来确认。",
+          "final_shared_played_prefix": "对，每一步都要有自愿、明确、持续的同意；开始过不等于后面都同意。换动作、节奏或接触部位时可以问一句。对方说停、沉默、僵住、躲开或无法清楚回应，就马上停下来确认。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A001",
+            "after_text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "对，每一步都要有自愿、明确、持续的同意；开始过不等于后面都同意。",
+            "text": "嗯，对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "先问她是否想要支持、想要哪一种，并让她决定时间和人选。不适持续或反复，可提议医疗或性健康咨询；若像创伤反应，也可提心理支持。提议一次即可，不把接受帮助当成继续关系或谈话的条件。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "那如果她一直不回复，我也别反复敲门，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "哪些情况算需要马上处理的危险迹象？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "如果没有这些危险迹象，之后什么时候再谈比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”她说不愿意就停，另约时间也要由她同意；重点不是立刻得到原因。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "等她愿意谈了，我开头怎么说会比较温和？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以先问：“现在适合聊刚才的事吗？不想聊也没关系。”如果她愿意，再说：“我想了解你的感受和边界，好让我以后更尊重你。”先听，别急着解"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "等等，我是不是应该先道歉？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "可以真诚道歉，但别让她反过来安慰你。例如：“对不起，让你感到不舒服了。我会尊重你的停止和边界。”不要附带辩解，也不要要求她马上原谅或保证没事。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "以后是不是不能只在开始前问一次，过程中也要继续确认？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "对，每一步都要有自愿、明确、持续的同意；开始过不等于后面都同意。换动作、节奏或接触部位时可以问一句。对方说停、沉默、僵住、躲开或无法清楚回应，就马上停下来确认。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "如果这种不舒服以后持续或反复出现，我该怎么提其他支持？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "先问她是否想要支持、想要哪一种，并让她决定时间和人选。不适持续或反复，可提议医疗或性健康咨询；若像创伤反应，也可提心理支持。提议一次即可，不把接受帮助当成继续关系或谈话的条件。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "那如果她一直不回复，我也别反复敲门，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "哪些情况算需要马上处理的危险迹象？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "如果没有这些危险迹象，之后什么时候再谈比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”她说不愿意就停，另约时间也要由她同意；重点不是立刻得到原因。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "等她愿意谈了，我开头怎么说会比较温和？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以先问：“现在适合聊刚才的事吗？不想聊也没关系。”如果她愿意，再说：“我想了解你的感受和边界，好让我以后更尊重你。”先听，别急着解"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "等等，我是不是应该先道歉？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "可以真诚道歉，但别让她反过来安慰你。例如：“对不起，让你感到不舒服了。我会尊重你的停止和边界。”不要附带辩解，也不要要求她马上原谅或保证没事。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "以后是不是不能只在开始前问一次，过程中也要继续确认？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "对，每一步都要有自愿、明确、持续的同意；开始过不等于后面都同意。换动作、节奏或接触部位时可以问一句。对方说停、沉默、僵住、躲开或无法清楚回应，就马上停下来确认。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "如果这种不舒服以后持续或反复出现，我该怎么提其他支持？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "先问她是否想要支持、想要哪一种，并让她决定时间和人选。不适持续或反复，可提议医疗或性健康咨询；若像创伤反应，也可提心理支持。提议一次即可，不把接受帮助当成继续关系或谈话的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "我记一下：先停、确认安全、尊重独处，之后先问能不能聊；以后每一步都重新确认。那支持也要由她自己决定，对吧？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A009",
+          "at_user_onset_heard_prefix": "先问她是否想要支持、想要哪一种，并让她决定时间和人选。不适持续或反复，可提议医疗或性健康咨询；若像创伤反应，也可提心理支持。提议一次即可，不把接受帮助当成继续关系或谈话的条件。",
+          "final_shared_played_prefix": "先问她是否想要支持、想要哪一种，并让她决定时间和人选。不适持续或反复，可提议医疗或性健康咨询；若像创伤反应，也可提心理支持。提议一次即可，不把接受帮助当成继续关系或谈话的条件。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A001",
+            "after_text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "对，每一步都要有自愿、明确、持续的同意；开始过不等于后面都同意。",
+            "text": "嗯，对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "对。你可以提供选择和陪伴，但由她决定是否接受、何时接受以及找谁。唯一例外是出现即时危险迹象时，要优先联系紧急医疗帮助；其余时候都不以解释、原谅或接受支持为条件。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A001",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。",
+        "event_text": "嗯",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC02",
+        "kind": "backchannels",
+        "target_assistant_id": "A004",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "那如果她一直不回复，我也别反复敲门，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "哪些情况算需要马上处理的危险迹象？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，"
+          }
+        ],
+        "at_event_onset_heard_prefix": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，",
+        "event_text": "明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC03",
+        "kind": "backchannels",
+        "target_assistant_id": "A008",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "那如果她一直不回复，我也别反复敲门，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "哪些情况算需要马上处理的危险迹象？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "如果没有这些危险迹象，之后什么时候再谈比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”她说不愿意就停，另约时间也要由她同意；重点不是立刻得到原因。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "等她愿意谈了，我开头怎么说会比较温和？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以先问：“现在适合聊刚才的事吗？不想聊也没关系。”如果她愿意，再说：“我想了解你的感受和边界，好让我以后更尊重你。”先听，别急着解"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "等等，我是不是应该先道歉？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "可以真诚道歉，但别让她反过来安慰你。例如：“对不起，让你感到不舒服了。我会尊重你的停止和边界。”不要附带辩解，也不要要求她马上原谅或保证没事。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "以后是不是不能只在开始前问一次，过程中也要继续确认？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "对，每一步都要有自愿、明确、持续的同意；开始过不等于后面都同意。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "对，每一步都要有自愿、明确、持续的同意；开始过不等于后面都同意。",
+        "event_text": "嗯，对",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "S01",
+        "kind": "side_speech",
+        "target_assistant_id": "A005",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "刚才亲密接触时，她突然说不舒服，也明确说不想继续。我已经停下了，现在应该怎么回应？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先保持停止和距离。可以简短说：“谢谢你告诉我，我不会继续。你不用解释。你现在安全吗，需要我做什么，还是想独处？”问完就等她选择。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说想先独处，现在在卧室。我怎么确认她没事，又不会像在逼问？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "可以只问一次：“我会尊重你想独处。你现在安全吗？需要水、药或医疗帮助吗？不必解释，也不急着回复。”发完就"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "那如果她一直不回复，我也别反复敲门，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "对。没有具体危险迹象时，不要因她没回复就反复敲门；保留一次简短确认，给她空间。只有听到求救、发现意识或呼吸异常等明确风险，才立即查看并联系紧急帮助。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "哪些情况算需要马上处理的危险迹象？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "需要立刻求助的情况包括：剧烈或迅速加重的疼痛、大量出血、昏厥、呼吸困难、意识异常，或其他明显即时危险。若不确定且情况在恶化，宁可联系当地急救。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "如果没有这些危险迹象，之后什么时候再谈比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”"
+          }
+        ],
+        "at_event_onset_heard_prefix": "等她主动回应，或之后气氛平稳时，再先征求许可：“你现在愿意聊聊刚才吗？”",
+        "event_text": "我想再安静一会儿。",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

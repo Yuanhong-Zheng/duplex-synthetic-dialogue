@@ -1,0 +1,2920 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 11 轮，允许 10–12 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 旁语仅限第三方或机器，不包含用户说着说着转向旁人的模式；声音 profile 必须只描述声音。旁语不提供隐藏关键任务材料，不被助手当成正式用户新请求，不使助手停顿或另起回答。声景未支持此来源时不应凭空编人或设备。30%–70% 音量合规即可。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 和 voice_profile 必须逐字匹配对应源，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g09-sample-006-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 4001491609,
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g09/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g09/relay-state",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D26",
+          "domain": "翻译、口译与跨文化沟通",
+          "scenario_id": "D26-S05",
+          "scenario": "文档口头翻译"
+        },
+        "task_style": "常识问答",
+        "task_instance": {
+          "goal": "弄清外语文档口头翻译中“直译”和“自然转述”的区别，围绕通知类文本理解语气、条件和义务表达如何转换，并能判断哪些说法更适合当面向别人转述。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "负责向本单位同事传达外文通知的行政协调员",
+          "task_familiarity": "low"
+        },
+        "voice_profile": "女性，感知年龄为四十多岁，音色偏清亮，吐字清楚但语速略快；情绪起伏较明显，遇到不确定的表达时语气会带出轻微焦急。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "formal",
+          "directness": "balanced",
+          "emotional_expressiveness": "expressive",
+          "verbosity": "balanced",
+          "initiative": "low",
+          "caution": "low",
+          "patience": "low",
+          "behavioral_notes": [
+            "措辞较正式，通常会先把疑问完整说清，再等待对方给出解释。",
+            "对语气和措辞差异的感受表达明显，听到不自然的说法时会直接指出自己的困惑。",
+            "希望解释尽快落到具体例子，若内容反复铺陈，容易表现出不耐烦。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "medium",
+        "target_turns": 11,
+        "min_turns": 10,
+        "max_turns": 12
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v2",
+        "seed": 1690399969,
+        "mode": "layered",
+        "discrete_event_target": 1,
+        "max_ambient_layers": 2,
+        "side_speech_requested": true,
+        "speech_kind_preferences": [
+          "machine",
+          "third_party"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "周二上午十点二十分，用户独自在单位行政办公室，准备在下午的内部碰头会上向同事口头传达一份合作方发来的英文通知。她已打印邮件附件，并划出了截止时间、适用人员、条件从句以及 must、may 等词，但不确定逐字翻译是否会显得生硬或造成义务强度偏差。她没有正式中文版，也暂时无法请专业译员复核，只能依据手边原文先弄清直译与自然转述各自适合保留什么。当前仍待分辨的问题包括怎样口头处理通知语气、怎样转换条件和后果表达，以及哪些自然说法既便于当面听懂又不会弱化原意。",
+        "task_reference_data": [
+          "来自用户手边已读的英文通知打印件：原文为“Please submit the attendance form no later than 5:00 p.m. on Friday.”",
+          "来自同一打印件、用户已划线的条件句：原文为“Employees who require special access arrangements must notify the Administration Office in advance.”",
+          "来自同一打印件、用户已读但尚未确定语气强度的后果句：原文为“Failure to complete the registration may result in delayed entry.”"
+        ],
+        "environment_audio": "办公室内的通风设备从近处持续发出平稳低鸣，音量基本不变。关闭的窗外有很远的道路车流声，断续起伏但明显低于说话声。",
+        "estimated_snr_db": 27,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "口头转述必须保留原文中的适用对象、截止时间、条件和义务强度，不得擅自增删例外。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "自然转述应以同事当面能够迅速听懂为优先，但不能把可能后果说成必然后果。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C03",
+            "text": "解释尽量结合手边通知中的具体句子，避免长时间停留在抽象术语上。",
+            "kind": "soft"
+          }
+        ],
+        "safety_limits": [],
+        "soundscape_plan": {
+          "mode": "layered",
+          "ambient_layers": [
+            {
+              "source_id": "AMB01",
+              "asset_id": "fan-fsd50k-eval-235362",
+              "reason": "稳定的机械通风声适合作为行政办公室的近处持续底噪。"
+            },
+            {
+              "source_id": "AMB02",
+              "asset_id": "traffic-fsd50k-eval-235541",
+              "reason": "远处道路车流可作为关闭窗户之外的微弱城市底色。"
+            }
+          ],
+          "environment_events": [
+            {
+              "source_id": "ENV01",
+              "asset_id": "paper-fsd50k-eval-343098",
+              "reason": "用户正在查看打印出的英文通知，短促翻动纸张声与现有材料相符。"
+            }
+          ],
+          "schema": "duplex_v2.soundscape_plan.v3",
+          "side_speech_sources": [],
+          "side_speech_count": 0,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v2",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v2",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611073009,
+              "slot": 5,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "crowd",
+                  "traffic",
+                  "birds",
+                  "fan",
+                  "rain",
+                  "wind"
+                ],
+                "event": [
+                  "water_tap",
+                  "paper",
+                  "keyboard",
+                  "door",
+                  "doorbell",
+                  "footsteps"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-319512",
+                  "birds-fsd50k-eval-86343",
+                  "birds-fsd50k-eval-57907"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-185058",
+                  "crowd-fsd50k-eval-121877",
+                  "crowd-fsd50k-eval-340358"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-419427",
+                  "fan-fsd50k-eval-415925"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-21189",
+                  "rain-fsd50k-eval-382582"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-235541",
+                  "traffic-fsd50k-eval-232686",
+                  "traffic-fsd50k-eval-124020"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113176",
+                  "wind-fsd50k-eval-113175",
+                  "wind-fsd50k-eval-113173"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-119077",
+                  "door-fsd50k-eval-71212",
+                  "door-fsd50k-eval-209519"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-348322",
+                  "doorbell-fsd50k-eval-426594",
+                  "doorbell-fsd50k-eval-332563"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-392303",
+                  "footsteps-fsd50k-eval-272381",
+                  "footsteps-fsd50k-eval-153104"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-411545",
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-399740"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-343098",
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-82562"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-232499",
+                  "water_tap-fsd50k-eval-402128",
+                  "water_tap-fsd50k-eval-402127"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v2",
+              "seed": 1690399969,
+              "mode": "layered",
+              "discrete_event_target": 1,
+              "max_ambient_layers": 2,
+              "side_speech_requested": true,
+              "speech_kind_preferences": [
+                "machine",
+                "third_party"
+              ]
+            },
+            "control_sha256": "dfccccb41483e60adb61a109659eaa45f76659ccdc51898477f1b2b8f8c3f452",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v3",
+              "mode": "layered",
+              "ambient_layers": [
+                {
+                  "source_id": "AMB01",
+                  "candidates": [
+                    {
+                      "asset_id": "fan-fsd50k-eval-235362",
+                      "reason": "稳定的机械通风声适合作为行政办公室的近处持续底噪。",
+                      "environment_audio": "近处持续而平稳的办公室通风设备低鸣。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-419427",
+                      "reason": "真实风扇或通风录音与安静办公室环境相容。",
+                      "environment_audio": "办公室内有音量均匀的低沉通风声。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-415925",
+                      "reason": "短段稳定机械声可表现室内通风设备，不引入额外场景事实。",
+                      "environment_audio": "近处机械通风声保持稳定，没有明显节奏变化。"
+                    }
+                  ]
+                },
+                {
+                  "source_id": "AMB02",
+                  "candidates": [
+                    {
+                      "asset_id": "traffic-fsd50k-eval-235541",
+                      "reason": "远处道路车流可作为关闭窗户之外的微弱城市底色。",
+                      "environment_audio": "窗外远处的道路车流声断续起伏，音量很低。"
+                    },
+                    {
+                      "asset_id": "traffic-fsd50k-eval-124020",
+                      "reason": "连续车流录音适合低音量叠加为办公室窗外的远景声。",
+                      "environment_audio": "很远的车流声透过窗户隐约传来。"
+                    },
+                    {
+                      "asset_id": "traffic-fsd50k-eval-232686",
+                      "reason": "较短的真实道路环境声与室内办公场景兼容。",
+                      "environment_audio": "窗外有轻微而断续的远处车辆声。"
+                    }
+                  ]
+                }
+              ],
+              "environment_events": [
+                {
+                  "source_id": "ENV01",
+                  "candidates": [
+                    {
+                      "asset_id": "paper-fsd50k-eval-343098",
+                      "reason": "用户正在查看打印出的英文通知，短促翻动纸张声与现有材料相符。",
+                      "environment_audio": "近处响起一次短促的纸张翻动声。"
+                    },
+                    {
+                      "asset_id": "paper-fsd50k-eval-121200",
+                      "reason": "打印件已在用户手边，轻微整理纸页不会引入新物品或行为风险。",
+                      "environment_audio": "桌面附近传来一次轻微的纸页整理声。"
+                    },
+                    {
+                      "asset_id": "paper-fsd50k-eval-82562",
+                      "reason": "完整纸张声效适合表现用户查看手边通知打印件。",
+                      "environment_audio": "近处出现一阵简短的纸张翻动声。"
+                    }
+                  ]
+                }
+              ],
+              "side_speech_eligibility": {
+                "third_party": {
+                  "compatible": false,
+                  "reason": "用户当前独自在办公室，故事中没有已经在场且可辨识的第三方说话者。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "当前场景只建立了非语音的通风设备，没有可合理发出旁语的机器。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "2ec49426c869eb1fff943dba562970a7873c1af9cf7e6e6c57f2ab24b57c08e6",
+            "aggregate_environment_audio": "办公室内的通风设备从近处持续发出平稳低鸣，音量基本不变。关闭的窗外有很远的道路车流声，断续起伏但明显低于说话声。 近处持续而平稳的办公室通风设备低鸣。 窗外远处的道路车流声断续起伏，音量很低。 近处响起一次短促的纸张翻动声。",
+            "draws": [
+              {
+                "source_id": "AMB01",
+                "category": "fan",
+                "asset_id": "fan-fsd50k-eval-235362",
+                "eligible_categories": [
+                  "fan"
+                ],
+                "eligible_assets": [
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-419427"
+                ]
+              },
+              {
+                "source_id": "AMB02",
+                "category": "traffic",
+                "asset_id": "traffic-fsd50k-eval-235541",
+                "eligible_categories": [
+                  "traffic"
+                ],
+                "eligible_assets": [
+                  "traffic-fsd50k-eval-124020",
+                  "traffic-fsd50k-eval-232686",
+                  "traffic-fsd50k-eval-235541"
+                ]
+              },
+              {
+                "source_id": "ENV01",
+                "category": "paper",
+                "asset_id": "paper-fsd50k-eval-343098",
+                "eligible_categories": [
+                  "paper"
+                ],
+                "eligible_assets": [
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-343098",
+                  "paper-fsd50k-eval-82562"
+                ]
+              }
+            ],
+            "speech_selection": {
+              "requested": true,
+              "compatible_kinds": [],
+              "selected_kind": null,
+              "outcome": "no_compatible_source",
+              "assessments": {
+                "third_party": {
+                  "compatible": false,
+                  "reason": "用户当前独自在办公室，故事中没有已经在场且可辨识的第三方说话者。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "当前场景只建立了非语音的通风设备，没有可合理发出旁语的机器。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v2",
+      "title": "英文通知的自然口头转述",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？",
+          "assistant_utterance": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”",
+          "user_intent": "提供通知中的第一句话并询问直译与自然转述的区别",
+          "assistant_intent": "结合原句说明两种翻译方式，并给出保留准确截止时间的自然说法",
+          "semantic_goal": "理解自然转述不是随意改意，并获得第一句的口头表达",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。",
+          "assistant_utterance": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的当面说法是：“请最晚于周五下午五点提交出席表。”如果想更口语些，还可以说：“周五下午五点是最晚提交时间。”",
+          "user_intent": "提出更口语的替代表达并确认是否准确",
+          "assistant_intent": "指出替代表达改变了明确截止时间，并提供准确的口头说法",
+          "semantic_goal": "判断能否用下班时间替代原文中的具体时间",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”",
+            "assistant_stop_after_text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？",
+          "assistant_utterance": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。",
+          "user_intent": "打断进一步展开并转入通知中的条件与义务句",
+          "assistant_intent": "停止原说明，准确转换适用对象、条件和必须履行的义务",
+          "semantic_goal": "获得第二句话自然且不弱化义务的口头表达",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。",
+            "assistant_stop_after_text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "我若说“需要特殊进出安排的人必须提前告诉行政办公室”，是不是更好懂？",
+          "assistant_utterance": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。",
+          "user_intent": "测试更通俗的对象与动作表述是否会改变原意",
+          "assistant_intent": "区分可自然替换的措辞和必须保留的适用对象",
+          "semantic_goal": "确认哪些词可以口语化而不扩大通知范围",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。",
+            "assistant_stop_after_text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "这里的“提前”，我能直接说成“周四之前”吗？同事可能更想知道具体时间。",
+          "assistant_utterance": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。",
+          "user_intent": "询问能否把不明确的提前要求改成具体日期",
+          "assistant_intent": "阻止擅自添加原文没有的期限，并说明应如何保留不确定性",
+          "semantic_goal": "避免为了方便理解而虚构具体截止日期",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。",
+            "assistant_stop_after_text": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U06",
+          "assistant_id": "A006",
+          "user_utterance": "还有一句我拿不准：“Failure to complete the registration may result in delayed entry.”这里的“may”，我怕转述时说重了。",
+          "assistant_utterance": "可自然说：“未完成登记，可能会导致入场延迟。”这里表达的是可能后果，所以“可能会”不能省，也不能说成“一定会延迟”。",
+          "user_intent": "提供后果句并重点询问可能性用词的强度",
+          "assistant_intent": "给出自然转述，并明确保留可能而非必然的后果",
+          "semantic_goal": "准确转换可能性，避免把风险说成确定结果",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A005",
+            "user_onset_after_text": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。",
+            "assistant_stop_after_text": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。"
+          },
+          "pause_cue": {
+            "after_text": "还有一句我拿不准：",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U07",
+          "assistant_id": "A007",
+          "user_utterance": "对，我就是担心把它说重了。那么当面说“没登记的话，进去可能会慢一些”行吗？",
+          "assistant_utterance": "不太稳妥。“没登记”可能被理解为完全没开始，而原文强调未完成；“慢一些”也不如“入场可能会延迟”准确。建议保留后者。",
+          "user_intent": "打断后续解释并测试一个更口语的后果表述",
+          "assistant_intent": "评估口语改写中对完成状态和后果含义的偏移",
+          "semantic_goal": "判断简化表达是否仍准确保留原文含义",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A006",
+            "user_onset_after_text": "可自然说：“未完成登记，可能会导致入场延迟。”",
+            "assistant_stop_after_text": "可自然说：“未完成登记，可能会导致入场延迟。”这"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U08",
+          "assistant_id": "A008",
+          "user_utterance": "如果我想先说条件、再说结果，怎样讲更像当面提醒？",
+          "assistant_utterance": "可以说：“如果没有完成登记，入场可能会延迟。”条件放在前面更便于听懂，同时“没有完成”和“可能”分别保留了完成要求与可能性。",
+          "user_intent": "询问如何调整条件与结果的顺序以适合口头提醒",
+          "assistant_intent": "提供条件在前的自然句式，并说明关键信息仍被保留",
+          "semantic_goal": "得到清楚、顺口且不改变强度的条件句表达",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A007",
+            "user_onset_after_text": "不太稳妥。“没登记”可能被理解为完全没开始，而原文强调未完成；“慢一些”也不如“入场可能会延迟”准确。建议保留后者。",
+            "assistant_stop_after_text": "不太稳妥。“没登记”可能被理解为完全没开始，而原文强调未完成；“慢一些”也不如“入场可能会延迟”准确。建议保留后者。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U09",
+          "assistant_id": "A009",
+          "user_utterance": "所以“没登记”和“没有完成登记”并不完全一样，对吧？",
+          "assistant_utterance": "对。“没登记”通常像是尚未办理；“没有完成登记”还包括已经开始但未完成的情况，范围更贴近原文的“failure to complete”。",
+          "user_intent": "确认两个中文表达在完成状态上的含义差异",
+          "assistant_intent": "解释未办理与未完成的范围区别，并对应原文",
+          "semantic_goal": "理解为何自然转述仍需保留完成这一条件",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A008",
+            "user_onset_after_text": "可以说：“如果没有完成登记，入场可能会延迟。”条件放在前面更便于听懂，同时“没有完成”和“可能”分别保留了完成要求与可能性。",
+            "assistant_stop_after_text": "可以说：“如果没有完成登记，入场可能会延迟。”条件放在前面更便于听懂，同时“没有完成”和“可能”分别保留了完成要求与可能性。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U10",
+          "assistant_id": "A010",
+          "user_utterance": "请把这三句整理成一段我在碰头会上可以直接说的话，语气自然一些，但不要改动要求。",
+          "assistant_utterance": "可以这样说：“请最晚于周五下午五点提交出席表。需要特殊通行安排的员工，必须提前通知行政办公室。如果没有完成登记，入场可能会延迟。”",
+          "user_intent": "请求整合三句话形成可直接使用的口头转述",
+          "assistant_intent": "完整回读自然版本，保留截止时间、适用对象、义务和可能后果",
+          "semantic_goal": "获得可在内部碰头会上直接使用的完整表述",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A009",
+            "user_onset_after_text": "对。“没登记”通常像是尚未办理；“没有完成登记”还包括已经开始但未完成的情况，范围更贴近原文的“failure to complete”。",
+            "assistant_stop_after_text": "对。“没登记”通常像是尚未办理；“没有完成登记”还包括已经开始但未完成的情况，范围更贴近原文的“failure to complete”。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U11",
+          "assistant_id": "A011",
+          "user_utterance": "最后给我一个很简短的判断标准吧，我临时遇到类似通知时好自查。",
+          "assistant_utterance": "自查四点：对象有没有变，时间是否准确，必须类义务有没有被弱化，可能后果有没有被说成必然。句式可以顺口调整，这四项不能改。",
+          "user_intent": "索要可快速套用的口头翻译自查标准",
+          "assistant_intent": "提炼判断自然转述是否忠实的关键检查项",
+          "semantic_goal": "掌握处理类似通知时可快速使用的判断方法",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A010",
+            "user_onset_after_text": "可以这样说：“请最晚于周五下午五点提交出席表。需要特殊通行安排的员工，必须提前通知行政办公室。如果没有完成登记，入场可能会延迟。”",
+            "assistant_stop_after_text": "可以这样说：“请最晚于周五下午五点提交出席表。需要特殊通行安排的员工，必须提前通知行政办公室。如果没有完成登记，入场可能会延迟。”"
+          },
+          "pause_cue": null
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A003",
+          "after_text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”",
+          "text": "嗯，明白"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A006",
+          "after_text": "可自然说：“未完成登记，",
+          "text": "嗯"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A010",
+          "after_text": "可以这样说：“请最晚于周五下午五点提交出席表。",
+          "text": "好"
+        }
+      ],
+      "side_speech": [],
+      "environment_events": [
+        {
+          "event_id": "ENV01",
+          "source_id": "ENV01",
+          "target_audio_id": "U06",
+          "placement_fraction": 0.18
+        }
+      ]
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”",
+          "final_shared_played_prefix": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的当面说法是：“请最晚于周五下午五点提交出席表。”如果想更口语些，还可以说：“周五下午五点是最晚提交时间。”",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。",
+          "final_shared_played_prefix": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的",
+          "discarded_unheard_tail": "当面说法是：“请最晚于周五下午五点提交出席表。”如果想更口语些，还可以说：“周五下午五点是最晚提交时间。”"
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我若说“需要特殊进出安排的人必须提前告诉行政办公室”，是不是更好懂？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。",
+          "final_shared_played_prefix": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A003",
+            "after_text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我若说“需要特殊进出安排的人必须提前告诉行政办公室”，是不是更好懂？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我若说“需要特殊进出安排的人必须提前告诉行政办公室”，是不是更好懂？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "这里的“提前”，我能直接说成“周四之前”吗？同事可能更想知道具体时间。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。",
+          "final_shared_played_prefix": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A003",
+            "after_text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我若说“需要特殊进出安排的人必须提前告诉行政办公室”，是不是更好懂？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "这里的“提前”，我能直接说成“周四之前”吗？同事可能更想知道具体时间。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我若说“需要特殊进出安排的人必须提前告诉行政办公室”，是不是更好懂？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "这里的“提前”，我能直接说成“周四之前”吗？同事可能更想知道具体时间。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一句我拿不准：“Failure to complete the registration may result in delayed entry.”这里的“may”，我怕转述时说重了。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A005",
+          "at_user_onset_heard_prefix": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。",
+          "final_shared_played_prefix": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A003",
+            "after_text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可自然说：“未完成登记，可能会导致入场延迟。”这里表达的是可能后果，所以“可能会”不能省，也不能说成“一定会延迟”。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我若说“需要特殊进出安排的人必须提前告诉行政办公室”，是不是更好懂？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "这里的“提前”，我能直接说成“周四之前”吗？同事可能更想知道具体时间。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一句我拿不准：“Failure to complete the registration may result in delayed entry.”这里的“may”，我怕转述时说重了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可自然说：“未完成登记，可能会导致入场延迟。”"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我若说“需要特殊进出安排的人必须提前告诉行政办公室”，是不是更好懂？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "这里的“提前”，我能直接说成“周四之前”吗？同事可能更想知道具体时间。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一句我拿不准：“Failure to complete the registration may result in delayed entry.”这里的“may”，我怕转述时说重了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可自然说：“未完成登记，可能会导致入场延迟。”这"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，我就是担心把它说重了。那么当面说“没登记的话，进去可能会慢一些”行吗？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A006",
+          "at_user_onset_heard_prefix": "可自然说：“未完成登记，可能会导致入场延迟。”",
+          "final_shared_played_prefix": "可自然说：“未完成登记，可能会导致入场延迟。”这",
+          "discarded_unheard_tail": "里表达的是可能后果，所以“可能会”不能省，也不能说成“一定会延迟”。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A003",
+            "after_text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "可自然说：“未完成登记，",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "不太稳妥。“没登记”可能被理解为完全没开始，而原文强调未完成；“慢一些”也不如“入场可能会延迟”准确。建议保留后者。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我若说“需要特殊进出安排的人必须提前告诉行政办公室”，是不是更好懂？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "这里的“提前”，我能直接说成“周四之前”吗？同事可能更想知道具体时间。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一句我拿不准：“Failure to complete the registration may result in delayed entry.”这里的“may”，我怕转述时说重了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可自然说：“未完成登记，可能会导致入场延迟。”这"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，我就是担心把它说重了。那么当面说“没登记的话，进去可能会慢一些”行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "不太稳妥。“没登记”可能被理解为完全没开始，而原文强调未完成；“慢一些”也不如“入场可能会延迟”准确。建议保留后者。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我若说“需要特殊进出安排的人必须提前告诉行政办公室”，是不是更好懂？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "这里的“提前”，我能直接说成“周四之前”吗？同事可能更想知道具体时间。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一句我拿不准：“Failure to complete the registration may result in delayed entry.”这里的“may”，我怕转述时说重了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可自然说：“未完成登记，可能会导致入场延迟。”这"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，我就是担心把它说重了。那么当面说“没登记的话，进去可能会慢一些”行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "不太稳妥。“没登记”可能被理解为完全没开始，而原文强调未完成；“慢一些”也不如“入场可能会延迟”准确。建议保留后者。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "如果我想先说条件、再说结果，怎样讲更像当面提醒？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A007",
+          "at_user_onset_heard_prefix": "不太稳妥。“没登记”可能被理解为完全没开始，而原文强调未完成；“慢一些”也不如“入场可能会延迟”准确。建议保留后者。",
+          "final_shared_played_prefix": "不太稳妥。“没登记”可能被理解为完全没开始，而原文强调未完成；“慢一些”也不如“入场可能会延迟”准确。建议保留后者。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A003",
+            "after_text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "可自然说：“未完成登记，",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可以说：“如果没有完成登记，入场可能会延迟。”条件放在前面更便于听懂，同时“没有完成”和“可能”分别保留了完成要求与可能性。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我若说“需要特殊进出安排的人必须提前告诉行政办公室”，是不是更好懂？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "这里的“提前”，我能直接说成“周四之前”吗？同事可能更想知道具体时间。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一句我拿不准：“Failure to complete the registration may result in delayed entry.”这里的“may”，我怕转述时说重了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可自然说：“未完成登记，可能会导致入场延迟。”这"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，我就是担心把它说重了。那么当面说“没登记的话，进去可能会慢一些”行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "不太稳妥。“没登记”可能被理解为完全没开始，而原文强调未完成；“慢一些”也不如“入场可能会延迟”准确。建议保留后者。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "如果我想先说条件、再说结果，怎样讲更像当面提醒？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以说：“如果没有完成登记，入场可能会延迟。”条件放在前面更便于听懂，同时“没有完成”和“可能”分别保留了完成要求与可能性。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我若说“需要特殊进出安排的人必须提前告诉行政办公室”，是不是更好懂？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "这里的“提前”，我能直接说成“周四之前”吗？同事可能更想知道具体时间。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一句我拿不准：“Failure to complete the registration may result in delayed entry.”这里的“may”，我怕转述时说重了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可自然说：“未完成登记，可能会导致入场延迟。”这"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，我就是担心把它说重了。那么当面说“没登记的话，进去可能会慢一些”行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "不太稳妥。“没登记”可能被理解为完全没开始，而原文强调未完成；“慢一些”也不如“入场可能会延迟”准确。建议保留后者。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "如果我想先说条件、再说结果，怎样讲更像当面提醒？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以说：“如果没有完成登记，入场可能会延迟。”条件放在前面更便于听懂，同时“没有完成”和“可能”分别保留了完成要求与可能性。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "所以“没登记”和“没有完成登记”并不完全一样，对吧？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A008",
+          "at_user_onset_heard_prefix": "可以说：“如果没有完成登记，入场可能会延迟。”条件放在前面更便于听懂，同时“没有完成”和“可能”分别保留了完成要求与可能性。",
+          "final_shared_played_prefix": "可以说：“如果没有完成登记，入场可能会延迟。”条件放在前面更便于听懂，同时“没有完成”和“可能”分别保留了完成要求与可能性。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A003",
+            "after_text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "可自然说：“未完成登记，",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "对。“没登记”通常像是尚未办理；“没有完成登记”还包括已经开始但未完成的情况，范围更贴近原文的“failure to complete”。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我若说“需要特殊进出安排的人必须提前告诉行政办公室”，是不是更好懂？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "这里的“提前”，我能直接说成“周四之前”吗？同事可能更想知道具体时间。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一句我拿不准：“Failure to complete the registration may result in delayed entry.”这里的“may”，我怕转述时说重了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可自然说：“未完成登记，可能会导致入场延迟。”这"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，我就是担心把它说重了。那么当面说“没登记的话，进去可能会慢一些”行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "不太稳妥。“没登记”可能被理解为完全没开始，而原文强调未完成；“慢一些”也不如“入场可能会延迟”准确。建议保留后者。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "如果我想先说条件、再说结果，怎样讲更像当面提醒？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以说：“如果没有完成登记，入场可能会延迟。”条件放在前面更便于听懂，同时“没有完成”和“可能”分别保留了完成要求与可能性。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "所以“没登记”和“没有完成登记”并不完全一样，对吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "对。“没登记”通常像是尚未办理；“没有完成登记”还包括已经开始但未完成的情况，范围更贴近原文的“failure to complete”。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我若说“需要特殊进出安排的人必须提前告诉行政办公室”，是不是更好懂？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "这里的“提前”，我能直接说成“周四之前”吗？同事可能更想知道具体时间。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一句我拿不准：“Failure to complete the registration may result in delayed entry.”这里的“may”，我怕转述时说重了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可自然说：“未完成登记，可能会导致入场延迟。”这"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，我就是担心把它说重了。那么当面说“没登记的话，进去可能会慢一些”行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "不太稳妥。“没登记”可能被理解为完全没开始，而原文强调未完成；“慢一些”也不如“入场可能会延迟”准确。建议保留后者。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "如果我想先说条件、再说结果，怎样讲更像当面提醒？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以说：“如果没有完成登记，入场可能会延迟。”条件放在前面更便于听懂，同时“没有完成”和“可能”分别保留了完成要求与可能性。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "所以“没登记”和“没有完成登记”并不完全一样，对吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "对。“没登记”通常像是尚未办理；“没有完成登记”还包括已经开始但未完成的情况，范围更贴近原文的“failure to complete”。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "请把这三句整理成一段我在碰头会上可以直接说的话，语气自然一些，但不要改动要求。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A009",
+          "at_user_onset_heard_prefix": "对。“没登记”通常像是尚未办理；“没有完成登记”还包括已经开始但未完成的情况，范围更贴近原文的“failure to complete”。",
+          "final_shared_played_prefix": "对。“没登记”通常像是尚未办理；“没有完成登记”还包括已经开始但未完成的情况，范围更贴近原文的“failure to complete”。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A003",
+            "after_text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "可自然说：“未完成登记，",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可以这样说：“请最晚于周五下午五点提交出席表。需要特殊通行安排的员工，必须提前通知行政办公室。如果没有完成登记，入场可能会延迟。”",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U11",
+        "assistant_id": "A011",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我若说“需要特殊进出安排的人必须提前告诉行政办公室”，是不是更好懂？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "这里的“提前”，我能直接说成“周四之前”吗？同事可能更想知道具体时间。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一句我拿不准：“Failure to complete the registration may result in delayed entry.”这里的“may”，我怕转述时说重了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可自然说：“未完成登记，可能会导致入场延迟。”这"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，我就是担心把它说重了。那么当面说“没登记的话，进去可能会慢一些”行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "不太稳妥。“没登记”可能被理解为完全没开始，而原文强调未完成；“慢一些”也不如“入场可能会延迟”准确。建议保留后者。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "如果我想先说条件、再说结果，怎样讲更像当面提醒？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以说：“如果没有完成登记，入场可能会延迟。”条件放在前面更便于听懂，同时“没有完成”和“可能”分别保留了完成要求与可能性。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "所以“没登记”和“没有完成登记”并不完全一样，对吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "对。“没登记”通常像是尚未办理；“没有完成登记”还包括已经开始但未完成的情况，范围更贴近原文的“failure to complete”。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "请把这三句整理成一段我在碰头会上可以直接说的话，语气自然一些，但不要改动要求。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可以这样说：“请最晚于周五下午五点提交出席表。需要特殊通行安排的员工，必须提前通知行政办公室。如果没有完成登记，入场可能会延迟。”"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我若说“需要特殊进出安排的人必须提前告诉行政办公室”，是不是更好懂？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "这里的“提前”，我能直接说成“周四之前”吗？同事可能更想知道具体时间。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一句我拿不准：“Failure to complete the registration may result in delayed entry.”这里的“may”，我怕转述时说重了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可自然说：“未完成登记，可能会导致入场延迟。”这"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，我就是担心把它说重了。那么当面说“没登记的话，进去可能会慢一些”行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "不太稳妥。“没登记”可能被理解为完全没开始，而原文强调未完成；“慢一些”也不如“入场可能会延迟”准确。建议保留后者。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "如果我想先说条件、再说结果，怎样讲更像当面提醒？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以说：“如果没有完成登记，入场可能会延迟。”条件放在前面更便于听懂，同时“没有完成”和“可能”分别保留了完成要求与可能性。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "所以“没登记”和“没有完成登记”并不完全一样，对吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "对。“没登记”通常像是尚未办理；“没有完成登记”还包括已经开始但未完成的情况，范围更贴近原文的“failure to complete”。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "请把这三句整理成一段我在碰头会上可以直接说的话，语气自然一些，但不要改动要求。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可以这样说：“请最晚于周五下午五点提交出席表。需要特殊通行安排的员工，必须提前通知行政办公室。如果没有完成登记，入场可能会延迟。”"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "最后给我一个很简短的判断标准吧，我临时遇到类似通知时好自查。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A010",
+          "at_user_onset_heard_prefix": "可以这样说：“请最晚于周五下午五点提交出席表。需要特殊通行安排的员工，必须提前通知行政办公室。如果没有完成登记，入场可能会延迟。”",
+          "final_shared_played_prefix": "可以这样说：“请最晚于周五下午五点提交出席表。需要特殊通行安排的员工，必须提前通知行政办公室。如果没有完成登记，入场可能会延迟。”",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A003",
+            "after_text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "可自然说：“未完成登记，",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A010",
+            "after_text": "可以这样说：“请最晚于周五下午五点提交出席表。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "自查四点：对象有没有变，时间是否准确，必须类义务有没有被弱化，可能后果有没有被说成必然。句式可以顺口调整，这四项不能改。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A003",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”"
+          }
+        ],
+        "at_event_onset_heard_prefix": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”",
+        "event_text": "嗯，明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC02",
+        "kind": "backchannels",
+        "target_assistant_id": "A006",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我若说“需要特殊进出安排的人必须提前告诉行政办公室”，是不是更好懂？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "这里的“提前”，我能直接说成“周四之前”吗？同事可能更想知道具体时间。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一句我拿不准：“Failure to complete the registration may result in delayed entry.”这里的“may”，我怕转述时说重了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可自然说：“未完成登记，"
+          }
+        ],
+        "at_event_onset_heard_prefix": "可自然说：“未完成登记，",
+        "event_text": "嗯",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC03",
+        "kind": "backchannels",
+        "target_assistant_id": "A010",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我下午要向同事转述一份英文通知。第一句是“Please submit the attendance form no later than 5:00 p.m. on Friday.”直译和自然转述到底有什么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "直译尽量贴近原句结构和词义；自然转述则保留关键信息，改成顺口的中文。这句可说：“请最晚于周五下午五点提交出席表。”"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "那我能不能简单说成“请在周五下班前交出席表”？这样听起来更自然。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "不建议说“周五下班前”，因为它把明确的五点改成了不固定的下班时间。稳妥的"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "明白，后面不用展开了。还有一句是“Employees who require special access arrangements must notify the Administration Office in advance.”这句怎么说自然？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这句可说：“需要特殊通行安排的员工，必须提前通知行政办公室。”这里的“员工”和“必须”都要保留，不能泛化成所有人，也不能弱化成“最好通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "我若说“需要特殊进出安排的人必须提前告诉行政办公室”，是不是更好懂？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "“特殊进出安排”可以，但“人”最好仍说成“员工”，否则扩大了适用对象。“告诉”偏口语，可以使用；正式些则用“通知”。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "这里的“提前”，我能直接说成“周四之前”吗？同事可能更想知道具体时间。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能。原文只说“in advance”，没有给出周四这个期限。口头转述应保留“提前”，具体要提前多久只能另行确认，不能自行补上。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一句我拿不准：“Failure to complete the registration may result in delayed entry.”这里的“may”，我怕转述时说重了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可自然说：“未完成登记，可能会导致入场延迟。”这"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，我就是担心把它说重了。那么当面说“没登记的话，进去可能会慢一些”行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "不太稳妥。“没登记”可能被理解为完全没开始，而原文强调未完成；“慢一些”也不如“入场可能会延迟”准确。建议保留后者。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "如果我想先说条件、再说结果，怎样讲更像当面提醒？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以说：“如果没有完成登记，入场可能会延迟。”条件放在前面更便于听懂，同时“没有完成”和“可能”分别保留了完成要求与可能性。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "所以“没登记”和“没有完成登记”并不完全一样，对吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "对。“没登记”通常像是尚未办理；“没有完成登记”还包括已经开始但未完成的情况，范围更贴近原文的“failure to complete”。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "请把这三句整理成一段我在碰头会上可以直接说的话，语气自然一些，但不要改动要求。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可以这样说：“请最晚于周五下午五点提交出席表。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "可以这样说：“请最晚于周五下午五点提交出席表。",
+        "event_text": "好",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

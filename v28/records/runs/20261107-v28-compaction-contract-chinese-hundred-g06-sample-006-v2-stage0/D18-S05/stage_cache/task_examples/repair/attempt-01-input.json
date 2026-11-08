@@ -1,0 +1,109 @@
+{
+  "scenario": {
+    "domain_id": "D18",
+    "domain": "会议、访谈与团队协作",
+    "domain_definition": "EchoChain 的 coordination、Audio MultiChallenge 的计划/消息、Google brainstorm 与 ElevenLabs interview 提供主要证据。",
+    "scenario_id": "D18-S05",
+    "scenario": "协同决策",
+    "requested_examples_per_style": 5,
+    "existing_example_task_seeds": [],
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "medium",
+      "target_turns": 13,
+      "min_turns": 12,
+      "max_turns": 14
+    },
+    "dialogue_length_instruction": "本条完整对话目标为 13 个主轮，允许 12–14 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    }
+  },
+  "current_example_tasks": {
+    "开放式互动": [
+      "通过一轮模拟团队会议练习如何在意见分歧时推动大家形成可接受的决定。",
+      "扮演不同立场的会议参与者，演练如何提出异议、回应担忧并逐步达成共识。",
+      "探讨多数表决、共识决策和负责人拍板各自适合什么情境，以及它们可能带来的后果。",
+      "共同设计一套适用于小团队的协同决策流程，兼顾发言机会、信息透明和责任分配。",
+      "以复盘对话的方式分析团队决策中常见的群体思维、沉默服从和责任模糊问题，并练习更好的应对方式。"
+    ],
+    "结构化整理": [
+      "根据随后提供的团队意见和候选方案，整理各方立场、共同点、分歧点与尚未解决的问题。",
+      "把成员提出的需求、限制条件和优先事项分类汇总，形成可用于会议讨论的决策清单。",
+      "比较几项候选方案在不同评价维度上的表现，并按团队给出的权重整理出清晰的排序结果。",
+      "核对会议记录中的承诺、待确认事项和责任归属，整理成后续协作计划。",
+      "根据参与者的可行时间、任务依赖和优先级，编排一份团队执行时间线并标出需要共同决定的节点。"
+    ],
+    "混合型": [
+      "结合协同决策中透明度、风险和执行责任等判断原则，比较团队随后提出的几个方案并确定更合适的方向。",
+      "面对成员意见互相冲突的具体情况，运用共识、授权和表决等决策框架判断应如何取舍，并形成可接受的选择。",
+      "根据团队成员的实际偏好、能力和限制，结合任务紧急程度与公平分工的原则调整候选分工方案。",
+      "围绕一项待定的团队安排，先识别哪些信息足以支持决定、哪些风险需要补充核实，再据此筛选或修改现有选项。",
+      "复盘随后提供的一次真实协作决策，结合有效会议和反馈机制的原则判断问题出在哪里，并拟定针对性的改进方案。"
+    ]
+  },
+  "judge_findings": [
+    {
+      "severity": "must_fix",
+      "path": "/example_tasks/开放式互动/1",
+      "problem": "与同组首条明显语义重复，二者都是通过角色模拟练习在意见分歧中回应异议并达成共识。",
+      "evidence": "“通过一轮模拟团队会议练习如何在意见分歧时推动大家形成可接受的决定。”与“扮演不同立场的会议参与者，演练如何提出异议、回应担忧并逐步达成共识。”",
+      "repair": "替换为不同的协同决策需求或互动入口，避免继续采用分歧情境下的角色扮演与共识演练。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/example_tasks/结构化整理/3",
+      "problem": "主要结果是会后承诺与责任跟踪计划，方向偏向会议纪要和团队执行管理，而非协同决策。",
+      "evidence": "核对会议记录中的承诺、待确认事项和责任归属，整理成后续协作计划。",
+      "repair": "将整理重点改为会议中的已定事项、备选决定、异议依据和待决问题，产出可支持团队继续决策的结构化结果。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/example_tasks/结构化整理/4",
+      "problem": "核心任务是依据时间、依赖和优先级编排执行时间线，主要属于项目排期；标出少量共同决定节点不足以使其成为协同决策任务。",
+      "evidence": "根据参与者的可行时间、任务依赖和优先级，编排一份团队执行时间线并标出需要共同决定的节点。",
+      "repair": "改为整理各决策节点的参与者、前置材料、可选方案、依赖关系和决定期限，使结构化结果直接服务于协同决策。"
+    }
+  ],
+  "repair_targets": [
+    {
+      "path": "/example_tasks/开放式互动/1",
+      "current_value": "扮演不同立场的会议参与者，演练如何提出异议、回应担忧并逐步达成共识。"
+    },
+    {
+      "path": "/example_tasks/结构化整理/3",
+      "current_value": "核对会议记录中的承诺、待确认事项和责任归属，整理成后续协作计划。"
+    },
+    {
+      "path": "/example_tasks/结构化整理/4",
+      "current_value": "根据参与者的可行时间、任务依赖和优先级，编排一份团队执行时间线并标出需要共同决定的节点。"
+    }
+  ]
+}

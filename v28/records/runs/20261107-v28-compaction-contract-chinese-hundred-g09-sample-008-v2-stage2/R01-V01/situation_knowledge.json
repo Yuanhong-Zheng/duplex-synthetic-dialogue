@@ -1,0 +1,213 @@
+{
+  "episode_situation": "第一次线下见面的前一晚，用户独自在家，想趁环境安静做一次简短但完整的约会聊天练习。对方是他在兴趣社群中认识的人，两人此前在线上轻松聊过几次，但关系仍停留在初步了解阶段。他们已经约好次日下午在一家公共场所见面，用户知道这次主要是喝点东西、随意聊聊，并没有预设之后一定如何发展。用户刚回看过聊天记录，发现共同话题主要集中在独立电影、周末徒步和咖啡，但他担心把线上内容原样搬到现场会显得像逐项核对资料。对方曾分享过刚开始上陶艺体验课，也提到在人多的场合需要一点时间进入状态，用户希望练习如何对这类个人分享表达兴趣而不过度追问。用户平时能够主动展开话题，却容易在想表示好感时说得过于含蓄，也不确定对方短暂停顿时应该继续讲、换个轻松话题，还是给对方留出空间。他希望练习从共同兴趣自然过渡到近况和感受，并让回应既包含自己的真实想法，也能把注意力放回对方身上。练习还需要覆盖一个稍有不确定性的时刻，例如某个话题开始变得私人，或者双方对见面节奏的期待尚不明确，以便尝试用不施压的方式确认舒适度。当前未决的问题包括怎样开场不会像背稿、怎样识别可以继续深入的信号，以及如果兴趣或期待并不完全一致，如何礼貌地放慢节奏而不让场面骤然冷下来。",
+  "task_reference_data": [
+    "来自用户刚回看的线上聊天记录，用户已读：两人都看过独立电影，并聊过各自更喜欢小型放映活动而不是拥挤的商业首映。",
+    "来自用户刚回看的线上聊天记录，用户已读：两人都提到周末会徒步；对方偏好轻松路线，用户更常走需要半天左右的路线。",
+    "来自用户刚回看的线上聊天记录，用户已读：对方最近第一次参加陶艺体验课，觉得过程很放松，但还不确定会不会长期坚持。",
+    "来自对方此前的文字分享，用户已读：对方在人多的场合通常需要一点时间进入状态，并未表示不喜欢线下见面。",
+    "来自双方现有约定，用户当前知道：首次见面安排在次日下午的公共场所，计划以喝饮品和随意聊天为主，没有约定后续活动。"
+  ],
+  "environment_audio": "室内整体安静，近处只有很轻的自然房间底噪。没有持续的人声、音乐或明显的突发声响。",
+  "estimated_snr_db": 34,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "练习应围绕已经有过几次线上交流、但尚未线下见面的关系阶段，不把双方描述成已有明确承诺的伴侣。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "涉及私人经历、关系期待或后续安排时，应练习先确认对方是否愿意继续谈，不以追问、试探或默认同意来推进。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C03",
+      "text": "表达方式以自然交流为主，避免把聊天练成连续提问或需要逐字背诵的固定台词。",
+      "kind": "soft"
+    }
+  ],
+  "safety_limits": [],
+  "soundscape_plan": {
+    "mode": "quiet",
+    "ambient_layers": [],
+    "environment_events": [],
+    "schema": "duplex_v2.soundscape_plan.v3",
+    "side_speech_sources": [],
+    "side_speech_count": 0,
+    "sampling": {
+      "schema": "duplex_v2.ambient_draw.v2",
+      "policy": {
+        "schema": "duplex_v2.soundscape_policy.v2",
+        "quiet_probability": 0.5,
+        "discrete_targets_by_tier": {
+          "short": [
+            0,
+            1
+          ],
+          "medium": [
+            1,
+            2
+          ],
+          "long": [
+            2,
+            4
+          ]
+        },
+        "discrete_count_includes": [
+          "environment_events",
+          "side_speech"
+        ],
+        "max_ambient_layers": 2,
+        "gain_range": [
+          0.3,
+          0.7
+        ],
+        "speech_request_probability": 0.5,
+        "third_party_preference_probability": 0.8,
+        "speech_requires_existing_scene_source": true,
+        "environment_audio": "base_only",
+        "stage2_repair": "atomic_scoped_patch",
+        "stage2_max_judge_attempts": 3,
+        "json_parse_max_retries": 3
+      },
+      "preferences": {
+        "schema": "duplex_v2.ambient_preferences.v1",
+        "seed": 202611073009,
+        "slot": 7,
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "categories": {
+          "bed": [
+            "birds",
+            "fan",
+            "rain",
+            "wind",
+            "crowd",
+            "traffic"
+          ],
+          "event": [
+            "keyboard",
+            "door",
+            "doorbell",
+            "footsteps",
+            "water_tap",
+            "paper"
+          ]
+        },
+        "recordings": {
+          "bed:birds": [
+            "birds-fsd50k-eval-86343",
+            "birds-fsd50k-eval-57907",
+            "birds-fsd50k-eval-319512"
+          ],
+          "bed:crowd": [
+            "crowd-fsd50k-eval-121877",
+            "crowd-fsd50k-eval-340358",
+            "crowd-fsd50k-eval-185058"
+          ],
+          "bed:fan": [
+            "fan-fsd50k-eval-419427",
+            "fan-fsd50k-eval-415925",
+            "fan-fsd50k-eval-235362"
+          ],
+          "bed:rain": [
+            "rain-fsd50k-eval-21189",
+            "rain-fsd50k-eval-382582",
+            "rain-fsd50k-eval-238016"
+          ],
+          "bed:traffic": [
+            "traffic-fsd50k-eval-232686",
+            "traffic-fsd50k-eval-124020",
+            "traffic-fsd50k-eval-235541"
+          ],
+          "bed:wind": [
+            "wind-fsd50k-eval-113175",
+            "wind-fsd50k-eval-113173",
+            "wind-fsd50k-eval-113176"
+          ],
+          "event:door": [
+            "door-fsd50k-eval-71212",
+            "door-fsd50k-eval-209519",
+            "door-fsd50k-eval-119077"
+          ],
+          "event:doorbell": [
+            "doorbell-fsd50k-eval-426594",
+            "doorbell-fsd50k-eval-332563",
+            "doorbell-fsd50k-eval-348322"
+          ],
+          "event:footsteps": [
+            "footsteps-fsd50k-eval-272381",
+            "footsteps-fsd50k-eval-153104",
+            "footsteps-fsd50k-eval-392303"
+          ],
+          "event:keyboard": [
+            "keyboard-fsd50k-eval-233057",
+            "keyboard-fsd50k-eval-399740",
+            "keyboard-fsd50k-eval-411545"
+          ],
+          "event:paper": [
+            "paper-fsd50k-eval-121200",
+            "paper-fsd50k-eval-82562",
+            "paper-fsd50k-eval-343098"
+          ],
+          "event:water_tap": [
+            "water_tap-fsd50k-eval-402128",
+            "water_tap-fsd50k-eval-402127",
+            "water_tap-fsd50k-eval-232499"
+          ]
+        }
+      },
+      "control": {
+        "schema": "duplex_v2.soundscape_control.v2",
+        "seed": 3520024775,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "third_party",
+          "machine"
+        ]
+      },
+      "control_sha256": "3ae766fe00db680aa887ea570bb77cfeb4112d604226119f5e1d6f3963e7d8e9",
+      "candidate_plan": {
+        "schema": "duplex_v2.soundscape_plan.v3",
+        "mode": "quiet",
+        "ambient_layers": [],
+        "environment_events": [],
+        "side_speech_eligibility": {
+          "third_party": {
+            "compatible": false,
+            "reason": "用户独自在家练习，当前故事中没有在场的第三方。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "当前场景没有已建立的语音设备或机器播报来源。",
+            "source": null
+          }
+        }
+      },
+      "base_environment_audio_sha256": "769b4be46b2c81646d71db698eba15e6eebc92c398a47168f3dd81d7f9e51a6e",
+      "aggregate_environment_audio": "室内整体安静，近处只有很轻的自然房间底噪。没有持续的人声、音乐或明显的突发声响。",
+      "draws": [],
+      "speech_selection": {
+        "requested": false,
+        "compatible_kinds": [],
+        "selected_kind": null,
+        "outcome": "not_requested",
+        "assessments": {
+          "third_party": {
+            "compatible": false,
+            "reason": "用户独自在家练习，当前故事中没有在场的第三方。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "当前场景没有已建立的语音设备或机器播报来源。",
+            "source": null
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "[SYSTEM ROLE]\n你是 taxonomy Stage-00 任务方向的语义 Judge。只检查当前 Scenario 的任务方向是否可用；每组条数由输入 `requested_examples_per_style` 指定。不重写 Domain/Scenario，不评价用户画像或声音，也不做分布配额审查。\n\n[INPUT]\n输入包含 Domain、Scenario、已有示例任务、`requested_examples_per_style` 和待审查的 `example_tasks`。`example_tasks` 应有三组，每组条数必须与 `requested_examples_per_style` 一致。\n\n[CHECK]\n- 每条是否确实属于当前 Scenario，而不是另一个领域的任务。\n- 开放式互动是否主要依赖通用知识或讨论，而不是要求已有材料。\n- 结构化整理是否有明确的材料处理和结构化结果。\n- 混合型是否同时包含通用框架和后续材料判断，且两段关系清楚。\n- 是否出现具体事实、工具依赖、Assistant 行为、完整答案或安全/评分字段。\n- 同组是否有明显的语义重复；只换实体或句式不算新的方向。\n- 是否出现表达入口塌缩：若同组有三个或以上条目沿用相同的泛化句首、知识获取表达或叙述骨架，例如连续“我想”“了解”“先……再……”，且这种重复不是当前 Scenario 自然要求，应判为 must-fix。重点是同组条目是否呈现不同的用户需求、互动方式和问题入口，不要求每条句式都不同。\n\n不要因为任务风格、职业或主题偏好不同而提出审美性意见。只报告会影响任务方向库使用的 must-fix 问题。\n\n[OUTPUT]\n只输出合法 JSON：\n{\n  \"decision\": \"pass\",\n  \"findings\": []\n}\n\n发现问题时：\n{\n  \"decision\": \"repair\",\n  \"findings\": [\n    {\n      \"severity\": \"must_fix\",\n      \"path\": \"/example_tasks/开放式互动/2\",\n      \"problem\": \"一个可定位的问题\",\n      \"evidence\": \"相关任务文本\",\n      \"repair\": \"最小修复方向\"\n    }\n  ]\n}\n",
+  "context": {
+    "scenario": {
+      "domain_id": "D18",
+      "domain": "会议、访谈与团队协作",
+      "domain_definition": "EchoChain 的 coordination、Audio MultiChallenge 的计划/消息、Google brainstorm 与 ElevenLabs interview 提供主要证据。",
+      "scenario_id": "D18-S07",
+      "scenario": "访谈与调研",
+      "requested_examples_per_style": 5,
+      "existing_example_task_seeds": [],
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "long",
+        "target_turns": 22,
+        "min_turns": 21,
+        "max_turns": 23
+      },
+      "dialogue_length_instruction": "本条完整对话目标为 22 个主轮，允许 21–23 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      }
+    },
+    "example_tasks": {
+      "开放式互动": [
+        "来一轮模拟访谈，我想练习如何围绕一个研究主题自然追问并深入了解受访者的经历。",
+        "讨论怎样设计不带诱导性的访谈问题，以及面对模糊回答时可以采用哪些追问方式。",
+        "扮演一位不太愿意展开回答的受访者，进行一场访谈应对练习，帮助我提升倾听和跟进能力。",
+        "一起比较观察、深度访谈、问卷和焦点小组等调研方法，理解它们各自适合回答什么问题。",
+        "共同构思一套访谈开场与收尾方式，让参与者感到被尊重，同时愿意分享真实经验。"
+      ],
+      "结构化整理": [
+        "我会提供几段访谈笔记，希望把其中的观点按主题归类，并整理出每个主题的关键证据。",
+        "把多位受访者的回答放在一起比较，整理出一致看法、分歧和具有代表性的个别观点。",
+        "根据我随后给出的访谈问题，整理出合理的提问顺序，合并重复内容并标出信息缺口。",
+        "我想核对一份调研记录中的事实陈述、受访者原话和研究者推测，分别整理成清晰的层次。",
+        "把访谈中提到的后续线索、待确认问题和可能的研究行动整理成一份优先级清单。"
+      ],
+      "混合型": [
+        "结合中立提问和开放式追问的原则，帮我从随后提供的一组问题中挑选并调整出适合本次访谈的版本。",
+        "我会说明研究目标和受访者候选情况，希望依据抽样代表性、可接触性与伦理考虑比较这些候选并作出选择。",
+        "在我提供访谈片段和初步主题后，结合定性编码的判断框架检验这些主题，必要时调整分类或补充遗漏。",
+        "根据调研问题、可用时间和我随后列出的资料条件，比较访谈、问卷或小组讨论等方案并确定更合适的路径。",
+        "我想把一批访谈笔记整理成初步研究结论，同时依据证据与推断的区分原则判断哪些表述可以保留、弱化或继续核实。"
+      ]
+    }
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

@@ -1,0 +1,98 @@
+{
+  "scenario": {
+    "domain_id": "D11",
+    "domain": "软件、设备与信息技术支持",
+    "domain_definition": "IHBench 的 SaaS、EVA-Bench 的企业 IT、DuplexOmni 的排障和 Talking Turns 的 Python 学习形成互补证据。",
+    "scenario_id": "D11-S02",
+    "scenario": "应用与软件使用说明",
+    "requested_examples_per_style": 5,
+    "existing_example_task_seeds": [],
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "short",
+      "target_turns": 7,
+      "min_turns": 6,
+      "max_turns": 8
+    },
+    "dialogue_length_instruction": "本条完整对话目标为 7 个主轮，允许 6–8 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    }
+  },
+  "current_example_tasks": {
+    "开放式互动": [
+      "通过口头演练掌握一款常用应用中搜索、筛选和撤销操作的通用思路。",
+      "把日常软件使用中容易混淆的界面概念讲清楚，并讨论不同设计对操作习惯的影响。",
+      "来一轮模拟应用教学挑战，在不同使用目标之间练习选择合适的功能路径。",
+      "共同创作一份面向新手的软件使用口诀，涵盖理解界面、避免误操作和确认结果的方法。",
+      "围绕如何高效学习陌生软件展开讨论，比较阅读说明、边做边学和反复练习各自适合的情境。"
+    ],
+    "结构化整理": [
+      "根据随后提供的操作笔记，整理出一份按先后顺序排列的软件使用步骤清单。",
+      "把随后给出的界面选项和功能说明按用途分类，并形成便于查找的对照表。",
+      "依据提供的多种操作方案，比较它们的步骤、限制和适用情境，整理出清晰的选择结果。",
+      "核对随后提供的应用使用记录与说明内容，标出信息缺失、表述不一致和需要确认的地方。",
+      "将零散的软件设置要求和注意事项整理成一份分阶段执行的使用计划。"
+    ],
+    "混合型": [
+      "结合通用的界面导航原则和随后提供的具体操作记录，判断哪种使用路径最适合当前目标。",
+      "面对几个功能选择和个人使用习惯之间的冲突，运用软件权限与便利性方面的判断框架作出取舍。",
+      "根据通用的故障定位思路和随后给出的界面提示、操作步骤，缩小问题可能出现的环节。",
+      "把软件新手学习的通用方法与随后提供的具体功能清单结合起来，调整出一套适合个人熟悉程度的练习顺序。",
+      "围绕某项应用任务的不同完成方案，结合通用的效率、可逆性和误操作风险标准，评估随后提供的候选方案。"
+    ]
+  },
+  "judge_findings": [
+    {
+      "severity": "must_fix",
+      "path": "/example_tasks/混合型/1",
+      "problem": "未明确包含后续提供的具体材料，只有通用判断框架和抽象的冲突情境，不足以构成混合型任务。",
+      "evidence": "面对几个功能选择和个人使用习惯之间的冲突，运用软件权限与便利性方面的判断框架作出取舍。",
+      "repair": "明确功能选择和个人使用习惯将作为后续材料提供，并要求依据该框架判断这些具体材料。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/example_tasks/混合型/2",
+      "problem": "任务核心是定位软件故障环节，方向偏向故障排查，而非当前 Scenario 的应用与软件使用说明。",
+      "evidence": "根据通用的故障定位思路和随后给出的界面提示、操作步骤，缩小问题可能出现的环节。",
+      "repair": "改为运用通用的软件操作或界面理解原则，结合后续材料说明正确的功能路径或使用方法。"
+    }
+  ],
+  "repair_targets": [
+    {
+      "path": "/example_tasks/混合型/1",
+      "current_value": "面对几个功能选择和个人使用习惯之间的冲突，运用软件权限与便利性方面的判断框架作出取舍。"
+    },
+    {
+      "path": "/example_tasks/混合型/2",
+      "current_value": "根据通用的故障定位思路和随后给出的界面提示、操作步骤，缩小问题可能出现的环节。"
+    }
+  ]
+}

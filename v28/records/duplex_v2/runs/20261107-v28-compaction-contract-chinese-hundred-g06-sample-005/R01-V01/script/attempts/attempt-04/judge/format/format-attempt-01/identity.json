@@ -1,0 +1,4480 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 15 轮，允许 14–15 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 旁语仅限第三方或机器，不包含用户说着说着转向旁人的模式；声音 profile 必须只描述声音。旁语不提供隐藏关键任务材料，不被助手当成正式用户新请求，不使助手停顿或另起回答。声景未支持此来源时不应凭空编人或设备。30%–70% 音量合规即可。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 和 voice_profile 必须逐字匹配对应源，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g06-sample-005-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 3967404162,
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g06/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g06/relay-state",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D30",
+          "domain": "游戏、电竞与数字娱乐",
+          "scenario_id": "D30-S04",
+          "scenario": "电竞赛事解说与复盘"
+        },
+        "task_style": "结构化整理",
+        "task_instance": {
+          "goal": "根据随后提供的比赛录像口述记录、选手采访摘录和解说草稿，整理出一份可用于赛后复盘的结构化材料：按比赛阶段归并关键事件，标出各事件涉及的决策、执行结果与局势变化，并将相互支持、存在冲突或仍缺少依据的观察分别列出，便于之后形成连贯且证据清楚的解说框架。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "负责制作俱乐部赛后内容的电竞赛事分析编辑",
+          "task_familiarity": "high"
+        },
+        "voice_profile": "女性，感知年龄为二十多岁，音色清亮而偏细，吐字清楚，语速平稳，整体听感专注克制，情绪起伏会自然地体现在语气中。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "formal",
+          "directness": "indirect",
+          "emotional_expressiveness": "balanced",
+          "verbosity": "balanced",
+          "initiative": "medium",
+          "caution": "medium",
+          "patience": "high",
+          "behavioral_notes": [
+            "通常会先交代判断所依据的材料范围，再较委婉地提出整理或调整请求。",
+            "表达完整但不过度铺陈，遇到信息不确定时会明确保留意见并请求核对。",
+            "愿意耐心补充上下文，也会通过温和的追问逐步确认分类标准和表述边界。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "medium",
+        "target_turns": 15,
+        "min_turns": 14,
+        "max_turns": 15
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v2",
+        "seed": 4020518563,
+        "mode": "layered",
+        "discrete_event_target": 1,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "third_party",
+          "machine"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "2026年11月7日晚上9点20分，用户独自在俱乐部内容组的剪辑室里，窗外正在下雨，室内只开着工作电脑和通风设备。用户负责制作一场《裂界战场》赛事的赛后分析内容，今晚需要先把证据材料整理清楚，再交给主笔搭建解说框架。待复盘的是“澄海”对“霜原”的三局两胜决胜局，比赛时长31分48秒，最终由澄海获胜。用户已经完整看过一次录像，并在回看时记下了入侵、资源交换、巨像争夺和终局推进等关键时间点。电脑里现有一份按时间记录的录像口述稿、三段选手与教练采访摘录、一份尚未核实的解说草稿，以及几个时点的经济面板读数；用户手边还有打印出的草稿页，便于边听边标记。比赛录像可以由用户在本地暂停和回放，但助手无法直接看到画面或读取文件，只能依据用户逐段口述的内容协助整理。内容组沿用0至10分钟为前期、10至20分钟为中期、20分钟以后为后期的分段方式，因此跨越10分钟边界的资源交换需要按事件实际发生时点拆分。当前最大的困难是，解说草稿把两次行动分别定性为“无视野入侵”和“沟通失误”，而采访中的当事人给出了不同解释。录像本身没有队内语音，部分小地图信息还被导播镜头遮挡，所以行动动机不能仅凭结果倒推。经济面板能够确认若干次领先变化，却不能单独证明是哪一个决策导致了变化。用户希望优先保留可由录像时间点、面板数值或多份陈述交叉支持的观察，再把冲突说法和证据空缺明确隔开。成稿面向普通赛事观众，既要呈现战术因果，也要避免在依据不足时把责任归到单一选手身上。目前仍未解决的问题包括前期入侵是否真有视野依据、17分26秒的后撤是否属于预定决策，以及18分钟巨像争夺中哪一条指令先发生。",
+        "task_reference_data": [
+          "比赛标题卡与结算页，用户已经核对：2026年11月7日《裂界战场》星港杯八强赛，澄海对霜原，三局两胜决胜局；澄海在31分48秒结束比赛，并以2比1赢下系列赛。",
+          "录像口述记录前期段，用户可现场逐句读取：03:58霜原打野出现在上河道；04:12澄海中野辅进入霜原下半野区；04:26澄海打野取得赤焰增益；04:34澄海辅助在撤离口被击倒；05:00经济面板显示霜原领先180。",
+          "录像口述记录资源交换段，用户可现场读取：09:36霜原三人控制上河道晶核，澄海同时在下河道取得第一条元素龙；10:05经济面板显示澄海领先320，但口述记录没有记下双方当时消耗的召唤技能。",
+          "录像口述记录中期推进段，用户可现场读取：14:48霜原使用上河道晶核撞击中路并拆除外塔；15:06澄海拆除下路外塔；15:20霜原领先610。记录者在旁注中写了“霜原用地图中心换到更快的中路推进”，该句属于解释而非画面直接事实。",
+          "录像口述记录巨像争夺段，用户可现场读取：17:26澄海三人进入河道后立即后撤；18:03霜原开始攻击远古巨像；18:22澄海打野完成抢夺；随后澄海打出三换一。18:00面板为霜原领先740，19:10变为澄海领先980。",
+          "录像口述记录后期段，用户可现场读取：24:41澄海辅助从侧翼进入并协助击倒霜原双人组；25:10澄海取得第二只远古巨像；26:00澄海领先3100；30:18霜原中路高地被破；31:48主堡被摧毁。",
+          "澄海辅助林昼的采访摘录，用户已经读过：“04分钟那次不是盲进，我们在03:58看见对面打野露在上半区，中路线也先到；我最后留在出口，是想让打野把增益带走。”这段陈述可以说明选手自述的判断依据，但录像口述稿没有记下对应视野图标。",
+          "澄海教练许闻的采访摘录，用户已经读过：“17:26的统一要求是先拉开，等第二个侦查技能，不是已经决定开团。”澄海打野顾澈的另一段摘录称：“我靠近时只想看血量，听到继续争的指令时，巨像大概还剩2400。”两段陈述涉及不同决策时点，尚无队内语音可验证先后。",
+          "未核实的解说草稿，用户可现场读取：草稿把04:12写成“澄海在缺少视野时强行入侵，并因辅助阵亡付出代价”；把17:26写成“澄海开团意见不一，被迫后撤”；把18:22写成“顾澈用个人判断挽救了失误的团队决策”。前两句与采访解释存在冲突，第三句包含尚无直接依据的责任判断。",
+          "录像与转写的可见性说明，来自用户的初次检查：导播画面在03:55至04:05主要展示上路对线，小地图部分区域被赛事信息条遮挡；录像不含队内语音；18分钟附近的现场解说转写把一句短语记成“看下”，用户听感也可能是“开下”，目前不能据此确认指令内容。"
+        ],
+        "environment_audio": "近处的通风设备持续发出均匀低沉的风扇声，音量稳定。窗外的雨声从右侧较远处传来，雨点节奏细密，偶尔略有增强。房间内没有清晰的人声，整体仍适合进行专注的语音整理。",
+        "estimated_snr_db": 27,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "按0至10分钟、10至20分钟、20分钟以后分别归入前期、中期和后期，跨越分界的连续记录按各事件实际时间点处理。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "每个关键事件需要区分当时的决策或意图、可观察的执行结果，以及随后能够由记录支持的局势变化。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C03",
+            "text": "相互支持、相互冲突和仍缺少依据的观察必须分开标记，不得把采访者的自述直接当作已由录像证实的事实。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C04",
+            "text": "没有队内语音或明确画面依据时，不得断言具体指令内容、沟通先后或单一选手责任。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C05",
+            "text": "表述需保持适合公开赛后解说的中性语气，并保留原始时间点和关键经济读数以便后续回查。",
+            "kind": "hard"
+          }
+        ],
+        "safety_limits": [],
+        "soundscape_plan": {
+          "mode": "layered",
+          "ambient_layers": [
+            {
+              "source_id": "AMB01",
+              "asset_id": "fan-fsd50k-eval-419427",
+              "reason": "适合作为剪辑室内持续运行的通风设备底噪。"
+            },
+            {
+              "source_id": "AMB02",
+              "asset_id": "rain-fsd50k-eval-21189",
+              "reason": "符合夜间剪辑室窗外持续下雨的既有场景。"
+            }
+          ],
+          "environment_events": [
+            {
+              "source_id": "ENV01",
+              "asset_id": "keyboard-fsd50k-eval-411545",
+              "reason": "用户正在电脑前整理赛事材料，短暂键盘输入与场景相容。"
+            }
+          ],
+          "schema": "duplex_v2.soundscape_plan.v3",
+          "side_speech_sources": [],
+          "side_speech_count": 0,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v2",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v2",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611073006,
+              "slot": 4,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "crowd",
+                  "fan",
+                  "birds",
+                  "rain",
+                  "wind",
+                  "traffic"
+                ],
+                "event": [
+                  "door",
+                  "water_tap",
+                  "footsteps",
+                  "paper",
+                  "doorbell",
+                  "keyboard"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-319512",
+                  "birds-fsd50k-eval-57907",
+                  "birds-fsd50k-eval-86343"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-121877",
+                  "crowd-fsd50k-eval-185058",
+                  "crowd-fsd50k-eval-340358"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-419427",
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-415925"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-21189",
+                  "rain-fsd50k-eval-382582",
+                  "rain-fsd50k-eval-238016"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-124020",
+                  "traffic-fsd50k-eval-232686",
+                  "traffic-fsd50k-eval-235541"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113173",
+                  "wind-fsd50k-eval-113175",
+                  "wind-fsd50k-eval-113176"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-209519",
+                  "door-fsd50k-eval-119077",
+                  "door-fsd50k-eval-71212"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-348322",
+                  "doorbell-fsd50k-eval-332563",
+                  "doorbell-fsd50k-eval-426594"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-153104",
+                  "footsteps-fsd50k-eval-272381",
+                  "footsteps-fsd50k-eval-392303"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-411545",
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-399740"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-343098",
+                  "paper-fsd50k-eval-82562"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-402128",
+                  "water_tap-fsd50k-eval-232499",
+                  "water_tap-fsd50k-eval-402127"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v2",
+              "seed": 4020518563,
+              "mode": "layered",
+              "discrete_event_target": 1,
+              "max_ambient_layers": 2,
+              "side_speech_requested": false,
+              "speech_kind_preferences": [
+                "third_party",
+                "machine"
+              ]
+            },
+            "control_sha256": "bb36e2033def1d59c4d7b530ea07a00cdeb0c17b00eccc056eb7f51e8b6e246d",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v3",
+              "mode": "layered",
+              "ambient_layers": [
+                {
+                  "source_id": "AMB01",
+                  "candidates": [
+                    {
+                      "asset_id": "fan-fsd50k-eval-419427",
+                      "reason": "适合作为剪辑室内持续运行的通风设备底噪。",
+                      "environment_audio": "近处持续传来稳定、低沉的机械通风声。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-235362",
+                      "reason": "与安静办公室内均匀的风扇底噪相符。",
+                      "environment_audio": "室内风扇保持均匀转动，声响低而连续。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-415925",
+                      "reason": "可表现剪辑室近处通风设备的稳定背景声。",
+                      "environment_audio": "近处有轻微而稳定的机械送风声。"
+                    }
+                  ]
+                },
+                {
+                  "source_id": "AMB02",
+                  "candidates": [
+                    {
+                      "asset_id": "rain-fsd50k-eval-21189",
+                      "reason": "符合夜间剪辑室窗外持续下雨的既有场景。",
+                      "environment_audio": "右侧较远处传来隔窗可闻的连续细雨声。"
+                    },
+                    {
+                      "asset_id": "rain-fsd50k-eval-382582",
+                      "reason": "可作为窗外稳定雨声，与室内办公环境兼容。",
+                      "environment_audio": "窗外雨点细密落下，声音持续且略有起伏。"
+                    },
+                    {
+                      "asset_id": "rain-fsd50k-eval-238016",
+                      "reason": "符合当前雨夜背景，不引入额外人物或事件。",
+                      "environment_audio": "较远处的雨声隔着窗户连续传入室内。"
+                    }
+                  ]
+                }
+              ],
+              "environment_events": [
+                {
+                  "source_id": "ENV01",
+                  "candidates": [
+                    {
+                      "asset_id": "keyboard-fsd50k-eval-411545",
+                      "reason": "用户正在电脑前整理赛事材料，短暂键盘输入与场景相容。",
+                      "environment_audio": "近处响起一小段清晰而短促的电脑键盘敲击声。"
+                    },
+                    {
+                      "asset_id": "keyboard-fsd50k-eval-233057",
+                      "reason": "剪辑室工作电脑已在使用，键盘声属于自然办公事件。",
+                      "environment_audio": "桌面方向传来数秒节奏较快的键盘输入声。"
+                    },
+                    {
+                      "asset_id": "keyboard-fsd50k-eval-399740",
+                      "reason": "适合表现用户在本地记录或标注材料时的短暂输入声。",
+                      "environment_audio": "近距离传来一阵短暂、音量适中的键盘敲击声。"
+                    }
+                  ]
+                }
+              ],
+              "side_speech_eligibility": {
+                "third_party": {
+                  "compatible": false,
+                  "reason": "用户独自在剪辑室内，当前故事没有已建立的第三方在场。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "工作电脑和通风设备均未被设定为会输出可辨语音的设备。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "9d7ec8467d279eefff57fb2579b99718c32eba05ab2f2867aaa5ff50726e8058",
+            "aggregate_environment_audio": "近处的通风设备持续发出均匀低沉的风扇声，音量稳定。窗外的雨声从右侧较远处传来，雨点节奏细密，偶尔略有增强。房间内没有清晰的人声，整体仍适合进行专注的语音整理。 近处持续传来稳定、低沉的机械通风声。 右侧较远处传来隔窗可闻的连续细雨声。 近处响起一小段清晰而短促的电脑键盘敲击声。",
+            "draws": [
+              {
+                "source_id": "AMB01",
+                "category": "fan",
+                "asset_id": "fan-fsd50k-eval-419427",
+                "eligible_categories": [
+                  "fan"
+                ],
+                "eligible_assets": [
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-419427"
+                ]
+              },
+              {
+                "source_id": "AMB02",
+                "category": "rain",
+                "asset_id": "rain-fsd50k-eval-21189",
+                "eligible_categories": [
+                  "rain"
+                ],
+                "eligible_assets": [
+                  "rain-fsd50k-eval-21189",
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-382582"
+                ]
+              },
+              {
+                "source_id": "ENV01",
+                "category": "keyboard",
+                "asset_id": "keyboard-fsd50k-eval-411545",
+                "eligible_categories": [
+                  "keyboard"
+                ],
+                "eligible_assets": [
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-399740",
+                  "keyboard-fsd50k-eval-411545"
+                ]
+              }
+            ],
+            "speech_selection": {
+              "requested": false,
+              "compatible_kinds": [],
+              "selected_kind": null,
+              "outcome": "not_requested",
+              "assessments": {
+                "third_party": {
+                  "compatible": false,
+                  "reason": "用户独自在剪辑室内，当前故事没有已建立的第三方在场。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "工作电脑和通风设备均未被设定为会输出可辨语音的设备。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v2",
+      "title": "澄海对霜原决胜局证据复盘",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。",
+          "assistant_utterance": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。",
+          "user_intent": "说明材料范围、整理目标和证据分类要求",
+          "assistant_intent": "建立整理框架并引导用户逐步提供基础信息",
+          "semantic_goal": "形成按阶段与证据状态整理比赛材料的共同框架",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。",
+          "assistant_utterance": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。",
+          "user_intent": "补充比赛结果和固定分段标准",
+          "assistant_intent": "确认总表字段及跨时间边界的归类原则",
+          "semantic_goal": "建立可承载后续事件的阶段化表格结构",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。",
+            "assistant_stop_after_text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。",
+          "assistant_utterance": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能先写成无视野入侵。",
+          "user_intent": "提供前期入侵事件与经济面板读数",
+          "assistant_intent": "区分可观察执行结果、局势变化与尚未确认的决策依据",
+          "semantic_goal": "形成前期入侵事件的首版证据记录",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。",
+            "assistant_stop_after_text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。",
+          "assistant_utterance": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。",
+          "user_intent": "打断既定判断并补充选手对入侵依据的自述",
+          "assistant_intent": "将采访作为自述证据纳入，同时保留与草稿的冲突和画面缺口",
+          "semantic_goal": "避免把入侵依据误标为完全缺失或已被录像证实",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺",
+            "assistant_stop_after_text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？",
+          "assistant_utterance": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”",
+          "user_intent": "追问前期事件的公开解说措辞",
+          "assistant_intent": "给出中性表述并明确采访与录像事实的边界",
+          "semantic_goal": "获得可直接用于解说框架的前期事件表述",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。",
+            "assistant_stop_after_text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U06",
+          "assistant_id": "A006",
+          "user_utterance": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。",
+          "assistant_utterance": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。",
+          "user_intent": "提供跨越十分钟边界的资源交换及证据缺口",
+          "assistant_intent": "按实际时点拆分事件并限制经济变化的因果解释",
+          "semantic_goal": "正确归类资源交换和随后经济面板信息",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A005",
+            "user_onset_after_text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”",
+            "assistant_stop_after_text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U07",
+          "assistant_id": "A007",
+          "user_utterance": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。",
+          "assistant_utterance": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能当成画面结论。",
+          "user_intent": "补充中期推进事实和记录者的解释性旁注",
+          "assistant_intent": "将画面事实、经济读数与主观解释分层",
+          "semantic_goal": "形成中期推进事件的事实层与分析层",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A006",
+            "user_onset_after_text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。",
+            "assistant_stop_after_text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U08",
+          "assistant_id": "A008",
+          "user_utterance": "对，分析假设可以保留，但措辞改成“可能体现”，不要写成已经证明。",
+          "assistant_utterance": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。",
+          "user_intent": "打断播报并调整解释性旁注的确定程度",
+          "assistant_intent": "将旁注改写为保留性的战术假设并附证据限制",
+          "semantic_goal": "保留分析价值但避免把推测写成已证事实",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A007",
+            "user_onset_after_text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设",
+            "assistant_stop_after_text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U09",
+          "assistant_id": "A009",
+          "user_utterance": "再到巨像争夺。十七分二十六秒澄海三人进入河道后立即后撤；十八分零三秒霜原开始打远古巨像；十八分二十二秒澄海打野完成抢夺，随后澄海打出三换一。十八分钟霜原领先七百四十，十九分十分变为澄海领先九百八十。",
+          "assistant_utterance": "中期可拆两件事：17:26进入河道后撤，意图未知；18:03霜原开巨像，18:22澄海抢到，随后三换一。面板从18:00霜原领先740转为19:10澄海领先980，支持局势反转。",
+          "user_intent": "提供巨像争夺的行动链和经济反转读数",
+          "assistant_intent": "拆分后撤与争夺事件，并标明可由面板支持的局势变化",
+          "semantic_goal": "建立巨像争夺阶段的时间链与结果链",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A008",
+            "user_onset_after_text": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。",
+            "assistant_stop_after_text": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U10",
+          "assistant_id": "A010",
+          "user_utterance": "教练许闻说，十七分二十六秒统一要求是先拉开，等第二个侦查技能，不是已经决定开团。打野顾澈则说，他靠近时只是想看血量，听到继续争的指令时，巨像大概还剩两千四百。另外现场转写把一句话记成“看下”，我听着也可能是“开下”。",
+          "assistant_utterance": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后；“看下／开下”也只能列为转写疑点。",
+          "user_intent": "补充教练与打野采访，并说明现场转写歧义",
+          "assistant_intent": "区分不同决策时点，判断陈述关系并保留指令先后的证据缺口",
+          "semantic_goal": "厘清后撤、继续争夺和模糊指令之间的证据边界",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A009",
+            "user_onset_after_text": "中期可拆两件事：17:26进入河道后撤，意图未知；18:03霜原开巨像，18:22澄海抢到，随后三换一。面板从18:00霜原领先740转为19:10澄海领先980，支持局势反转。",
+            "assistant_stop_after_text": "中期可拆两件事：17:26进入河道后撤，意图未知；18:03霜原开巨像，18:22澄海抢到，随后三换一。面板从18:00霜原领先740转为19:10澄海领先980，支持局势反转。"
+          },
+          "pause_cue": {
+            "after_text": "教练许闻说，十七分二十六秒统一要求是先拉开，等第二个侦查技能，不是已经决定开团。",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U11",
+          "assistant_id": "A011",
+          "user_utterance": "那草稿里“顾澈用个人判断挽救了失误的团队决策”这句，我倾向于不用。能否换成只描述抢夺和反超的版本？",
+          "assistant_utterance": "不宜保留。可替换为：“顾澈在18:22完成抢夺，澄海随后实现经济反超；该操作与团队此前指令的关系，现有材料不足以确认。”既保留关键执行，也不归责。",
+          "user_intent": "对草稿中的个人英雄化和团队归责提出异议",
+          "assistant_intent": "删除无依据的责任判断并提供中性替代表述",
+          "semantic_goal": "保留关键操作结果，同时避免将责任归于单一选手",
+          "act_ref": "A05",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A010",
+            "user_onset_after_text": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后",
+            "assistant_stop_after_text": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后；“看下"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U12",
+          "assistant_id": "A012",
+          "user_utterance": "后期记录是：二十四分四十一秒澄海辅助从侧翼进入，协助击倒霜原双人组；二十五分十分澄海拿到第二只远古巨像；二十六分钟领先三千一；三十分十八秒破中路高地；三十一分四十八秒摧毁主堡。",
+          "assistant_utterance": "后期链条可写：24:41辅助侧翼进入并协助击倒双人组；25:10取得第二只巨像；26:00领先3100；30:18破中路高地；31:48摧毁主堡。前两项到领先扩大有关联，但仍避免断言单一原因。",
+          "user_intent": "提供后期侧翼进场、巨像获取和终局推进记录",
+          "assistant_intent": "整理后期行动链，并限制对领先扩大的单因果判断",
+          "semantic_goal": "形成从后期交战到结束比赛的完整事件序列",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A011",
+            "user_onset_after_text": "不宜保留。可替换为：“顾澈在18:22完成抢夺，澄海随后实现经济反超；该操作与团队此前指令的关系，现有材料不足以确认。”既保留关键执行，也不归责。",
+            "assistant_stop_after_text": "不宜保留。可替换为：“顾澈在18:22完成抢夺，澄海随后实现经济反超；该操作与团队此前指令的关系，现有材料不足以确认。”既保留关键执行，也不归责。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U13",
+          "assistant_id": "A013",
+          "user_utterance": "现在请把相互支持、相互冲突和仍缺依据的观察各归一遍，尽量保留关键时间点。",
+          "assistant_utterance": "相互支持：03:58露头记录与林昼自述相合；18:22抢夺、三换一及19:10领先980共同支持局势反转。相互冲突：现有已披露材料不足以确认。依据不足：入侵视野、17:26后撤意图、指令先后、“看下／开下”、个人归责及经济变化的单一成因均缺独立核实。",
+          "user_intent": "要求汇总三类证据关系",
+          "assistant_intent": "按支持、冲突和依据不足归纳已建立的观察",
+          "semantic_goal": "获得可直接置于复盘材料末尾的证据状态摘要",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A012",
+            "user_onset_after_text": "后期链条可写：24:41辅助侧翼进入并协助击倒双人组；25:10取得第二只巨像；26:00领先3100；30:18破中路高地；31:48摧毁主堡。前两项到领先扩大有关联，但仍避免断言单一原因。",
+            "assistant_stop_after_text": "后期链条可写：24:41辅助侧翼进入并协助击倒双人组；25:10取得第二只巨像；26:00领先3100；30:18破中路高地；31:48摧毁主堡。前两项到领先扩大有关联，但仍避免断言单一原因。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U14",
+          "assistant_id": "A014",
+          "user_utterance": "再按最终解说的播放顺序，给我一个简洁的完整骨架，主笔后面可以直接扩写。",
+          "assistant_utterance": "成稿骨架：一，标题卡与赛果；二，前期入侵及09:36资源交换；三，10:05后的经济变化与中路、下路推进；四，17:26后撤及18:22巨像反转；五，24:41侧翼击杀到31:48终局推进；六，集中列冲突说法和待核证据。",
+          "user_intent": "请求将已整理内容转为顺序清晰的解说骨架",
+          "assistant_intent": "按比赛进程整合事件，并把证据争议保留为独立部分",
+          "semantic_goal": "形成可供主笔直接扩写的完整结构",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A013",
+            "user_onset_after_text": "相互支持：03:58露头记录与林昼自述相合；18:22抢夺、三换一及19:10领先980共同支持局势反转。相互冲突：现有已披露材料不足以确认。依据不足：入侵视野、17:26后撤意图、指令先后、“看下／开下”、个人归责及经济变化的单一成因均缺独立核实。",
+            "assistant_stop_after_text": "相互支持：03:58露头记录与林昼自述相合；18:22抢夺、三换一及19:10领先980共同支持局势反转。相互冲突：现有已披露材料不足以确认。依据不足：入侵视野、17:26后撤意图、指令先后、“看下／开下”、个人归责及经济变化的单一成因均缺独立核实。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U15",
+          "assistant_id": "A015",
+          "user_utterance": "最后给这个复盘材料拟一个标题，再补一句适合放在结尾的证据说明。",
+          "assistant_utterance": "标题可用《从资源交换到巨像反转：澄海对霜原决胜局复盘》。结尾说明：“本文依据比赛画面记录、经济面板与赛后采访整理；涉及视野、队内指令和责任判断之处，均保留未核实边界。”",
+          "user_intent": "请求拟定材料标题和统一的结尾证据声明",
+          "assistant_intent": "提供中性标题并概括材料来源与未核实边界",
+          "semantic_goal": "完成复盘材料的标题与证据免责声明",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A014",
+            "user_onset_after_text": "成稿骨架：一，标题卡与赛果；二，前期入侵及09:36资源交换；三，10:05后的经济变化与中路、下路推进；四，17:26后撤及18:22巨像反转；五，24:41侧翼击杀到31:48终局推进；六，集中列冲突说法和待核证据。",
+            "assistant_stop_after_text": "成稿骨架：一，标题卡与赛果；二，前期入侵及09:36资源交换；三，10:05后的经济变化与中路、下路推进；四，17:26后撤及18:22巨像反转；五，24:41侧翼击杀到31:48终局推进；六，集中列冲突说法和待核证据。"
+          },
+          "pause_cue": null
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。",
+          "text": "好"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A005",
+          "after_text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。",
+          "text": "嗯"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A006",
+          "after_text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。",
+          "text": "明白"
+        },
+        {
+          "event_id": "BC04",
+          "target_assistant_id": "A009",
+          "after_text": "中期可拆两件事：17:26进入河道后撤，意图未知；",
+          "text": "对"
+        },
+        {
+          "event_id": "BC05",
+          "target_assistant_id": "A013",
+          "after_text": "相互支持：03:58露头记录与林昼自述相合；18:22抢夺、三换一及19:10领先980共同支持局势反转。",
+          "text": "嗯，清楚"
+        }
+      ],
+      "side_speech": [],
+      "environment_events": [
+        {
+          "event_id": "ENV01",
+          "source_id": "ENV01",
+          "target_audio_id": "U10",
+          "placement_fraction": 0.24
+        }
+      ]
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。",
+          "final_shared_played_prefix": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。",
+          "final_shared_played_prefix": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能先写成无视野入侵。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺",
+          "final_shared_played_prefix": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能",
+          "discarded_unheard_tail": "先写成无视野入侵。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。",
+          "final_shared_played_prefix": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A005",
+          "at_user_onset_heard_prefix": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”",
+          "final_shared_played_prefix": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A006",
+          "at_user_onset_heard_prefix": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。",
+          "final_shared_played_prefix": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A006",
+            "after_text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能当成画面结论。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，分析假设可以保留，但措辞改成“可能体现”，不要写成已经证明。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A007",
+          "at_user_onset_heard_prefix": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设",
+          "final_shared_played_prefix": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能",
+          "discarded_unheard_tail": "当成画面结论。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A006",
+            "after_text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，分析假设可以保留，但措辞改成“可能体现”，不要写成已经证明。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，分析假设可以保留，但措辞改成“可能体现”，不要写成已经证明。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "再到巨像争夺。十七分二十六秒澄海三人进入河道后立即后撤；十八分零三秒霜原开始打远古巨像；十八分二十二秒澄海打野完成抢夺，随后澄海打出三换一。十八分钟霜原领先七百四十，十九分十分变为澄海领先九百八十。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A008",
+          "at_user_onset_heard_prefix": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。",
+          "final_shared_played_prefix": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A006",
+            "after_text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "中期可拆两件事：17:26进入河道后撤，意图未知；18:03霜原开巨像，18:22澄海抢到，随后三换一。面板从18:00霜原领先740转为19:10澄海领先980，支持局势反转。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，分析假设可以保留，但措辞改成“可能体现”，不要写成已经证明。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "再到巨像争夺。十七分二十六秒澄海三人进入河道后立即后撤；十八分零三秒霜原开始打远古巨像；十八分二十二秒澄海打野完成抢夺，随后澄海打出三换一。十八分钟霜原领先七百四十，十九分十分变为澄海领先九百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "中期可拆两件事：17:26进入河道后撤，意图未知；18:03霜原开巨像，18:22澄海抢到，随后三换一。面板从18:00霜原领先740转为19:10澄海领先980，支持局势反转。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，分析假设可以保留，但措辞改成“可能体现”，不要写成已经证明。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "再到巨像争夺。十七分二十六秒澄海三人进入河道后立即后撤；十八分零三秒霜原开始打远古巨像；十八分二十二秒澄海打野完成抢夺，随后澄海打出三换一。十八分钟霜原领先七百四十，十九分十分变为澄海领先九百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "中期可拆两件事：17:26进入河道后撤，意图未知；18:03霜原开巨像，18:22澄海抢到，随后三换一。面板从18:00霜原领先740转为19:10澄海领先980，支持局势反转。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "教练许闻说，十七分二十六秒统一要求是先拉开，等第二个侦查技能，不是已经决定开团。打野顾澈则说，他靠近时只是想看血量，听到继续争的指令时，巨像大概还剩两千四百。另外现场转写把一句话记成“看下”，我听着也可能是“开下”。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A009",
+          "at_user_onset_heard_prefix": "中期可拆两件事：17:26进入河道后撤，意图未知；18:03霜原开巨像，18:22澄海抢到，随后三换一。面板从18:00霜原领先740转为19:10澄海领先980，支持局势反转。",
+          "final_shared_played_prefix": "中期可拆两件事：17:26进入河道后撤，意图未知；18:03霜原开巨像，18:22澄海抢到，随后三换一。面板从18:00霜原领先740转为19:10澄海领先980，支持局势反转。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A006",
+            "after_text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A009",
+            "after_text": "中期可拆两件事：17:26进入河道后撤，意图未知；",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后；“看下／开下”也只能列为转写疑点。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U11",
+        "assistant_id": "A011",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，分析假设可以保留，但措辞改成“可能体现”，不要写成已经证明。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "再到巨像争夺。十七分二十六秒澄海三人进入河道后立即后撤；十八分零三秒霜原开始打远古巨像；十八分二十二秒澄海打野完成抢夺，随后澄海打出三换一。十八分钟霜原领先七百四十，十九分十分变为澄海领先九百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "中期可拆两件事：17:26进入河道后撤，意图未知；18:03霜原开巨像，18:22澄海抢到，随后三换一。面板从18:00霜原领先740转为19:10澄海领先980，支持局势反转。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "教练许闻说，十七分二十六秒统一要求是先拉开，等第二个侦查技能，不是已经决定开团。打野顾澈则说，他靠近时只是想看血量，听到继续争的指令时，巨像大概还剩两千四百。另外现场转写把一句话记成“看下”，我听着也可能是“开下”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，分析假设可以保留，但措辞改成“可能体现”，不要写成已经证明。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "再到巨像争夺。十七分二十六秒澄海三人进入河道后立即后撤；十八分零三秒霜原开始打远古巨像；十八分二十二秒澄海打野完成抢夺，随后澄海打出三换一。十八分钟霜原领先七百四十，十九分十分变为澄海领先九百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "中期可拆两件事：17:26进入河道后撤，意图未知；18:03霜原开巨像，18:22澄海抢到，随后三换一。面板从18:00霜原领先740转为19:10澄海领先980，支持局势反转。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "教练许闻说，十七分二十六秒统一要求是先拉开，等第二个侦查技能，不是已经决定开团。打野顾澈则说，他靠近时只是想看血量，听到继续争的指令时，巨像大概还剩两千四百。另外现场转写把一句话记成“看下”，我听着也可能是“开下”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后；“看下"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "那草稿里“顾澈用个人判断挽救了失误的团队决策”这句，我倾向于不用。能否换成只描述抢夺和反超的版本？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A010",
+          "at_user_onset_heard_prefix": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后",
+          "final_shared_played_prefix": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后；“看下",
+          "discarded_unheard_tail": "／开下”也只能列为转写疑点。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A006",
+            "after_text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A009",
+            "after_text": "中期可拆两件事：17:26进入河道后撤，意图未知；",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "不宜保留。可替换为：“顾澈在18:22完成抢夺，澄海随后实现经济反超；该操作与团队此前指令的关系，现有材料不足以确认。”既保留关键执行，也不归责。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U12",
+        "assistant_id": "A012",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，分析假设可以保留，但措辞改成“可能体现”，不要写成已经证明。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "再到巨像争夺。十七分二十六秒澄海三人进入河道后立即后撤；十八分零三秒霜原开始打远古巨像；十八分二十二秒澄海打野完成抢夺，随后澄海打出三换一。十八分钟霜原领先七百四十，十九分十分变为澄海领先九百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "中期可拆两件事：17:26进入河道后撤，意图未知；18:03霜原开巨像，18:22澄海抢到，随后三换一。面板从18:00霜原领先740转为19:10澄海领先980，支持局势反转。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "教练许闻说，十七分二十六秒统一要求是先拉开，等第二个侦查技能，不是已经决定开团。打野顾澈则说，他靠近时只是想看血量，听到继续争的指令时，巨像大概还剩两千四百。另外现场转写把一句话记成“看下”，我听着也可能是“开下”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后；“看下"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "那草稿里“顾澈用个人判断挽救了失误的团队决策”这句，我倾向于不用。能否换成只描述抢夺和反超的版本？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "不宜保留。可替换为：“顾澈在18:22完成抢夺，澄海随后实现经济反超；该操作与团队此前指令的关系，现有材料不足以确认。”既保留关键执行，也不归责。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，分析假设可以保留，但措辞改成“可能体现”，不要写成已经证明。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "再到巨像争夺。十七分二十六秒澄海三人进入河道后立即后撤；十八分零三秒霜原开始打远古巨像；十八分二十二秒澄海打野完成抢夺，随后澄海打出三换一。十八分钟霜原领先七百四十，十九分十分变为澄海领先九百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "中期可拆两件事：17:26进入河道后撤，意图未知；18:03霜原开巨像，18:22澄海抢到，随后三换一。面板从18:00霜原领先740转为19:10澄海领先980，支持局势反转。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "教练许闻说，十七分二十六秒统一要求是先拉开，等第二个侦查技能，不是已经决定开团。打野顾澈则说，他靠近时只是想看血量，听到继续争的指令时，巨像大概还剩两千四百。另外现场转写把一句话记成“看下”，我听着也可能是“开下”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后；“看下"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "那草稿里“顾澈用个人判断挽救了失误的团队决策”这句，我倾向于不用。能否换成只描述抢夺和反超的版本？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "不宜保留。可替换为：“顾澈在18:22完成抢夺，澄海随后实现经济反超；该操作与团队此前指令的关系，现有材料不足以确认。”既保留关键执行，也不归责。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "后期记录是：二十四分四十一秒澄海辅助从侧翼进入，协助击倒霜原双人组；二十五分十分澄海拿到第二只远古巨像；二十六分钟领先三千一；三十分十八秒破中路高地；三十一分四十八秒摧毁主堡。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A011",
+          "at_user_onset_heard_prefix": "不宜保留。可替换为：“顾澈在18:22完成抢夺，澄海随后实现经济反超；该操作与团队此前指令的关系，现有材料不足以确认。”既保留关键执行，也不归责。",
+          "final_shared_played_prefix": "不宜保留。可替换为：“顾澈在18:22完成抢夺，澄海随后实现经济反超；该操作与团队此前指令的关系，现有材料不足以确认。”既保留关键执行，也不归责。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A006",
+            "after_text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A009",
+            "after_text": "中期可拆两件事：17:26进入河道后撤，意图未知；",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "后期链条可写：24:41辅助侧翼进入并协助击倒双人组；25:10取得第二只巨像；26:00领先3100；30:18破中路高地；31:48摧毁主堡。前两项到领先扩大有关联，但仍避免断言单一原因。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U13",
+        "assistant_id": "A013",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，分析假设可以保留，但措辞改成“可能体现”，不要写成已经证明。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "再到巨像争夺。十七分二十六秒澄海三人进入河道后立即后撤；十八分零三秒霜原开始打远古巨像；十八分二十二秒澄海打野完成抢夺，随后澄海打出三换一。十八分钟霜原领先七百四十，十九分十分变为澄海领先九百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "中期可拆两件事：17:26进入河道后撤，意图未知；18:03霜原开巨像，18:22澄海抢到，随后三换一。面板从18:00霜原领先740转为19:10澄海领先980，支持局势反转。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "教练许闻说，十七分二十六秒统一要求是先拉开，等第二个侦查技能，不是已经决定开团。打野顾澈则说，他靠近时只是想看血量，听到继续争的指令时，巨像大概还剩两千四百。另外现场转写把一句话记成“看下”，我听着也可能是“开下”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后；“看下"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "那草稿里“顾澈用个人判断挽救了失误的团队决策”这句，我倾向于不用。能否换成只描述抢夺和反超的版本？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "不宜保留。可替换为：“顾澈在18:22完成抢夺，澄海随后实现经济反超；该操作与团队此前指令的关系，现有材料不足以确认。”既保留关键执行，也不归责。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "后期记录是：二十四分四十一秒澄海辅助从侧翼进入，协助击倒霜原双人组；二十五分十分澄海拿到第二只远古巨像；二十六分钟领先三千一；三十分十八秒破中路高地；三十一分四十八秒摧毁主堡。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "后期链条可写：24:41辅助侧翼进入并协助击倒双人组；25:10取得第二只巨像；26:00领先3100；30:18破中路高地；31:48摧毁主堡。前两项到领先扩大有关联，但仍避免断言单一原因。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，分析假设可以保留，但措辞改成“可能体现”，不要写成已经证明。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "再到巨像争夺。十七分二十六秒澄海三人进入河道后立即后撤；十八分零三秒霜原开始打远古巨像；十八分二十二秒澄海打野完成抢夺，随后澄海打出三换一。十八分钟霜原领先七百四十，十九分十分变为澄海领先九百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "中期可拆两件事：17:26进入河道后撤，意图未知；18:03霜原开巨像，18:22澄海抢到，随后三换一。面板从18:00霜原领先740转为19:10澄海领先980，支持局势反转。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "教练许闻说，十七分二十六秒统一要求是先拉开，等第二个侦查技能，不是已经决定开团。打野顾澈则说，他靠近时只是想看血量，听到继续争的指令时，巨像大概还剩两千四百。另外现场转写把一句话记成“看下”，我听着也可能是“开下”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后；“看下"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "那草稿里“顾澈用个人判断挽救了失误的团队决策”这句，我倾向于不用。能否换成只描述抢夺和反超的版本？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "不宜保留。可替换为：“顾澈在18:22完成抢夺，澄海随后实现经济反超；该操作与团队此前指令的关系，现有材料不足以确认。”既保留关键执行，也不归责。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "后期记录是：二十四分四十一秒澄海辅助从侧翼进入，协助击倒霜原双人组；二十五分十分澄海拿到第二只远古巨像；二十六分钟领先三千一；三十分十八秒破中路高地；三十一分四十八秒摧毁主堡。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "后期链条可写：24:41辅助侧翼进入并协助击倒双人组；25:10取得第二只巨像；26:00领先3100；30:18破中路高地；31:48摧毁主堡。前两项到领先扩大有关联，但仍避免断言单一原因。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "现在请把相互支持、相互冲突和仍缺依据的观察各归一遍，尽量保留关键时间点。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A012",
+          "at_user_onset_heard_prefix": "后期链条可写：24:41辅助侧翼进入并协助击倒双人组；25:10取得第二只巨像；26:00领先3100；30:18破中路高地；31:48摧毁主堡。前两项到领先扩大有关联，但仍避免断言单一原因。",
+          "final_shared_played_prefix": "后期链条可写：24:41辅助侧翼进入并协助击倒双人组；25:10取得第二只巨像；26:00领先3100；30:18破中路高地；31:48摧毁主堡。前两项到领先扩大有关联，但仍避免断言单一原因。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A006",
+            "after_text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A009",
+            "after_text": "中期可拆两件事：17:26进入河道后撤，意图未知；",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "相互支持：03:58露头记录与林昼自述相合；18:22抢夺、三换一及19:10领先980共同支持局势反转。相互冲突：现有已披露材料不足以确认。依据不足：入侵视野、17:26后撤意图、指令先后、“看下／开下”、个人归责及经济变化的单一成因均缺独立核实。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U14",
+        "assistant_id": "A014",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，分析假设可以保留，但措辞改成“可能体现”，不要写成已经证明。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "再到巨像争夺。十七分二十六秒澄海三人进入河道后立即后撤；十八分零三秒霜原开始打远古巨像；十八分二十二秒澄海打野完成抢夺，随后澄海打出三换一。十八分钟霜原领先七百四十，十九分十分变为澄海领先九百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "中期可拆两件事：17:26进入河道后撤，意图未知；18:03霜原开巨像，18:22澄海抢到，随后三换一。面板从18:00霜原领先740转为19:10澄海领先980，支持局势反转。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "教练许闻说，十七分二十六秒统一要求是先拉开，等第二个侦查技能，不是已经决定开团。打野顾澈则说，他靠近时只是想看血量，听到继续争的指令时，巨像大概还剩两千四百。另外现场转写把一句话记成“看下”，我听着也可能是“开下”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后；“看下"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "那草稿里“顾澈用个人判断挽救了失误的团队决策”这句，我倾向于不用。能否换成只描述抢夺和反超的版本？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "不宜保留。可替换为：“顾澈在18:22完成抢夺，澄海随后实现经济反超；该操作与团队此前指令的关系，现有材料不足以确认。”既保留关键执行，也不归责。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "后期记录是：二十四分四十一秒澄海辅助从侧翼进入，协助击倒霜原双人组；二十五分十分澄海拿到第二只远古巨像；二十六分钟领先三千一；三十分十八秒破中路高地；三十一分四十八秒摧毁主堡。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "后期链条可写：24:41辅助侧翼进入并协助击倒双人组；25:10取得第二只巨像；26:00领先3100；30:18破中路高地；31:48摧毁主堡。前两项到领先扩大有关联，但仍避免断言单一原因。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "现在请把相互支持、相互冲突和仍缺依据的观察各归一遍，尽量保留关键时间点。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "相互支持：03:58露头记录与林昼自述相合；18:22抢夺、三换一及19:10领先980共同支持局势反转。相互冲突：现有已披露材料不足以确认。依据不足：入侵视野、17:26后撤意图、指令先后、“看下／开下”、个人归责及经济变化的单一成因均缺独立核实。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，分析假设可以保留，但措辞改成“可能体现”，不要写成已经证明。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "再到巨像争夺。十七分二十六秒澄海三人进入河道后立即后撤；十八分零三秒霜原开始打远古巨像；十八分二十二秒澄海打野完成抢夺，随后澄海打出三换一。十八分钟霜原领先七百四十，十九分十分变为澄海领先九百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "中期可拆两件事：17:26进入河道后撤，意图未知；18:03霜原开巨像，18:22澄海抢到，随后三换一。面板从18:00霜原领先740转为19:10澄海领先980，支持局势反转。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "教练许闻说，十七分二十六秒统一要求是先拉开，等第二个侦查技能，不是已经决定开团。打野顾澈则说，他靠近时只是想看血量，听到继续争的指令时，巨像大概还剩两千四百。另外现场转写把一句话记成“看下”，我听着也可能是“开下”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后；“看下"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "那草稿里“顾澈用个人判断挽救了失误的团队决策”这句，我倾向于不用。能否换成只描述抢夺和反超的版本？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "不宜保留。可替换为：“顾澈在18:22完成抢夺，澄海随后实现经济反超；该操作与团队此前指令的关系，现有材料不足以确认。”既保留关键执行，也不归责。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "后期记录是：二十四分四十一秒澄海辅助从侧翼进入，协助击倒霜原双人组；二十五分十分澄海拿到第二只远古巨像；二十六分钟领先三千一；三十分十八秒破中路高地；三十一分四十八秒摧毁主堡。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "后期链条可写：24:41辅助侧翼进入并协助击倒双人组；25:10取得第二只巨像；26:00领先3100；30:18破中路高地；31:48摧毁主堡。前两项到领先扩大有关联，但仍避免断言单一原因。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "现在请把相互支持、相互冲突和仍缺依据的观察各归一遍，尽量保留关键时间点。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "相互支持：03:58露头记录与林昼自述相合；18:22抢夺、三换一及19:10领先980共同支持局势反转。相互冲突：现有已披露材料不足以确认。依据不足：入侵视野、17:26后撤意图、指令先后、“看下／开下”、个人归责及经济变化的单一成因均缺独立核实。"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "再按最终解说的播放顺序，给我一个简洁的完整骨架，主笔后面可以直接扩写。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A013",
+          "at_user_onset_heard_prefix": "相互支持：03:58露头记录与林昼自述相合；18:22抢夺、三换一及19:10领先980共同支持局势反转。相互冲突：现有已披露材料不足以确认。依据不足：入侵视野、17:26后撤意图、指令先后、“看下／开下”、个人归责及经济变化的单一成因均缺独立核实。",
+          "final_shared_played_prefix": "相互支持：03:58露头记录与林昼自述相合；18:22抢夺、三换一及19:10领先980共同支持局势反转。相互冲突：现有已披露材料不足以确认。依据不足：入侵视野、17:26后撤意图、指令先后、“看下／开下”、个人归责及经济变化的单一成因均缺独立核实。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A006",
+            "after_text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A009",
+            "after_text": "中期可拆两件事：17:26进入河道后撤，意图未知；",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC05",
+            "target_assistant_id": "A013",
+            "after_text": "相互支持：03:58露头记录与林昼自述相合；18:22抢夺、三换一及19:10领先980共同支持局势反转。",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "成稿骨架：一，标题卡与赛果；二，前期入侵及09:36资源交换；三，10:05后的经济变化与中路、下路推进；四，17:26后撤及18:22巨像反转；五，24:41侧翼击杀到31:48终局推进；六，集中列冲突说法和待核证据。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U15",
+        "assistant_id": "A015",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，分析假设可以保留，但措辞改成“可能体现”，不要写成已经证明。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "再到巨像争夺。十七分二十六秒澄海三人进入河道后立即后撤；十八分零三秒霜原开始打远古巨像；十八分二十二秒澄海打野完成抢夺，随后澄海打出三换一。十八分钟霜原领先七百四十，十九分十分变为澄海领先九百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "中期可拆两件事：17:26进入河道后撤，意图未知；18:03霜原开巨像，18:22澄海抢到，随后三换一。面板从18:00霜原领先740转为19:10澄海领先980，支持局势反转。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "教练许闻说，十七分二十六秒统一要求是先拉开，等第二个侦查技能，不是已经决定开团。打野顾澈则说，他靠近时只是想看血量，听到继续争的指令时，巨像大概还剩两千四百。另外现场转写把一句话记成“看下”，我听着也可能是“开下”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后；“看下"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "那草稿里“顾澈用个人判断挽救了失误的团队决策”这句，我倾向于不用。能否换成只描述抢夺和反超的版本？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "不宜保留。可替换为：“顾澈在18:22完成抢夺，澄海随后实现经济反超；该操作与团队此前指令的关系，现有材料不足以确认。”既保留关键执行，也不归责。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "后期记录是：二十四分四十一秒澄海辅助从侧翼进入，协助击倒霜原双人组；二十五分十分澄海拿到第二只远古巨像；二十六分钟领先三千一；三十分十八秒破中路高地；三十一分四十八秒摧毁主堡。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "后期链条可写：24:41辅助侧翼进入并协助击倒双人组；25:10取得第二只巨像；26:00领先3100；30:18破中路高地；31:48摧毁主堡。前两项到领先扩大有关联，但仍避免断言单一原因。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "现在请把相互支持、相互冲突和仍缺依据的观察各归一遍，尽量保留关键时间点。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "相互支持：03:58露头记录与林昼自述相合；18:22抢夺、三换一及19:10领先980共同支持局势反转。相互冲突：现有已披露材料不足以确认。依据不足：入侵视野、17:26后撤意图、指令先后、“看下／开下”、个人归责及经济变化的单一成因均缺独立核实。"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "再按最终解说的播放顺序，给我一个简洁的完整骨架，主笔后面可以直接扩写。"
+          },
+          {
+            "role": "assistant",
+            "id": "A014",
+            "text": "成稿骨架：一，标题卡与赛果；二，前期入侵及09:36资源交换；三，10:05后的经济变化与中路、下路推进；四，17:26后撤及18:22巨像反转；五，24:41侧翼击杀到31:48终局推进；六，集中列冲突说法和待核证据。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，分析假设可以保留，但措辞改成“可能体现”，不要写成已经证明。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "再到巨像争夺。十七分二十六秒澄海三人进入河道后立即后撤；十八分零三秒霜原开始打远古巨像；十八分二十二秒澄海打野完成抢夺，随后澄海打出三换一。十八分钟霜原领先七百四十，十九分十分变为澄海领先九百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "中期可拆两件事：17:26进入河道后撤，意图未知；18:03霜原开巨像，18:22澄海抢到，随后三换一。面板从18:00霜原领先740转为19:10澄海领先980，支持局势反转。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "教练许闻说，十七分二十六秒统一要求是先拉开，等第二个侦查技能，不是已经决定开团。打野顾澈则说，他靠近时只是想看血量，听到继续争的指令时，巨像大概还剩两千四百。另外现场转写把一句话记成“看下”，我听着也可能是“开下”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后；“看下"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "那草稿里“顾澈用个人判断挽救了失误的团队决策”这句，我倾向于不用。能否换成只描述抢夺和反超的版本？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "不宜保留。可替换为：“顾澈在18:22完成抢夺，澄海随后实现经济反超；该操作与团队此前指令的关系，现有材料不足以确认。”既保留关键执行，也不归责。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "后期记录是：二十四分四十一秒澄海辅助从侧翼进入，协助击倒霜原双人组；二十五分十分澄海拿到第二只远古巨像；二十六分钟领先三千一；三十分十八秒破中路高地；三十一分四十八秒摧毁主堡。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "后期链条可写：24:41辅助侧翼进入并协助击倒双人组；25:10取得第二只巨像；26:00领先3100；30:18破中路高地；31:48摧毁主堡。前两项到领先扩大有关联，但仍避免断言单一原因。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "现在请把相互支持、相互冲突和仍缺依据的观察各归一遍，尽量保留关键时间点。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "相互支持：03:58露头记录与林昼自述相合；18:22抢夺、三换一及19:10领先980共同支持局势反转。相互冲突：现有已披露材料不足以确认。依据不足：入侵视野、17:26后撤意图、指令先后、“看下／开下”、个人归责及经济变化的单一成因均缺独立核实。"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "再按最终解说的播放顺序，给我一个简洁的完整骨架，主笔后面可以直接扩写。"
+          },
+          {
+            "role": "assistant",
+            "id": "A014",
+            "text": "成稿骨架：一，标题卡与赛果；二，前期入侵及09:36资源交换；三，10:05后的经济变化与中路、下路推进；四，17:26后撤及18:22巨像反转；五，24:41侧翼击杀到31:48终局推进；六，集中列冲突说法和待核证据。"
+          },
+          {
+            "role": "user",
+            "id": "U15",
+            "text": "最后给这个复盘材料拟一个标题，再补一句适合放在结尾的证据说明。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A014",
+          "at_user_onset_heard_prefix": "成稿骨架：一，标题卡与赛果；二，前期入侵及09:36资源交换；三，10:05后的经济变化与中路、下路推进；四，17:26后撤及18:22巨像反转；五，24:41侧翼击杀到31:48终局推进；六，集中列冲突说法和待核证据。",
+          "final_shared_played_prefix": "成稿骨架：一，标题卡与赛果；二，前期入侵及09:36资源交换；三，10:05后的经济变化与中路、下路推进；四，17:26后撤及18:22巨像反转；五，24:41侧翼击杀到31:48终局推进；六，集中列冲突说法和待核证据。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A006",
+            "after_text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A009",
+            "after_text": "中期可拆两件事：17:26进入河道后撤，意图未知；",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC05",
+            "target_assistant_id": "A013",
+            "after_text": "相互支持：03:58露头记录与林昼自述相合；18:22抢夺、三换一及19:10领先980共同支持局势反转。",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "标题可用《从资源交换到巨像反转：澄海对霜原决胜局复盘》。结尾说明：“本文依据比赛画面记录、经济面板与赛后采访整理；涉及视野、队内指令和责任判断之处，均保留未核实边界。”",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A002",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。",
+        "event_text": "好",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC02",
+        "kind": "backchannels",
+        "target_assistant_id": "A005",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。",
+        "event_text": "嗯",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC03",
+        "kind": "backchannels",
+        "target_assistant_id": "A006",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。",
+        "event_text": "明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC04",
+        "kind": "backchannels",
+        "target_assistant_id": "A009",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，分析假设可以保留，但措辞改成“可能体现”，不要写成已经证明。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "再到巨像争夺。十七分二十六秒澄海三人进入河道后立即后撤；十八分零三秒霜原开始打远古巨像；十八分二十二秒澄海打野完成抢夺，随后澄海打出三换一。十八分钟霜原领先七百四十，十九分十分变为澄海领先九百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "中期可拆两件事：17:26进入河道后撤，意图未知；"
+          }
+        ],
+        "at_event_onset_heard_prefix": "中期可拆两件事：17:26进入河道后撤，意图未知；",
+        "event_text": "对",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC05",
+        "kind": "backchannels",
+        "target_assistant_id": "A013",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我需要把一场决胜局的录像口述、采访和解说草稿整理成赛后复盘材料。希望按比赛阶段归并事件，同时把支持、冲突和证据空缺分开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先按阶段建事件表，再另列“相互支持、相互冲突、依据不足”。你先给我比赛基本信息和前期第一组时间点。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "比赛是十一月七日星港杯八强赛，澄海对霜原的三局两胜决胜局。澄海在三十一分四十八秒结束比赛，系列赛二比一获胜。阶段仍按零到十分钟、十到二十分钟、二十分钟以后划分。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先建总表：前期、中期、后期三段，每个事件列“决策或意图、执行结果、局势变化、证据状态”。比赛信息单列标题卡，时间边界按事件实际发生点切分。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "前期记录是：三分五十八秒霜原打野出现在上河道；四分十二秒澄海中野辅进入霜原下半野区；四分二十六秒澄海打野取得赤焰；四分三十四秒辅助在撤离口被击倒。五分钟面板显示霜原领先一百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "前期先记硬事实：04:12澄海中野辅进入下半野区，04:26打野取得赤焰，04:34辅助被击倒；05:00霜原领先180。决策依据暂缺，不能"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先别把决策依据写成完全缺失，我补一段采访。辅助林昼说，他们根据三分五十八秒对方打野露在上半区和中路线权进入野区；他留在出口，是想让打野把增益带走。不过录像口述没有记到视野图标。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "明白。可记为：林昼自述，入侵依据是03:58对方打野露在上半区和中路线权，他留在出口是为掩护打野带走增益。录像口述稿未记录对应视野图标，尚不能由现有记录核实。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "那这一段如果面向普通观众，怎样写能同时保留战术判断和证据边界？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "可写：“据林昼赛后解释，入侵依据是03:58的露头信息和中路线权。记录可确认04:12进入、04:26取得增益、04:34辅助阵亡，05:00霜原领先180；对应视野图标尚未核实。”"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "接着是资源交换：九分三十六秒霜原三人控制上河道晶核，澄海同时拿到下河道第一条元素龙；十分零五秒面板显示澄海领先三百二十。召唤技能消耗没有记下来，这里需要跨阶段拆开。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "要拆分。09:36的晶核与元素龙交换归前期；10:05经济面板归中期起点。可确认领先转为澄海320，但缺少召唤技能消耗，不能把变化单归因于该交换。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "中期推进记录是：十四分四十八秒霜原用上河道晶核撞中路并拆掉外塔；十五分零六秒澄海拆掉下路外塔；十五分二十秒霜原领先六百一十。旁注写的是“霜原用地图中心换到更快的中路推进”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "中期推进的硬事实是：14:48霜原借晶核撞中并拆外塔，15:06澄海拆下路外塔，15:20霜原领先610。旁注只能作为分析假设，不能"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，分析假设可以保留，但措辞改成“可能体现”，不要写成已经证明。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以。写成：“霜原以晶核推进中路、澄海回应下路拆塔，可能体现双方对地图中心与边线资源的不同取舍。”再注明15:20霜原领先610，因果尚未单独证实。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "再到巨像争夺。十七分二十六秒澄海三人进入河道后立即后撤；十八分零三秒霜原开始打远古巨像；十八分二十二秒澄海打野完成抢夺，随后澄海打出三换一。十八分钟霜原领先七百四十，十九分十分变为澄海领先九百八十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "中期可拆两件事：17:26进入河道后撤，意图未知；18:03霜原开巨像，18:22澄海抢到，随后三换一。面板从18:00霜原领先740转为19:10澄海领先980，支持局势反转。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "教练许闻说，十七分二十六秒统一要求是先拉开，等第二个侦查技能，不是已经决定开团。打野顾澈则说，他靠近时只是想看血量，听到继续争的指令时，巨像大概还剩两千四百。另外现场转写把一句话记成“看下”，我听着也可能是“开下”。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可分层：教练说法支持“后撤是预定拉开”；打野说法表明“继续争”出现在其靠近观察血量之后。两者未必冲突，但无语音无法排定指令先后；“看下"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "那草稿里“顾澈用个人判断挽救了失误的团队决策”这句，我倾向于不用。能否换成只描述抢夺和反超的版本？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "不宜保留。可替换为：“顾澈在18:22完成抢夺，澄海随后实现经济反超；该操作与团队此前指令的关系，现有材料不足以确认。”既保留关键执行，也不归责。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "后期记录是：二十四分四十一秒澄海辅助从侧翼进入，协助击倒霜原双人组；二十五分十分澄海拿到第二只远古巨像；二十六分钟领先三千一；三十分十八秒破中路高地；三十一分四十八秒摧毁主堡。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "后期链条可写：24:41辅助侧翼进入并协助击倒双人组；25:10取得第二只巨像；26:00领先3100；30:18破中路高地；31:48摧毁主堡。前两项到领先扩大有关联，但仍避免断言单一原因。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "现在请把相互支持、相互冲突和仍缺依据的观察各归一遍，尽量保留关键时间点。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "相互支持：03:58露头记录与林昼自述相合；18:22抢夺、三换一及19:10领先980共同支持局势反转。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "相互支持：03:58露头记录与林昼自述相合；18:22抢夺、三换一及19:10领先980共同支持局势反转。",
+        "event_text": "嗯，清楚",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

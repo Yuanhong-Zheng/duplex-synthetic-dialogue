@@ -1,0 +1,98 @@
+{
+  "scenario": {
+    "domain_id": "D26",
+    "domain": "翻译、口译与跨文化沟通",
+    "domain_definition": "Google multilingual Live、SpokenUS 的多语/口语实现、VoiceBench 和 OpenAI Realtime 提供相邻依据；专门双工口译评测仍缺失。",
+    "scenario_id": "D26-S05",
+    "scenario": "文档口头翻译",
+    "requested_examples_per_style": 5,
+    "existing_example_task_seeds": [],
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "medium",
+      "target_turns": 11,
+      "min_turns": 10,
+      "max_turns": 12
+    },
+    "dialogue_length_instruction": "本条完整对话目标为 11 个主轮，允许 10–12 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    }
+  },
+  "current_example_tasks": {
+    "开放式互动": [
+      "通过一轮模拟对话练习把日常通知进行连续口译，并在过程中讨论哪些表达更适合口头传达",
+      "围绕书面语转成自然口语时的取舍展开讨论，比较直译、意译和补充说明各自适用的情境",
+      "扮演跨文化会议中的发言者与口译员，练习传达礼貌、语气和隐含立场等非字面信息",
+      "共同创作几段包含习语、双关或文化典故的短文，并探索如何在口头翻译中保留其效果",
+      "进行一轮不同难度的即兴口译挑战，重点处理长句、重复表达、语气变化和临场自我修正"
+    ],
+    "结构化整理": [
+      "把随后提供的文档按段落整理成适合口头翻译的内容提纲，并汇总其中的专有名词和关键术语",
+      "根据随后提供的原文和译文草稿，逐项核对遗漏、增译、错译和语气偏差，形成清晰的修订清单",
+      "将一份文档中的句子按信息重点、逻辑关系和口译难度分类，整理出适合分段传达的顺序",
+      "对随后提供的多个文档版本进行段落和术语对照，整理出内容差异、表述变化及需要确认的部分",
+      "从随后提供的文档中整理出人物、机构、事件和相互关系，形成便于口头翻译前快速查阅的背景清单"
+    ],
+    "混合型": [
+      "面对随后提供的专业文档和听众背景，结合准确性、可理解性与口语流畅性的原则，确定哪些术语应保留、解释或改写",
+      "根据随后提供的原文、候选译稿和具体使用场合，判断各段更适合直译、意译还是补充文化说明，并说明取舍依据",
+      "需要在有限口译时长内传达随后提供的文档内容时，结合信息重要性和口头处理难度，制定取舍与分段方案",
+      "围绕随后提供的含有文化敏感表达的文档，结合礼貌程度、目标听众习惯和语境适切性，选择合适的译法并比较风险",
+      "结合口头翻译中连贯性、忠实度和可追踪性的判断框架，评估随后提供的多版译文并确定适合当前场合的一版"
+    ]
+  },
+  "judge_findings": [
+    {
+      "severity": "must_fix",
+      "path": "/example_tasks/开放式互动/2",
+      "problem": "任务核心是跨文化会议中的现场发言口译，未体现对文档内容的口头翻译，方向更接近会议口译。",
+      "evidence": "扮演跨文化会议中的发言者与口译员，练习传达礼貌、语气和隐含立场等非字面信息",
+      "repair": "改为围绕会议文稿、书面发言稿等文档如何口头翻译来讨论礼貌、语气和隐含立场。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/example_tasks/开放式互动/4",
+      "problem": "任务是泛化的即兴口译挑战，没有文档或书面内容这一场景锚点，容易落入一般口译任务。",
+      "evidence": "进行一轮不同难度的即兴口译挑战，重点处理长句、重复表达、语气变化和临场自我修正",
+      "repair": "将挑战限定为对不同类型书面文档的即席口头翻译，并保留长句、重复表达和临场修正等练习重点。"
+    }
+  ],
+  "repair_targets": [
+    {
+      "path": "/example_tasks/开放式互动/2",
+      "current_value": "扮演跨文化会议中的发言者与口译员，练习传达礼貌、语气和隐含立场等非字面信息"
+    },
+    {
+      "path": "/example_tasks/开放式互动/4",
+      "current_value": "进行一轮不同难度的即兴口译挑战，重点处理长句、重复表达、语气变化和临场自我修正"
+    }
+  ]
+}

@@ -1,0 +1,202 @@
+{
+  "episode_situation": "周六傍晚，用户独自在公寓客厅照看家中的玄凤鹦鹉，准备清理鸟笼时再次看到它胸腹部的羽毛变得稀乱，因而现在开始询问。近一周它明显更常低头啄扯羽毛，笼底既有完整脱落羽，也有几根断羽，但用户未见出血或开放伤口。用户没有系统记录发作时段，也不确定近期作息、陪伴、光照和笼位变化是否相关；食欲、粪便、精神状态及皮肤情况也尚未逐项核对。用户经验有限，希望先理解压力、无聊、环境不适和身体问题各自常见的判断线索，再根据危险表现决定是继续观察记录，还是尽快联系有鸟类诊疗经验的兽医。",
+  "task_reference_data": [],
+  "environment_audio": "室内整体安静，近处只有极轻微且稳定的房间底噪。没有持续的人声或明显的突发声响。",
+  "estimated_snr_db": 35,
+  "constraints": [],
+  "safety_limits": [
+    {
+      "limit_id": "L01",
+      "text": "如果鹦鹉持续出血、出现开放性伤口、呼吸困难、倒地或无法站稳，应立即寻求急诊兽医帮助。",
+      "severity": "critical"
+    },
+    {
+      "limit_id": "L02",
+      "text": "如果拔羽持续加重，或同时出现食欲下降、粪便明显异常、嗜睡、体重下降、皮肤红肿或结痂，应尽快由有鸟类诊疗经验的兽医评估，不能仅按行为问题处理。",
+      "severity": "hard"
+    }
+  ],
+  "soundscape_plan": {
+    "mode": "quiet",
+    "ambient_layers": [],
+    "environment_events": [],
+    "schema": "duplex_v2.soundscape_plan.v3",
+    "side_speech_sources": [],
+    "side_speech_count": 0,
+    "sampling": {
+      "schema": "duplex_v2.ambient_draw.v2",
+      "policy": {
+        "schema": "duplex_v2.soundscape_policy.v2",
+        "quiet_probability": 0.5,
+        "discrete_targets_by_tier": {
+          "short": [
+            0,
+            1
+          ],
+          "medium": [
+            1,
+            2
+          ],
+          "long": [
+            2,
+            4
+          ]
+        },
+        "discrete_count_includes": [
+          "environment_events",
+          "side_speech"
+        ],
+        "max_ambient_layers": 2,
+        "gain_range": [
+          0.3,
+          0.7
+        ],
+        "speech_request_probability": 0.5,
+        "third_party_preference_probability": 0.8,
+        "speech_requires_existing_scene_source": true,
+        "environment_audio": "base_only",
+        "stage2_repair": "atomic_scoped_patch",
+        "stage2_max_judge_attempts": 3,
+        "json_parse_max_retries": 3
+      },
+      "preferences": {
+        "schema": "duplex_v2.ambient_preferences.v1",
+        "seed": 202611073003,
+        "slot": 4,
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "categories": {
+          "bed": [
+            "fan",
+            "birds",
+            "traffic",
+            "rain",
+            "wind",
+            "crowd"
+          ],
+          "event": [
+            "footsteps",
+            "water_tap",
+            "keyboard",
+            "paper",
+            "doorbell",
+            "door"
+          ]
+        },
+        "recordings": {
+          "bed:birds": [
+            "birds-fsd50k-eval-57907",
+            "birds-fsd50k-eval-319512",
+            "birds-fsd50k-eval-86343"
+          ],
+          "bed:crowd": [
+            "crowd-fsd50k-eval-185058",
+            "crowd-fsd50k-eval-121877",
+            "crowd-fsd50k-eval-340358"
+          ],
+          "bed:fan": [
+            "fan-fsd50k-eval-419427",
+            "fan-fsd50k-eval-415925",
+            "fan-fsd50k-eval-235362"
+          ],
+          "bed:rain": [
+            "rain-fsd50k-eval-382582",
+            "rain-fsd50k-eval-21189",
+            "rain-fsd50k-eval-238016"
+          ],
+          "bed:traffic": [
+            "traffic-fsd50k-eval-232686",
+            "traffic-fsd50k-eval-124020",
+            "traffic-fsd50k-eval-235541"
+          ],
+          "bed:wind": [
+            "wind-fsd50k-eval-113173",
+            "wind-fsd50k-eval-113176",
+            "wind-fsd50k-eval-113175"
+          ],
+          "event:door": [
+            "door-fsd50k-eval-119077",
+            "door-fsd50k-eval-209519",
+            "door-fsd50k-eval-71212"
+          ],
+          "event:doorbell": [
+            "doorbell-fsd50k-eval-332563",
+            "doorbell-fsd50k-eval-426594",
+            "doorbell-fsd50k-eval-348322"
+          ],
+          "event:footsteps": [
+            "footsteps-fsd50k-eval-153104",
+            "footsteps-fsd50k-eval-392303",
+            "footsteps-fsd50k-eval-272381"
+          ],
+          "event:keyboard": [
+            "keyboard-fsd50k-eval-411545",
+            "keyboard-fsd50k-eval-233057",
+            "keyboard-fsd50k-eval-399740"
+          ],
+          "event:paper": [
+            "paper-fsd50k-eval-343098",
+            "paper-fsd50k-eval-82562",
+            "paper-fsd50k-eval-121200"
+          ],
+          "event:water_tap": [
+            "water_tap-fsd50k-eval-402127",
+            "water_tap-fsd50k-eval-232499",
+            "water_tap-fsd50k-eval-402128"
+          ]
+        }
+      },
+      "control": {
+        "schema": "duplex_v2.soundscape_control.v2",
+        "seed": 2771222215,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "third_party",
+          "machine"
+        ]
+      },
+      "control_sha256": "98ffe4f32944330267539fc3ade2dd24b97b949662b13efd6edf1ce4161af57e",
+      "candidate_plan": {
+        "schema": "duplex_v2.soundscape_plan.v3",
+        "mode": "quiet",
+        "ambient_layers": [],
+        "environment_events": [],
+        "side_speech_eligibility": {
+          "third_party": {
+            "compatible": false,
+            "reason": "当前故事中只有用户与玄凤鹦鹉在场，没有已建立的可辨第三方说话者。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "当前场景没有已建立的语音设备或机器播报来源。",
+            "source": null
+          }
+        }
+      },
+      "base_environment_audio_sha256": "dbac2c96c2ffe716dfa0159f3d75c0dcb48e3773156bdb73fe46a14285ee010a",
+      "aggregate_environment_audio": "室内整体安静，近处只有极轻微且稳定的房间底噪。没有持续的人声或明显的突发声响。",
+      "draws": [],
+      "speech_selection": {
+        "requested": false,
+        "compatible_kinds": [],
+        "selected_kind": null,
+        "outcome": "not_requested",
+        "assessments": {
+          "third_party": {
+            "compatible": false,
+            "reason": "当前故事中只有用户与玄凤鹦鹉在场，没有已建立的可辨第三方说话者。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "当前场景没有已建立的语音设备或机器播报来源。",
+            "source": null
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,248 @@
+{
+  "schema_version": "duplex_v2.fixed_script.v2",
+  "title": "OrderFlow间歇性访问异常排查",
+  "rounds": [
+    {
+      "user_id": "U01",
+      "assistant_id": "A001",
+      "user_utterance": "OrderFlow从九点四十二分左右开始间歇报502或超时，已报告的十八人里苏州十四人、上海虚拟桌面四人，重试有时能成功。我需要尽快缩小故障域。",
+      "assistant_utterance": "先看请求经过哪些组件，以及错误是否集中在某条路径。请给我负载均衡到网关的流量和错误分布，健康检查覆盖范围也很关键。",
+      "user_intent": "说明事件影响和当前排障目标",
+      "assistant_intent": "建立首要判别方向并索取负载均衡证据",
+      "semantic_goal": "开始按路径分布缩小故障范围",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": null,
+      "pause_cue": null
+    },
+    {
+      "user_id": "U02",
+      "assistant_id": "A002",
+      "user_utterance": "请求先到内部负载均衡，再近似均分给gw-a和gw-b。快照里两者流量占比是百分之四十九和百分之五十一，但5xx分别为百分之一点四和百分之二十九点八。两台本地健康检查都正常，不过只查自身的健康端点。",
+      "assistant_utterance": "请求量近似对半，但gw-b的5xx是百分之二十九点八，对比gw-a的百分之一点四，已确认异常强烈偏向gw-b。自身健康检查不覆盖上游链路，下一步看两台网关的同类上游错误及目标节点分布。",
+      "user_intent": "补充负载均衡分流和健康检查信息",
+      "assistant_intent": "确认错误偏向gw-b并指出健康检查盲区",
+      "semantic_goal": "判断异常是否与特定网关相关",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A001",
+        "user_onset_after_text": "先看请求经过哪些组件，以及错误是否集中在某条路径。请给我负载均衡到网关的流量和错误分布，健康检查覆盖范围也很关键。",
+        "assistant_stop_after_text": "先看请求经过哪些组件，以及错误是否集中在某条路径。请给我负载均衡到网关的流量和错误分布，健康检查覆盖范围也很关键。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U03",
+      "assistant_id": "A003",
+      "user_utterance": "gw-b有四十七条上游连接在响应头前被重置，其中三十九条指向app-02，八条指向app-01；gw-a同期只有两条。日志没写重置由哪一端发起。",
+      "assistant_utterance": "这进一步把故障域压向gw-b及其到上游的路径，并显示app-02方向更可疑。但重置方向未知，暂时不能区分网关本机、链路或应用端主动断开。",
+      "user_intent": "提供网关错误日志及其局限",
+      "assistant_intent": "缩小故障域并保留对重置来源的不确定性",
+      "semantic_goal": "评估网关与应用节点组合的可疑程度",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A002",
+        "user_onset_after_text": "请求量近似对半，但gw-b的5xx是百分之二十九点八，对比gw-a的百分之一点四，已确认异常强烈偏向gw-b。自身健康检查不覆盖上游链路，下一步看两台网关的同类上游错误及目标节点分布。",
+        "assistant_stop_after_text": "请求量近似对半，但gw-b的5xx是百分之二十九点八，对比gw-a的百分之一点四，已确认异常强烈偏向gw-b。自身健康检查不覆盖上游链路，下一步看两台网关的同类上游错误及目标节点分布。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U04",
+      "assistant_id": "A004",
+      "user_utterance": "两台应用节点的CPU都低于百分之四十六，内存和工作线程没告警。数据库连接利用率稳定，慢查询没突增；身份服务成功率也在百分之九十九点九六以上，没有同步延迟尖峰。",
+      "assistant_utterance": "已确认应用资源、数据库和身份服务没有同步恶化，只能降低这些公共依赖作为主因的优先级，不能排除单个应用节点或网关到节点的路径问题。",
+      "user_intent": "补充应用资源和依赖服务监控",
+      "assistant_intent": "评估公共依赖异常的可能性并说明不能排除的范围",
+      "semantic_goal": "降低或保留各应用侧故障假设的优先级",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A003",
+        "user_onset_after_text": "这进一步把故障域压向gw-b及其到上游的路径，并显示app-02方向更可疑。但重置方向未知，暂时不能区分网关本机、链路或应用端主动断开。",
+        "assistant_stop_after_text": "这进一步把故障域压向gw-b及其到上游的路径，并显示app-02方向更可疑。但重置方向未知，暂时不能区分网关本机、链路或应用端主动断开。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U05",
+      "assistant_id": "A005",
+      "user_utterance": "先停一下，应用侧还有个关键限制。抽出的十二个失败请求ID都没出现在应用访问日志里，但日志采集是否丢失或延迟还没核实。",
+      "assistant_utterance": "十二个失败请求ID未进应用日志，使请求可能没到应用进程更可信，但这只是推测。先核对日志完整性；若采集可靠，再重点查gw-b本机及其到app-02的连接路径。",
+      "user_intent": "打断并补充应用日志证据及限制",
+      "assistant_intent": "纳入新证据，同时避免把日志缺失直接当成未到达应用",
+      "semantic_goal": "明确应用日志证据的含义和验证前提",
+      "act_ref": "A02",
+      "timing_refs": [
+        "T03"
+      ],
+      "timing": {
+        "target_assistant_id": "A004",
+        "user_onset_after_text": "已确认应用资源、数据库和身份服务没有同步恶化，",
+        "assistant_stop_after_text": "已确认应用资源、数据库和身份服务没有同步恶化，只能"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U06",
+      "assistant_id": "A006",
+      "user_utterance": "变更方面，九点三十一分给苏州网段新增了访问虚拟地址的放行规则；九点三十六分两台网关重载证书包，gw-b九点三十九分还发生过服务发现监听流断开并保留缓存。应用昨晚发布后一直稳定到九点四十一分。",
+      "assistant_utterance": "时间上更贴近的是九点三十六分的证书包重载，以及gw-b九点三十九分的服务发现断流。防火墙变更仅针对苏州源，应用发布又早且有稳定窗口；当前先查网关状态或配置差异，再查网络路径，仍不能定因。",
+      "user_intent": "提供近期变更及其时间关系",
+      "assistant_intent": "按现象吻合度排列变更假设但不宣称因果",
+      "semantic_goal": "确定更值得优先验证的近期变更",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A005",
+        "user_onset_after_text": "十二个失败请求ID未进应用日志，使请求可能没到应用进程更可信，但这只是推测。先核对日志完整性；若采集可靠，再重点查gw-b本机及其到app-02的连接路径。",
+        "assistant_stop_after_text": "十二个失败请求ID未进应用日志，使请求可能没到应用进程更可信，但这只是推测。先核对日志完整性；若采集可靠，再重点查gw-b本机及其到app-02的连接路径。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U07",
+      "assistant_id": "A007",
+      "user_utterance": "还有地域线索：苏州报告最集中，但上海虚拟桌面也有四个失败样本。监控网段的合成请求在九点四十七分和十点零三分失败，其他分钟成功。",
+      "assistant_utterance": "上海和监控网段也出现失败，已足以反对故障只存在于苏州源网段的说法。地域集中仍可能反映使用量或路径差异，但目前不足以把苏州防火墙变更列为主因。",
+      "user_intent": "补充跨地域失败样本和合成探测结果",
+      "assistant_intent": "检验单一苏州网络故障假设",
+      "semantic_goal": "判断地域集中是否能直接指向苏州防火墙",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A006",
+        "user_onset_after_text": "时间上更贴近的是九点三十六分的证书包重载，以及gw-b九点三十九分的服务发现断流。防火墙变更仅针对苏州源，应用发布又早且有稳定窗口；当前先查网关状态或配置差异，再查网络路径，仍不能定因。",
+        "assistant_stop_after_text": "时间上更贴近的是九点三十六分的证书包重载，以及gw-b九点三十九分的服务发现断流。防火墙变更仅针对苏州源，应用发布又早且有稳定窗口；当前先查网关状态或配置差异，再查网络路径，仍不能定因。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U08",
+      "assistant_id": "A008",
+      "user_utterance": "那就按判别力和风险排一下，先只用现有材料，别把未获批的操作列成执行项。",
+      "assistant_utterance": "第一，核对日志采集完整性并按网关和应用节点整理成功、失败矩阵；第二，对比两台网关有效配置、服务发现缓存和证书状态；第三，补gw-b分目标连接统计；第四，再申请失败时段的重置方向证据。前三项低风险且判别力更高。",
+      "user_intent": "要求按判别力和风险给出验证顺序",
+      "assistant_intent": "形成不扩大业务影响的分级验证路径",
+      "semantic_goal": "获得可执行但不越权的优先验证清单",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01",
+        "T02"
+      ],
+      "timing": {
+        "target_assistant_id": "A007",
+        "user_onset_after_text": "上海和监控网段也出现失败，已足以反对故障只存在于苏州源网段的说法。地域集中仍可能反映使用量或路径差异，但目前不足以把苏州防火墙变更列为主因。",
+        "assistant_stop_after_text": "上海和监控网段也出现失败，已足以反对故障只存在于苏州源网段的说法。地域集中仍可能反映使用量或路径差异，但目前不足以把苏州防火墙变更列为主因。"
+      },
+      "pause_cue": {
+        "after_text": "那就按判别力和风险排一下，",
+        "duration_ms": 650
+      }
+    },
+    {
+      "user_id": "U09",
+      "assistant_id": "A009",
+      "user_utterance": "基于现在这些证据，继续观察、临时遏制和升级联合处理，三种选择分别怎么判断？",
+      "assistant_utterance": "单纯观察风险偏高，因为客服仍受影响且gw-b错误持续显著；立即重启或回滚证据不足，可能扩大影响。更合适的是现在升级网关与网络团队联合取证，同时准备可逆减载方案，是否执行取决于批准和持续指标。",
+      "user_intent": "比较三种事件处置方向",
+      "assistant_intent": "权衡继续观察、临时遏制和联合升级的依据与代价",
+      "semantic_goal": "形成当前阶段有依据的处置判断",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A008",
+        "user_onset_after_text": "第一，核对日志采集完整性并按网关和应用节点整理成功、失败矩阵；第二，对比两台网关有效配置、服务发现缓存和证书状态；第三，补gw-b分目标连接统计；第四，再申请失败时段的重置方向证据。前三项低风险且判别力更高。",
+        "assistant_stop_after_text": "第一，核对日志采集完整性并按网关和应用节点整理成功、失败矩阵；第二，对比两台网关有效配置、服务发现缓存和证书状态；第三，补gw-b分目标连接统计；第四，再申请失败时段的重置方向证据。前三项低风险且判别力更高。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U10",
+      "assistant_id": "A010",
+      "user_utterance": "如果影响继续上升，临时遏制具体应满足什么条件？我不想把建议说成已经获批。",
+      "assistant_utterance": "可把减少gw-b承载作为候选，不是已授权动作。条件应包括负责人批准、gw-a容量有余量、明确分步减载幅度、同步观察错误率和延迟，并预设恢复原权重的阈值；条件不全就不执行，更不宜先重启或整体回滚。",
+      "user_intent": "追问可逆临时遏制的执行前提",
+      "assistant_intent": "说明候选措施的审批、容量和回退护栏",
+      "semantic_goal": "区分预案与已授权操作并控制处置风险",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A009",
+        "user_onset_after_text": "单纯观察风险偏高，因为客服仍受影响且gw-b错误持续显著；立即重启或回滚证据不足，可能扩大影响。更合适的是现在升级网关与网络团队联合取证，同时准备可逆减载方案，是否执行取决于批准和持续指标。",
+        "assistant_stop_after_text": "单纯观察风险偏高，因为客服仍受影响且gw-b错误持续显著；立即重启或回滚证据不足，可能扩大影响。更合适的是现在升级网关与网络团队联合取证，同时准备可逆减载方案，是否执行取决于批准和持续指标。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U11",
+      "assistant_id": "A011",
+      "user_utterance": "好，最后帮我整理成十一点更新时能直接口头转述的一段，事实、推测和缺口分开。",
+      "assistant_utterance": "十一点可这样更新：已确认异常自九点四十二分起，流量近半分配但错误高度集中gw-b，且其重置多指向app-02；数据库、身份服务和应用资源无同步异常。较强推测是gw-b状态、配置或其到app-02的路径，尚未定因。缺口是配置差异、组合成功率、重置方向和日志完整性。先完成低风险核对，同时升级网关与网络团队；仅在获批且可回退时考虑暂时减载gw-b。",
+      "user_intent": "要求生成可直接转述的事件更新",
+      "assistant_intent": "汇总已知事实、较强推测、证据缺口和下一步判断",
+      "semantic_goal": "形成十一点内部更新的简明口径",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A010",
+        "user_onset_after_text": "可把减少gw-b承载作为候选，不是已授权动作。条件应包括负责人批准、gw-a容量有余量、明确分步减载幅度、同步观察错误率和延迟，并预设恢复原权重的阈值；条件不全就不执行，更不宜先重启或整体回滚。",
+        "assistant_stop_after_text": "可把减少gw-b承载作为候选，不是已授权动作。条件应包括负责人批准、gw-a容量有余量、明确分步减载幅度、同步观察错误率和延迟，并预设恢复原权重的阈值；条件不全就不执行，更不宜先重启或整体回滚。"
+      },
+      "pause_cue": null
+    }
+  ],
+  "backchannels": [
+    {
+      "event_id": "BC01",
+      "target_assistant_id": "A002",
+      "after_text": "请求量近似对半，但gw-b的5xx是百分之二十九点八，对比gw-a的百分之一点四，已确认异常强烈偏向gw-b。",
+      "text": "嗯，明白"
+    },
+    {
+      "event_id": "BC02",
+      "target_assistant_id": "A005",
+      "after_text": "十二个失败请求ID未进应用日志，使请求可能没到应用进程更可信，",
+      "text": "对"
+    },
+    {
+      "event_id": "BC03",
+      "target_assistant_id": "A008",
+      "after_text": "第一，核对日志采集完整性并按网关和应用节点整理成功、失败矩阵；第二，对比两台网关有效配置、服务发现缓存和证书状态；",
+      "text": "嗯"
+    }
+  ],
+  "side_speech": [
+    {
+      "event_id": "S01",
+      "source_id": "SP01",
+      "target_assistant_id": "A006",
+      "after_text": "时间上更贴近的是九点三十六分的证书包重载，以及gw-b九点三十九分的服务发现断流。",
+      "text": "这页记录我放你右手边了。",
+      "speaker": "third_party",
+      "voice_profile": "自然清晰、音量较低、措辞简短的成年普通话声音",
+      "gain": 0.46
+    }
+  ],
+  "environment_events": []
+}

@@ -1,0 +1,77 @@
+{
+  "scene": {
+    "domain_id": "D13",
+    "domain": "金融、银行与保险",
+    "scenario_id": "D13-S05",
+    "scenario": "贷款与房贷知识",
+    "example_tasks": [
+      "结合我的收入稳定性、现有债务、首付款和购房计划，运用负担能力与应急储备的通用原则判断适合关注的借款范围。",
+      "拿我随后提供的几种房贷方案作比较，并结合固定与浮动利率的风险特点判断各方案更适合怎样的财务状况。",
+      "根据我的还款压力和未来几年可能发生的收入变化，结合期限、月供与总利息之间的取舍调整贷款期限选择。",
+      "比较我提供的提前还款、转贷和维持原贷款等选项，并用费用、利率风险、灵活性和长期成本建立选择依据。",
+      "针对我收到的贷款条款中存在的疑惑，结合常见合同结构和消费者核对要点，判断哪些内容需要澄清或进一步确认。"
+    ]
+  },
+  "task_style": "混合型",
+  "previous_task_goals": [],
+  "batch_size": 1,
+  "available_modalities": [
+    "audio"
+  ],
+  "capability_contract": {
+    "interaction_modalities": [
+      "audio"
+    ],
+    "available_tools": [],
+    "external_state_access": "none",
+    "external_side_effects": "forbidden"
+  },
+  "dialogue_length_plan": {
+    "schema": "duplex_v2.dialogue_length_plan.v1",
+    "tier": "long",
+    "target_turns": 21,
+    "min_turns": 20,
+    "max_turns": 22
+  },
+  "dialogue_length_instruction": "本条完整对话目标为 21 个主轮，允许 20–22 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+  "sampled_interaction_axes": {
+    "formality": "casual",
+    "directness": "direct",
+    "emotional_expressiveness": "expressive",
+    "verbosity": "brief",
+    "initiative": "low",
+    "caution": "low",
+    "patience": "low"
+  },
+  "interaction_profile_schema": "duplex_v2.interaction_profile.v1",
+  "text_policy": {
+    "schema": "duplex_v2.text_policy.v1",
+    "workflow_version": "v2.5",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "models": {
+      "sol": "openai/gpt-5.6-sol",
+      "luna": "openai/gpt-5.6-luna"
+    },
+    "roles": {
+      "stage0_generation": "luna",
+      "stage1_generation": "luna",
+      "stage2_generation": "sol",
+      "script_generation": "sol",
+      "script_patch": "sol",
+      "judge": "sol",
+      "compaction_first": "luna",
+      "compaction_later": "sol"
+    },
+    "reasoning_effort_policy": "default",
+    "stage0_max_judge_attempts": 5,
+    "content_max_repairs": 5,
+    "json_parse_max_retries": 3,
+    "length_compaction_max_attempts": 3,
+    "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+    "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+    "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+  }
+}

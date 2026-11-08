@@ -1,0 +1,77 @@
+{
+  "scene": {
+    "domain_id": "D08",
+    "domain": "旅行、住宿与本地探索",
+    "scenario_id": "D08-S07",
+    "scenario": "行程中断后的重排",
+    "example_tasks": [
+      "来做一轮“旅途中突发变故”的口头应变练习，逐步演练如何在时间紧张时重新安排一天的行程。",
+      "我想讨论行程被打乱时怎样判断哪些安排值得保留、哪些应该果断放弃，以及如何减少后续连锁影响。",
+      "请扮演一位临时改变计划的旅行顾问，和我共同推演从景点临时关闭、交通延误到住宿变更等不同情境下的应对思路。",
+      "把“旅行计划被迫重启”当成一个小型决策游戏，我们围绕时间、体力和体验取舍设计几种可能的重排方案。",
+      "通过口头练习，帮我准备一些在行程中断后与同行者沟通、解释变化并重新达成共识的表达方式。"
+    ]
+  },
+  "task_style": "开放式互动",
+  "previous_task_goals": [],
+  "batch_size": 1,
+  "available_modalities": [
+    "audio"
+  ],
+  "capability_contract": {
+    "interaction_modalities": [
+      "audio"
+    ],
+    "available_tools": [],
+    "external_state_access": "none",
+    "external_side_effects": "forbidden"
+  },
+  "dialogue_length_plan": {
+    "schema": "duplex_v2.dialogue_length_plan.v1",
+    "tier": "medium",
+    "target_turns": 13,
+    "min_turns": 12,
+    "max_turns": 14
+  },
+  "dialogue_length_instruction": "本条完整对话目标为 13 个主轮，允许 12–14 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+  "sampled_interaction_axes": {
+    "formality": "neutral",
+    "directness": "direct",
+    "emotional_expressiveness": "expressive",
+    "verbosity": "balanced",
+    "initiative": "high",
+    "caution": "high",
+    "patience": "high"
+  },
+  "interaction_profile_schema": "duplex_v2.interaction_profile.v1",
+  "text_policy": {
+    "schema": "duplex_v2.text_policy.v1",
+    "workflow_version": "v2.5",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "models": {
+      "sol": "openai/gpt-5.6-sol",
+      "luna": "openai/gpt-5.6-luna"
+    },
+    "roles": {
+      "stage0_generation": "luna",
+      "stage1_generation": "luna",
+      "stage2_generation": "sol",
+      "script_generation": "sol",
+      "script_patch": "sol",
+      "judge": "sol",
+      "compaction_first": "luna",
+      "compaction_later": "sol"
+    },
+    "reasoning_effort_policy": "default",
+    "stage0_max_judge_attempts": 5,
+    "content_max_repairs": 5,
+    "json_parse_max_retries": 3,
+    "length_compaction_max_attempts": 3,
+    "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+    "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+    "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+  }
+}

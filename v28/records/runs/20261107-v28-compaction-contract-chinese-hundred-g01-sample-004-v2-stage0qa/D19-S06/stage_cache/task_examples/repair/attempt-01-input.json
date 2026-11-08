@@ -1,0 +1,73 @@
+{
+  "scenario": {
+    "domain_id": "D19",
+    "domain": "媒体、娱乐与角色扮演",
+    "domain_definition": "PersonaPlex 的开放角色、Audio MultiChallenge 的 roleplay 与 SPEARBench 的自然话题支持娱乐和内容交流。",
+    "scenario_id": "D19-S06",
+    "scenario": "虚构或历史角色扮演",
+    "requested_examples_per_style": 5,
+    "existing_example_task_seeds": [],
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "short",
+      "target_turns": 8,
+      "min_turns": 7,
+      "max_turns": 8
+    },
+    "dialogue_length_instruction": "本条完整对话目标为 8 个主轮，允许 7–8 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    }
+  },
+  "current_example_tasks": {
+    "常识问答": [
+      "和诸葛亮做一段轻量对话，先问空城计为什么可能奏效，再追问这种策略在什么情况下反而会失败。",
+      "请让助手扮演福尔摩斯，给出一个不涉及复杂背景的小谜案，通过逐步提示让我猜答案，并解释关键线索。",
+      "以嫦娥的身份聊聊中国神话中的月宫传说，先说明她为什么奔月，再追问不同版本的故事有哪些主要区别。",
+      "请让助手扮演古代航海家，回答没有现代导航时人们如何利用星星辨认方向，并用一个简单情境考考我。",
+      "和一位中世纪骑士角色讨论骑士精神，先解释它通常包含哪些品质，再用一个日常小冲突说明荣誉和实际选择可能发生的矛盾。"
+    ]
+  },
+  "judge_findings": [
+    {
+      "severity": "must_fix",
+      "path": "/example_tasks/常识问答/1",
+      "problem": "任务核心是由助手设计谜案、逐步提示并让用户猜答案，属于互动解谜，而非围绕明确常识主题展开的问答。",
+      "evidence": "请让助手扮演福尔摩斯，给出一个不涉及复杂背景的小谜案，通过逐步提示让我猜答案，并解释关键线索。",
+      "repair": "保留福尔摩斯角色，将核心改为围绕一种日常观察或基础推理常识进行解释、判断和自然追问。"
+    }
+  ],
+  "repair_targets": [
+    {
+      "path": "/example_tasks/常识问答/1",
+      "current_value": "请让助手扮演福尔摩斯，给出一个不涉及复杂背景的小谜案，通过逐步提示让我猜答案，并解释关键线索。"
+    }
+  ]
+}

@@ -1,0 +1,2544 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 10 轮，允许 9–11 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 旁语仅限第三方或机器，不包含用户说着说着转向旁人的模式；声音 profile 必须只描述声音。旁语不提供隐藏关键任务材料，不被助手当成正式用户新请求，不使助手停顿或另起回答。声景未支持此来源时不应凭空编人或设备。30%–70% 音量合规即可。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 和 voice_profile 必须逐字匹配对应源，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g09-sample-007-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 1923460711,
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g09/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g09/relay-state",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D13",
+          "domain": "金融、银行与保险",
+          "scenario_id": "D13-S05",
+          "scenario": "贷款与房贷知识"
+        },
+        "task_style": "混合型",
+        "task_instance": {
+          "goal": "在准备购买首套自住房时，结合通用的偿债能力、应急资金、利率风险和总融资成本判断自己可承受的月供范围，并根据随后提供的收入支出、储蓄和两套贷款方案，比较不同期限与利率安排的长期影响，明确更稳妥的选择以及仍需补充核实的关键信息。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "正在为家庭购买首套住房做贷款决策的技术公司员工",
+          "task_familiarity": "low"
+        },
+        "voice_profile": "男性，感知年龄约三十多岁，音色偏低沉，吐字清楚但略显拘谨；整体语气有克制的谨慎感，遇到不确定之处时语速会放慢一些。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "neutral",
+          "directness": "balanced",
+          "emotional_expressiveness": "expressive",
+          "verbosity": "brief",
+          "initiative": "low",
+          "caution": "high",
+          "patience": "high",
+          "behavioral_notes": [
+            "通常先简短说明自己的疑问，等对方解释后再补充相关情况。",
+            "对条件、例外和信息缺口较敏感，会礼貌地要求澄清依据或确认理解是否准确。",
+            "面对不同选择时会表达真实的担忧和犹豫，但倾向于逐项听完再作判断。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "medium",
+        "target_turns": 10,
+        "min_turns": 9,
+        "max_turns": 11
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v2",
+        "seed": 224543770,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "third_party",
+          "machine"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "2026年11月7日晚上，用户在杭州租住的公寓里整理首次购买自住房的资金安排，配偶林澄也在餐桌旁查看他们带回来的贷款资料。两人已经看中一套总价300万元的现房，暂按首付90万元、贷款210万元准备，但还没有签订正式购房合同或贷款文件。用户把家庭近六个月的常规到手收入和支出做了汇总，也把奖金单独列出，因为他不愿依赖不确定的奖金或未来加薪承担固定月供。支付首付、税费、中介费、基础装修家电和搬家费后，现有储蓄预计只剩29万元，其中至少25万元希望继续作为应急资金。家庭目前还有一笔每月2800元、剩余18个月的汽车贷款，购房后房租可以取消，但物业费、维修和家居更新等住房持有支出会开始出现。两人近半年不准备更换工作，不过未来两年可能考虑生育，届时配偶收入可能短期下降，新增照护支出目前还没有可靠数字。用户担心只按双职工当前收入测算会过于乐观，也想知道是否需要用单收入、利率上升或突发支出情形做压力测试。银行客户经理给了两套210万元贷款的初步报价：一套期限较长且利率固定，另一套期限较短、前三年利率较低但随后按基准重新定价。用户能看懂月供数字，却不熟悉偿债比率、等额本息的长期利息、重定价风险和提前还款条款如何共同影响选择。较短方案能更早还清并可能减少基准情形下的总利息，但最初现金流更紧，而且未来利率并未锁定；较长方案月供较低，却会让债务持续更久。用户希望先建立一个不过度冒进的月供范围，再逐项比较两套方案，而不是仅凭首月月供或宣传中的低利率作决定。现阶段仍需确认家庭应急资金应覆盖哪些支出、配偶收入下降的幅度和期限、浮动利率的准确调整公式，以及报价之外是否还有贷款服务费或强制搭售成本。",
+        "task_reference_data": [
+          "用户手边的近六个月工资记录显示：用户每月常规税后收入25500元，配偶林澄每月常规税后收入12500元，家庭常规月收入合计38000元；用户已核对这些数字，但未把年度奖金计入。",
+          "用户自己的支出汇总表显示：购房并搬入后，家庭日常生活、交通、保险和赡养等支出预计每月15800元，物业、日常维修及家居更新预留每月2000元；这两项均不含房贷和汽车贷款。",
+          "汽车贷款还款记录显示：每月还款2800元，尚余18期，没有其他信用贷款或分期欠款；该记录已由用户查看。",
+          "用户的资金表显示：现有可用储蓄142万元；按首付90万元、税费及中介费7.5万元、基础装修家电14万元、搬家费1.5万元计算，购房后预计剩余29万元现金。",
+          "银行在2026年11月5日出具的方案A初步报价写明：贷款本金210万元，30年等额本息，固定年利率3.45%，估算月供约9370元；正常还满期限的估算总利息约127万元。报价有效至2026年11月20日，尚不等于正式审批。",
+          "同一份报价中的方案A提前还款条款写明：放款满12个月后可申请部分提前还款，单次最低5万元，当前列示不收提前还款违约金；用户已读到该条款，但尚未确认正式合同是否完全一致。",
+          "银行在2026年11月5日出具的方案B初步报价写明：贷款本金210万元，20年等额本息，前三年固定年利率2.85%，前三年估算月供约11490元；第四年起每年重新定价，利率为届时五年期贷款市场报价利率减0.35个百分点，且报价页未列利率上限。",
+          "方案B报价页的示例写明：若第四年起执行利率为3.15%且以后不变，届时月供约11760元，正常还满期限的估算总利息约71万元；这只是银行的静态示例，不是未来利率承诺。",
+          "方案B提前还款条款写明：放款前三年提前偿还本金，按提前偿还金额的1%收取违约金，单次最低10万元；满三年后当前列示不收违约金，正式合同条款仍待核实。",
+          "用户保存的年度奖金记录显示：上一年度家庭税后奖金合计约6万元，但金额与发放时间均不固定；该记录可用于讨论额外还款可能性，不适合作为固定月供的基础收入。",
+          "用户与配偶已经讨论过未来两年可能生育，但配偶收入下降的持续时间、可获得的生育津贴和新增照护费用都尚未核实，因此目前不能把这些数值作为确定现金流。",
+          "银行报价页未明确列出贷款服务费、账户管理费、保险或理财搭售要求，用户也尚未拿到完整费用清单和正式贷款合同。"
+        ],
+        "environment_audio": "安静的家中餐桌旁，近处只有很轻且稳定的室内底噪。窗户关闭，外部声音微弱，整段环境没有明显的突发声响。",
+        "estimated_snr_db": 34,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "基础偿债能力应按家庭常规税后收入测算，不把年度奖金、未来加薪或房价上涨计入固定还款来源。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "支付购房相关前期费用后，至少保留25万元现金作为应急资金，不用于追加首付。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C03",
+            "text": "比较范围限于当前两套210万元等额本息方案，并同时考虑期限、利率调整、总利息、提前还款限制和现金流压力。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C04",
+            "text": "稳妥性判断应包含汽车贷款尚未结束、单收入或配偶收入暂时下降、浮动利率上升等压力情形。",
+            "kind": "soft"
+          }
+        ],
+        "safety_limits": [
+          {
+            "limit_id": "L01",
+            "text": "初步报价不能视为贷款获批或正式合同承诺；在签署不可逆文件前，应向贷款机构书面核实完整费用、重定价公式、提前还款条款及是否存在搭售要求。",
+            "severity": "advisory"
+          }
+        ],
+        "soundscape_plan": {
+          "mode": "quiet",
+          "ambient_layers": [],
+          "environment_events": [],
+          "schema": "duplex_v2.soundscape_plan.v3",
+          "side_speech_sources": [],
+          "side_speech_count": 0,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v2",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v2",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611073009,
+              "slot": 6,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "traffic",
+                  "birds",
+                  "fan",
+                  "rain",
+                  "wind",
+                  "crowd"
+                ],
+                "event": [
+                  "paper",
+                  "keyboard",
+                  "door",
+                  "doorbell",
+                  "footsteps",
+                  "water_tap"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-86343",
+                  "birds-fsd50k-eval-57907",
+                  "birds-fsd50k-eval-319512"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-121877",
+                  "crowd-fsd50k-eval-340358",
+                  "crowd-fsd50k-eval-185058"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-419427",
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-235362"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-21189",
+                  "rain-fsd50k-eval-382582",
+                  "rain-fsd50k-eval-238016"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-232686",
+                  "traffic-fsd50k-eval-124020",
+                  "traffic-fsd50k-eval-235541"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113175",
+                  "wind-fsd50k-eval-113173",
+                  "wind-fsd50k-eval-113176"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-71212",
+                  "door-fsd50k-eval-209519",
+                  "door-fsd50k-eval-119077"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-426594",
+                  "doorbell-fsd50k-eval-332563",
+                  "doorbell-fsd50k-eval-348322"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-272381",
+                  "footsteps-fsd50k-eval-153104",
+                  "footsteps-fsd50k-eval-392303"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-399740",
+                  "keyboard-fsd50k-eval-411545"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-82562",
+                  "paper-fsd50k-eval-343098"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-402128",
+                  "water_tap-fsd50k-eval-402127",
+                  "water_tap-fsd50k-eval-232499"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v2",
+              "seed": 224543770,
+              "mode": "quiet",
+              "discrete_event_target": 0,
+              "max_ambient_layers": 2,
+              "side_speech_requested": false,
+              "speech_kind_preferences": [
+                "third_party",
+                "machine"
+              ]
+            },
+            "control_sha256": "9e227881e9c715f1539d41282ad3476e35453389bdcb551aecffd6dfe4db8dcc",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v3",
+              "mode": "quiet",
+              "ambient_layers": [],
+              "environment_events": [],
+              "side_speech_eligibility": {
+                "third_party": {
+                  "compatible": true,
+                  "reason": "配偶林澄已在当前故事中明确坐在同一餐桌旁查看贷款资料。",
+                  "source": {
+                    "speaker": "third_party",
+                    "voice_profile": "自然清晰、音量较低的成年普通话声音",
+                    "description": "当前在餐桌旁共同整理购房贷款资料的配偶林澄"
+                  }
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "当前场景没有建立能够发出可辨语音的设备或机器。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "50d4f37ad34a8dc603d283789abdb847eef0c5be8b515272afa45337c3ca04da",
+            "aggregate_environment_audio": "安静的家中餐桌旁，近处只有很轻且稳定的室内底噪。窗户关闭，外部声音微弱，整段环境没有明显的突发声响。",
+            "draws": [],
+            "speech_selection": {
+              "requested": false,
+              "compatible_kinds": [
+                "third_party"
+              ],
+              "selected_kind": null,
+              "outcome": "not_requested",
+              "assessments": {
+                "third_party": {
+                  "compatible": true,
+                  "reason": "配偶林澄已在当前故事中明确坐在同一餐桌旁查看贷款资料。",
+                  "source": {
+                    "speaker": "third_party",
+                    "voice_profile": "自然清晰、音量较低的成年普通话声音",
+                    "description": "当前在餐桌旁共同整理购房贷款资料的配偶林澄"
+                  }
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "当前场景没有建立能够发出可辨语音的设备或机器。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v2",
+      "title": "首套房贷款稳妥性比较",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？",
+          "assistant_utterance": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？",
+          "user_intent": "询问判断家庭可承受月供的稳妥方法",
+          "assistant_intent": "建立月供评估框架并索取稳定收入和必要支出数据",
+          "semantic_goal": "明确月供不能仅按贷款额度决定，并开始测算偿债能力",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。",
+          "assistant_utterance": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。",
+          "user_intent": "提供稳定收入和购房后的非房贷支出",
+          "assistant_intent": "确认测算基数并继续询问债务和购房后现金储备",
+          "semantic_goal": "建立家庭常规现金流的基础数据",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？",
+            "assistant_stop_after_text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "还有车贷每月两千八，剩十八个月。买房各项费用付完，现金大概剩二十九万，其中二十五万我不想动。",
+          "assistant_utterance": "先按现有现金流算：收入三万八，非房贷支出一万七千八，再扣车贷两千八，房贷前余一万七千四。稳妥月供不宜吃满，先看九千到一万一千元，并保留压力测试空间。",
+          "user_intent": "补充汽车贷款和应急资金底线",
+          "assistant_intent": "依据现有现金流初步估算月供范围",
+          "semantic_goal": "把现有债务和不可动用的应急资金纳入判断",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。",
+            "assistant_stop_after_text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "等一下，我还漏了一个风险。未来两年我们可能生孩子，配偶收入也许会短期下降，但现在没有可靠数字。这该怎么压测？",
+          "assistant_utterance": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。单收入下，扣掉一万七千八支出和两千八车贷，仅余四千九，显然覆盖不了房贷；应把它当短期风险情形，用应急金测可撑多久。",
+          "user_intent": "打断初步测算并补充生育和配偶收入下降风险",
+          "assistant_intent": "改用多档收入情形进行压力测试并指出单收入缺口",
+          "semantic_goal": "避免仅按当前双职工收入得出过度乐观的结论",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "先按现有现金流算：",
+            "assistant_stop_after_text": "先按现有现金流算：收入"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "银行有两套二百一十万的方案。A是三十年固定年利率百分之三点四五，月供约九千三百七十；B是二十年，前三年百分之二点八五，月供约一万一千四百九十。",
+          "assistant_utterance": "按当前现金流，A月供后每月约余八千零三十元，B约余六千二百一十元；车贷结束后各多两千八。考虑生育不确定性，我会先把稳妥月供放在九千到一万元，B目前偏紧。B第四年后的定价规则是什么？",
+          "user_intent": "提供两套贷款的期限、初始利率和月供",
+          "assistant_intent": "比较两案当前现金流余量并追问浮动方案的重定价规则",
+          "semantic_goal": "判断两套方案是否落在稳妥月供范围内",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。单收入下，扣掉一万七千八支出和两千八车贷，仅余四千九，显然覆盖不了房贷；应把它当短期风险情形，用应急金测可撑多久。",
+            "assistant_stop_after_text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。单收入下，扣掉一万七千八支出和两千八车贷，仅余四千九，显然覆盖不了房贷；应把它当短期风险情形，用应急金测可撑多久。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U06",
+          "assistant_id": "A006",
+          "user_utterance": "B第四年起按五年期LPR减零点三五个百分点，每年重定价，报价没写上限。我有点不踏实，银行只举例说若第四年起是百分之三点一五且以后不变，月供约一万一千七百六十元。",
+          "assistant_utterance": "这个一万一千七百六十元只是利率三点一五且以后不变的静态示例，不是上限。可要求银行列出更高利率下的月供，例如上升一到两个百分点，并结合配偶降薪期，看月度缺口和二十五万元应急金能支撑多久。",
+          "user_intent": "补充浮动利率公式并表达对无上限重定价的担忧",
+          "assistant_intent": "澄清静态示例并提出利率上升和收入下降的联合压力测试",
+          "semantic_goal": "正确理解浮动方案未来月供的不确定性",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A005",
+            "user_onset_after_text": "按当前现金流，A月供后每月约余八千零三十元，B约余六千二百一十元；车贷结束后各多两千八。考虑生育不确定性，我会先把稳妥月供放在九千到一万元，B目前偏紧。B第四年后的定价规则是什么？",
+            "assistant_stop_after_text": "按当前现金流，A月供后每月约余八千零三十元，B约余六千二百一十元；车贷结束后各多两千八。考虑生育不确定性，我会先把稳妥月供放在九千到一万元，B目前偏紧。B第四年后的定价规则是什么？"
+          },
+          "pause_cue": {
+            "after_text": "B第四年起按五年期LPR减零点三五个百分点，每年重定价，报价没写上限。我有点不踏实，",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U07",
+          "assistant_id": "A007",
+          "user_utterance": "总利息报价是A约一百二十七万，B按那个静态例子约七十一万。A满一年后五万元起提前还，目前写着不收违约金；B前三年十万元起，还要收提前金额的百分之一。",
+          "assistant_utterance": "按报价静态估算，A总利息约一百二十七万，B约七十一万，差约五十六万；但B的优势伴随更高月供和重定价风险。A满一年后可五万元起提前还且当前无违约金；B前三年十万元起并收提前额百分之一，灵活性较差。",
+          "user_intent": "补充两案总利息和提前还款限制",
+          "assistant_intent": "综合比较长期利息、现金流风险和提前还款灵活性",
+          "semantic_goal": "理解B较低静态总利息所对应的风险与限制",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A006",
+            "user_onset_after_text": "这个一万一千七百六十元只是利率三点一五且以后不变的静态示例，不是上限。可要求银行列出更高利率下的月供，例如上升一到两个百分点，并结合配偶降薪期，看月度缺口和二十五万元应急金能支撑多久。",
+            "assistant_stop_after_text": "这个一万一千七百六十元只是利率三点一五且以后不变的静态示例，不是上限。可要求银行列出更高利率下的月供，例如上升一到两个百分点，并结合配偶降薪期，看月度缺口和二十五万元应急金能支撑多久。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U08",
+          "assistant_id": "A008",
+          "user_utterance": "去年奖金大约六万，但不固定。那我能不能选A，把奖金只当可选的提前还款资金？这样是不是比硬扛B更合适？",
+          "assistant_utterance": "可以，这种安排不把奖金变成固定义务，和你的风险偏好更匹配。前提是始终保留二十五万元应急金，并在正式合同确认A的提前还款门槛、次数、申请流程和无违约金条款；也要比较缩短期限与降低月供的处理方式。",
+          "user_intent": "提出用不固定奖金自愿提前还款的替代策略",
+          "assistant_intent": "评估该策略并限定应急金和合同核实条件",
+          "semantic_goal": "在不依赖奖金承担固定月供的前提下降低长期利息",
+          "act_ref": "A05",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A007",
+            "user_onset_after_text": "按报价静态估算，A总利息约一百二十七万，B约七十一万，差约五十六万；但B的优势伴随更高月供和重定价风险。A满一年后可五万元起提前还且当前无违约金；B前三年十万元起并收提前额百分之一，灵活性较差。",
+            "assistant_stop_after_text": "按报价静态估算，A总利息约一百二十七万，B约七十一万，差约五十六万；但B的优势伴随更高月供和重定价风险。A满一年后可五万元起提前还且当前无违约金；B前三年十万元起并收提前额百分之一，灵活性较差。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U09",
+          "assistant_id": "A009",
+          "user_utterance": "如果把生育和短期收入下降也算进去，你会更倾向哪一套？我主要怕现在省利息，后来现金流反而太紧。",
+          "assistant_utterance": "在现有信息下，我更偏向A：月供落在稳妥区间，固定利率便于预算，提前还款也较灵活。代价是期限长、基准总利息高。B只有在配偶收入下降影响较小、利率上行情形也能承受，且你们重视二十年还清时才更合适。",
+          "user_intent": "要求结合家庭风险给出更稳妥的方案倾向",
+          "assistant_intent": "明确推荐倾向并说明选择A和选择B各自成立的条件",
+          "semantic_goal": "在长期成本和现金流安全之间形成决策结论",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A008",
+            "user_onset_after_text": "可以，这种安排不把奖金变成固定义务，和你的风险偏好更匹配。前提是始终保留二十五万元应急金，并在正式合同确认A的提前还款门槛、次数、申请流程和无违约金条款；也要比较缩短期限与降低月供的处理方式。",
+            "assistant_stop_after_text": "可以，这种安排不把奖金变成固定义务，和你的风险偏好更匹配。前提是始终保留二十五万元应急金，并在正式合同确认A的提前还款门槛、次数、申请流程和无违约金条款；也要比较缩短期限与降低月供的处理方式。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U10",
+          "assistant_id": "A010",
+          "user_utterance": "明白。最后帮我归一下，签任何文件前还必须向银行确认什么，我们自己又要补哪些数字？",
+          "assistant_utterance": "签前向银行书面确认：B的LPR取值日、调整日、点差是否固定及有无上限；两案全部服务费、账户费、保险或理财搭售；提前还款条款；月供与总成本测算。再补齐配偶降薪幅度、期限、津贴和照护费。初步报价不等于审批或合同。",
+          "user_intent": "索取签约前的银行核实事项和家庭信息缺口清单",
+          "assistant_intent": "汇总重定价、费用、搭售、提前还款及家庭压力测试所需信息",
+          "semantic_goal": "形成可执行的签约前核查步骤并避免把初步报价视为承诺",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A009",
+            "user_onset_after_text": "在现有信息下，我更偏向A：月供落在稳妥区间，固定利率便于预算，提前还款也较灵活。代价是期限长、基准总利息高。B只有在配偶收入下降影响较小、利率上行情形也能承受，且你们重视二十年还清时才更合适。",
+            "assistant_stop_after_text": "在现有信息下，我更偏向A：月供落在稳妥区间，固定利率便于预算，提前还款也较灵活。代价是期限长、基准总利息高。B只有在配偶收入下降影响较小、利率上行情形也能承受，且你们重视二十年还清时才更合适。"
+          },
+          "pause_cue": null
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "三万八的常规收入可以作为基数，奖金不计。",
+          "text": "嗯，明白"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A004",
+          "after_text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。",
+          "text": "对"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A007",
+          "after_text": "按报价静态估算，A总利息约一百二十七万，B约七十一万，差约五十六万；",
+          "text": "嗯"
+        }
+      ],
+      "side_speech": [],
+      "environment_events": []
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？",
+          "final_shared_played_prefix": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "还有车贷每月两千八，剩十八个月。买房各项费用付完，现金大概剩二十九万，其中二十五万我不想动。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。",
+          "final_shared_played_prefix": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "三万八的常规收入可以作为基数，奖金不计。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "先按现有现金流算：收入三万八，非房贷支出一万七千八，再扣车贷两千八，房贷前余一万七千四。稳妥月供不宜吃满，先看九千到一万一千元，并保留压力测试空间。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "还有车贷每月两千八，剩十八个月。买房各项费用付完，现金大概剩二十九万，其中二十五万我不想动。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先按现有现金流算："
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "还有车贷每月两千八，剩十八个月。买房各项费用付完，现金大概剩二十九万，其中二十五万我不想动。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先按现有现金流算：收入"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，我还漏了一个风险。未来两年我们可能生孩子，配偶收入也许会短期下降，但现在没有可靠数字。这该怎么压测？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "先按现有现金流算：",
+          "final_shared_played_prefix": "先按现有现金流算：收入",
+          "discarded_unheard_tail": "三万八，非房贷支出一万七千八，再扣车贷两千八，房贷前余一万七千四。稳妥月供不宜吃满，先看九千到一万一千元，并保留压力测试空间。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "三万八的常规收入可以作为基数，奖金不计。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。单收入下，扣掉一万七千八支出和两千八车贷，仅余四千九，显然覆盖不了房贷；应把它当短期风险情形，用应急金测可撑多久。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "还有车贷每月两千八，剩十八个月。买房各项费用付完，现金大概剩二十九万，其中二十五万我不想动。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先按现有现金流算：收入"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，我还漏了一个风险。未来两年我们可能生孩子，配偶收入也许会短期下降，但现在没有可靠数字。这该怎么压测？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。单收入下，扣掉一万七千八支出和两千八车贷，仅余四千九，显然覆盖不了房贷；应把它当短期风险情形，用应急金测可撑多久。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "还有车贷每月两千八，剩十八个月。买房各项费用付完，现金大概剩二十九万，其中二十五万我不想动。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先按现有现金流算：收入"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，我还漏了一个风险。未来两年我们可能生孩子，配偶收入也许会短期下降，但现在没有可靠数字。这该怎么压测？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。单收入下，扣掉一万七千八支出和两千八车贷，仅余四千九，显然覆盖不了房贷；应把它当短期风险情形，用应急金测可撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "银行有两套二百一十万的方案。A是三十年固定年利率百分之三点四五，月供约九千三百七十；B是二十年，前三年百分之二点八五，月供约一万一千四百九十。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。单收入下，扣掉一万七千八支出和两千八车贷，仅余四千九，显然覆盖不了房贷；应把它当短期风险情形，用应急金测可撑多久。",
+          "final_shared_played_prefix": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。单收入下，扣掉一万七千八支出和两千八车贷，仅余四千九，显然覆盖不了房贷；应把它当短期风险情形，用应急金测可撑多久。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "三万八的常规收入可以作为基数，奖金不计。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "按当前现金流，A月供后每月约余八千零三十元，B约余六千二百一十元；车贷结束后各多两千八。考虑生育不确定性，我会先把稳妥月供放在九千到一万元，B目前偏紧。B第四年后的定价规则是什么？",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "还有车贷每月两千八，剩十八个月。买房各项费用付完，现金大概剩二十九万，其中二十五万我不想动。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先按现有现金流算：收入"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，我还漏了一个风险。未来两年我们可能生孩子，配偶收入也许会短期下降，但现在没有可靠数字。这该怎么压测？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。单收入下，扣掉一万七千八支出和两千八车贷，仅余四千九，显然覆盖不了房贷；应把它当短期风险情形，用应急金测可撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "银行有两套二百一十万的方案。A是三十年固定年利率百分之三点四五，月供约九千三百七十；B是二十年，前三年百分之二点八五，月供约一万一千四百九十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "按当前现金流，A月供后每月约余八千零三十元，B约余六千二百一十元；车贷结束后各多两千八。考虑生育不确定性，我会先把稳妥月供放在九千到一万元，B目前偏紧。B第四年后的定价规则是什么？"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "还有车贷每月两千八，剩十八个月。买房各项费用付完，现金大概剩二十九万，其中二十五万我不想动。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先按现有现金流算：收入"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，我还漏了一个风险。未来两年我们可能生孩子，配偶收入也许会短期下降，但现在没有可靠数字。这该怎么压测？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。单收入下，扣掉一万七千八支出和两千八车贷，仅余四千九，显然覆盖不了房贷；应把它当短期风险情形，用应急金测可撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "银行有两套二百一十万的方案。A是三十年固定年利率百分之三点四五，月供约九千三百七十；B是二十年，前三年百分之二点八五，月供约一万一千四百九十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "按当前现金流，A月供后每月约余八千零三十元，B约余六千二百一十元；车贷结束后各多两千八。考虑生育不确定性，我会先把稳妥月供放在九千到一万元，B目前偏紧。B第四年后的定价规则是什么？"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "B第四年起按五年期LPR减零点三五个百分点，每年重定价，报价没写上限。我有点不踏实，银行只举例说若第四年起是百分之三点一五且以后不变，月供约一万一千七百六十元。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A005",
+          "at_user_onset_heard_prefix": "按当前现金流，A月供后每月约余八千零三十元，B约余六千二百一十元；车贷结束后各多两千八。考虑生育不确定性，我会先把稳妥月供放在九千到一万元，B目前偏紧。B第四年后的定价规则是什么？",
+          "final_shared_played_prefix": "按当前现金流，A月供后每月约余八千零三十元，B约余六千二百一十元；车贷结束后各多两千八。考虑生育不确定性，我会先把稳妥月供放在九千到一万元，B目前偏紧。B第四年后的定价规则是什么？",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "三万八的常规收入可以作为基数，奖金不计。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "这个一万一千七百六十元只是利率三点一五且以后不变的静态示例，不是上限。可要求银行列出更高利率下的月供，例如上升一到两个百分点，并结合配偶降薪期，看月度缺口和二十五万元应急金能支撑多久。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "还有车贷每月两千八，剩十八个月。买房各项费用付完，现金大概剩二十九万，其中二十五万我不想动。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先按现有现金流算：收入"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，我还漏了一个风险。未来两年我们可能生孩子，配偶收入也许会短期下降，但现在没有可靠数字。这该怎么压测？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。单收入下，扣掉一万七千八支出和两千八车贷，仅余四千九，显然覆盖不了房贷；应把它当短期风险情形，用应急金测可撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "银行有两套二百一十万的方案。A是三十年固定年利率百分之三点四五，月供约九千三百七十；B是二十年，前三年百分之二点八五，月供约一万一千四百九十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "按当前现金流，A月供后每月约余八千零三十元，B约余六千二百一十元；车贷结束后各多两千八。考虑生育不确定性，我会先把稳妥月供放在九千到一万元，B目前偏紧。B第四年后的定价规则是什么？"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "B第四年起按五年期LPR减零点三五个百分点，每年重定价，报价没写上限。我有点不踏实，银行只举例说若第四年起是百分之三点一五且以后不变，月供约一万一千七百六十元。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这个一万一千七百六十元只是利率三点一五且以后不变的静态示例，不是上限。可要求银行列出更高利率下的月供，例如上升一到两个百分点，并结合配偶降薪期，看月度缺口和二十五万元应急金能支撑多久。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "还有车贷每月两千八，剩十八个月。买房各项费用付完，现金大概剩二十九万，其中二十五万我不想动。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先按现有现金流算：收入"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，我还漏了一个风险。未来两年我们可能生孩子，配偶收入也许会短期下降，但现在没有可靠数字。这该怎么压测？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。单收入下，扣掉一万七千八支出和两千八车贷，仅余四千九，显然覆盖不了房贷；应把它当短期风险情形，用应急金测可撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "银行有两套二百一十万的方案。A是三十年固定年利率百分之三点四五，月供约九千三百七十；B是二十年，前三年百分之二点八五，月供约一万一千四百九十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "按当前现金流，A月供后每月约余八千零三十元，B约余六千二百一十元；车贷结束后各多两千八。考虑生育不确定性，我会先把稳妥月供放在九千到一万元，B目前偏紧。B第四年后的定价规则是什么？"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "B第四年起按五年期LPR减零点三五个百分点，每年重定价，报价没写上限。我有点不踏实，银行只举例说若第四年起是百分之三点一五且以后不变，月供约一万一千七百六十元。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这个一万一千七百六十元只是利率三点一五且以后不变的静态示例，不是上限。可要求银行列出更高利率下的月供，例如上升一到两个百分点，并结合配偶降薪期，看月度缺口和二十五万元应急金能支撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "总利息报价是A约一百二十七万，B按那个静态例子约七十一万。A满一年后五万元起提前还，目前写着不收违约金；B前三年十万元起，还要收提前金额的百分之一。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A006",
+          "at_user_onset_heard_prefix": "这个一万一千七百六十元只是利率三点一五且以后不变的静态示例，不是上限。可要求银行列出更高利率下的月供，例如上升一到两个百分点，并结合配偶降薪期，看月度缺口和二十五万元应急金能支撑多久。",
+          "final_shared_played_prefix": "这个一万一千七百六十元只是利率三点一五且以后不变的静态示例，不是上限。可要求银行列出更高利率下的月供，例如上升一到两个百分点，并结合配偶降薪期，看月度缺口和二十五万元应急金能支撑多久。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "三万八的常规收入可以作为基数，奖金不计。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "按报价静态估算，A总利息约一百二十七万，B约七十一万，差约五十六万；但B的优势伴随更高月供和重定价风险。A满一年后可五万元起提前还且当前无违约金；B前三年十万元起并收提前额百分之一，灵活性较差。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "还有车贷每月两千八，剩十八个月。买房各项费用付完，现金大概剩二十九万，其中二十五万我不想动。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先按现有现金流算：收入"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，我还漏了一个风险。未来两年我们可能生孩子，配偶收入也许会短期下降，但现在没有可靠数字。这该怎么压测？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。单收入下，扣掉一万七千八支出和两千八车贷，仅余四千九，显然覆盖不了房贷；应把它当短期风险情形，用应急金测可撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "银行有两套二百一十万的方案。A是三十年固定年利率百分之三点四五，月供约九千三百七十；B是二十年，前三年百分之二点八五，月供约一万一千四百九十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "按当前现金流，A月供后每月约余八千零三十元，B约余六千二百一十元；车贷结束后各多两千八。考虑生育不确定性，我会先把稳妥月供放在九千到一万元，B目前偏紧。B第四年后的定价规则是什么？"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "B第四年起按五年期LPR减零点三五个百分点，每年重定价，报价没写上限。我有点不踏实，银行只举例说若第四年起是百分之三点一五且以后不变，月供约一万一千七百六十元。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这个一万一千七百六十元只是利率三点一五且以后不变的静态示例，不是上限。可要求银行列出更高利率下的月供，例如上升一到两个百分点，并结合配偶降薪期，看月度缺口和二十五万元应急金能支撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "总利息报价是A约一百二十七万，B按那个静态例子约七十一万。A满一年后五万元起提前还，目前写着不收违约金；B前三年十万元起，还要收提前金额的百分之一。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "按报价静态估算，A总利息约一百二十七万，B约七十一万，差约五十六万；但B的优势伴随更高月供和重定价风险。A满一年后可五万元起提前还且当前无违约金；B前三年十万元起并收提前额百分之一，灵活性较差。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "还有车贷每月两千八，剩十八个月。买房各项费用付完，现金大概剩二十九万，其中二十五万我不想动。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先按现有现金流算：收入"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，我还漏了一个风险。未来两年我们可能生孩子，配偶收入也许会短期下降，但现在没有可靠数字。这该怎么压测？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。单收入下，扣掉一万七千八支出和两千八车贷，仅余四千九，显然覆盖不了房贷；应把它当短期风险情形，用应急金测可撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "银行有两套二百一十万的方案。A是三十年固定年利率百分之三点四五，月供约九千三百七十；B是二十年，前三年百分之二点八五，月供约一万一千四百九十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "按当前现金流，A月供后每月约余八千零三十元，B约余六千二百一十元；车贷结束后各多两千八。考虑生育不确定性，我会先把稳妥月供放在九千到一万元，B目前偏紧。B第四年后的定价规则是什么？"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "B第四年起按五年期LPR减零点三五个百分点，每年重定价，报价没写上限。我有点不踏实，银行只举例说若第四年起是百分之三点一五且以后不变，月供约一万一千七百六十元。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这个一万一千七百六十元只是利率三点一五且以后不变的静态示例，不是上限。可要求银行列出更高利率下的月供，例如上升一到两个百分点，并结合配偶降薪期，看月度缺口和二十五万元应急金能支撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "总利息报价是A约一百二十七万，B按那个静态例子约七十一万。A满一年后五万元起提前还，目前写着不收违约金；B前三年十万元起，还要收提前金额的百分之一。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "按报价静态估算，A总利息约一百二十七万，B约七十一万，差约五十六万；但B的优势伴随更高月供和重定价风险。A满一年后可五万元起提前还且当前无违约金；B前三年十万元起并收提前额百分之一，灵活性较差。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "去年奖金大约六万，但不固定。那我能不能选A，把奖金只当可选的提前还款资金？这样是不是比硬扛B更合适？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A007",
+          "at_user_onset_heard_prefix": "按报价静态估算，A总利息约一百二十七万，B约七十一万，差约五十六万；但B的优势伴随更高月供和重定价风险。A满一年后可五万元起提前还且当前无违约金；B前三年十万元起并收提前额百分之一，灵活性较差。",
+          "final_shared_played_prefix": "按报价静态估算，A总利息约一百二十七万，B约七十一万，差约五十六万；但B的优势伴随更高月供和重定价风险。A满一年后可五万元起提前还且当前无违约金；B前三年十万元起并收提前额百分之一，灵活性较差。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "三万八的常规收入可以作为基数，奖金不计。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A007",
+            "after_text": "按报价静态估算，A总利息约一百二十七万，B约七十一万，差约五十六万；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可以，这种安排不把奖金变成固定义务，和你的风险偏好更匹配。前提是始终保留二十五万元应急金，并在正式合同确认A的提前还款门槛、次数、申请流程和无违约金条款；也要比较缩短期限与降低月供的处理方式。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "还有车贷每月两千八，剩十八个月。买房各项费用付完，现金大概剩二十九万，其中二十五万我不想动。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先按现有现金流算：收入"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，我还漏了一个风险。未来两年我们可能生孩子，配偶收入也许会短期下降，但现在没有可靠数字。这该怎么压测？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。单收入下，扣掉一万七千八支出和两千八车贷，仅余四千九，显然覆盖不了房贷；应把它当短期风险情形，用应急金测可撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "银行有两套二百一十万的方案。A是三十年固定年利率百分之三点四五，月供约九千三百七十；B是二十年，前三年百分之二点八五，月供约一万一千四百九十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "按当前现金流，A月供后每月约余八千零三十元，B约余六千二百一十元；车贷结束后各多两千八。考虑生育不确定性，我会先把稳妥月供放在九千到一万元，B目前偏紧。B第四年后的定价规则是什么？"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "B第四年起按五年期LPR减零点三五个百分点，每年重定价，报价没写上限。我有点不踏实，银行只举例说若第四年起是百分之三点一五且以后不变，月供约一万一千七百六十元。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这个一万一千七百六十元只是利率三点一五且以后不变的静态示例，不是上限。可要求银行列出更高利率下的月供，例如上升一到两个百分点，并结合配偶降薪期，看月度缺口和二十五万元应急金能支撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "总利息报价是A约一百二十七万，B按那个静态例子约七十一万。A满一年后五万元起提前还，目前写着不收违约金；B前三年十万元起，还要收提前金额的百分之一。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "按报价静态估算，A总利息约一百二十七万，B约七十一万，差约五十六万；但B的优势伴随更高月供和重定价风险。A满一年后可五万元起提前还且当前无违约金；B前三年十万元起并收提前额百分之一，灵活性较差。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "去年奖金大约六万，但不固定。那我能不能选A，把奖金只当可选的提前还款资金？这样是不是比硬扛B更合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以，这种安排不把奖金变成固定义务，和你的风险偏好更匹配。前提是始终保留二十五万元应急金，并在正式合同确认A的提前还款门槛、次数、申请流程和无违约金条款；也要比较缩短期限与降低月供的处理方式。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "还有车贷每月两千八，剩十八个月。买房各项费用付完，现金大概剩二十九万，其中二十五万我不想动。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先按现有现金流算：收入"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，我还漏了一个风险。未来两年我们可能生孩子，配偶收入也许会短期下降，但现在没有可靠数字。这该怎么压测？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。单收入下，扣掉一万七千八支出和两千八车贷，仅余四千九，显然覆盖不了房贷；应把它当短期风险情形，用应急金测可撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "银行有两套二百一十万的方案。A是三十年固定年利率百分之三点四五，月供约九千三百七十；B是二十年，前三年百分之二点八五，月供约一万一千四百九十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "按当前现金流，A月供后每月约余八千零三十元，B约余六千二百一十元；车贷结束后各多两千八。考虑生育不确定性，我会先把稳妥月供放在九千到一万元，B目前偏紧。B第四年后的定价规则是什么？"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "B第四年起按五年期LPR减零点三五个百分点，每年重定价，报价没写上限。我有点不踏实，银行只举例说若第四年起是百分之三点一五且以后不变，月供约一万一千七百六十元。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这个一万一千七百六十元只是利率三点一五且以后不变的静态示例，不是上限。可要求银行列出更高利率下的月供，例如上升一到两个百分点，并结合配偶降薪期，看月度缺口和二十五万元应急金能支撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "总利息报价是A约一百二十七万，B按那个静态例子约七十一万。A满一年后五万元起提前还，目前写着不收违约金；B前三年十万元起，还要收提前金额的百分之一。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "按报价静态估算，A总利息约一百二十七万，B约七十一万，差约五十六万；但B的优势伴随更高月供和重定价风险。A满一年后可五万元起提前还且当前无违约金；B前三年十万元起并收提前额百分之一，灵活性较差。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "去年奖金大约六万，但不固定。那我能不能选A，把奖金只当可选的提前还款资金？这样是不是比硬扛B更合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以，这种安排不把奖金变成固定义务，和你的风险偏好更匹配。前提是始终保留二十五万元应急金，并在正式合同确认A的提前还款门槛、次数、申请流程和无违约金条款；也要比较缩短期限与降低月供的处理方式。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "如果把生育和短期收入下降也算进去，你会更倾向哪一套？我主要怕现在省利息，后来现金流反而太紧。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A008",
+          "at_user_onset_heard_prefix": "可以，这种安排不把奖金变成固定义务，和你的风险偏好更匹配。前提是始终保留二十五万元应急金，并在正式合同确认A的提前还款门槛、次数、申请流程和无违约金条款；也要比较缩短期限与降低月供的处理方式。",
+          "final_shared_played_prefix": "可以，这种安排不把奖金变成固定义务，和你的风险偏好更匹配。前提是始终保留二十五万元应急金，并在正式合同确认A的提前还款门槛、次数、申请流程和无违约金条款；也要比较缩短期限与降低月供的处理方式。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "三万八的常规收入可以作为基数，奖金不计。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A007",
+            "after_text": "按报价静态估算，A总利息约一百二十七万，B约七十一万，差约五十六万；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "在现有信息下，我更偏向A：月供落在稳妥区间，固定利率便于预算，提前还款也较灵活。代价是期限长、基准总利息高。B只有在配偶收入下降影响较小、利率上行情形也能承受，且你们重视二十年还清时才更合适。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "还有车贷每月两千八，剩十八个月。买房各项费用付完，现金大概剩二十九万，其中二十五万我不想动。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先按现有现金流算：收入"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，我还漏了一个风险。未来两年我们可能生孩子，配偶收入也许会短期下降，但现在没有可靠数字。这该怎么压测？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。单收入下，扣掉一万七千八支出和两千八车贷，仅余四千九，显然覆盖不了房贷；应把它当短期风险情形，用应急金测可撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "银行有两套二百一十万的方案。A是三十年固定年利率百分之三点四五，月供约九千三百七十；B是二十年，前三年百分之二点八五，月供约一万一千四百九十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "按当前现金流，A月供后每月约余八千零三十元，B约余六千二百一十元；车贷结束后各多两千八。考虑生育不确定性，我会先把稳妥月供放在九千到一万元，B目前偏紧。B第四年后的定价规则是什么？"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "B第四年起按五年期LPR减零点三五个百分点，每年重定价，报价没写上限。我有点不踏实，银行只举例说若第四年起是百分之三点一五且以后不变，月供约一万一千七百六十元。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这个一万一千七百六十元只是利率三点一五且以后不变的静态示例，不是上限。可要求银行列出更高利率下的月供，例如上升一到两个百分点，并结合配偶降薪期，看月度缺口和二十五万元应急金能支撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "总利息报价是A约一百二十七万，B按那个静态例子约七十一万。A满一年后五万元起提前还，目前写着不收违约金；B前三年十万元起，还要收提前金额的百分之一。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "按报价静态估算，A总利息约一百二十七万，B约七十一万，差约五十六万；但B的优势伴随更高月供和重定价风险。A满一年后可五万元起提前还且当前无违约金；B前三年十万元起并收提前额百分之一，灵活性较差。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "去年奖金大约六万，但不固定。那我能不能选A，把奖金只当可选的提前还款资金？这样是不是比硬扛B更合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以，这种安排不把奖金变成固定义务，和你的风险偏好更匹配。前提是始终保留二十五万元应急金，并在正式合同确认A的提前还款门槛、次数、申请流程和无违约金条款；也要比较缩短期限与降低月供的处理方式。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "如果把生育和短期收入下降也算进去，你会更倾向哪一套？我主要怕现在省利息，后来现金流反而太紧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "在现有信息下，我更偏向A：月供落在稳妥区间，固定利率便于预算，提前还款也较灵活。代价是期限长、基准总利息高。B只有在配偶收入下降影响较小、利率上行情形也能承受，且你们重视二十年还清时才更合适。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "还有车贷每月两千八，剩十八个月。买房各项费用付完，现金大概剩二十九万，其中二十五万我不想动。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先按现有现金流算：收入"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，我还漏了一个风险。未来两年我们可能生孩子，配偶收入也许会短期下降，但现在没有可靠数字。这该怎么压测？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。单收入下，扣掉一万七千八支出和两千八车贷，仅余四千九，显然覆盖不了房贷；应把它当短期风险情形，用应急金测可撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "银行有两套二百一十万的方案。A是三十年固定年利率百分之三点四五，月供约九千三百七十；B是二十年，前三年百分之二点八五，月供约一万一千四百九十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "按当前现金流，A月供后每月约余八千零三十元，B约余六千二百一十元；车贷结束后各多两千八。考虑生育不确定性，我会先把稳妥月供放在九千到一万元，B目前偏紧。B第四年后的定价规则是什么？"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "B第四年起按五年期LPR减零点三五个百分点，每年重定价，报价没写上限。我有点不踏实，银行只举例说若第四年起是百分之三点一五且以后不变，月供约一万一千七百六十元。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这个一万一千七百六十元只是利率三点一五且以后不变的静态示例，不是上限。可要求银行列出更高利率下的月供，例如上升一到两个百分点，并结合配偶降薪期，看月度缺口和二十五万元应急金能支撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "总利息报价是A约一百二十七万，B按那个静态例子约七十一万。A满一年后五万元起提前还，目前写着不收违约金；B前三年十万元起，还要收提前金额的百分之一。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "按报价静态估算，A总利息约一百二十七万，B约七十一万，差约五十六万；但B的优势伴随更高月供和重定价风险。A满一年后可五万元起提前还且当前无违约金；B前三年十万元起并收提前额百分之一，灵活性较差。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "去年奖金大约六万，但不固定。那我能不能选A，把奖金只当可选的提前还款资金？这样是不是比硬扛B更合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以，这种安排不把奖金变成固定义务，和你的风险偏好更匹配。前提是始终保留二十五万元应急金，并在正式合同确认A的提前还款门槛、次数、申请流程和无违约金条款；也要比较缩短期限与降低月供的处理方式。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "如果把生育和短期收入下降也算进去，你会更倾向哪一套？我主要怕现在省利息，后来现金流反而太紧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "在现有信息下，我更偏向A：月供落在稳妥区间，固定利率便于预算，提前还款也较灵活。代价是期限长、基准总利息高。B只有在配偶收入下降影响较小、利率上行情形也能承受，且你们重视二十年还清时才更合适。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "明白。最后帮我归一下，签任何文件前还必须向银行确认什么，我们自己又要补哪些数字？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A009",
+          "at_user_onset_heard_prefix": "在现有信息下，我更偏向A：月供落在稳妥区间，固定利率便于预算，提前还款也较灵活。代价是期限长、基准总利息高。B只有在配偶收入下降影响较小、利率上行情形也能承受，且你们重视二十年还清时才更合适。",
+          "final_shared_played_prefix": "在现有信息下，我更偏向A：月供落在稳妥区间，固定利率便于预算，提前还款也较灵活。代价是期限长、基准总利息高。B只有在配偶收入下降影响较小、利率上行情形也能承受，且你们重视二十年还清时才更合适。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "三万八的常规收入可以作为基数，奖金不计。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A007",
+            "after_text": "按报价静态估算，A总利息约一百二十七万，B约七十一万，差约五十六万；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "签前向银行书面确认：B的LPR取值日、调整日、点差是否固定及有无上限；两案全部服务费、账户费、保险或理财搭售；提前还款条款；月供与总成本测算。再补齐配偶降薪幅度、期限、津贴和照护费。初步报价不等于审批或合同。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A002",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "三万八的常规收入可以作为基数，奖金不计。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "三万八的常规收入可以作为基数，奖金不计。",
+        "event_text": "嗯，明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC02",
+        "kind": "backchannels",
+        "target_assistant_id": "A004",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "还有车贷每月两千八，剩十八个月。买房各项费用付完，现金大概剩二十九万，其中二十五万我不想动。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先按现有现金流算：收入"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，我还漏了一个风险。未来两年我们可能生孩子，配偶收入也许会短期下降，但现在没有可靠数字。这该怎么压测？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。",
+        "event_text": "对",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC03",
+        "kind": "backchannels",
+        "target_assistant_id": "A007",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们准备买首套房。我想先判断月供控制在多少比较稳妥，不能只看银行愿意贷多少吧？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先用常规税后收入，不算奖金或加薪。月供要和生活支出、其他债务、住房持有成本一起看，还要留应急金并做单收入和利率上升测试。你们每月稳定收入和购房后非房贷支出大概多少？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我们常规税后收入每月三万八，奖金不算。搬进去后，日常支出一万五千八，物业、维修和家居更新再留两千。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "三万八的常规收入可以作为基数，奖金不计。两项支出合计一万七千八。还需要扣除现有债务，并确认买房后能留下多少现金；这两项会决定月供范围是否稳妥。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "还有车贷每月两千八，剩十八个月。买房各项费用付完，现金大概剩二十九万，其中二十五万我不想动。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先按现有现金流算：收入"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，我还漏了一个风险。未来两年我们可能生孩子，配偶收入也许会短期下降，但现在没有可靠数字。这该怎么压测？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "那就不能只看当前双收入。先做三档：当前双收入、配偶收入暂降、只靠你一人收入。单收入下，扣掉一万七千八支出和两千八车贷，仅余四千九，显然覆盖不了房贷；应把它当短期风险情形，用应急金测可撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "银行有两套二百一十万的方案。A是三十年固定年利率百分之三点四五，月供约九千三百七十；B是二十年，前三年百分之二点八五，月供约一万一千四百九十。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "按当前现金流，A月供后每月约余八千零三十元，B约余六千二百一十元；车贷结束后各多两千八。考虑生育不确定性，我会先把稳妥月供放在九千到一万元，B目前偏紧。B第四年后的定价规则是什么？"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "B第四年起按五年期LPR减零点三五个百分点，每年重定价，报价没写上限。我有点不踏实，银行只举例说若第四年起是百分之三点一五且以后不变，月供约一万一千七百六十元。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这个一万一千七百六十元只是利率三点一五且以后不变的静态示例，不是上限。可要求银行列出更高利率下的月供，例如上升一到两个百分点，并结合配偶降薪期，看月度缺口和二十五万元应急金能支撑多久。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "总利息报价是A约一百二十七万，B按那个静态例子约七十一万。A满一年后五万元起提前还，目前写着不收违约金；B前三年十万元起，还要收提前金额的百分之一。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "按报价静态估算，A总利息约一百二十七万，B约七十一万，差约五十六万；"
+          }
+        ],
+        "at_event_onset_heard_prefix": "按报价静态估算，A总利息约一百二十七万，B约七十一万，差约五十六万；",
+        "event_text": "嗯",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

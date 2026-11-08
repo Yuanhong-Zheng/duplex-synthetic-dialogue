@@ -1,0 +1,87 @@
+{
+  "scenario": {
+    "domain_id": "D06",
+    "domain": "购物、零售与消费决策",
+    "domain_definition": "Google Gemini Live 明确列出商品比较与穿搭建议，tau-Voice 和 IHBench 覆盖零售服务，Audio MultiChallenge 覆盖购物清单。",
+    "scenario_id": "D06-S03",
+    "scenario": "穿搭与风格建议",
+    "requested_examples_per_style": 5,
+    "existing_example_task_seeds": [],
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "long",
+      "target_turns": 24,
+      "min_turns": 23,
+      "max_turns": 24
+    },
+    "dialogue_length_instruction": "本条完整对话目标为 24 个主轮，允许 23–24 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    }
+  },
+  "current_example_tasks": {
+    "开放式互动": [
+      "来一轮“风格侦探”口头挑战，通过描述不同穿搭场景来辨认并讨论它们传达的气质。",
+      "探索色彩、比例、材质和层次如何共同影响穿搭观感，并尝试为几种虚构场合构思造型。",
+      "围绕“舒适和个性如何兼得”展开风格讨论，逐步澄清自己偏好的穿衣取向。",
+      "共同创作一套具有鲜明主题的虚构造型，并为其中每个搭配选择说明风格意图。",
+      "模拟一次造型顾问与顾客的角色扮演，练习应对正式、休闲和社交场合中的穿搭难题。"
+    ],
+    "结构化整理": [
+      "把随后提供的衣物按品类、颜色、材质和适合季节整理成清晰的衣橱清单。",
+      "比较几套随后提供的完整穿搭候选，按照场合适配度、协调性和舒适度排出优先顺序。",
+      "根据现有衣物的描述整理出可组合的上装、下装、鞋包和配饰搭配清单。",
+      "核对一批随后提供的穿搭照片或文字描述，归纳其中反复出现的风格元素，并按风格类型分类。",
+      "把现有衣物和计划使用的场合整理成一份穿搭安排，标出每个场合可采用的方案及尚未覆盖的需求。"
+    ],
+    "混合型": [
+      "结合色彩协调、比例平衡和场合着装规则，在随后提供的几套候选造型中选出最适合个人的一套，并说明取舍。",
+      "依据通用的风格定位方法和个人对舒适度、显眼程度的偏好，调整现有衣物组合，使其更接近想要的整体形象。",
+      "在比较随后提供的不同风格参考与现有衣橱后，判断哪些元素值得尝试，并形成可逐步过渡的搭配方向。",
+      "结合体型比例、活动需求和个人审美偏好，评估一组具体单品能否组成合适造型，并提出必要的替换或搭配调整。",
+      "先讨论配饰与叠穿在强化风格、平衡比例和应对温度变化中的作用，再根据随后提供的衣物判断如何补足现有造型。"
+    ]
+  },
+  "judge_findings": [
+    {
+      "severity": "must_fix",
+      "path": "/example_tasks/混合型/2",
+      "problem": "任务直接比较后续风格参考与现有衣橱，缺少独立的通用风格判断框架，不足以构成混合型。",
+      "evidence": "在比较随后提供的不同风格参考与现有衣橱后，判断哪些元素值得尝试，并形成可逐步过渡的搭配方向。",
+      "repair": "补充先讨论或建立筛选风格元素的通用判断框架，再用该框架比较后续参考材料与现有衣橱。"
+    }
+  ],
+  "repair_targets": [
+    {
+      "path": "/example_tasks/混合型/2",
+      "current_value": "在比较随后提供的不同风格参考与现有衣橱后，判断哪些元素值得尝试，并形成可逐步过渡的搭配方向。"
+    }
+  ]
+}

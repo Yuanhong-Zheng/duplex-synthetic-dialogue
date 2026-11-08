@@ -1,0 +1,87 @@
+{
+  "scenario": {
+    "domain_id": "D06",
+    "domain": "购物、零售与消费决策",
+    "domain_definition": "Google Gemini Live 明确列出商品比较与穿搭建议，tau-Voice 和 IHBench 覆盖零售服务，Audio MultiChallenge 覆盖购物清单。",
+    "scenario_id": "D06-S02",
+    "scenario": "参数比较",
+    "requested_examples_per_style": 5,
+    "existing_example_task_seeds": [],
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "long",
+      "target_turns": 16,
+      "min_turns": 16,
+      "max_turns": 17
+    },
+    "dialogue_length_instruction": "本条完整对话目标为 16 个主轮，允许 16–17 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    }
+  },
+  "current_example_tasks": {
+    "开放式互动": [
+      "弄清楚比较电子产品参数时，性能、续航、耐用性和易用性之间通常该怎样权衡。",
+      "通过一轮口头情境练习，学会根据不同使用需求判断哪些商品参数真正重要。",
+      "讨论商品宣传中的专业参数、测试数据和用户体验各自能说明什么，以及它们可能遗漏什么。",
+      "模拟一场关于参数取舍的消费决策辩论，在不同立场之间练习解释选择理由。",
+      "共同设计一套适用于日常购物的参数比较思路，能够应对参数互相矛盾或难以直接换算的商品。"
+    ],
+    "结构化整理": [
+      "把我随后提供的几款商品规格整理成统一维度的对比表，并标出缺失或无法直接比较的参数。",
+      "根据我提供的商品页面和筛选条件，比较候选商品的关键参数，筛出符合条件的选项。",
+      "核对我收集的商品参数与宣传描述，整理出数值冲突、单位不一致和需要进一步确认的地方。",
+      "按照我随后给出的权重和候选清单，对商品进行分项评分、排序并列出各自的优缺点。",
+      "把我提供的多份商品记录按核心性能、便携性、维护要求和附加功能分类，形成便于选择的候选清单。"
+    ],
+    "混合型": [
+      "结合我的使用场景和随后提供的候选商品，判断哪些参数应当优先，并比较不同取舍带来的实际影响。",
+      "我在几款参数各有优势的商品之间难以选择，希望结合通用的性价比和适配性判断原则，分析我提供的候选方案。",
+      "根据我提供的商品规格和个人限制，区分哪些差异会影响实际体验，哪些只是宣传层面的参数优势。",
+      "面对候选商品之间的续航、性能和便携性冲突，结合参数解读方法和我的使用习惯，确定更合适的选择方向。",
+      "我想复盘自己过去购买商品时只看单一参数的问题，并用更完整的比较框架重新评估随后提供的候选产品。"
+    ]
+  },
+  "judge_findings": [
+    {
+      "severity": "must_fix",
+      "path": "/example_tasks/混合型/2",
+      "problem": "任务仅要求依据用户提供的规格和限制进行判断，没有明确包含可先讨论或建立的通用参数比较框架，不足以构成混合型。",
+      "evidence": "根据我提供的商品规格和个人限制，区分哪些差异会影响实际体验，哪些只是宣传层面的参数优势。",
+      "repair": "补充先建立通用的“实际体验影响与宣传参数识别”框架，再用该框架判断随后提供的规格和个人限制。"
+    }
+  ],
+  "repair_targets": [
+    {
+      "path": "/example_tasks/混合型/2",
+      "current_value": "根据我提供的商品规格和个人限制，区分哪些差异会影响实际体验，哪些只是宣传层面的参数优势。"
+    }
+  ]
+}

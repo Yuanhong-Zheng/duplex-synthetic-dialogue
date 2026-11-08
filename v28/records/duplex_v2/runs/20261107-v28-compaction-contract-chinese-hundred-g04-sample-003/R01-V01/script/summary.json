@@ -1,0 +1,415 @@
+{
+  "status": "passed",
+  "content_repair_budget": 5,
+  "content_max_attempts": 6,
+  "content_repairs_used": 4,
+  "v2_controls": {
+    "model_token_budgets": {
+      "generation": null,
+      "judge": null,
+      "compact": null
+    },
+    "output_token_budget": null,
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    },
+    "reasoning_effort_policy": "default",
+    "script_execution_policy": {
+      "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+      "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+      "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+      "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+      "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+      "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+      "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+    },
+    "program_anchor_seed": 654804417,
+    "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+    "text_output_token_policy": "omit",
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "short",
+      "target_turns": 7,
+      "min_turns": 6,
+      "max_turns": 8
+    },
+    "interaction_profile": {
+      "schema": "duplex_v2.interaction_profile.v1",
+      "formality": "neutral",
+      "directness": "balanced",
+      "emotional_expressiveness": "expressive",
+      "verbosity": "balanced",
+      "initiative": "low",
+      "caution": "medium",
+      "patience": "high",
+      "behavioral_notes": [
+        "通常先完整说明自己的困惑，再请对方给出建议，不太主动抢先设定讨论方向。",
+        "会用语气和简短感叹表达练习中的紧张、惊讶或满意，但仍能保持表达清楚。",
+        "遇到不确定的表述时会耐心听完，并通过复述或温和追问确认自己的理解。"
+      ]
+    },
+    "soundscape_plan": {
+      "mode": "layered",
+      "ambient_layers": [
+        {
+          "source_id": "AMB01",
+          "asset_id": "fan-fsd50k-eval-415925",
+          "reason": "稳定的室内机械送风声与小会议室已建立的通风背景相容。"
+        }
+      ],
+      "environment_events": [],
+      "schema": "duplex_v2.soundscape_plan.v3",
+      "side_speech_sources": [],
+      "side_speech_count": 0,
+      "sampling": {
+        "schema": "duplex_v2.ambient_draw.v2",
+        "policy": {
+          "schema": "duplex_v2.soundscape_policy.v2",
+          "quiet_probability": 0.5,
+          "discrete_targets_by_tier": {
+            "short": [
+              0,
+              1
+            ],
+            "medium": [
+              1,
+              2
+            ],
+            "long": [
+              2,
+              4
+            ]
+          },
+          "discrete_count_includes": [
+            "environment_events",
+            "side_speech"
+          ],
+          "max_ambient_layers": 2,
+          "gain_range": [
+            0.3,
+            0.7
+          ],
+          "speech_request_probability": 0.5,
+          "third_party_preference_probability": 0.8,
+          "speech_requires_existing_scene_source": true,
+          "environment_audio": "base_only",
+          "stage2_repair": "atomic_scoped_patch",
+          "stage2_max_judge_attempts": 3,
+          "json_parse_max_retries": 3
+        },
+        "preferences": {
+          "schema": "duplex_v2.ambient_preferences.v1",
+          "seed": 202611073004,
+          "slot": 2,
+          "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+          "categories": {
+            "bed": [
+              "crowd",
+              "wind",
+              "birds",
+              "fan",
+              "rain",
+              "traffic"
+            ],
+            "event": [
+              "footsteps",
+              "water_tap",
+              "door",
+              "doorbell",
+              "paper",
+              "keyboard"
+            ]
+          },
+          "recordings": {
+            "bed:birds": [
+              "birds-fsd50k-eval-319512",
+              "birds-fsd50k-eval-57907",
+              "birds-fsd50k-eval-86343"
+            ],
+            "bed:crowd": [
+              "crowd-fsd50k-eval-340358",
+              "crowd-fsd50k-eval-121877",
+              "crowd-fsd50k-eval-185058"
+            ],
+            "bed:fan": [
+              "fan-fsd50k-eval-415925",
+              "fan-fsd50k-eval-419427",
+              "fan-fsd50k-eval-235362"
+            ],
+            "bed:rain": [
+              "rain-fsd50k-eval-238016",
+              "rain-fsd50k-eval-382582",
+              "rain-fsd50k-eval-21189"
+            ],
+            "bed:traffic": [
+              "traffic-fsd50k-eval-232686",
+              "traffic-fsd50k-eval-235541",
+              "traffic-fsd50k-eval-124020"
+            ],
+            "bed:wind": [
+              "wind-fsd50k-eval-113173",
+              "wind-fsd50k-eval-113176",
+              "wind-fsd50k-eval-113175"
+            ],
+            "event:door": [
+              "door-fsd50k-eval-119077",
+              "door-fsd50k-eval-71212",
+              "door-fsd50k-eval-209519"
+            ],
+            "event:doorbell": [
+              "doorbell-fsd50k-eval-332563",
+              "doorbell-fsd50k-eval-426594",
+              "doorbell-fsd50k-eval-348322"
+            ],
+            "event:footsteps": [
+              "footsteps-fsd50k-eval-153104",
+              "footsteps-fsd50k-eval-392303",
+              "footsteps-fsd50k-eval-272381"
+            ],
+            "event:keyboard": [
+              "keyboard-fsd50k-eval-233057",
+              "keyboard-fsd50k-eval-411545",
+              "keyboard-fsd50k-eval-399740"
+            ],
+            "event:paper": [
+              "paper-fsd50k-eval-343098",
+              "paper-fsd50k-eval-82562",
+              "paper-fsd50k-eval-121200"
+            ],
+            "event:water_tap": [
+              "water_tap-fsd50k-eval-402128",
+              "water_tap-fsd50k-eval-232499",
+              "water_tap-fsd50k-eval-402127"
+            ]
+          }
+        },
+        "control": {
+          "schema": "duplex_v2.soundscape_control.v2",
+          "seed": 1056813584,
+          "mode": "layered",
+          "discrete_event_target": 0,
+          "max_ambient_layers": 2,
+          "side_speech_requested": false,
+          "speech_kind_preferences": [
+            "third_party",
+            "machine"
+          ]
+        },
+        "control_sha256": "ece12d25afee8483f4b267a516564ce691958ca6032e0ef6a6aff92caea27df4",
+        "candidate_plan": {
+          "schema": "duplex_v2.soundscape_plan.v3",
+          "mode": "layered",
+          "ambient_layers": [
+            {
+              "source_id": "AMB01",
+              "candidates": [
+                {
+                  "asset_id": "fan-fsd50k-eval-415925",
+                  "reason": "稳定的室内机械送风声与小会议室已建立的通风背景相容。",
+                  "environment_audio": "头顶通风口传来持续、低沉且均匀的送风声。"
+                },
+                {
+                  "asset_id": "fan-fsd50k-eval-419427",
+                  "reason": "连续的风扇或通风录音适合作为安静办公空间的低强度底噪。",
+                  "environment_audio": "会议室上方保持着音量平稳的机械通风声。"
+                },
+                {
+                  "asset_id": "fan-fsd50k-eval-235362",
+                  "reason": "该录音属于稳定室内通风底噪，不会引入故事中未建立的事件或人物。",
+                  "environment_audio": "远高于说话位置的送风设备持续轻响，没有明显起伏。"
+                }
+              ]
+            }
+          ],
+          "environment_events": [],
+          "side_speech_eligibility": {
+            "third_party": {
+              "compatible": false,
+              "reason": "用户独自在小会议室内，当前故事没有在场的第三方。",
+              "source": null
+            },
+            "machine": {
+              "compatible": false,
+              "reason": "场景只建立了持续通风设备，没有可辨识的机器语音来源。",
+              "source": null
+            }
+          }
+        },
+        "base_environment_audio_sha256": "2e07ceba762481e33c9132a9aa03712dcdd7ad46ab3df9c68f4f098a12543a3c",
+        "aggregate_environment_audio": "头顶约两米处的通风口持续发出低而稳定的送风声，音量基本不变。会议室内没有其他人声，近处语音清晰，房间轻微的封闭回响始终保持在背景。 头顶通风口传来持续、低沉且均匀的送风声。",
+        "draws": [
+          {
+            "source_id": "AMB01",
+            "category": "fan",
+            "asset_id": "fan-fsd50k-eval-415925",
+            "eligible_categories": [
+              "fan"
+            ],
+            "eligible_assets": [
+              "fan-fsd50k-eval-235362",
+              "fan-fsd50k-eval-415925",
+              "fan-fsd50k-eval-419427"
+            ]
+          }
+        ],
+        "speech_selection": {
+          "requested": false,
+          "compatible_kinds": [],
+          "selected_kind": null,
+          "outcome": "not_requested",
+          "assessments": {
+            "third_party": {
+              "compatible": false,
+              "reason": "用户独自在小会议室内，当前故事没有在场的第三方。",
+              "source": null
+            },
+            "machine": {
+              "compatible": false,
+              "reason": "场景只建立了持续通风设备，没有可辨识的机器语音来源。",
+              "source": null
+            }
+          }
+        }
+      }
+    },
+    "ambient_control": {
+      "schema": "duplex_v2.soundscape_control.v2",
+      "seed": 1056813584,
+      "mode": "layered",
+      "discrete_event_target": 0,
+      "max_ambient_layers": 2,
+      "side_speech_requested": false,
+      "speech_kind_preferences": [
+        "third_party",
+        "machine"
+      ]
+    },
+    "ambient_catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f"
+  },
+  "script_repair_policy": {
+    "schema": "duplex_v2.script_repair_policy.v1",
+    "mode": "json_patch",
+    "patch_schema": "duplex_v2.script_patch.v1",
+    "json_parse_max_retries": 3,
+    "content_max_repairs": 5,
+    "length_compaction_max_attempts": 3,
+    "overlength_after_compaction": "fail_case",
+    "judge_scope": "complete_script_and_heard_context"
+  },
+  "json_parse_max_retries": 3,
+  "repair_output": "changed_fields_only",
+  "script_execution_policy": {
+    "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+    "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+    "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+    "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+    "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+    "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+    "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+  },
+  "program_anchor_seed": 654804417,
+  "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+  "attempts": [
+    {
+      "attempt": 1,
+      "decision": "repair",
+      "directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g04-sample-003/R01-V01/script/attempts/attempt-01"
+    },
+    {
+      "attempt": 2,
+      "decision": "repair",
+      "directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g04-sample-003/R01-V01/script/attempts/attempt-02"
+    },
+    {
+      "attempt": 3,
+      "decision": "repair",
+      "directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g04-sample-003/R01-V01/script/attempts/attempt-03"
+    },
+    {
+      "attempt": 4,
+      "decision": "repair",
+      "directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g04-sample-003/R01-V01/script/attempts/attempt-04"
+    },
+    {
+      "attempt": 5,
+      "decision": "pass",
+      "directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g04-sample-003/R01-V01/script/attempts/attempt-05"
+    }
+  ],
+  "rounds": 7,
+  "backchannels": 2,
+  "side_speech": 0,
+  "environment_events": 0,
+  "interruptions": 1,
+  "length_warnings": [],
+  "script_path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g04-sample-003/R01-V01/script/script.json",
+  "semantic_waivers": [
+    {
+      "assistant_id": "A001",
+      "attempt": 3,
+      "characters": 249,
+      "judge_decision": "repair",
+      "findings": [
+        {
+          "severity": "must_fix",
+          "path": "/rounds/0/assistant_utterance",
+          "problem": "首次盲听材料被改写成电报式摘要，既不适合作为自然连续发言，也改变或削弱了冻结原文中的条件、归因和委婉强度。",
+          "evidence": "冻结材料是“could be ready by 30 September, provided the data migration test is completed by the 12th”“We are broadly comfortable…”“The vendor believes…”以及“I would not recommend cutting…”。候选却说“ready 30 September if data migration test ends”“Broadly accept”“Vendor: defects below…”和“keep two-week security review”，分别丢失或改变了截止含义、有限认可、供应商判断归因和“不建议”的立场；这也使A002随后引用未实际播出的“could consider”缺乏当前听觉依据。",
+          "repair": "将A001改为忠实、自然地口头朗读冻结的英文模拟发言，保留全部数字、条件、归因、建议和保留意见；同步更新受其正文影响的T01及BC01精确前缀锚点。"
+        }
+      ],
+      "reason": "third_compaction_length_and_structure_accepted_without_semantic_pass"
+    },
+    {
+      "assistant_id": "A003",
+      "attempt": 3,
+      "characters": 240,
+      "judge_decision": "repair",
+      "findings": [
+        {
+          "severity": "must_fix",
+          "path": "/rounds/0/assistant_utterance",
+          "problem": "助手在首轮直接使用了用户尚未说出的隐藏模拟材料，包括具体日期、人数、比例和项目状态，违反已听上下文的信息边界。",
+          "evidence": "U01只要求“盲听一遍模拟发言”，未提供任何具体内容；assistant_before_reply_history也只有该请求。A001却直接说出“30 September”“12th”“240 users”“1.5%”等仅存在于frozen_source.situation_knowledge.task_reference_data中的事实。",
+          "repair": "不要在首轮从隐藏task_reference_data提取具体值；调整开场安排，使练习材料在合法可见来源中建立后再由助手使用，同时保持首次只听不看文字的约束。"
+        },
+        {
+          "severity": "must_fix",
+          "path": "/rounds/0/assistant_utterance",
+          "problem": "模拟发言的电报式改写削弱或改变了多处原始立场和委婉程度，不适合作为要求保留情态的首次听辨材料。",
+          "evidence": "冻结原文是“The vendor believes the defect rate can be kept below 1.5 percent”和“we could consider reducing the initial scope, but I would not recommend cutting...”；A001改成“Vendor: defects below 1.5%”和“consider less scope; keep two-week security review”，分别删掉供应商判断与可能性，并把“不建议削减”压成直接指令。",
+          "repair": "在不展示文字的前提下口头朗读时保留believes、can、could consider、would not recommend等归属和情态，不用电报式措辞把判断、选项或建议强化为事实和命令。"
+        }
+      ],
+      "reason": "third_compaction_length_and_structure_accepted_without_semantic_pass"
+    }
+  ],
+  "semantic_review_status": "waived_after_third_compaction"
+}

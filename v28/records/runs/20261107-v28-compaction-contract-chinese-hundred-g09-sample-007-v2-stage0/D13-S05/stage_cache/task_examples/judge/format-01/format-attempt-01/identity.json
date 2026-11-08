@@ -1,0 +1,128 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "[SYSTEM ROLE]\n你是 taxonomy Stage-00 任务方向的语义 Judge。只检查当前 Scenario 的任务方向是否可用；每组条数由输入 `requested_examples_per_style` 指定。不重写 Domain/Scenario，不评价用户画像或声音，也不做分布配额审查。\n\n[INPUT]\n输入包含 Domain、Scenario、已有示例任务、`requested_examples_per_style` 和待审查的 `example_tasks`。`example_tasks` 应有三组，每组条数必须与 `requested_examples_per_style` 一致。\n\n[CHECK]\n- 每条是否确实属于当前 Scenario，而不是另一个领域的任务。\n- 开放式互动是否主要依赖通用知识或讨论，而不是要求已有材料。\n- 结构化整理是否有明确的材料处理和结构化结果。\n- 混合型是否同时包含通用框架和后续材料判断，且两段关系清楚。\n- 是否出现具体事实、工具依赖、Assistant 行为、完整答案或安全/评分字段。\n- 同组是否有明显的语义重复；只换实体或句式不算新的方向。\n- 是否出现表达入口塌缩：若同组有三个或以上条目沿用相同的泛化句首、知识获取表达或叙述骨架，例如连续“我想”“了解”“先……再……”，且这种重复不是当前 Scenario 自然要求，应判为 must-fix。重点是同组条目是否呈现不同的用户需求、互动方式和问题入口，不要求每条句式都不同。\n\n不要因为任务风格、职业或主题偏好不同而提出审美性意见。只报告会影响任务方向库使用的 must-fix 问题。\n\n[OUTPUT]\n只输出合法 JSON：\n{\n  \"decision\": \"pass\",\n  \"findings\": []\n}\n\n发现问题时：\n{\n  \"decision\": \"repair\",\n  \"findings\": [\n    {\n      \"severity\": \"must_fix\",\n      \"path\": \"/example_tasks/开放式互动/2\",\n      \"problem\": \"一个可定位的问题\",\n      \"evidence\": \"相关任务文本\",\n      \"repair\": \"最小修复方向\"\n    }\n  ]\n}\n",
+  "context": {
+    "scenario": {
+      "domain_id": "D13",
+      "domain": "金融、银行与保险",
+      "domain_definition": "PersonaPlex 明确展示银行支持，IHBench 覆盖 finance；本库只描述信息咨询，不推断交易执行能力。",
+      "scenario_id": "D13-S05",
+      "scenario": "贷款与房贷知识",
+      "requested_examples_per_style": 5,
+      "existing_example_task_seeds": [],
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "medium",
+        "target_turns": 10,
+        "min_turns": 9,
+        "max_turns": 11
+      },
+      "dialogue_length_instruction": "本条完整对话目标为 10 个主轮，允许 9–11 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      }
+    },
+    "example_tasks": {
+      "开放式互动": [
+        "通过一个口头问答练习，熟悉申请贷款或房贷时常见的问题、回答思路与注意事项。",
+        "弄清固定利率、浮动利率和混合利率的差异，以及它们分别适合怎样的借款需求。",
+        "讨论贷款期限、月供压力和总利息之间的取舍，建立评估借款负担的基本方法。",
+        "围绕提前还款、逾期和利率变化等情况，理解房贷中常见的风险与应对思路。",
+        "共同设计一套向银行咨询房贷时值得提出的问题，涵盖资格、费用、利率和合同条款等方面。"
+      ],
+      "结构化整理": [
+        "把随后提供的多份贷款或房贷方案按利率、期限、费用、还款方式和限制条件整理成可比较的清单。",
+        "根据随后提供的收入、支出和现有负债记录，整理借款人的偿还负担与可承受范围。",
+        "将随后提供的贷款申请材料按身份、收入、资产、负债和房产信息分类，并列出缺失或需要核对的项目。",
+        "把随后提供的房贷办理事项、所需材料和前置条件整理成清晰的申请流程与准备计划。",
+        "核对随后提供的贷款合同或条款摘录，归纳其中关于利率调整、费用、违约和提前还款的规定及相互矛盾之处。"
+      ],
+      "混合型": [
+        "结合浮动利率风险、利率变化逻辑和随后提供的个人现金流及候选方案，判断哪种利率安排更适合自己的承受能力。",
+        "依据偿债能力、应急储备和借款成本等通用判断框架，结合随后提供的财务记录，评估合理的借款规模与期限选择。",
+        "拿随后提供的提前还款条款、剩余贷款情况和资金用途，与盈亏平衡、流动性和机会成本等原则结合起来判断是否适合提前还款。",
+        "根据还款稳定性、总成本和现金流灵活性等标准，比较随后提供的不同还款方式并选择更符合个人情况的一种。",
+        "结合贷款审批的一般要求和随后提供的个人条件、材料状况及备选计划，判断当前申请准备是否充分以及下一步应优先解决什么问题。"
+      ]
+    }
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

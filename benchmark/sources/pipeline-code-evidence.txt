@@ -1,0 +1,152 @@
+
+FILE: /ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/export.py
+258:     for aid, response in sorted(responses.items(), key=lambda pair: pair[1]['start_frame']):
+259:         uid = assistant_placements[aid].get('focus_turn_id')
+260:         # Legacy SyntheticTimeline placements omit focus_turn_id; the main
+261:         # user with the latest onset before this reply identifies its context.
+262:         if uid is None:
+263:             mains = [p for p in placements if p['speaker']=='user' and p.get('kind')=='deliver'
+264:                      and p['start_frame']+p['frames'] <= response['start_frame']]
+265:             _require(bool(mains), aid+': no completed main user before reply')
+266:             uid = max(mains, key=lambda p: p['start_frame'])['focus_turn_id']
+267:         _require(uid in by_user, aid+': missing corresponding role-visible history')
+268:         context = by_user[uid]['assistant_history_before_reply']
+269:         expected = _history_at(observed, response['start_frame'])
+270:         _require(context['current_frame'] == response['start_frame'] and
+271:                  context['observed_audio'] == expected,
+272:                  aid+': assistant input history differs from the consumed timeline')
+273:         messages = [{'role': i['speaker'], 'audio_id': i['audio_id'], 'content': i['text']}
+274:                     for i in expected]
+275:         relative = 'audio/'+aid+'.wav'
+276:         records.append({'schema': 'duplex_v2.consumed_training_example.v1',
+277:             'data_kind': 'scripted_target_behavior', 'example_id': aid, 'user_id': uid,
+278:             'messages': messages,
+279:             'response': {'role': 'assistant', 'content': response['heard_text'],
+280:                          'audio_path': relative, 'audio_sha256': digest(consumed_paths[aid]),
+281:                          'sample_rate': 16000, 'frames': response['played_frames']},
+282:             'context_through_frame': response['start_frame']})
+283:         copied.append((consumed_paths[aid], relative))
+284: 
+285:     raw = ''.join(json.dumps(record, ensure_ascii=False, sort_keys=True)+'\n' for record in records)
+304:         'data_kind': 'scripted_target_behavior', 'examples': len(records),
+305:         'training_path': 'training.jsonl', 'training_sha256': digest(final),
+306:         'assistant_audio_seconds': sum(r['played_frames'] for r in responses.values())/16000,
+307:         'contains_full_script': False, 'contains_unplayed_assistant_text': False,
+308:         'background_in_history': False, 'live_policy_evaluation': False,
+309:         'verified_artifact_sha256': {name: digest(source/name) for name in
+310:                                   ('timeline.json', 'heard-context.json', 'integrity.json', 'result.json')}}
+311:     if omitted:
+312:         summary['omitted_backchannels'] = omitted
+313:     if ambient_export is not None:
+314:         mixed_path, attribution, evidence = ambient_export
+315:         mixed_output = target/'audio/dialogue-stereo.wav'
+316:         if mixed_output.exists():
+317:             _require(digest(mixed_output) == digest(mixed_path), 'previous exported mixed dialogue changed')
+318:         else:
+319:             shutil.copyfile(mixed_path, mixed_output)
+320:         attribution_path = target/'background-attribution.json'
+321:         if attribution_path.exists():
+322:             _require(_read(attribution_path) == attribution, 'previous exported background attribution changed')
+323:         else:
+324:             write_json(attribution_path, attribution)
+325:         summary.update(mixed_audio={'path': 'audio/dialogue-stereo.wav',
+
+FILE: /ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/anchor_dependencies.py
+49:                 timing.get('target_assistant_id') != previous.get('assistant_id')):
+50:             continue
+51:         updates, count = {}, None
+52:         if refs in (['T01'], ['T01', 'T02']):
+53:             updates = {'user_onset_after_text': text, 'assistant_stop_after_text': text}
+54:         elif refs in (['T03'], ['T03', 'T02']):
+55:             onset = timing.get('user_onset_after_text')
+56:             if not isinstance(onset, str) or not onset or not text.startswith(onset):
+57:                 continue
+58:             positions = [i+1 for i in range(len(onset), len(text)) if _spoken(text[i])]
+59:             # At least one character must remain unheard after a true interruption.
+60:             maximum = min(3, len(positions)-1)
+61:             if maximum < 1:
+62:                 errors.append(f'/rounds/{index}/timing/user_onset_after_text: '
+63:                               'leave room for 1–3 additional spoken characters and an unheard spoken tail')
+64:                 continue
+65:             material = f"{source['program_anchor_seed']}:{row.get('user_id')}:assistant-stop-v26"
+66:             count = int.from_bytes(hashlib.sha256(material.encode()).digest()[:8], 'big') % maximum + 1
+67:             updates = {'assistant_stop_after_text': text[:positions[count-1]]}
+68:         for field, value in updates.items():
+69:             old = timing.get(field)
+70:             if old != value:
+71:                 timing[field] = value
+72:                 derivations.append({'path': f'/rounds/{index}/timing/{field}',
+146:     changed = {key for key in old.keys() | new.keys() if old.get(key) != new.get(key)}
+147:     return [item for item in dependency_index(after) if isinstance(item['target_id'], str) and item['target_id'] in changed]
+148: 
+149: 
+150: def prompt_rules():
+151:     return ('\n\n[V2.6 程序锚点与依赖闭包]\n'
+152:             '模型决定 T03 用户起声的精确全文前缀；停止位置归程序所有：按冻结种子在起声后再说1–3个字，'
+153:             '不计标点、空格，不等待完整词句，且必须留下未播出的实词。起声点须留足该空间。'
+154:             'T01 的起声和停声前缀由程序设为上一A全文。仍返回原完整 timing 对象，程序会明确派生上述字段并留证。'
+155:             '程序派生后的完整剧本才进入已听上下文重建和独立Judge，后续用户和助手不能依赖被截掉的尾文。'
+156:             '正文变化时，根据 anchor_dependencies/previous_patch_failure 同步修改受影响的模型所有锚点：'
+157:             'T03起声、附和、旁语、用户T02停顿。仍有效的精确前缀保持；失效的必须在同一局部补丁中更新。'
+158:             '程序不做模糊匹配或名称替换，不移动这些语义事件；补丁经程序派生与完整结构检查后才原子接受。')
+
+FILE: /ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/audio.py
+25: from duplex_runtime.user_simulator import json_hash, write_json
+26: from duplex_v2.anchor_punctuation import (LEGACY_SENTENCE_PUNCTUATION,
+27:                                          is_unspoken_prose_attachment)
+28: 
+29: 
+30: SAMPLE_RATE = 16000
+31: DEFAULT_GAP_MS = 240
+32: SCHEMA = 'duplex_v2.fixed_script.v1'
+33: SCRIPT_SCHEMAS = frozenset((SCHEMA, 'duplex_v2.fixed_script.v2'))
+773:                 'source': 'audited_frozen_script', 'guard_called_at_runtime': False},
+774:                 'rendered': {'main': clip.get('rendered'), 'side_speech': [],
+775:                              'source_root': clip.get('render_root')}, 'audio_id': uid})
+776:             timeline.log('user_audio_completed', audio_id=uid)
+777:         elif kind == 'backchannel_complete':
+778:             identifier = payload['identifier']
+779:             timeline.hear('user', identifier, clips[identifier]['text'], frame)
+780:             timeline.log('backchannel_completed', audio_id=identifier,
+781:                          response_id=payload['aid'], assistant_continues=True,
+782:                          new_assistant_response=False, advances_main_turn=False)
+783:         elif kind in {'backchannel_onset', 'side_speech_onset'}:
+784:             identifier = payload['identifier']
+785:             definition = event_definitions[identifier]
+786:             if not timeline.last_response or timeline.last_response['id'] != payload['aid']:
+787:                 raise AudioPlanError(identifier+': event target is not the current response')
+788:             prefix = timeline.last_response['ledger'].heard_text
+789:             if prefix != actual_event_prefixes[identifier]:
+790:                 raise AudioPlanError(identifier+': actual event-onset prefix differs from the frozen script')
+791:             event_heard.append({'event_id': identifier, 'kind': kind, 'onset_frame': frame,
+792:                 'target_assistant_id': payload['aid'], 'assistant_prefix_at_onset': prefix,
+793:                 'planned_assistant_prefix_at_onset': definition['after_text'],
+794:                 'history_at_onset': timeline.context(),
+795:                 'event_added_to_assistant_context': kind == 'backchannel_onset'})
+796:             timeline.log(kind, **payload, assistant_prefix_at_onset=prefix,
+797:                          planned_assistant_prefix_at_onset=definition['after_text'],
+798:                          background_only=kind == 'side_speech_onset')
+799:         else:
+800:             timeline.log(kind, **payload, background_only=kind.startswith('side_speech'))
+801:     response_by_id = {r['response_id']: r for r in timeline.responses}
+
+FILE: /ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/script.py
+877:                 continue
+878:             _write(folder / "candidate.json", candidate)
+879:             result = _evaluate(candidate, source, folder, judge)
+880:             count = assistant_char_count(compacted["assistant_utterance"])
+881:             length_attempts.append({"attempt": attempt+1, "content_decision": result["decision"], "characters": count})
+882:             _write(folder / "decision.json", result)
+883:             structurally_valid = execution and not json.loads((folder / 'validation.json').read_text())['errors']
+884:             waived = bool(execution and attempt == 2 and count <= MAX_ASSISTANT_CHARS
+885:                           and structurally_valid and result['decision'] != 'pass')
+886:             if waived:
+887:                 waiver = {'assistant_id': assistant_id, 'attempt': attempt+1, 'characters': count,
+888:                           'judge_decision': result['decision'], 'findings': result['findings'],
+889:                           'reason': 'third_compaction_length_and_structure_accepted_without_semantic_pass'}
+890:                 semantic_waivers.append(waiver)
+891:                 length_attempts[-1]['accepted_with_semantic_waiver'] = True
+892:                 _write(folder / 'acceptance.json', {'accepted': True, **waiver})
+893:             if (result["decision"] == "pass" or waived) and count <= MAX_ASSISTANT_CHARS:
+894:                 accepted = candidate
+895:                 success = True

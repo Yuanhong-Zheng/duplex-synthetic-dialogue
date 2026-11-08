@@ -1,0 +1,115 @@
+{
+  "schema": "duplex_v2.audio_manifest.v1",
+  "identity_sha256": "3801c6298ab5b32493a38f83b80d88f9cb15b73eaf862470434c2c7b42edcdb1",
+  "seed": 3729996875,
+  "qwen_options": {
+    "engine": "vllm_omni",
+    "service_url": "http://127.0.0.1:18766",
+    "health_timeout_seconds": 1800,
+    "health_policy": "cached_gateway_health_long_wait_v1",
+    "engine_identity": {
+      "vllm": "0.28.0+cu129",
+      "vllm_omni": "0.28.0",
+      "dtype": "bfloat16",
+      "dependency_versions": {
+        "torch": "2.13.0+cu129",
+        "vllm": "0.28.0+cu129",
+        "vllm-omni": "0.28.0",
+        "transformers": "5.14.1",
+        "tokenizers": "0.22.2"
+      },
+      "max_inflight_per_gpu": 8,
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "speech_source_revision": "v27",
+      "model_config_sha256": "b4f01752d15a488abde3e1ab44723ae4f4b9e68a4037257b098b3737893cc1f9",
+      "deploy_config_sha256": "faaf35e2136c852e7d8f2d9706ecc41a88054ccbe0ccf7e1a9244fc008b9f063",
+      "reference_preparation": {
+        "policy": "validated_reference_fast_path_singleflight_gpu_pool_v1",
+        "workers": 2,
+        "gpus": [
+          0,
+          1
+        ],
+        "cache": "reference_settings_manifest_and_audio_sha256",
+        "singleflight": "per_reference_key_with_retained_failures"
+      }
+    }
+  },
+  "voices": {
+    "user": {
+      "schema": "duplex-runtime.qwen3-voice-plan.v1",
+      "voice_profile": "女性，感知年龄约四十多岁，音色温和但略显紧绷，吐字清楚，语速偏快，句尾偶尔带着明显的疑惑和担心。",
+      "voice_profile_sha256": "803f1ea896a014160aef808e5a7bf7163067375449ad9e288cebca7bf68e593f",
+      "identity_sha256": "71787e119dbc78e393ba4726c2dbf22ea6eb268916314b55e68e503441b60468",
+      "settings": {
+        "backend": "qwen3",
+        "endpoint": "local://qwen3-tts",
+        "model": "Qwen3-TTS-12Hz-1.7B-Base",
+        "voice_id": "qwen3-profile-71787e119dbc78e3",
+        "sample_rate": 16000,
+        "subtitle_type": "word",
+        "seed": 3729996875,
+        "language": "Chinese",
+        "voice_profile": "女性，感知年龄约四十多岁，音色温和但略显紧绷，吐字清楚，语速偏快，句尾偶尔带着明显的疑惑和担心。",
+        "reference_text": "我整理抽屉时摸到一个不认识的小东西，大约半副扑克牌那么大，是扁平的金属长方形，四角圆滑。一条短边固定连着十厘米左右的细线，线头是个不分上下的扁圆插头。您能帮我判断一下吗？",
+        "reference_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N004-R01-V01/R01-V01/audio/voices/user-reference",
+        "instruct": ""
+      },
+      "mapping": {
+        "voice_id": "qwen3-profile-71787e119dbc78e3",
+        "reason": "由冻结的 Stage 1 声音画像生成固定参考音频，再由 Base 复用同一参考合成整条对话。"
+      },
+      "source": "frozen_stage1_voice_profile",
+      "fixed_for_whole_episode": true
+    },
+    "assistant": {
+      "settings": {
+        "backend": "qwen3",
+        "endpoint": "local://qwen3-tts",
+        "model": "Qwen3-TTS-12Hz-1.7B-Base",
+        "voice_id": "Serena",
+        "sample_rate": 16000,
+        "subtitle_type": "word",
+        "seed": 3729996875,
+        "language": "Chinese",
+        "voice_profile": null,
+        "reference_text": "我们先把已经确认的情况理清楚，再一步一步处理。需要补充的信息，可以接着告诉我。",
+        "reference_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261107-v28-reference-parallel-audio/fresh-batch-shared-assistant-reference/ac9cfa7b3cf77221ad8bf9f7f244ecb3d2dba752b00f51b216804b9380575b32",
+        "instruct": "",
+        "reference_preset": "Serena",
+        "reference_audio": null,
+        "reference_audio_sha256": null,
+        "reference_seed": 20261102,
+        "non_streaming_mode": true
+      },
+      "source": "shared_fixed_Serena_reference",
+      "fixed_for_whole_episode": true
+    },
+    "side_speech": {}
+  },
+  "mode": "frozen_script_parallel_TTS_static_PCM_timeline",
+  "tts_backend": "qwen3",
+  "clip_concurrency": 16,
+  "pool_capacity": 64,
+  "gap_ms": 240,
+  "runtime_text_model_calls": 0,
+  "api_wait_advances_synthetic_clock": false,
+  "native_realtime_latency_measured": false,
+  "native_server_cancellation": false,
+  "alignment_source": "qwen3_forced_aligner_0.6b_posthoc",
+  "background_audio_is_context": false,
+  "full_assistant_synthesized_before_prefix_crop": true,
+  "status": "completed",
+  "anchor_boundary_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+  "language": "zh",
+  "assistant_reference_root": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261107-v28-reference-parallel-audio/fresh-batch-shared-assistant-reference",
+  "backchannel_alignment_failure_policy": "warn_and_omit_exhausted_alignment_v1",
+  "speech_onset_policy": "cpu_vad_t03_outer_silence_preroll30ms_same_prefix_speech_start_calibration_v1",
+  "ambient_plan_sha256": "5886a3dfb302a40ce7733a8d92166673a290460c6ddfe3bfb2cfbd6645cb72fd",
+  "planned_text_boundaries_exact": true,
+  "spoken_anchor_boundaries_exact": true,
+  "anchor_boundary_warnings": []
+}

@@ -1,0 +1,210 @@
+{
+  "episode_situation": "今天下午，用户在公司一间安静的小会议室里，正准备稍后陪同一位中国供应商代表与海外客户沟通。供应商刚在工作消息中用一句客气却似乎带轻微反讽的话拒绝了客户的提议，用户能看到中文原句，但尚不确定反讽是有意表达，还是自己对语气判断过度。用户的双语沟通经验有限，担心机械直译会显得生硬或攻击性过强，也不想擅自把原话的态度软化掉。眼下可用的是原句及前后语境，不能即时请教资深译员；仍待确认的是说话者想保留多少锋芒、对客户应有的正式程度，以及该如何用不带诱导的简短问题核实语气。",
+  "task_reference_data": [
+    "客户此前提议把原定交期提前两周，同时不增加费用，并询问供应商能否配合。",
+    "供应商的完整回复是：“您的建议当然很理想，不过我们恐怕还没有在不增加成本的情况下把两周变出来的本事，所以还是先按原计划走吧。”"
+  ],
+  "environment_audio": "会议室整体安静，背景接近无声。用户近距离说话清晰，没有持续声源或突发声响遮挡。",
+  "estimated_snr_db": 35,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "英文转述应同时顾及客气、拒绝和轻微反讽，不能只按字面逐词替换。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "比较示例保持简短，并说明不同译法可能给英文听者带来的语气感受。",
+      "kind": "soft"
+    },
+    {
+      "constraint_id": "C03",
+      "text": "向原说话者确认语气时，应使用中性、非诱导式问法，不预设对方是在讽刺。",
+      "kind": "hard"
+    }
+  ],
+  "safety_limits": [],
+  "soundscape_plan": {
+    "mode": "quiet",
+    "ambient_layers": [],
+    "environment_events": [],
+    "schema": "duplex_v2.soundscape_plan.v3",
+    "side_speech_sources": [],
+    "side_speech_count": 0,
+    "sampling": {
+      "schema": "duplex_v2.ambient_draw.v2",
+      "policy": {
+        "schema": "duplex_v2.soundscape_policy.v2",
+        "quiet_probability": 0.5,
+        "discrete_targets_by_tier": {
+          "short": [
+            0,
+            1
+          ],
+          "medium": [
+            1,
+            2
+          ],
+          "long": [
+            2,
+            4
+          ]
+        },
+        "discrete_count_includes": [
+          "environment_events",
+          "side_speech"
+        ],
+        "max_ambient_layers": 2,
+        "gain_range": [
+          0.3,
+          0.7
+        ],
+        "speech_request_probability": 0.5,
+        "third_party_preference_probability": 0.8,
+        "speech_requires_existing_scene_source": true,
+        "environment_audio": "base_only",
+        "stage2_repair": "atomic_scoped_patch",
+        "stage2_max_judge_attempts": 3,
+        "json_parse_max_retries": 3
+      },
+      "preferences": {
+        "schema": "duplex_v2.ambient_preferences.v1",
+        "seed": 202611073008,
+        "slot": 7,
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "categories": {
+          "bed": [
+            "rain",
+            "crowd",
+            "birds",
+            "traffic",
+            "fan",
+            "wind"
+          ],
+          "event": [
+            "paper",
+            "keyboard",
+            "water_tap",
+            "doorbell",
+            "door",
+            "footsteps"
+          ]
+        },
+        "recordings": {
+          "bed:birds": [
+            "birds-fsd50k-eval-86343",
+            "birds-fsd50k-eval-57907",
+            "birds-fsd50k-eval-319512"
+          ],
+          "bed:crowd": [
+            "crowd-fsd50k-eval-340358",
+            "crowd-fsd50k-eval-185058",
+            "crowd-fsd50k-eval-121877"
+          ],
+          "bed:fan": [
+            "fan-fsd50k-eval-415925",
+            "fan-fsd50k-eval-235362",
+            "fan-fsd50k-eval-419427"
+          ],
+          "bed:rain": [
+            "rain-fsd50k-eval-238016",
+            "rain-fsd50k-eval-21189",
+            "rain-fsd50k-eval-382582"
+          ],
+          "bed:traffic": [
+            "traffic-fsd50k-eval-124020",
+            "traffic-fsd50k-eval-235541",
+            "traffic-fsd50k-eval-232686"
+          ],
+          "bed:wind": [
+            "wind-fsd50k-eval-113173",
+            "wind-fsd50k-eval-113176",
+            "wind-fsd50k-eval-113175"
+          ],
+          "event:door": [
+            "door-fsd50k-eval-119077",
+            "door-fsd50k-eval-209519",
+            "door-fsd50k-eval-71212"
+          ],
+          "event:doorbell": [
+            "doorbell-fsd50k-eval-348322",
+            "doorbell-fsd50k-eval-332563",
+            "doorbell-fsd50k-eval-426594"
+          ],
+          "event:footsteps": [
+            "footsteps-fsd50k-eval-392303",
+            "footsteps-fsd50k-eval-272381",
+            "footsteps-fsd50k-eval-153104"
+          ],
+          "event:keyboard": [
+            "keyboard-fsd50k-eval-233057",
+            "keyboard-fsd50k-eval-411545",
+            "keyboard-fsd50k-eval-399740"
+          ],
+          "event:paper": [
+            "paper-fsd50k-eval-82562",
+            "paper-fsd50k-eval-343098",
+            "paper-fsd50k-eval-121200"
+          ],
+          "event:water_tap": [
+            "water_tap-fsd50k-eval-402128",
+            "water_tap-fsd50k-eval-402127",
+            "water_tap-fsd50k-eval-232499"
+          ]
+        }
+      },
+      "control": {
+        "schema": "duplex_v2.soundscape_control.v2",
+        "seed": 3942153787,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "third_party",
+          "machine"
+        ]
+      },
+      "control_sha256": "82b4bfbb4ed4e31ea1f9f45945ee80568b98a0ccfe5a66b15ee296cbe84fd858",
+      "candidate_plan": {
+        "schema": "duplex_v2.soundscape_plan.v3",
+        "mode": "quiet",
+        "ambient_layers": [],
+        "environment_events": [],
+        "side_speech_eligibility": {
+          "third_party": {
+            "compatible": false,
+            "reason": "当前故事中没有第三方在会议室内与用户共同参与对话。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "当前场景没有已建立的语音播报设备或其他机器语音来源。",
+            "source": null
+          }
+        }
+      },
+      "base_environment_audio_sha256": "ffa0b7f3b50b284a77fe2341e3a50078820acc7a31efe0a56d9234faa07fe9ba",
+      "aggregate_environment_audio": "会议室整体安静，背景接近无声。用户近距离说话清晰，没有持续声源或突发声响遮挡。",
+      "draws": [],
+      "speech_selection": {
+        "requested": false,
+        "compatible_kinds": [],
+        "selected_kind": null,
+        "outcome": "not_requested",
+        "assessments": {
+          "third_party": {
+            "compatible": false,
+            "reason": "当前故事中没有第三方在会议室内与用户共同参与对话。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "当前场景没有已建立的语音播报设备或其他机器语音来源。",
+            "source": null
+          }
+        }
+      }
+    }
+  }
+}

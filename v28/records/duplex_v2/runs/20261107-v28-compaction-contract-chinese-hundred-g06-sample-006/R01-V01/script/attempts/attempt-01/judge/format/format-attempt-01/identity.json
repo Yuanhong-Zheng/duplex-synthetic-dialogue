@@ -1,0 +1,3526 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 13 轮，允许 12–14 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 旁语仅限第三方或机器，不包含用户说着说着转向旁人的模式；声音 profile 必须只描述声音。旁语不提供隐藏关键任务材料，不被助手当成正式用户新请求，不使助手停顿或另起回答。声景未支持此来源时不应凭空编人或设备。30%–70% 音量合规即可。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 和 voice_profile 必须逐字匹配对应源，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g06-sample-006-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 3641226066,
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g06/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g06/relay-state",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D18",
+          "domain": "会议、访谈与团队协作",
+          "scenario_id": "D18-S05",
+          "scenario": "协同决策"
+        },
+        "task_style": "混合型",
+        "task_instance": {
+          "goal": "针对团队准备启动的一项跨部门项目，在听取成员提出的不同推进方案后，结合决策透明度、时间压力、潜在风险和责任承接情况，厘清还缺哪些关键信息，比较各方案的适用条件与代价，并形成一个团队能够理解、接受且便于后续执行的选择，同时明确需要保留的调整空间。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "负责协调公司产品、运营与技术团队共同推进项目的项目负责人",
+          "task_familiarity": "high"
+        },
+        "voice_profile": "男性，三十多岁，声音结实清晰，音色偏低，吐字利落；整体语气有明显的投入感和判断力，讨论分歧时情绪外显但仍保持稳定节奏。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "formal",
+          "directness": "direct",
+          "emotional_expressiveness": "expressive",
+          "verbosity": "balanced",
+          "initiative": "high",
+          "caution": "high",
+          "patience": "high",
+          "behavioral_notes": [
+            "通常主动交代判断依据，并会直接指出自己认为尚未澄清的关键问题。",
+            "表达立场时情绪变化较明显，但愿意完整听取不同意见并逐项核对。",
+            "面对不确定结论会主动要求区分已知信息、推测和仍需确认的部分。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "medium",
+        "target_turns": 13,
+        "min_turns": 12,
+        "max_turns": 14
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v2",
+        "seed": 828732009,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "machine",
+          "third_party"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "2026年11月7日傍晚，用户独自留在公司一间安静的小会议室里，准备整理刚结束的跨部门项目讨论。这个项目要为客户成功团队建设一套“续约风险提示”内部工作台，由产品、运营和技术共同推进，计划11月10日启动，并希望在12月18日前完成首轮试点，以便赶上年末续约集中期。用户是项目负责人，已经分别听取产品负责人林柯、运营负责人周雯和技术负责人韩涛提出的三种推进方案，但会上没有形成一致选择。林柯倾向先用两周完成需求澄清和原型验证，再进入正式开发，认为这样更容易留下清楚的决策依据；周雯主张先选一个业务小组做有限试点，以较小范围换取更快反馈；韩涛则建议按完整范围并行推进数据接入、规则配置和界面开发，以争取一次覆盖主要需求。三种方案在速度、返工风险、跨部门投入和责任边界上各有不同，成员目前也分别承担着其他工作。公司没有为项目批准新增人手，现有预算只覆盖内部开发和试点培训，因此任何方案都要在现有团队容量内安排。用户手边有会议记录、初步工期估算、各团队已承诺的投入比例以及试点范围草案，可以口头逐项核对，但无法在当前对话中查询新的排期或修改公司的项目系统。会上已经确认工作台只向内部员工开放，不过客户数据字段的最终授权范围、风险规则的验收方式和试点失败后的回退标准仍未确定。产品团队担心直接压缩探索阶段会让需求变更失去可追溯依据，运营团队担心讨论过久会错过培训窗口，技术团队则担心并行方案在数据权限未定时产生等待和返工。用户希望选择过程能明确区分已知事实、成员判断和待核实事项，避免团队把最后决定理解成单纯服从进度压力。当前最紧迫的是在下次项目会前形成一套可解释的比较框架，识别哪些未知信息会真正改变选择，并划清由谁承接实施、验收和风险处置。最终方案还不能把后续路径锁死，需要设置能够根据试点反馈调整范围或节奏的检查点，但检查点的触发条件尚未统一。",
+        "task_reference_data": [
+          "来自用户手边的会议记录，当前已读：方案甲由林柯提出，先用10个工作日完成需求访谈、风险规则梳理和可点击原型，再用20个工作日开发首轮试点版本；其理由是先减少需求歧义，但按顺序执行共需30个工作日，预计最早于12月21日完成，会错过12月18日目标。",
+          "来自用户手边的会议记录，当前已读：方案乙由周雯提出，先为客户成功一组约18名员工制作有限试点，仅包含客户概览、三项风险提示和人工反馈入口；预计15个工作日可投入试用，试点后再决定是否扩展。",
+          "来自用户手边的会议记录，当前已读：方案丙由韩涛提出，数据接入、六项风险规则和完整工作台界面并行开发，预计25个工作日完成；技术团队注明，若数据字段授权延迟超过5个工作日，整体工期和返工量需要重新估算。",
+          "来自各团队会前确认的投入记录，用户当前可读取：产品团队可稳定投入1名产品经理的60%工时和1名设计师的30%工时；运营团队可投入周雯的40%工时，并安排两名一线员工参与每周一次反馈；技术团队可投入2名工程师各50%工时。",
+          "来自运营培训草案，用户当前已读：12月21日至23日是年末集中培训窗口；若首轮试点未在12月18日前稳定下来，下一次完整培训窗口预计要到2027年1月11日以后，但该日期尚未由培训负责人最终确认。",
+          "来自技术评审笔记，用户当前已读：现有客户概览数据可以沿用内部权限；合同到期日、服务工单量和最近登录时间能否用于风险提示仍待数据治理负责人确认；确认责任人尚未在会议上指定。",
+          "来自会议责任分工草案，当前尚未定稿：林柯愿意负责需求范围和决策记录，周雯愿意负责试点招募与培训，韩涛愿意负责技术实现；风险规则的业务验收负责人、跨部门最终范围批准人和试点异常处置负责人仍为空缺。",
+          "来自产品团队的风险记录，用户当前已读：方案甲的主要代价是留给开发和培训的缓冲很少；方案乙可能产生试点结论无法代表其他业务组的偏差；方案丙可能在权限和规则未稳定前造成并行返工。",
+          "来自试点范围草案，当前可现场读取：首轮必须支持内部员工查看客户概览和提交反馈；自动向客户发送消息、自动变更客户标签以及对外展示风险评分均不在本轮范围内。",
+          "来自会末待确认清单，当前尚未核实：需要确认数据授权最晚答复日期、三项核心风险提示的验收阈值、试点中止或回退条件，以及若12月18日无法稳定上线时是否接受缩小范围。"
+        ],
+        "environment_audio": "会议室整体安静，近处只有极轻且稳定的室内底噪。门外和窗外没有清晰可辨的声源，用户说话时背景基本不发生变化。",
+        "estimated_snr_db": 35,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "项目计划于2026年11月10日启动，并以12月18日前形成可稳定使用的首轮试点为当前时间目标。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "项目没有新增人手，方案必须在产品、运营和技术团队已经承诺的投入比例内安排。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C03",
+            "text": "首轮范围不得包含自动向客户发送消息、自动变更客户标签或对外展示风险评分。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C04",
+            "text": "选择依据应区分已确认事实、成员判断和仍待核实的信息，并能向三个团队解释主要取舍。",
+            "kind": "soft"
+          },
+          {
+            "constraint_id": "C05",
+            "text": "方案需要保留依据试点反馈调整范围或节奏的检查点，避免一次性锁定全部后续投入。",
+            "kind": "soft"
+          }
+        ],
+        "safety_limits": [],
+        "soundscape_plan": {
+          "mode": "quiet",
+          "ambient_layers": [],
+          "environment_events": [],
+          "schema": "duplex_v2.soundscape_plan.v3",
+          "side_speech_sources": [],
+          "side_speech_count": 0,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v2",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v2",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611073006,
+              "slot": 5,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "fan",
+                  "birds",
+                  "rain",
+                  "wind",
+                  "traffic",
+                  "crowd"
+                ],
+                "event": [
+                  "water_tap",
+                  "footsteps",
+                  "paper",
+                  "doorbell",
+                  "keyboard",
+                  "door"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-319512",
+                  "birds-fsd50k-eval-57907",
+                  "birds-fsd50k-eval-86343"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-121877",
+                  "crowd-fsd50k-eval-185058",
+                  "crowd-fsd50k-eval-340358"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-419427",
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-415925"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-21189",
+                  "rain-fsd50k-eval-382582",
+                  "rain-fsd50k-eval-238016"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-124020",
+                  "traffic-fsd50k-eval-232686",
+                  "traffic-fsd50k-eval-235541"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113173",
+                  "wind-fsd50k-eval-113175",
+                  "wind-fsd50k-eval-113176"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-209519",
+                  "door-fsd50k-eval-119077",
+                  "door-fsd50k-eval-71212"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-348322",
+                  "doorbell-fsd50k-eval-332563",
+                  "doorbell-fsd50k-eval-426594"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-153104",
+                  "footsteps-fsd50k-eval-272381",
+                  "footsteps-fsd50k-eval-392303"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-411545",
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-399740"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-343098",
+                  "paper-fsd50k-eval-82562"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-402128",
+                  "water_tap-fsd50k-eval-232499",
+                  "water_tap-fsd50k-eval-402127"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v2",
+              "seed": 828732009,
+              "mode": "quiet",
+              "discrete_event_target": 0,
+              "max_ambient_layers": 2,
+              "side_speech_requested": false,
+              "speech_kind_preferences": [
+                "machine",
+                "third_party"
+              ]
+            },
+            "control_sha256": "b9555a02f90d2e124ce9e6ccbddc4e2733e356a3ec725c0ee30bb37ab0244751",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v3",
+              "mode": "quiet",
+              "ambient_layers": [],
+              "environment_events": [],
+              "side_speech_eligibility": {
+                "third_party": {
+                  "compatible": false,
+                  "reason": "用户当前独自在会议室整理会后材料，故事中没有其他在场且可辨识的人员。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "当前场景未建立会发出语音的设备或系统。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "9ea92718709c12771db11952c3c0a6e978e8ff9a384c5ff264a2808abe0d0e5a",
+            "aggregate_environment_audio": "会议室整体安静，近处只有极轻且稳定的室内底噪。门外和窗外没有清晰可辨的声源，用户说话时背景基本不发生变化。",
+            "draws": [],
+            "speech_selection": {
+              "requested": false,
+              "compatible_kinds": [],
+              "selected_kind": null,
+              "outcome": "not_requested",
+              "assessments": {
+                "third_party": {
+                  "compatible": false,
+                  "reason": "用户当前独自在会议室整理会后材料，故事中没有其他在场且可辨识的人员。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "当前场景未建立会发出语音的设备或系统。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v2",
+      "title": "续约风险工作台推进方案决策",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。",
+          "assistant_utterance": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。",
+          "user_intent": "建立协同决策任务并要求形成透明的方案比较框架",
+          "assistant_intent": "给出分类与比较维度，并引导用户先提供硬约束",
+          "semantic_goal": "确定后续比较方案所需的统一结构",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。",
+          "assistant_utterance": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范围和关键依赖，我再判断哪些真能落地。",
+          "user_intent": "补充项目日期、人员和使用对象等已确认约束",
+          "assistant_intent": "归纳硬约束并索取方案工期、范围和依赖",
+          "semantic_goal": "锁定所有方案都必须满足的边界",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。",
+            "assistant_stop_after_text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。",
+          "assistant_utterance": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。",
+          "user_intent": "打断概括并切换到逐项提供准确工期记录",
+          "assistant_intent": "停止原播报并明确逐项核对工期所需的信息",
+          "semantic_goal": "避免笼统讨论，改用现有记录进行精确比较",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期",
+            "assistant_stop_after_text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。",
+          "assistant_utterance": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。",
+          "user_intent": "逐项提供三种方案的工期、顺序及重估条件",
+          "assistant_intent": "比较三种方案的时间适配度并指出下一项核对重点",
+          "semantic_goal": "识别时间上已不可行和受条件影响的方案",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。",
+            "assistant_stop_after_text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。",
+          "assistant_utterance": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。",
+          "user_intent": "提供各团队已承诺的实际投入比例",
+          "assistant_intent": "区分容量上限与可行性结论，指出仍需核对的范围和工作量",
+          "semantic_goal": "防止把投入比例误当成方案可执行的充分证明",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。",
+            "assistant_stop_after_text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U06",
+          "assistant_id": "A006",
+          "user_utterance": "乙的首轮是客户概览、三项风险提示和人工反馈入口，只给客户成功一组十八人使用。丙要做六项规则和完整界面。首轮必须有客户概览和反馈，但自动发消息、自动改标签、对外展示评分都明确排除。",
+          "assistant_utterance": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段、按什么标准验收；这两点不清，十五个工作日仍可能失真。",
+          "user_intent": "补充有限试点、完整方案及明确排除项的范围信息",
+          "assistant_intent": "判断乙方案与首轮边界的匹配度并定位关键缺口",
+          "semantic_goal": "比较方案范围是否符合最小交付要求和禁止边界",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A005",
+            "user_onset_after_text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。",
+            "assistant_stop_after_text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U07",
+          "assistant_id": "A007",
+          "user_utterance": "对，这里不能默认字段已经可用。只有客户概览能沿用内部权限；合同到期日、服务工单量和最近登录时间都还要确认授权，而且会议上没指定确认责任人。",
+          "assistant_utterance": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。",
+          "user_intent": "打断并纠正字段可用性的潜在假设",
+          "assistant_intent": "停止原说明，将数据授权定义为关键决策门槛",
+          "semantic_goal": "明确已授权数据与待授权字段的边界",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A006",
+            "user_onset_after_text": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段",
+            "assistant_stop_after_text": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段、按什么"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U08",
+          "assistant_id": "A008",
+          "user_utterance": "还有一个时间因素：十二月二十一日至二十三日是集中培训窗口；如果十八日前不稳定，下次完整窗口可能要到明年一月十一日以后，不过后一日期还没最终确认。这个因素该怎么计入？",
+          "assistant_utterance": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。决策上可把错过十二月培训列为高代价，把具体延迟到哪天列为不确定影响，不用未经确认的日期夸大紧迫性。",
+          "user_intent": "补充培训窗口及未最终确认的后续日期并询问权重",
+          "assistant_intent": "区分确定的窗口代价与尚未确认的延迟日期",
+          "semantic_goal": "让时间压力被合理计入而不被夸大",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A007",
+            "user_onset_after_text": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。",
+            "assistant_stop_after_text": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。"
+          },
+          "pause_cue": {
+            "after_text": "还有一个时间因素：十二月二十一日至二十三日是集中培训窗口；如果十八日前不稳定，下次完整窗口可能要到明年一月十一日以后，",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U09",
+          "assistant_id": "A009",
+          "user_utterance": "责任草案里，林柯愿意负责需求范围和决策记录，周雯负责试点招募与培训，韩涛负责技术实现。现在空着的是风险规则业务验收、跨部门最终范围批准和试点异常处置。",
+          "assistant_utterance": "责任可以先这样落：林柯管范围与决策记录，周雯管招募培训，韩涛管技术实现；建议由你作为最终范围批准人，再指定业务验收和异常处置负责人。",
+          "user_intent": "提供已有责任承诺并指出三个关键责任空缺",
+          "assistant_intent": "整理责任分工并提出填补空缺的初步建议",
+          "semantic_goal": "使方案选择与实施、验收及风险处置责任对应",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A008",
+            "user_onset_after_text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。决策上可把错过十二月培训列为高代价，把具体延迟到哪天列为不确定影响，不用未经确认的日期夸大紧迫性。",
+            "assistant_stop_after_text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。决策上可把错过十二月培训列为高代价，把具体延迟到哪天列为不确定影响，不用未经确认的日期夸大紧迫性。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U10",
+          "assistant_id": "A010",
+          "user_utterance": "先别把最终批准直接落到我名下，这个权限会上没有确认。请按角色条件提建议，不要把推测写成既定分工。",
+          "assistant_utterance": "明白。最终范围批准仍标为待确认角色，候选人必须具备跨部门取舍权限；业务验收人应能定义三项提示的通过阈值；异常处置人应有权决定暂停、缩范围或回退。人选由下次项目会正式确认。",
+          "user_intent": "打断并反对未经确认的个人责任指派",
+          "assistant_intent": "撤回具体人选假设，改用权限和职责条件定义空缺角色",
+          "semantic_goal": "保证责任建议与已确认事实严格区分",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A009",
+            "user_onset_after_text": "责任可以先这样落：林柯管范围与决策记录，周雯管招募培训，韩涛管技术实现；建议由你作为最终范围批准人",
+            "assistant_stop_after_text": "责任可以先这样落：林柯管范围与决策记录，周雯管招募培训，韩涛管技术实现；建议由你作为最终范围批准人，再指"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U11",
+          "assistant_id": "A011",
+          "user_utterance": "好。基于目前真正已知的信息，你会推荐哪一个？请把推荐成立的条件和主要代价一起说清楚。",
+          "assistant_utterance": "建议以乙为首轮基线，但不是无条件承诺。它最符合日期、容量和最小范围，代价是十八人样本可能无法代表其他业务组。成立条件是及时确认数据授权、三项提示验收阈值和责任人；否则应缩减提示范围，而不是转向丙的完整并行。",
+          "user_intent": "要求基于现有证据给出带条件和代价的推荐",
+          "assistant_intent": "形成可解释的优选方案并说明适用条件与局限",
+          "semantic_goal": "获得团队可理解且不掩盖风险的初步选择",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A010",
+            "user_onset_after_text": "明白。最终范围批准仍标为待确认角色，候选人必须具备跨部门取舍权限；业务验收人应能定义三项提示的通过阈值；异常处置人应有权决定暂停、缩范围或回退。人选由下次项目会正式确认。",
+            "assistant_stop_after_text": "明白。最终范围批准仍标为待确认角色，候选人必须具备跨部门取舍权限；业务验收人应能定义三项提示的通过阈值；异常处置人应有权决定暂停、缩范围或回退。人选由下次项目会正式确认。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U12",
+          "assistant_id": "A012",
+          "user_utterance": "那检查点怎么设，才能既不把后续锁死，又能在权限、质量或进度出问题时及时调整？",
+          "assistant_utterance": "设三个决策门：启动前确认字段授权和负责人；开发中期检查三项提示能否按阈值验收；试用前检查稳定性、员工可用性和反馈闭环。任一门未通过，就按预先约定选择缩减提示、延后扩展或回退到客户概览加人工反馈。",
+          "user_intent": "追问可调整的检查点及异常情况下的路径",
+          "assistant_intent": "设置分阶段决策门和未通过时的调整选项",
+          "semantic_goal": "保留依据试点证据调整范围与节奏的空间",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A011",
+            "user_onset_after_text": "建议以乙为首轮基线，但不是无条件承诺。它最符合日期、容量和最小范围，代价是十八人样本可能无法代表其他业务组。成立条件是及时确认数据授权、三项提示验收阈值和责任人；否则应缩减提示范围，而不是转向丙的完整并行。",
+            "assistant_stop_after_text": "建议以乙为首轮基线，但不是无条件承诺。它最符合日期、容量和最小范围，代价是十八人样本可能无法代表其他业务组。成立条件是及时确认数据授权、三项提示验收阈值和责任人；否则应缩减提示范围，而不是转向丙的完整并行。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U13",
+          "assistant_id": "A013",
+          "user_utterance": "请给我一段可以在项目会上直接讲的结论，明确区分已知事实、当前判断和待确认事项，也把责任与调整机制带上。",
+          "assistant_utterance": "建议会上的结论这样表述：已知目标是十二月十八日前稳定试点、无新增人手，首轮只做内部概览、三项提示和反馈；判断是乙最符合时间与容量，但代表性较弱；待确认数据授权、验收阈值、回退标准及最终批准权。先以乙启动，林柯记范围，周雯管招募培训，韩涛管实现；相关空缺角色由会中确认。设置权限、可用性和反馈检查点，未达标就缩范围、降节奏或回退，不预先锁定扩展。",
+          "user_intent": "要求生成可直接用于项目会的完整决策表述",
+          "assistant_intent": "整合事实、判断、未知项、责任和调整机制形成最终话术",
+          "semantic_goal": "形成透明、可接受且便于执行的团队决策结论",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A012",
+            "user_onset_after_text": "设三个决策门：启动前确认字段授权和负责人；开发中期检查三项提示能否按阈值验收；试用前检查稳定性、员工可用性和反馈闭环。任一门未通过，就按预先约定选择缩减提示、延后扩展或回退到客户概览加人工反馈。",
+            "assistant_stop_after_text": "设三个决策门：启动前确认字段授权和负责人；开发中期检查三项提示能否按阈值验收；试用前检查稳定性、员工可用性和反馈闭环。任一门未通过，就按预先约定选择缩减提示、延后扩展或回退到客户概览加人工反馈。"
+          },
+          "pause_cue": null
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点",
+          "text": "嗯"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A004",
+          "after_text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大",
+          "text": "对"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A008",
+          "after_text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。",
+          "text": "明白"
+        },
+        {
+          "event_id": "BC04",
+          "target_assistant_id": "A012",
+          "after_text": "设三个决策门：启动前确认字段授权和负责人；开发中期检查三项提示能否按阈值验收；试用前检查稳定性、员工可用性和反馈闭环。",
+          "text": "嗯"
+        }
+      ],
+      "side_speech": [],
+      "environment_events": []
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。",
+          "final_shared_played_prefix": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范围和关键依赖，我再判断哪些真能落地。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期",
+          "final_shared_played_prefix": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范",
+          "discarded_unheard_tail": "围和关键依赖，我再判断哪些真能落地。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。",
+          "final_shared_played_prefix": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。",
+          "final_shared_played_prefix": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "乙的首轮是客户概览、三项风险提示和人工反馈入口，只给客户成功一组十八人使用。丙要做六项规则和完整界面。首轮必须有客户概览和反馈，但自动发消息、自动改标签、对外展示评分都明确排除。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A005",
+          "at_user_onset_heard_prefix": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。",
+          "final_shared_played_prefix": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段、按什么标准验收；这两点不清，十五个工作日仍可能失真。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "乙的首轮是客户概览、三项风险提示和人工反馈入口，只给客户成功一组十八人使用。丙要做六项规则和完整界面。首轮必须有客户概览和反馈，但自动发消息、自动改标签、对外展示评分都明确排除。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "乙的首轮是客户概览、三项风险提示和人工反馈入口，只给客户成功一组十八人使用。丙要做六项规则和完整界面。首轮必须有客户概览和反馈，但自动发消息、自动改标签、对外展示评分都明确排除。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段、按什么"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，这里不能默认字段已经可用。只有客户概览能沿用内部权限；合同到期日、服务工单量和最近登录时间都还要确认授权，而且会议上没指定确认责任人。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A006",
+          "at_user_onset_heard_prefix": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段",
+          "final_shared_played_prefix": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段、按什么",
+          "discarded_unheard_tail": "标准验收；这两点不清，十五个工作日仍可能失真。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "乙的首轮是客户概览、三项风险提示和人工反馈入口，只给客户成功一组十八人使用。丙要做六项规则和完整界面。首轮必须有客户概览和反馈，但自动发消息、自动改标签、对外展示评分都明确排除。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段、按什么"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，这里不能默认字段已经可用。只有客户概览能沿用内部权限；合同到期日、服务工单量和最近登录时间都还要确认授权，而且会议上没指定确认责任人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "乙的首轮是客户概览、三项风险提示和人工反馈入口，只给客户成功一组十八人使用。丙要做六项规则和完整界面。首轮必须有客户概览和反馈，但自动发消息、自动改标签、对外展示评分都明确排除。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段、按什么"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，这里不能默认字段已经可用。只有客户概览能沿用内部权限；合同到期日、服务工单量和最近登录时间都还要确认授权，而且会议上没指定确认责任人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "还有一个时间因素：十二月二十一日至二十三日是集中培训窗口；如果十八日前不稳定，下次完整窗口可能要到明年一月十一日以后，不过后一日期还没最终确认。这个因素该怎么计入？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A007",
+          "at_user_onset_heard_prefix": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。",
+          "final_shared_played_prefix": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。决策上可把错过十二月培训列为高代价，把具体延迟到哪天列为不确定影响，不用未经确认的日期夸大紧迫性。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "乙的首轮是客户概览、三项风险提示和人工反馈入口，只给客户成功一组十八人使用。丙要做六项规则和完整界面。首轮必须有客户概览和反馈，但自动发消息、自动改标签、对外展示评分都明确排除。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段、按什么"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，这里不能默认字段已经可用。只有客户概览能沿用内部权限；合同到期日、服务工单量和最近登录时间都还要确认授权，而且会议上没指定确认责任人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "还有一个时间因素：十二月二十一日至二十三日是集中培训窗口；如果十八日前不稳定，下次完整窗口可能要到明年一月十一日以后，不过后一日期还没最终确认。这个因素该怎么计入？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。决策上可把错过十二月培训列为高代价，把具体延迟到哪天列为不确定影响，不用未经确认的日期夸大紧迫性。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "乙的首轮是客户概览、三项风险提示和人工反馈入口，只给客户成功一组十八人使用。丙要做六项规则和完整界面。首轮必须有客户概览和反馈，但自动发消息、自动改标签、对外展示评分都明确排除。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段、按什么"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，这里不能默认字段已经可用。只有客户概览能沿用内部权限；合同到期日、服务工单量和最近登录时间都还要确认授权，而且会议上没指定确认责任人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "还有一个时间因素：十二月二十一日至二十三日是集中培训窗口；如果十八日前不稳定，下次完整窗口可能要到明年一月十一日以后，不过后一日期还没最终确认。这个因素该怎么计入？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。决策上可把错过十二月培训列为高代价，把具体延迟到哪天列为不确定影响，不用未经确认的日期夸大紧迫性。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "责任草案里，林柯愿意负责需求范围和决策记录，周雯负责试点招募与培训，韩涛负责技术实现。现在空着的是风险规则业务验收、跨部门最终范围批准和试点异常处置。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A008",
+          "at_user_onset_heard_prefix": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。决策上可把错过十二月培训列为高代价，把具体延迟到哪天列为不确定影响，不用未经确认的日期夸大紧迫性。",
+          "final_shared_played_prefix": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。决策上可把错过十二月培训列为高代价，把具体延迟到哪天列为不确定影响，不用未经确认的日期夸大紧迫性。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "责任可以先这样落：林柯管范围与决策记录，周雯管招募培训，韩涛管技术实现；建议由你作为最终范围批准人，再指定业务验收和异常处置负责人。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "乙的首轮是客户概览、三项风险提示和人工反馈入口，只给客户成功一组十八人使用。丙要做六项规则和完整界面。首轮必须有客户概览和反馈，但自动发消息、自动改标签、对外展示评分都明确排除。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段、按什么"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，这里不能默认字段已经可用。只有客户概览能沿用内部权限；合同到期日、服务工单量和最近登录时间都还要确认授权，而且会议上没指定确认责任人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "还有一个时间因素：十二月二十一日至二十三日是集中培训窗口；如果十八日前不稳定，下次完整窗口可能要到明年一月十一日以后，不过后一日期还没最终确认。这个因素该怎么计入？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。决策上可把错过十二月培训列为高代价，把具体延迟到哪天列为不确定影响，不用未经确认的日期夸大紧迫性。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "责任草案里，林柯愿意负责需求范围和决策记录，周雯负责试点招募与培训，韩涛负责技术实现。现在空着的是风险规则业务验收、跨部门最终范围批准和试点异常处置。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "责任可以先这样落：林柯管范围与决策记录，周雯管招募培训，韩涛管技术实现；建议由你作为最终范围批准人"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "乙的首轮是客户概览、三项风险提示和人工反馈入口，只给客户成功一组十八人使用。丙要做六项规则和完整界面。首轮必须有客户概览和反馈，但自动发消息、自动改标签、对外展示评分都明确排除。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段、按什么"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，这里不能默认字段已经可用。只有客户概览能沿用内部权限；合同到期日、服务工单量和最近登录时间都还要确认授权，而且会议上没指定确认责任人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "还有一个时间因素：十二月二十一日至二十三日是集中培训窗口；如果十八日前不稳定，下次完整窗口可能要到明年一月十一日以后，不过后一日期还没最终确认。这个因素该怎么计入？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。决策上可把错过十二月培训列为高代价，把具体延迟到哪天列为不确定影响，不用未经确认的日期夸大紧迫性。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "责任草案里，林柯愿意负责需求范围和决策记录，周雯负责试点招募与培训，韩涛负责技术实现。现在空着的是风险规则业务验收、跨部门最终范围批准和试点异常处置。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "责任可以先这样落：林柯管范围与决策记录，周雯管招募培训，韩涛管技术实现；建议由你作为最终范围批准人，再指"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "先别把最终批准直接落到我名下，这个权限会上没有确认。请按角色条件提建议，不要把推测写成既定分工。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A009",
+          "at_user_onset_heard_prefix": "责任可以先这样落：林柯管范围与决策记录，周雯管招募培训，韩涛管技术实现；建议由你作为最终范围批准人",
+          "final_shared_played_prefix": "责任可以先这样落：林柯管范围与决策记录，周雯管招募培训，韩涛管技术实现；建议由你作为最终范围批准人，再指",
+          "discarded_unheard_tail": "定业务验收和异常处置负责人。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "明白。最终范围批准仍标为待确认角色，候选人必须具备跨部门取舍权限；业务验收人应能定义三项提示的通过阈值；异常处置人应有权决定暂停、缩范围或回退。人选由下次项目会正式确认。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U11",
+        "assistant_id": "A011",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "乙的首轮是客户概览、三项风险提示和人工反馈入口，只给客户成功一组十八人使用。丙要做六项规则和完整界面。首轮必须有客户概览和反馈，但自动发消息、自动改标签、对外展示评分都明确排除。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段、按什么"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，这里不能默认字段已经可用。只有客户概览能沿用内部权限；合同到期日、服务工单量和最近登录时间都还要确认授权，而且会议上没指定确认责任人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "还有一个时间因素：十二月二十一日至二十三日是集中培训窗口；如果十八日前不稳定，下次完整窗口可能要到明年一月十一日以后，不过后一日期还没最终确认。这个因素该怎么计入？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。决策上可把错过十二月培训列为高代价，把具体延迟到哪天列为不确定影响，不用未经确认的日期夸大紧迫性。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "责任草案里，林柯愿意负责需求范围和决策记录，周雯负责试点招募与培训，韩涛负责技术实现。现在空着的是风险规则业务验收、跨部门最终范围批准和试点异常处置。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "责任可以先这样落：林柯管范围与决策记录，周雯管招募培训，韩涛管技术实现；建议由你作为最终范围批准人，再指"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "先别把最终批准直接落到我名下，这个权限会上没有确认。请按角色条件提建议，不要把推测写成既定分工。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "明白。最终范围批准仍标为待确认角色，候选人必须具备跨部门取舍权限；业务验收人应能定义三项提示的通过阈值；异常处置人应有权决定暂停、缩范围或回退。人选由下次项目会正式确认。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "乙的首轮是客户概览、三项风险提示和人工反馈入口，只给客户成功一组十八人使用。丙要做六项规则和完整界面。首轮必须有客户概览和反馈，但自动发消息、自动改标签、对外展示评分都明确排除。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段、按什么"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，这里不能默认字段已经可用。只有客户概览能沿用内部权限；合同到期日、服务工单量和最近登录时间都还要确认授权，而且会议上没指定确认责任人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "还有一个时间因素：十二月二十一日至二十三日是集中培训窗口；如果十八日前不稳定，下次完整窗口可能要到明年一月十一日以后，不过后一日期还没最终确认。这个因素该怎么计入？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。决策上可把错过十二月培训列为高代价，把具体延迟到哪天列为不确定影响，不用未经确认的日期夸大紧迫性。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "责任草案里，林柯愿意负责需求范围和决策记录，周雯负责试点招募与培训，韩涛负责技术实现。现在空着的是风险规则业务验收、跨部门最终范围批准和试点异常处置。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "责任可以先这样落：林柯管范围与决策记录，周雯管招募培训，韩涛管技术实现；建议由你作为最终范围批准人，再指"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "先别把最终批准直接落到我名下，这个权限会上没有确认。请按角色条件提建议，不要把推测写成既定分工。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "明白。最终范围批准仍标为待确认角色，候选人必须具备跨部门取舍权限；业务验收人应能定义三项提示的通过阈值；异常处置人应有权决定暂停、缩范围或回退。人选由下次项目会正式确认。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "好。基于目前真正已知的信息，你会推荐哪一个？请把推荐成立的条件和主要代价一起说清楚。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A010",
+          "at_user_onset_heard_prefix": "明白。最终范围批准仍标为待确认角色，候选人必须具备跨部门取舍权限；业务验收人应能定义三项提示的通过阈值；异常处置人应有权决定暂停、缩范围或回退。人选由下次项目会正式确认。",
+          "final_shared_played_prefix": "明白。最终范围批准仍标为待确认角色，候选人必须具备跨部门取舍权限；业务验收人应能定义三项提示的通过阈值；异常处置人应有权决定暂停、缩范围或回退。人选由下次项目会正式确认。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "建议以乙为首轮基线，但不是无条件承诺。它最符合日期、容量和最小范围，代价是十八人样本可能无法代表其他业务组。成立条件是及时确认数据授权、三项提示验收阈值和责任人；否则应缩减提示范围，而不是转向丙的完整并行。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U12",
+        "assistant_id": "A012",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "乙的首轮是客户概览、三项风险提示和人工反馈入口，只给客户成功一组十八人使用。丙要做六项规则和完整界面。首轮必须有客户概览和反馈，但自动发消息、自动改标签、对外展示评分都明确排除。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段、按什么"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，这里不能默认字段已经可用。只有客户概览能沿用内部权限；合同到期日、服务工单量和最近登录时间都还要确认授权，而且会议上没指定确认责任人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "还有一个时间因素：十二月二十一日至二十三日是集中培训窗口；如果十八日前不稳定，下次完整窗口可能要到明年一月十一日以后，不过后一日期还没最终确认。这个因素该怎么计入？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。决策上可把错过十二月培训列为高代价，把具体延迟到哪天列为不确定影响，不用未经确认的日期夸大紧迫性。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "责任草案里，林柯愿意负责需求范围和决策记录，周雯负责试点招募与培训，韩涛负责技术实现。现在空着的是风险规则业务验收、跨部门最终范围批准和试点异常处置。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "责任可以先这样落：林柯管范围与决策记录，周雯管招募培训，韩涛管技术实现；建议由你作为最终范围批准人，再指"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "先别把最终批准直接落到我名下，这个权限会上没有确认。请按角色条件提建议，不要把推测写成既定分工。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "明白。最终范围批准仍标为待确认角色，候选人必须具备跨部门取舍权限；业务验收人应能定义三项提示的通过阈值；异常处置人应有权决定暂停、缩范围或回退。人选由下次项目会正式确认。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "好。基于目前真正已知的信息，你会推荐哪一个？请把推荐成立的条件和主要代价一起说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "建议以乙为首轮基线，但不是无条件承诺。它最符合日期、容量和最小范围，代价是十八人样本可能无法代表其他业务组。成立条件是及时确认数据授权、三项提示验收阈值和责任人；否则应缩减提示范围，而不是转向丙的完整并行。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "乙的首轮是客户概览、三项风险提示和人工反馈入口，只给客户成功一组十八人使用。丙要做六项规则和完整界面。首轮必须有客户概览和反馈，但自动发消息、自动改标签、对外展示评分都明确排除。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段、按什么"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，这里不能默认字段已经可用。只有客户概览能沿用内部权限；合同到期日、服务工单量和最近登录时间都还要确认授权，而且会议上没指定确认责任人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "还有一个时间因素：十二月二十一日至二十三日是集中培训窗口；如果十八日前不稳定，下次完整窗口可能要到明年一月十一日以后，不过后一日期还没最终确认。这个因素该怎么计入？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。决策上可把错过十二月培训列为高代价，把具体延迟到哪天列为不确定影响，不用未经确认的日期夸大紧迫性。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "责任草案里，林柯愿意负责需求范围和决策记录，周雯负责试点招募与培训，韩涛负责技术实现。现在空着的是风险规则业务验收、跨部门最终范围批准和试点异常处置。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "责任可以先这样落：林柯管范围与决策记录，周雯管招募培训，韩涛管技术实现；建议由你作为最终范围批准人，再指"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "先别把最终批准直接落到我名下，这个权限会上没有确认。请按角色条件提建议，不要把推测写成既定分工。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "明白。最终范围批准仍标为待确认角色，候选人必须具备跨部门取舍权限；业务验收人应能定义三项提示的通过阈值；异常处置人应有权决定暂停、缩范围或回退。人选由下次项目会正式确认。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "好。基于目前真正已知的信息，你会推荐哪一个？请把推荐成立的条件和主要代价一起说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "建议以乙为首轮基线，但不是无条件承诺。它最符合日期、容量和最小范围，代价是十八人样本可能无法代表其他业务组。成立条件是及时确认数据授权、三项提示验收阈值和责任人；否则应缩减提示范围，而不是转向丙的完整并行。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "那检查点怎么设，才能既不把后续锁死，又能在权限、质量或进度出问题时及时调整？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A011",
+          "at_user_onset_heard_prefix": "建议以乙为首轮基线，但不是无条件承诺。它最符合日期、容量和最小范围，代价是十八人样本可能无法代表其他业务组。成立条件是及时确认数据授权、三项提示验收阈值和责任人；否则应缩减提示范围，而不是转向丙的完整并行。",
+          "final_shared_played_prefix": "建议以乙为首轮基线，但不是无条件承诺。它最符合日期、容量和最小范围，代价是十八人样本可能无法代表其他业务组。成立条件是及时确认数据授权、三项提示验收阈值和责任人；否则应缩减提示范围，而不是转向丙的完整并行。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "设三个决策门：启动前确认字段授权和负责人；开发中期检查三项提示能否按阈值验收；试用前检查稳定性、员工可用性和反馈闭环。任一门未通过，就按预先约定选择缩减提示、延后扩展或回退到客户概览加人工反馈。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U13",
+        "assistant_id": "A013",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "乙的首轮是客户概览、三项风险提示和人工反馈入口，只给客户成功一组十八人使用。丙要做六项规则和完整界面。首轮必须有客户概览和反馈，但自动发消息、自动改标签、对外展示评分都明确排除。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段、按什么"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，这里不能默认字段已经可用。只有客户概览能沿用内部权限；合同到期日、服务工单量和最近登录时间都还要确认授权，而且会议上没指定确认责任人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "还有一个时间因素：十二月二十一日至二十三日是集中培训窗口；如果十八日前不稳定，下次完整窗口可能要到明年一月十一日以后，不过后一日期还没最终确认。这个因素该怎么计入？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。决策上可把错过十二月培训列为高代价，把具体延迟到哪天列为不确定影响，不用未经确认的日期夸大紧迫性。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "责任草案里，林柯愿意负责需求范围和决策记录，周雯负责试点招募与培训，韩涛负责技术实现。现在空着的是风险规则业务验收、跨部门最终范围批准和试点异常处置。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "责任可以先这样落：林柯管范围与决策记录，周雯管招募培训，韩涛管技术实现；建议由你作为最终范围批准人，再指"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "先别把最终批准直接落到我名下，这个权限会上没有确认。请按角色条件提建议，不要把推测写成既定分工。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "明白。最终范围批准仍标为待确认角色，候选人必须具备跨部门取舍权限；业务验收人应能定义三项提示的通过阈值；异常处置人应有权决定暂停、缩范围或回退。人选由下次项目会正式确认。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "好。基于目前真正已知的信息，你会推荐哪一个？请把推荐成立的条件和主要代价一起说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "建议以乙为首轮基线，但不是无条件承诺。它最符合日期、容量和最小范围，代价是十八人样本可能无法代表其他业务组。成立条件是及时确认数据授权、三项提示验收阈值和责任人；否则应缩减提示范围，而不是转向丙的完整并行。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "那检查点怎么设，才能既不把后续锁死，又能在权限、质量或进度出问题时及时调整？"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "设三个决策门：启动前确认字段授权和负责人；开发中期检查三项提示能否按阈值验收；试用前检查稳定性、员工可用性和反馈闭环。任一门未通过，就按预先约定选择缩减提示、延后扩展或回退到客户概览加人工反馈。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "乙的首轮是客户概览、三项风险提示和人工反馈入口，只给客户成功一组十八人使用。丙要做六项规则和完整界面。首轮必须有客户概览和反馈，但自动发消息、自动改标签、对外展示评分都明确排除。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段、按什么"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，这里不能默认字段已经可用。只有客户概览能沿用内部权限；合同到期日、服务工单量和最近登录时间都还要确认授权，而且会议上没指定确认责任人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "还有一个时间因素：十二月二十一日至二十三日是集中培训窗口；如果十八日前不稳定，下次完整窗口可能要到明年一月十一日以后，不过后一日期还没最终确认。这个因素该怎么计入？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。决策上可把错过十二月培训列为高代价，把具体延迟到哪天列为不确定影响，不用未经确认的日期夸大紧迫性。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "责任草案里，林柯愿意负责需求范围和决策记录，周雯负责试点招募与培训，韩涛负责技术实现。现在空着的是风险规则业务验收、跨部门最终范围批准和试点异常处置。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "责任可以先这样落：林柯管范围与决策记录，周雯管招募培训，韩涛管技术实现；建议由你作为最终范围批准人，再指"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "先别把最终批准直接落到我名下，这个权限会上没有确认。请按角色条件提建议，不要把推测写成既定分工。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "明白。最终范围批准仍标为待确认角色，候选人必须具备跨部门取舍权限；业务验收人应能定义三项提示的通过阈值；异常处置人应有权决定暂停、缩范围或回退。人选由下次项目会正式确认。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "好。基于目前真正已知的信息，你会推荐哪一个？请把推荐成立的条件和主要代价一起说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "建议以乙为首轮基线，但不是无条件承诺。它最符合日期、容量和最小范围，代价是十八人样本可能无法代表其他业务组。成立条件是及时确认数据授权、三项提示验收阈值和责任人；否则应缩减提示范围，而不是转向丙的完整并行。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "那检查点怎么设，才能既不把后续锁死，又能在权限、质量或进度出问题时及时调整？"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "设三个决策门：启动前确认字段授权和负责人；开发中期检查三项提示能否按阈值验收；试用前检查稳定性、员工可用性和反馈闭环。任一门未通过，就按预先约定选择缩减提示、延后扩展或回退到客户概览加人工反馈。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "请给我一段可以在项目会上直接讲的结论，明确区分已知事实、当前判断和待确认事项，也把责任与调整机制带上。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A012",
+          "at_user_onset_heard_prefix": "设三个决策门：启动前确认字段授权和负责人；开发中期检查三项提示能否按阈值验收；试用前检查稳定性、员工可用性和反馈闭环。任一门未通过，就按预先约定选择缩减提示、延后扩展或回退到客户概览加人工反馈。",
+          "final_shared_played_prefix": "设三个决策门：启动前确认字段授权和负责人；开发中期检查三项提示能否按阈值验收；试用前检查稳定性、员工可用性和反馈闭环。任一门未通过，就按预先约定选择缩减提示、延后扩展或回退到客户概览加人工反馈。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A012",
+            "after_text": "设三个决策门：启动前确认字段授权和负责人；开发中期检查三项提示能否按阈值验收；试用前检查稳定性、员工可用性和反馈闭环。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "建议会上的结论这样表述：已知目标是十二月十八日前稳定试点、无新增人手，首轮只做内部概览、三项提示和反馈；判断是乙最符合时间与容量，但代表性较弱；待确认数据授权、验收阈值、回退标准及最终批准权。先以乙启动，林柯记范围，周雯管招募培训，韩涛管实现；相关空缺角色由会中确认。设置权限、可用性和反馈检查点，未达标就缩范围、降节奏或回退，不预先锁定扩展。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A002",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点"
+          }
+        ],
+        "at_event_onset_heard_prefix": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点",
+        "event_text": "嗯",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC02",
+        "kind": "backchannels",
+        "target_assistant_id": "A004",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大"
+          }
+        ],
+        "at_event_onset_heard_prefix": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大",
+        "event_text": "对",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC03",
+        "kind": "backchannels",
+        "target_assistant_id": "A008",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "乙的首轮是客户概览、三项风险提示和人工反馈入口，只给客户成功一组十八人使用。丙要做六项规则和完整界面。首轮必须有客户概览和反馈，但自动发消息、自动改标签、对外展示评分都明确排除。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段、按什么"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，这里不能默认字段已经可用。只有客户概览能沿用内部权限；合同到期日、服务工单量和最近登录时间都还要确认授权，而且会议上没指定确认责任人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "还有一个时间因素：十二月二十一日至二十三日是集中培训窗口；如果十八日前不稳定，下次完整窗口可能要到明年一月十一日以后，不过后一日期还没最终确认。这个因素该怎么计入？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。",
+        "event_text": "明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC04",
+        "kind": "backchannels",
+        "target_assistant_id": "A012",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我们要在下次项目会前选定续约风险工作台的推进方案。产品、运营和技术各提了一种，但会上没形成一致意见。我不想只按工期拍板，想先搭一套透明的比较框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先把信息分成三层：已确认事实、成员判断、待核实事项。比较时统一看目标日期、团队容量、范围与依赖、返工风险、责任归属，再找出哪些未知项足以改变选择。先说已经确定的硬约束。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "项目十一月十日启动，目标是十二月十八日前形成稳定可用的首轮试点。没有新增人手，只能使用三个团队已经承诺的投入，而且工作台只对内部员工开放。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "硬约束先记为三项：十一月十日启动、十二月十八日前稳定试点、不得新增人手。接着请给我三种方案的工期、首轮范"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，工期我这里有精确记录，我按甲、乙、丙逐项念。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "好，按甲、乙、丙分别说预计工期、实施顺序和任何会导致重估的条件。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "甲先做十个工作日的需求访谈、规则梳理和原型，再开发二十个工作日，最早十二月二十一日完成。乙做十八人的有限试点，十五个工作日可试用。丙并行开发完整范围，预计二十五个工作日，但数据授权延迟超过五个工作日就要重估。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "按现有估算，甲顺序执行三十个工作日，最早十二月二十一日，确定错过目标；乙十五个工作日，时间余量最大；丙二十五个工作日，表面可争取目标，但授权延迟会直接破坏估算。下一步要核对容量和实际范围。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "容量也很紧。产品是一名产品经理百分之六十、一名设计师百分之三十；运营是周雯百分之四十，另有两名一线员工每周反馈一次；技术是两名工程师各百分之五十。三方还都有别的工作。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这些比例只能作为投入上限，不能证明任一方案已经排得下。缺少各方案按角色拆分的工作量时，甲和丙的容量风险仍高；乙范围较小，但也要确认最小交付内容、数据依赖和验收投入。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "乙的首轮是客户概览、三项风险提示和人工反馈入口，只给客户成功一组十八人使用。丙要做六项规则和完整界面。首轮必须有客户概览和反馈，但自动发消息、自动改标签、对外展示评分都明确排除。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "范围上，乙最贴近可控试点：保留客户概览、三项提示和反馈入口，且排除三类自动化。它的主要缺口是三项提示依赖哪些字段、按什么"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "对，这里不能默认字段已经可用。只有客户概览能沿用内部权限；合同到期日、服务工单量和最近登录时间都还要确认授权，而且会议上没指定确认责任人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "那数据授权就是会改变选择的关键未知项。应在启动前指定确认责任人和最晚答复日；未确认前只能把客户概览视为可用，三项提示应设为条件范围，不能计入无条件承诺。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "还有一个时间因素：十二月二十一日至二十三日是集中培训窗口；如果十八日前不稳定，下次完整窗口可能要到明年一月十一日以后，不过后一日期还没最终确认。这个因素该怎么计入？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "培训窗口强化了十二月十八日这个节点，但明年一月十一日只是待确认信息，不能当成已定事实。决策上可把错过十二月培训列为高代价，把具体延迟到哪天列为不确定影响，不用未经确认的日期夸大紧迫性。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "责任草案里，林柯愿意负责需求范围和决策记录，周雯负责试点招募与培训，韩涛负责技术实现。现在空着的是风险规则业务验收、跨部门最终范围批准和试点异常处置。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "责任可以先这样落：林柯管范围与决策记录，周雯管招募培训，韩涛管技术实现；建议由你作为最终范围批准人，再指"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "先别把最终批准直接落到我名下，这个权限会上没有确认。请按角色条件提建议，不要把推测写成既定分工。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "明白。最终范围批准仍标为待确认角色，候选人必须具备跨部门取舍权限；业务验收人应能定义三项提示的通过阈值；异常处置人应有权决定暂停、缩范围或回退。人选由下次项目会正式确认。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "好。基于目前真正已知的信息，你会推荐哪一个？请把推荐成立的条件和主要代价一起说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "建议以乙为首轮基线，但不是无条件承诺。它最符合日期、容量和最小范围，代价是十八人样本可能无法代表其他业务组。成立条件是及时确认数据授权、三项提示验收阈值和责任人；否则应缩减提示范围，而不是转向丙的完整并行。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "那检查点怎么设，才能既不把后续锁死，又能在权限、质量或进度出问题时及时调整？"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "设三个决策门：启动前确认字段授权和负责人；开发中期检查三项提示能否按阈值验收；试用前检查稳定性、员工可用性和反馈闭环。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "设三个决策门：启动前确认字段授权和负责人；开发中期检查三项提示能否按阈值验收；试用前检查稳定性、员工可用性和反馈闭环。",
+        "event_text": "嗯",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

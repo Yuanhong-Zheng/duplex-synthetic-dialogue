@@ -1,0 +1,87 @@
+{
+  "scenario": {
+    "domain_id": "D10",
+    "domain": "家庭、空间整理与日常维护",
+    "domain_definition": "Google Gemini Live 明确列出空间整理和可见物体排障，OmniInteract 与 DuplexOmni 覆盖现场程序指导。",
+    "scenario_id": "D10-S07",
+    "scenario": "搬家准备",
+    "requested_examples_per_style": 5,
+    "existing_example_task_seeds": [],
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "medium",
+      "target_turns": 14,
+      "min_turns": 13,
+      "max_turns": 15
+    },
+    "dialogue_length_instruction": "本条完整对话目标为 14 个主轮，允许 13–15 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    }
+  },
+  "current_example_tasks": {
+    "开放式互动": [
+      "来一轮“搬家指挥官”口头挑战：通过情境问答练习如何在有限时间内安排打包、清洁和休息节奏。",
+      "我正在为离开熟悉的住处做心理和生活上的准备，想讨论怎样减少搬家过程中的焦虑与失控感。",
+      "一起设计一套适合家庭成员分工的搬家打包游戏，让不同年龄的人都能参与并保持动力。",
+      "假设搬家当天连续遇到几个小意外，和我即兴演练如何冷静判断先后顺序并调整计划。",
+      "从“搬到新家后的第一周”这个主题出发，帮我构思一套让新空间尽快有秩序、又不过度疲惫的生活习惯。"
+    ],
+    "结构化整理": [
+      "我会逐项提供需要带走、捐出、丢弃或暂存的物品，请据此整理成分类清单并标出处理顺序。",
+      "把我随后说出的房间、物品和打包进度整理成一份搬家任务表，按空间和完成状态归类。",
+      "我会提供现有箱子及其容量、物品类别和搬运限制，请据此规划装箱组合并形成可核对的标记清单。",
+      "根据我列出的家具尺寸、房间条件和待搬物品，整理一份需要提前确认的适配事项与风险清单。",
+      "我会描述几项搬家前要完成的清洁、拆卸、交接和收纳任务，请帮我排成一条有先后依赖关系的时间线。"
+    ],
+    "混合型": [
+      "我有几组物品不确定该带走还是趁搬家处理掉；结合它们的使用频率、替代难度和新空间需求，帮我做取舍。",
+      "面对多个房间同时要打包的情况，参考效率与体力分配的原则，结合我提供的时间和人手安排出合理顺序。",
+      "我会说出新住处的收纳条件和现有物品，请用减少日常寻找与重复购买的整理思路，帮我调整物品归位方案。",
+      "几件大件家具可能无法按原样搬入新空间；根据通行空间、功能优先级和我提供的尺寸，协助判断保留、改造或替换方向。",
+      "我已经有一份比较杂乱的搬家计划和一些未解决的担忧，希望结合轻重缓急、依赖关系与我的实际精力，重新确定下一步安排。"
+    ]
+  },
+  "judge_findings": [
+    {
+      "severity": "must_fix",
+      "path": "/example_tasks/结构化整理/2",
+      "problem": "同组第1、3、5条均以“我会……”引入后续材料，达到三个相同泛化句首，造成表达入口塌缩。",
+      "evidence": "我会提供现有箱子及其容量、物品类别和搬运限制，请据此规划装箱组合并形成可核对的标记清单。",
+      "repair": "改用不同的问题入口，例如从箱子匹配或装箱核对需求切入，同时保留材料处理和标记清单结果。"
+    }
+  ],
+  "repair_targets": [
+    {
+      "path": "/example_tasks/结构化整理/2",
+      "current_value": "我会提供现有箱子及其容量、物品类别和搬运限制，请据此规划装箱组合并形成可核对的标记清单。"
+    }
+  ]
+}

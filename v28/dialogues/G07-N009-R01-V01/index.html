@@ -1,0 +1,1238 @@
+<!doctype html><html lang='zh-CN'><head>
+<meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>手机应用权限的最小授权原则 · V2 静态剧本目标数据 · 1 个案例</title>
+<style>
+:root{--ink:#18232b;--muted:#586875;--line:#ccd6dc;--paper:#f6f8f9;--white:#fff;--green:#146c43;--blue:#1d5875;--orange:#c2410c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+main{max-width:1360px;margin:0 auto;padding:28px 20px 72px}
+h1{font-size:30px;line-height:1.2;margin:0 0 10px}
+h2{font-size:22px;line-height:1.3;margin:0}
+h3{font-size:16px;margin:0 0 10px}
+h4{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:16px 0 6px}
+.intro{color:var(--muted);max-width:980px;margin:0 0 6px}
+.case{margin-top:28px;background:var(--white);border:1px solid var(--line);border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(24,35,43,.05)}
+.case-header{padding:18px 22px;background:#edf3f5;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+.case-id{margin:0 0 2px;color:var(--blue);font-weight:700;font-size:13px;letter-spacing:.05em}
+.case-meta{margin:6px 0 0;color:var(--muted);font-size:13px}
+.pass{color:var(--green);font-weight:700;white-space:nowrap}
+.fail{color:#b91c1c;font-weight:700;white-space:nowrap}
+.info{color:var(--blue);font-weight:700}
+section{padding:18px 22px;border-bottom:1px solid #e2e8eb}
+section:last-child{border-bottom:0}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid #e2e8eb}
+.two-col > div{padding:18px 22px}
+.two-col > div:first-child{border-right:1px solid #e2e8eb}
+dl.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0}
+dl.kv dt{color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap;padding-top:2px}
+dl.kv dd{margin:0;font-size:14px}
+.voice-prompt{margin:10px 0 0;padding:10px 12px;background:#f4f8f9;border-left:3px solid #8aa9b8;font-size:13px;color:#2e4a5a;font-style:italic}
+.situation-block{padding:12px 14px;border-left:3px solid #8aa9b8;background:#f4f8f9;margin:0 0 12px;font-size:14px}
+.situation-block p{margin:4px 0 0}
+.audio-block{padding:12px 14px;border-left:3px solid #4d8b72;background:#f1f8f4;margin:0 0 12px;font-size:14px}
+.audio-block p{margin:4px 0 0}
+.audio-block small{color:var(--muted);font-size:12px}
+.side-speech{margin-top:8px;padding:7px 9px;border-left:3px solid #c58b38;background:#fff8ea;color:#6b4a16;font-size:12px;line-height:1.5}
+.side-speech b{font-weight:700}
+.ref-list{margin:6px 0 0;padding-left:20px}
+.ref-list li{padding:3px 0;font-size:14px;line-height:1.55}
+.cl-list{margin:6px 0 0;padding-left:0;list-style:none}
+.cl-list li{padding:4px 0;font-size:14px;border-bottom:1px solid #edf1f3}
+.cl-list li:last-child{border-bottom:0}
+.badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:11px;font-weight:700;vertical-align:middle;margin-left:4px}
+.badge-hard{background:#fee2e2;color:#991b1b}
+.badge-advisory{background:#fef9c3;color:#854d0e}
+.badge-critical{background:#fce7f3;color:#9d174d}
+.badge-info{background:#dbeafe;color:#1e40af}
+.empty{color:var(--muted);font-style:italic;font-size:14px}
+table.script{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+table.script th,table.script td{border-top:1px solid #e5e7eb;padding:10px 9px;vertical-align:top;text-align:left;overflow-wrap:anywhere;word-break:break-word;line-height:1.55}
+table.script th{background:#f8fafc;font-size:12px;color:var(--muted)}
+table.script th:nth-child(1){width:5%}
+table.script th:nth-child(2){width:5%}
+table.script th:nth-child(3){width:7%}
+table.script th:nth-child(4){width:14%}
+table.script th:nth-child(5){width:18%}
+table.script th:nth-child(6){width:24%}
+table.script th:nth-child(7){width:18%}
+code{background:#e9eff2;border-radius:3px;padding:1px 5px;font:12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.artifact{margin:12px 0 0;border:1px solid var(--line);border-radius:6px;background:#fbfcfc}
+.artifact summary{cursor:pointer;display:flex;justify-content:space-between;gap:16px;align-items:center;padding:9px 12px;font-size:13px;font-weight:700;color:var(--muted)}
+.artifact pre{margin:0;padding:14px;overflow:auto;max-height:500px;border-top:1px solid var(--line);background:#f8fafb;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.overview-wrap{margin:20px 0 28px;overflow-x:auto;border:1px solid var(--line);background:var(--white);border-radius:6px}
+.overview-table{width:100%;border-collapse:collapse;min-width:860px}
+.overview-table th,.overview-table td{padding:9px 12px;border-bottom:1px solid #e2e8eb;text-align:left;vertical-align:top}
+.overview-table th{background:#edf3f5;font-size:12px;color:var(--muted)}
+.overview-table tbody tr:last-child td{border-bottom:0}
+.overview-table span{font-size:12px;color:var(--muted)}
+.rubric-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:8px}
+.rubric-turn{padding:10px 12px;border:1px solid #e2e8eb;border-radius:5px;background:#fbfcfc}
+.rubric-turn h4{margin:0 0 5px;color:var(--blue);text-transform:none;letter-spacing:0}
+.rubric-turn p{margin:4px 0;font-size:14px}
+.rubric-behavior{margin:5px 0 0;padding-left:22px}
+.rubric-behavior li{padding:2px 0;font-size:14px}
+.rubric-status{font-weight:700}
+.audit-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0 14px}
+.audit-summary div{padding:8px 10px;border:1px solid #e2e8eb;border-radius:5px;background:#fbfcfc}
+.audit-summary b{display:block;color:var(--muted);font-size:12px}
+.audit-summary span{font-size:18px;font-weight:700}
+.audit-findings{margin:8px 0 0;padding:0;list-style:none}
+.audit-finding{padding:10px 12px;border:1px solid #f0caca;border-left:4px solid #b91c1c;border-radius:5px;background:#fffafa;margin:8px 0}
+.audit-finding h4{margin:0 0 5px;color:#991b1b;text-transform:none;letter-spacing:0}
+.audit-finding p{margin:3px 0;font-size:13px}
+.audit-dimensions{width:100%;border-collapse:collapse;font-size:13px}
+.audit-dimensions th,.audit-dimensions td{border-top:1px solid #e5e7eb;padding:7px 8px;text-align:left;vertical-align:top}
+.audit-dimensions th{background:#f8fafc;color:var(--muted);font-size:12px}
+.audit-dimensions .audit-fail{color:#b91c1c;font-weight:700}
+.guide-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+.guide-flow a{display:block;padding:14px;background:#f4f8f9;border:1px solid var(--line);border-top:3px solid var(--blue);border-radius:6px;text-decoration:none;color:var(--ink)}
+.guide-flow b{display:block;color:var(--blue);margin-bottom:5px}
+.guide-flow small{display:block;color:var(--muted);line-height:1.5}
+.guide-toc{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0 0}
+.guide-toc a{padding:4px 9px;border:1px solid var(--line);border-radius:4px;color:var(--blue);text-decoration:none;font-size:13px}
+.guide-prose p{max-width:1120px;margin:8px 0;line-height:1.85}
+.guide-prose blockquote{margin:12px 0;padding:12px 16px;border-left:3px solid var(--blue);background:#f4f8f9}
+.guide-table-wrap{overflow-x:auto;margin-top:12px}
+.guide-table-wrap table{min-width:650px;table-layout:auto}
+.guide-table-wrap td{line-height:1.75;overflow-wrap:anywhere}
+section[id]{scroll-margin-top:16px}
+@media(max-width:800px){
+  .two-col{grid-template-columns:1fr}
+  .audit-summary{grid-template-columns:1fr}
+  .two-col > div:first-child{border-right:0;border-bottom:1px solid #e2e8eb}
+  table.script{font-size:12px;display:block;overflow-x:auto;white-space:normal}
+  body{padding:10px}
+  .overview-wrap{font-size:13px}
+  .guide-flow{grid-template-columns:1fr 1fr}
+}
+
+.rx{--rx-blue:#245b78;--rx-blue-soft:#eef5f8;--rx-amber:#925b16;--rx-amber-soft:#fff6e7;--rx-border:#d8e2e8;color:var(--ink);margin-top:26px}
+.rx [hidden]{display:none!important}
+.rx a{color:var(--rx-blue)}
+.rx button,.rx a{touch-action:manipulation}
+.rx button{font:inherit;cursor:pointer}
+.rx button:focus-visible,.rx a:focus-visible,.rx summary:focus-visible{outline:3px solid #e1a33b;outline-offset:3px}
+.rx-hero{position:relative;padding:34px;border:1px solid #bdd0dc;border-radius:14px;background:linear-gradient(120deg,#edf4f7,#fff 80%);overflow:hidden}
+.rx-hero:after{content:"";position:absolute;right:-70px;top:-110px;width:270px;height:270px;border:1px solid #b6ced9;border-radius:50%;opacity:.45;pointer-events:none}
+.rx-eyebrow{font-size:11px;font-weight:800;letter-spacing:.12em;color:var(--rx-blue);margin:0 0 10px}
+.rx-hero h2{font-size:clamp(25px,3vw,37px);line-height:1.35;max-width:850px;letter-spacing:-.02em}
+.rx-lead{max-width:890px;color:var(--muted);font-size:15px;line-height:1.85;margin:14px 0}
+.rx-meta{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 22px}
+.rx-chip{display:inline-flex;gap:5px;align-items:center;padding:4px 10px;border-radius:20px;background:#edf2f5;color:#465c6b;font-size:12px;font-weight:650;max-width:100%;overflow-wrap:anywhere}
+.rx-chip.blue{background:#e6f0f6;color:#245b78}.rx-chip.amber{background:#fff0d9;color:#82510f}.rx-chip.green{background:#e9f5ee;color:#226343}
+.rx-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.rx-metric{padding:16px;border:1px solid #d6e2e9;border-radius:9px;background:#ffffffd9}
+.rx-metric span{display:block;font-size:12px;color:var(--muted)}
+.rx-metric strong{display:block;font-size:27px;line-height:1.3;margin:6px 0;color:#203e50;letter-spacing:-.02em}
+.rx-metric small{color:var(--muted);font-size:12px}.rx-metric.warn{border-color:#dfbc86;background:#fff9ef}.rx-metric.warn strong{color:#8c5514}
+.rx-alert{padding:15px 18px;border:1px solid #e6c695;border-left:4px solid #bc812c;background:var(--rx-amber-soft);border-radius:8px;margin:18px 0 0;color:#6c4817;font-size:14px;line-height:1.8}
+.rx-alert p{margin:4px 0}.rx-alert a{font-weight:700;color:#765019}
+.rx-nav{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;padding:12px 0;margin:14px 0;background:#f6f8f9f2;backdrop-filter:blur(10px)}
+.rx-nav a{display:flex;flex-direction:column;padding:10px 12px;border:1px solid var(--rx-border);border-radius:8px;text-decoration:none;background:#fff;min-width:0;color:var(--muted);font-size:12px}
+.rx-nav b{font-size:14px;color:#29495c;margin-bottom:3px}
+.rx-nav a:hover,.rx-nav a[aria-current=step]{background:#eaf2f7;border-color:#638fa9;color:#29495c;box-shadow:inset 0 -3px #417695}
+.rx-nav.with-runtime{grid-template-columns:repeat(7,minmax(0,1fr))}
+.rx-nav.with-tts{grid-template-columns:repeat(8,minmax(0,1fr))}
+.rx-nav.with-speech{display:flex;overflow-x:auto}.rx-nav.with-speech a{flex:0 0 142px}
+.rx-speech .rx-metrics{margin:18px 0}.rx-speech #rx-speech-pause p{margin:0 0 10px}.rx-speech .rx-button:disabled{opacity:.5;cursor:default}.rx-speech .rx-turn-list{max-height:650px}
+.rx-rollout .rx-metrics{margin:18px 0}.rx-rollout-scroll{overflow-x:auto;max-width:100%;margin:20px 0}.rx-rollout-chart{position:relative;min-width:680px;height:126px;border:1px solid var(--rx-border);border-radius:8px;background:repeating-linear-gradient(to right,#f4f6fa 0,#f4f6fa 1px,transparent 1px,transparent 10%)}.rx-rollout-lane{position:absolute;left:12px;font-size:12px;color:var(--muted)}.rx-rollout-lane.user{top:23px}.rx-rollout-lane.assistant{top:76px}.rx-rollout-bars{position:absolute;left:62px;right:12px;top:0;bottom:0}.rx-rollout-bar{position:absolute;height:30px;top:15px;min-width:3px;padding:0;border:1px solid #4a84a2;border-radius:4px;background:#c9e1ed;cursor:pointer;font-size:10px;overflow:hidden;color:#193d50}.rx-rollout-bar.assistant{top:68px;background:#ded7ef;border-color:#8673af}.rx-rollout-bar.aside{background:#f4d7b6;border-color:#ae722e}.rx-rollout-bar[aria-pressed=true]{outline:3px solid #234c66;outline-offset:1px}.rx-rollout #rx-rollout-segments{max-height:550px}.rx-rollout #rx-rollout-outcome{overflow-wrap:anywhere}
+.rx-stage{border:1px solid var(--rx-border);border-radius:12px;background:#fff;margin:18px 0 26px;overflow:hidden;scroll-margin-top:100px;box-shadow:0 3px 14px #203b4e05}
+.rx-stage-head{padding:23px 26px;display:grid;grid-template-columns:46px minmax(0,1fr) auto;align-items:start;gap:17px;border-bottom:1px solid #e2e9ed;background:#fbfcfd}
+.rx-number{flex:0 0 46px;width:46px;height:46px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#2d5a73;background:#e7f0f5;border-radius:10px}
+.rx-stage-title{flex:1;min-width:0}.rx-stage-title h2{font-size:24px}.rx-stage-title p{margin:7px 0 0;color:var(--muted);line-height:1.75;max-width:820px;font-size:14px}
+.rx-state{padding:5px 10px;font-size:12px;border-radius:6px;background:#eaf5ed;color:#276342;white-space:nowrap;font-weight:700}.rx-state.note{background:#eaf0f8;color:#355e7c}.rx-state.warn{background:#fff0d9;color:#8a5414}
+.rx-stage-body{padding:25px 26px}
+.rx-stage-body h3{font-size:16px;margin:0 0 10px}.rx-stage-body p{line-height:1.8}
+.rx-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.rx-card{padding:20px;border:1px solid var(--rx-border);border-radius:9px;background:#fff;min-width:0}
+.rx-card.soft{background:#f5f8fa}.rx-card.blue{background:#f0f6f9;border-color:#c9dce7}.rx-card.amber{background:#fff8ed;border-color:#ead0a7}
+.rx-card h3{margin:0 0 12px}.rx-card p:last-child{margin-bottom:0}
+.rx-label{font-size:11px;color:#637b89;font-weight:750;letter-spacing:.05em;margin:0 0 7px}
+.rx-goal{font-size:19px;line-height:1.85;margin:10px 0 0;letter-spacing:.01em}
+.rx-meaning{font-size:14px;padding:12px 14px;background:var(--rx-blue-soft);border-left:3px solid #7ea0b6;color:#38586d;line-height:1.85;margin:14px 0}
+.rx-meaning p{margin:0}.rx-meaning strong{color:#244d67}
+.rx-small{font-size:13px;color:var(--muted);line-height:1.8}
+.rx-facts{display:grid;grid-template-columns:110px minmax(0,1fr);gap:10px 16px;margin:0}
+.rx-facts dt{font-size:12px;color:var(--muted)}.rx-facts dd{margin:0;font-size:14px;overflow-wrap:anywhere}
+.rx-source{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:22px;padding-top:16px;border-top:1px solid #e6ecef;font-size:12px;color:var(--muted)}
+.rx-source a,.rx-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #c9d9e2;border-radius:6px;padding:7px 11px;color:#2d5f7c;background:#f5f9fb;text-decoration:none;font-size:12px;font-weight:650}
+.rx-source a:hover,.rx-button:hover{background:#e6f1f7}.rx-button.primary{background:#2f617c;color:#fff;border-color:#2f617c}
+.rx-actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}
+.rx-filter{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 18px}
+.rx-filter button{border:1px solid #d2dfe6;background:#fff;border-radius:20px;padding:7px 13px;font-size:12px;color:#4f6573}
+.rx-filter button[aria-pressed=true]{background:#2f617c;border-color:#2f617c;color:#fff}
+.rx-count{font-size:12px;color:var(--muted);margin-left:auto}
+.rx-people{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.rx-person{border:1px solid #d7e2e8;border-radius:9px;min-width:0;overflow:hidden;background:#fff}
+.rx-person-top{padding:15px 18px;background:#f2f6f8;border-bottom:1px solid #e2e9ed;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rx-person-top h3{font-size:18px;margin:0}.rx-person-top .rx-chip{margin-left:auto}
+.rx-person-body{padding:17px 18px}.rx-person-body p{margin:0 0 12px;font-size:14px}
+.rx-status-list{list-style:none;padding:0;margin:0 0 13px}.rx-status-list li{display:flex;justify-content:space-between;gap:15px;border-top:1px solid #edf1f3;padding:7px 0;font-size:13px}.rx-status-list span{color:var(--muted);flex-shrink:0}.rx-status-list strong{font-weight:550;text-align:right;overflow-wrap:anywhere}
+.rx-pending{padding:10px 12px;background:#fff7e9;border-radius:5px;font-size:13px;line-height:1.8;color:#78531b}
+.rx-person-links{font-size:12px;color:var(--muted);margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
+.rx-details{border:1px solid #dbe5eb;border-radius:7px;margin-top:14px;background:#fcfdfe;overflow:hidden;scroll-margin-top:110px}
+.rx-details>summary{padding:12px 15px;cursor:pointer;font-size:13px;font-weight:650;color:#456275;line-height:1.65}
+.rx-details>div,.rx-details>p{padding:14px 16px;margin:0;border-top:1px solid #e1e9ee;font-size:14px;line-height:1.9}
+.rx-details pre{margin:0;padding:15px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:430px;overflow:auto;border-top:1px solid #e1e9ee;font-size:12px;background:#f4f8fa}
+.rx-details-list{display:grid;gap:8px;margin-top:14px}.rx-details-list .rx-details{margin:0}
+.rx-boundaries{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}.rx-boundaries ul{padding-left:20px;margin:0}.rx-boundaries li{padding:5px 0;font-size:13px;line-height:1.75}
+.rx-turn-layout{display:grid;grid-template-columns:270px minmax(0,1fr);gap:18px;align-items:start}
+.rx-turn-list{display:flex;flex-direction:column;gap:7px;max-height:610px;overflow:auto;padding:2px 5px 3px 2px}
+.rx-turn-button{display:grid;grid-template-columns:36px minmax(0,1fr);gap:4px 8px;align-items:center;text-align:left;padding:10px 12px;border:1px solid #d9e4eb;border-radius:7px;color:#405d70;background:#fafcfd;min-width:0}
+.rx-turn-button b{font-size:12px;align-self:start;margin-top:1px}.rx-turn-button span{font-size:12px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.6}.rx-turn-button small{grid-column:2;font-size:10px;color:#698292}
+.rx-turn-button[aria-pressed=true]{background:#eaf3f8;border-color:#507f9c;box-shadow:inset 3px 0 #386f8d;color:#224e68}
+.rx-turn-button.is-overlap small{color:#9d6013}
+.rx-turn-detail{padding:22px;border:1px solid #ccdfe9;background:#f9fcfe;border-radius:10px;min-width:0;min-height:420px}
+.rx-turn-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}.rx-turn-head h3{font-size:21px;margin:0}
+.rx-utterance{padding:17px 19px;background:#fff;border:1px solid #d8e6ef;border-left:4px solid #417a9a;border-radius:7px;font-size:19px;line-height:1.85;overflow-wrap:anywhere;margin:8px 0 18px}
+.rx-turn-goal{font-size:14px;color:#38596e;margin:0 0 15px}.rx-expected{background:#eff3f6;border-radius:6px;padding:14px;margin-top:13px;line-height:1.8;font-size:14px}.rx-expected p{margin:4px 0 0}
+.rx-cue{padding:11px 13px;border-radius:6px;background:#fff3df;color:#84591e;font-size:13px;line-height:1.8;margin-top:12px}
+.rx-turn-detail .rx-actions{margin-bottom:0}
+.rx-route{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 0 15px;font-size:13px;color:#5d7280}
+.rx-route span{border:1px solid #d4e2e9;border-radius:6px;background:#fff;padding:6px 11px;color:#365c72;font-weight:650}
+.rx-side-box{border:1px solid #e5c28a;background:#fff7e8;border-radius:9px;padding:20px;margin-top:16px}.rx-side-box blockquote{border:0;margin:10px 0;font-size:23px;font-weight:650;line-height:1.8;color:#795016}
+.rx-comparison-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}.rx-comparison-metrics div{padding:12px;background:#f2f6f8;border-radius:7px;text-align:center}.rx-comparison-metrics b{display:block;font-size:20px;color:#2d566c}.rx-comparison-metrics span{font-size:11px;color:var(--muted)}
+.rx-rubric-pills{display:flex;flex-wrap:wrap;gap:7px;margin:15px 0 20px}
+.rx-rubric-pill{padding:8px 10px;border:1px solid #d2e0e8;border-radius:5px;background:#f7fafc;color:#416278;font-size:12px}.rx-rubric-pill[aria-pressed=true]{background:#2f617c;color:#fff;border-color:#2f617c}
+.rx-criteria{list-style:none;padding:0;margin:0;counter-reset:criterion}.rx-criteria li{position:relative;padding:12px 0 12px 32px;border-top:1px solid #e2e9ef;font-size:14px;line-height:1.9;counter-increment:criterion}.rx-criteria li:before{content:counter(criterion);position:absolute;left:0;top:15px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;background:#e7eff5;border-radius:50%;font-size:11px;font-weight:700;color:#365e77}.rx-criteria li:first-child{border-top:0}
+.rx-score-turns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:20px 0}.rx-score-turn{padding:12px;border:1px solid #ccdcd3;background:#f3faf5;border-radius:7px;text-align:left;color:#365c48}.rx-score-turn b,.rx-score-turn span{display:block}.rx-score-turn span{font-size:11px;margin-top:6px;line-height:1.7}.rx-score-turn.has-failure{background:#fff2f1;border-color:#e6b5b0;color:#8c3831}.rx-score-turn.has-insufficient{background:#fff8eb;border-color:#e1c98e;color:#826018}.rx-score-turn[aria-pressed=true]{outline:2px solid #245b78;outline-offset:1px}.rx-score-detail{min-width:0}.rx-score-criterion{border-top:1px solid var(--rx-border);padding:18px 0}.rx-score-criterion-title{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px}.rx-score-status{padding:4px 10px;border-radius:15px;font-size:12px;background:#eef2f5;color:#526571}.rx-score-status.pass{background:#e3f3e9;color:#286142}.rx-score-status.fail{background:#fbe7e5;color:#8c3831}.rx-score-status.insufficient_evidence{background:#fff1d3;color:#826018}.rx-score-original{font-size:15px;line-height:1.9;margin:12px 0 8px}.rx-score-quote{font-size:14px;line-height:1.9;border-left:3px solid #b5ccd8;padding:10px 15px;margin:13px 0;background:#f5f9fb;white-space:pre-wrap;overflow-wrap:anywhere}.rx-score-criterion .rx-button{font-size:12px;margin:5px 8px 5px 0}.rx-scoring-notes{margin-top:20px}.rx-score-detail .rx-details pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.rx-rubric-caption{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.rx-rubric-caption h3{font-size:20px;margin:0}
+.rx-sim-case-filter{margin-top:23px}.rx-sim-detail{min-width:0}.rx-sim-heard{font-size:15px;line-height:1.9;margin:0;overflow-wrap:anywhere}.rx-sim-utterance{font-size:18px;line-height:1.9;overflow-wrap:anywhere}.rx-sim-notes{margin-top:22px}.rx-simulator .rx-metrics{margin:16px 0}.rx-simulator .rx-source{margin-top:17px}.rx-simulator .rx-details pre{max-height:430px}.rx-sim-detail>.rx-grid{align-items:start}.rx-sim-detail .rx-meaning span{overflow-wrap:anywhere}
+.rx-tts-samples{align-items:start}.rx-tts-card{scroll-margin-top:105px}.rx-tts-card h3{line-height:1.6}.rx-tts-card>.rx-small{margin-bottom:12px}.rx-tts-player{display:block;width:100%;max-width:100%;min-width:0;height:54px;margin:16px 0 10px;border-radius:9px;background:#f1f3f4}.rx-tts-player:focus-visible{outline:3px solid #e1a33b;outline-offset:3px}
+.rx-tts-file{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted);line-height:1.8}.rx-tts-file a{font-weight:650}.rx-tts-transcript{font-size:14px;line-height:1.9;overflow-wrap:anywhere}
+.rx-tts-heading{margin:30px 0 18px}.rx-tts-heading h3{font-size:20px}.rx-tts-heading p:last-child{margin-bottom:0}.rx-tts-pauses{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.rx-tts-table{overflow-x:auto;margin:20px 0 0;border:1px solid var(--rx-border);border-radius:8px}.rx-tts-table table{width:100%;border-collapse:collapse;font-size:13px;margin:0}.rx-tts-table caption{text-align:left;padding:13px 15px;font-weight:700;background:#f4f8fa;color:#3f5e71}.rx-tts-table th,.rx-tts-table td{padding:12px 15px;text-align:left;line-height:1.7;border-top:1px solid #dfe8ed;font-variant-numeric:tabular-nums}.rx-tts-table thead th{background:#f8fafb;font-weight:650}
+.rx-tts-figure{margin:0}.rx-tts-figure img{display:block;width:100%;height:auto;border:1px solid #e2e9ee;border-radius:5px}.rx-tts-figure figcaption{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.8}.rx-tts-notes{margin-top:22px}.rx-tts-notes ul{padding-left:20px;font-size:13px;line-height:1.9}
+.rx-score-layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:25px;margin:8px 0 22px}
+.rx-score-total{padding:22px;border:1px solid #e3c795;border-radius:10px;background:#fff8ec;display:flex;flex-direction:column;justify-content:center;align-items:flex-start}
+.rx-score-total strong{font-size:67px;line-height:1;color:#875718;letter-spacing:-.05em;margin:14px 0 7px}.rx-score-total strong small{font-size:20px;letter-spacing:0;color:#9a805c;font-weight:500}
+.rx-score-total p{font-size:13px;line-height:1.8;color:#795b35;margin:8px 0}.rx-score-bars{display:grid;gap:11px;align-content:center;padding:5px 0}
+.rx-score-row{display:grid;grid-template-columns:185px minmax(65px,1fr) 55px;gap:10px;align-items:center;font-size:12px}
+.rx-score-name{line-height:1.5}.rx-score-track{height:9px;border-radius:6px;background:#e9eff2;position:relative;min-width:0}.rx-score-fill{height:100%;display:block;background:#78a38d;border-radius:6px}.rx-score-min{position:absolute;top:-3px;height:15px;width:2px;background:#425b68}.rx-score-value{text-align:right;font-variant-numeric:tabular-nums;color:#3c5b6b;font-weight:650}
+.rx-score-legend{font-size:11px;color:var(--muted);margin-top:12px}.rx-score-legend b{color:#445c68}
+.rx-conflict-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}.rx-conflict-grid pre{white-space:pre-wrap;font-size:15px;line-height:1.8;background:transparent;margin:10px 0 0;overflow-wrap:anywhere}
+.rx-finding{border:1px solid #e6c591;border-left:4px solid #b68031;border-radius:8px;padding:19px;background:#fffaf2;margin-top:19px}.rx-finding h3{color:#80531b}.rx-finding p{font-size:14px;line-height:1.85;margin:9px 0}
+.rx-review-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}.rx-review-grid strong{font-size:13px}.rx-review-grid p{font-size:13px;margin:7px 0 0}
+.rx-footer{padding:24px;border:1px solid #d6e3eb;background:#eef4f7;border-radius:10px;margin:28px 0 36px}.rx-footer h2{font-size:20px}.rx-footer p{font-size:14px;color:#526d7d;line-height:1.8}
+.rx-artifact-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:15px}.rx-artifact-list a{padding:10px 13px;border:1px solid #d3e0e8;border-radius:5px;background:#fff;text-decoration:none;font-size:12px;overflow-wrap:anywhere}.rx-artifact-list small{display:block;color:var(--muted);margin-top:3px}
+.rx-appendix-title{margin:42px 0 14px;scroll-margin-top:22px}.rx-appendix-title h2{font-size:23px}.rx-appendix-title p{font-size:14px;color:var(--muted)}
+.results-canonical .case-header{flex-wrap:wrap}.results-canonical .case>section{overflow-x:auto}.results-canonical table.script{min-width:1050px}
+@media(max-width:1000px){.rx-stage-head{grid-template-columns:46px minmax(0,1fr)}.rx-state{grid-column:2;justify-self:start;margin-left:0}.rx-score-layout{grid-template-columns:200px minmax(0,1fr)}.rx-score-row{grid-template-columns:155px minmax(65px,1fr) 50px}.rx-turn-layout{grid-template-columns:225px minmax(0,1fr)}.rx-stage-body{padding:22px}}
+@media(max-width:700px){.rx-hero{padding:23px 20px}.rx-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.rx-metric{padding:13px}.rx-metric strong{font-size:24px}.rx-nav{display:flex;overflow-x:auto;padding:9px 0;gap:7px;margin:12px 0}.rx-nav a{flex:0 0 136px;padding:9px 10px}.rx-stage{scroll-margin-top:92px}.rx-stage-head{padding:20px;gap:12px;grid-template-columns:37px minmax(0,1fr)}.rx-number{flex-basis:37px;width:37px;height:37px;font-size:15px}.rx-stage-title h2{font-size:21px}.rx-state{margin-left:0}.rx-stage-body{padding:19px 17px}.rx-grid,.rx-people,.rx-boundaries,.rx-conflict-grid,.rx-review-grid{grid-template-columns:1fr}.rx-card{padding:17px}.rx-goal{font-size:17px}.rx-facts{grid-template-columns:85px minmax(0,1fr);gap:10px}.rx-filter{gap:7px}.rx-filter button{padding:7px 11px}.rx-count{width:100%;margin-left:0}.rx-turn-layout{grid-template-columns:1fr;gap:13px}.rx-turn-list{flex-direction:row;max-height:none;overflow-x:auto;padding:2px 2px 8px}.rx-turn-button{flex:0 0 170px;grid-template-columns:31px minmax(0,1fr)}.rx-turn-detail{padding:18px;min-height:0}.rx-utterance{padding:14px;font-size:17px}.rx-comparison-metrics{grid-template-columns:repeat(2,1fr)}.rx-side-box{padding:17px}.rx-side-box blockquote{font-size:19px}.rx-score-layout{grid-template-columns:1fr;gap:19px}.rx-score-total{padding:20px}.rx-score-total strong{font-size:60px}.rx-score-row{grid-template-columns:130px minmax(45px,1fr) 43px;gap:7px;font-size:11px}.rx-artifact-list{grid-template-columns:1fr}.rx-footer{padding:20px}.rx-goal,.rx-card,.rx-stage-title,.rx-lead{overflow-wrap:anywhere}.rx-source a{max-width:100%;overflow-wrap:anywhere}.results-canonical dl.kv{grid-template-columns:1fr}.results-canonical dl.kv dd{margin-bottom:8px}.results-canonical .audit-summary{grid-template-columns:1fr}.results-canonical .case-header h2{font-size:20px}}
+@media(max-width:1100px){.rx-nav.with-tts{display:flex;overflow-x:auto}.rx-nav.with-tts a{flex:0 0 144px}}
+@media(max-width:700px){.rx-tts-pauses{grid-template-columns:1fr}.rx-tts-table th,.rx-tts-table td{padding:10px 9px;font-size:12px}.rx-tts-heading{margin-top:25px}.rx-nav.with-tts a{flex-basis:136px}}
+@media(max-width:700px){.rx-score-turns{grid-template-columns:repeat(2,minmax(0,1fr))}.rx-score-detail{padding:17px}.rx-score-original{font-size:14px}}
+@media(prefers-reduced-motion:reduce){.rx{scroll-behavior:auto}}
+.rx-batch-table{overflow-x:auto}.rx-batch-table table{min-width:600px}.rx-batch-criteria{display:grid;gap:10px;margin-top:16px}.rx-batch-criteria [hidden]{display:none}.rx-batch-criteria p{overflow-wrap:anywhere}
+
+.rx-rollout-bar.backchannel{background:#14614f!important;color:white;border-color:#14614f!important}
+.rx-rollout-playback{position:absolute;left:62px;right:12px;top:0;bottom:0;pointer-events:none;z-index:3}
+.rx-rollout-playhead{position:absolute;left:0;top:7px;bottom:7px;width:3px;background:#c43d2e;box-shadow:0 0 0 1px #fff}
+.rx-rollout-playhead span{position:absolute;bottom:0;left:1px;transform:translateX(-50%);padding:1px 5px;border-radius:3px;background:#c43d2e;color:#fff;font-size:11px;line-height:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rx-rollout-playhead.at-start span{transform:none}.rx-rollout-playhead.at-end span{transform:translateX(-100%)}
+.rx-rollout-now{margin:-10px 0 18px;color:#8f3027;font-variant-numeric:tabular-nums}
+.rx-rollout-bar.is-playing{box-shadow:inset 0 0 0 2px #c43d2e}
+.rx-rollout .rx-turn-button.is-playing{border-color:#c43d2e;box-shadow:inset 3px 0 #c43d2e}
+
+/* Full admitted-script reader. Namespaced to avoid changing older report views. */
+.fsr{margin:2.2rem 0 0;border:1px solid #dce6ed;border-radius:18px;background:#f7fafb;overflow:hidden;color:#203340}.fsr-header{display:flex;justify-content:space-between;gap:1rem;padding:1.4rem 1.5rem 1rem}.fsr-header h3,.fsr-empty h3{margin:.15rem 0 .4rem;font-size:1.25rem}.fsr-header p{margin:.35rem 0;color:#536a78;font-size:.9rem;line-height:1.65}.fsr .fsr-eyebrow{font-size:.7rem;letter-spacing:.13em;color:#287386;font-weight:700}.fsr-count{align-self:flex-start;min-width:3.4rem;text-align:center;font-size:1.5rem;font-weight:700;color:#1f6e81}.fsr-count small{display:block;font-size:.7rem;font-weight:500;color:#67808b}.fsr-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.7rem;padding:.8rem 1.5rem;background:#edf4f5;border-block:1px solid #dce8e9}.fsr-nav,.fsr-actions{display:flex;flex-wrap:wrap;gap:.35rem}.fsr button{border:1px solid #c8dce0;border-radius:7px;background:#fff;color:#245767;padding:.3rem .55rem;font:inherit;font-size:.78rem;cursor:pointer}.fsr button:hover,.fsr button:focus-visible{background:#e1f1f3;outline:2px solid #4e9aad;outline-offset:1px}.fsr-actions a{align-self:center;font-size:.78rem;color:#236b80;margin-left:.35rem}.fsr-status{margin:0;padding:0 1.5rem;color:#506973;font-size:.75rem}.fsr-status:empty{display:none}.fsr-list{max-height:min(68vh,780px);overflow:auto;padding:1rem 1.2rem;scrollbar-color:#b1c9ce transparent}.fsr-round{background:white;border:1px solid #dde8eb;border-radius:12px;margin-bottom:.7rem;overflow:hidden}.fsr-round>summary{display:flex;align-items:center;gap:.65rem;cursor:pointer;list-style:none;padding:.75rem 1rem;background:#fff}.fsr-round>summary::-webkit-details-marker{display:none}.fsr-round>summary:after{content:'+';margin-left:auto;color:#5f8390}.fsr-round[open]>summary:after{content:'−'}.fsr-number{font-size:.7rem;color:#72929e;font-weight:700}.fsr-round-title{font-weight:700;color:#244c5c}.fsr-meta{display:flex;flex-wrap:wrap;gap:.3rem}.fsr-chip,.fsr-ambient{font-size:.69rem;border-radius:5px;background:#edf4f6;color:#59737f;padding:.18rem .38rem}.fsr-round-body{padding:0 1rem .8rem;border-top:1px solid #edf2f3}.fsr-speaker{padding:.85rem 0;border-bottom:1px solid #edf2f3}.fsr-speaker-head{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;font-size:.79rem;color:#1f6e81}.fsr-assistant .fsr-speaker-head{color:#8a632c}.fsr-text{margin:.45rem 0 0!important;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.9!important;color:#273c46;font-size:.94rem}.fsr-event{display:inline-block;vertical-align:baseline;margin:0 .2rem;padding:.06rem .36rem;border-radius:5px;background:#e4f1ee;color:#23735d;font-size:.72rem;line-height:1.5}.fsr-event-onset,.fsr-event-stop{background:#fff0df;color:#97601b}.fsr-event-side,.fsr-event-pause{background:#eeeafd;color:#6954a5}.fsr-unheard{color:#81919a;background:#f2f4f5}.fsr-intent{font-size:.78rem;color:#667d86;padding-top:.65rem}.fsr-intent summary{cursor:pointer}.fsr-intent dl{display:grid;gap:.4rem;margin:.65rem 0}.fsr-intent dl div{display:flex;gap:.6rem}.fsr-intent dt{flex:none;font-weight:700}.fsr-intent dd{margin:0}.fsr-warning,.fsr-audio-warning{color:#995a31;background:#fff4e9;font-size:.8rem;padding:.6rem .8rem;border-radius:7px}.fsr-audio-warning{margin:0 1.5rem 1rem}.fsr-empty{padding:1.4rem}.fsr-empty p{color:#657a84;font-size:.9rem}@media(max-width:600px){.fsr-header,.fsr-toolbar{padding:1rem}.fsr-list{padding:.7rem}.fsr-meta{width:100%}.fsr-round>summary{flex-wrap:wrap}.fsr-count{min-width:2rem}}
+</style>
+</head><body><main>
+<h1>手机应用权限的最小授权原则 · V2 静态剧本目标数据 · 1 个案例</h1>
+<p class='intro'>短篇 · 目标 8 轮 · 实际剧本 8 轮 · 完整 · 8 轮 · 168.2 秒 · 附和 2 次 · 打断 1 次 · 安静样本 · 持续声层 0 层 · 离散旁音 0 次（环境音 0 / 旁话 0） · 用户：口语 · 直接度适中 · 克制 · 简洁 · 主动中 · 审慎中 · 耐心高</p>
+<div class="rx" data-results-explorer><article class="rx-stage rx-rollout" id="result-rollout" data-rx-stage>
+<header class="rx-stage-head"><span class="rx-number">V2</span><div class="rx-stage-title"><p class="rx-eyebrow">STATIC SCRIPT · OFFLINE TARGET DATA</p><h2>用户与助手，第一次放进同一条音频</h2><p>整段用户与助手台词、附和、插话及停播锚点先生成并审查，再并行使用 本地 Qwen3-TTS，字幕由独立强制对齐器生成，按精确对齐执行静态时间轴。</p></div><span class="rx-state note">V2 静态目标数据已完成</span></header>
+<div class="rx-stage-body"><div class="rx-meta"><span class="rx-chip blue">GPT-5.6-sol · 离线剧本与 Judge</span><span class="rx-chip ">Qwen3-TTS 1.7B</span><span class="rx-chip ">左：用户 / 右：助手</span><span class="rx-chip amber">离线合成 · 非原生实时测量</span></div>
+<p class="rx-small">短篇 · 目标 8 轮 · 实际剧本 8 轮</p><div class="rx-meaning"><strong>用户表达与互动画像</strong><p>口语 · 直接度适中 · 克制 · 简洁 · 主动中 · 审慎中 · 耐心高</p><details class="rx-details"><summary>展开七个稳定表达轴与模型备注</summary><pre>{
+  &quot;schema&quot;: &quot;duplex_v2.interaction_profile.v1&quot;,
+  &quot;formality&quot;: &quot;casual&quot;,
+  &quot;directness&quot;: &quot;balanced&quot;,
+  &quot;emotional_expressiveness&quot;: &quot;reserved&quot;,
+  &quot;verbosity&quot;: &quot;brief&quot;,
+  &quot;initiative&quot;: &quot;medium&quot;,
+  &quot;caution&quot;: &quot;medium&quot;,
+  &quot;patience&quot;: &quot;high&quot;,
+  &quot;behavioral_notes&quot;: [
+    &quot;通常先简短说明自己的疑问，再根据交流进展补充必要的背景。&quot;,
+    &quot;遇到不确定的概念会用日常说法复述，请求确认自己是否理解准确。&quot;,
+    &quot;愿意听完不同角度的解释，必要时会追问实际使用中的例外情况。&quot;
+  ]
+}</pre></details><a href="../../records/runs/20261107-v28-compaction-contract-chinese-hundred-g07-sample-009-v2-stage1/R01-V01/user_voice.json" target="_blank" rel="noopener">查看原始 user_voice.json 与来源 ↗</a></div><div class="rx-meaning"><strong>声景与旁音</strong><p>安静样本 · 持续声层 0 层 · 离散旁音 0 次（环境音 0 / 旁话 0）</p><p>持续声层不计离散次数；离散旁音包含无台词环境事件和有台词旁话。背景音不进入双方的文字历史。</p><p>本样本预采样为安静模式：持续声层、环境事件和旁话均为空。</p><details class="rx-details"><summary>Stage 2 冻结声景计划</summary><pre>{
+  &quot;mode&quot;: &quot;quiet&quot;,
+  &quot;ambient_layers&quot;: [],
+  &quot;environment_events&quot;: [],
+  &quot;schema&quot;: &quot;duplex_v2.soundscape_plan.v3&quot;,
+  &quot;side_speech_sources&quot;: [],
+  &quot;side_speech_count&quot;: 0,
+  &quot;sampling&quot;: {
+    &quot;schema&quot;: &quot;duplex_v2.ambient_draw.v2&quot;,
+    &quot;policy&quot;: {
+      &quot;schema&quot;: &quot;duplex_v2.soundscape_policy.v2&quot;,
+      &quot;quiet_probability&quot;: 0.5,
+      &quot;discrete_targets_by_tier&quot;: {
+        &quot;short&quot;: [
+          0,
+          1
+        ],
+        &quot;medium&quot;: [
+          1,
+          2
+        ],
+        &quot;long&quot;: [
+          2,
+          4
+        ]
+      },
+      &quot;discrete_count_includes&quot;: [
+        &quot;environment_events&quot;,
+        &quot;side_speech&quot;
+      ],
+      &quot;max_ambient_layers&quot;: 2,
+      &quot;gain_range&quot;: [
+        0.3,
+        0.7
+      ],
+      &quot;speech_request_probability&quot;: 0.5,
+      &quot;third_party_preference_probability&quot;: 0.8,
+      &quot;speech_requires_existing_scene_source&quot;: true,
+      &quot;environment_audio&quot;: &quot;base_only&quot;,
+      &quot;stage2_repair&quot;: &quot;atomic_scoped_patch&quot;,
+      &quot;stage2_max_judge_attempts&quot;: 3,
+      &quot;json_parse_max_retries&quot;: 3
+    },
+    &quot;preferences&quot;: {
+      &quot;schema&quot;: &quot;duplex_v2.ambient_preferences.v1&quot;,
+      &quot;seed&quot;: 202611073007,
+      &quot;slot&quot;: 8,
+      &quot;catalog_sha256&quot;: &quot;f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f&quot;,
+      &quot;categories&quot;: {
+        &quot;bed&quot;: [
+          &quot;rain&quot;,
+          &quot;traffic&quot;,
+          &quot;crowd&quot;,
+          &quot;wind&quot;,
+          &quot;birds&quot;,
+          &quot;fan&quot;
+        ],
+        &quot;event&quot;: [
+          &quot;footsteps&quot;,
+          &quot;paper&quot;,
+          &quot;door&quot;,
+          &quot;keyboard&quot;,
+          &quot;doorbell&quot;,
+          &quot;water_tap&quot;
+        ]
+      },
+      &quot;recordings&quot;: {
+        &quot;bed:birds&quot;: [
+          &quot;birds-fsd50k-eval-57907&quot;,
+          &quot;birds-fsd50k-eval-86343&quot;,
+          &quot;birds-fsd50k-eval-319512&quot;
+        ],
+        &quot;bed:crowd&quot;: [
+          &quot;crowd-fsd50k-eval-340358&quot;,
+          &quot;crowd-fsd50k-eval-121877&quot;,
+          &quot;crowd-fsd50k-eval-185058&quot;
+        ],
+        &quot;bed:fan&quot;: [
+          &quot;fan-fsd50k-eval-419427&quot;,
+          &quot;fan-fsd50k-eval-415925&quot;,
+          &quot;fan-fsd50k-eval-235362&quot;
+        ],
+        &quot;bed:rain&quot;: [
+          &quot;rain-fsd50k-eval-21189&quot;,
+          &quot;rain-fsd50k-eval-382582&quot;,
+          &quot;rain-fsd50k-eval-238016&quot;
+        ],
+        &quot;bed:traffic&quot;: [
+          &quot;traffic-fsd50k-eval-124020&quot;,
+          &quot;traffic-fsd50k-eval-235541&quot;,
+          &quot;traffic-fsd50k-eval-232686&quot;
+        ],
+        &quot;bed:wind&quot;: [
+          &quot;wind-fsd50k-eval-113173&quot;,
+          &quot;wind-fsd50k-eval-113175&quot;,
+          &quot;wind-fsd50k-eval-113176&quot;
+        ],
+        &quot;event:door&quot;: [
+          &quot;door-fsd50k-eval-119077&quot;,
+          &quot;door-fsd50k-eval-209519&quot;,
+          &quot;door-fsd50k-eval-71212&quot;
+        ],
+        &quot;event:doorbell&quot;: [
+          &quot;doorbell-fsd50k-eval-426594&quot;,
+          &quot;doorbell-fsd50k-eval-332563&quot;,
+          &quot;doorbell-fsd50k-eval-348322&quot;
+        ],
+        &quot;event:footsteps&quot;: [
+          &quot;footsteps-fsd50k-eval-392303&quot;,
+          &quot;footsteps-fsd50k-eval-153104&quot;,
+          &quot;footsteps-fsd50k-eval-272381&quot;
+        ],
+        &quot;event:keyboard&quot;: [
+          &quot;keyboard-fsd50k-eval-399740&quot;,
+          &quot;keyboard-fsd50k-eval-411545&quot;,
+          &quot;keyboard-fsd50k-eval-233057&quot;
+        ],
+        &quot;event:paper&quot;: [
+          &quot;paper-fsd50k-eval-121200&quot;,
+          &quot;paper-fsd50k-eval-82562&quot;,
+          &quot;paper-fsd50k-eval-343098&quot;
+        ],
+        &quot;event:water_tap&quot;: [
+          &quot;water_tap-fsd50k-eval-402127&quot;,
+          &quot;water_tap-fsd50k-eval-402128&quot;,
+          &quot;water_tap-fsd50k-eval-232499&quot;
+        ]
+      }
+    },
+    &quot;control&quot;: {
+      &quot;schema&quot;: &quot;duplex_v2.soundscape_control.v2&quot;,
+      &quot;seed&quot;: 4095711672,
+      &quot;mode&quot;: &quot;quiet&quot;,
+      &quot;discrete_event_target&quot;: 0,
+      &quot;max_ambient_layers&quot;: 2,
+      &quot;side_speech_requested&quot;: false,
+      &quot;speech_kind_preferences&quot;: [
+        &quot;third_party&quot;,
+        &quot;machine&quot;
+      ]
+    },
+    &quot;control_sha256&quot;: &quot;0427d73b3adc19b84c16d41bb18b744dc57bd1e9df0f5a6bce31a4a90b3d4519&quot;,
+    &quot;candidate_plan&quot;: {
+      &quot;schema&quot;: &quot;duplex_v2.soundscape_plan.v3&quot;,
+      &quot;mode&quot;: &quot;quiet&quot;,
+      &quot;ambient_layers&quot;: [],
+      &quot;environment_events&quot;: [],
+      &quot;side_speech_eligibility&quot;: {
+        &quot;third_party&quot;: {
+          &quot;compatible&quot;: false,
+          &quot;reason&quot;: &quot;用户独自在家，当前故事中没有在场的第三方。&quot;,
+          &quot;source&quot;: null
+        },
+        &quot;machine&quot;: {
+          &quot;compatible&quot;: false,
+          &quot;reason&quot;: &quot;当前场景没有已建立的语音播报设备或其他机器旁语来源。&quot;,
+          &quot;source&quot;: null
+        }
+      }
+    },
+    &quot;base_environment_audio_sha256&quot;: &quot;c09937737ad95b2a1fdf6ed03f5a86e1ac065438334fd5dfb2515a2af84c1538&quot;,
+    &quot;aggregate_environment_audio&quot;: &quot;室内整体安静，近处只有几乎不可察觉的自然房间底噪。周围没有持续的人声、设备播报或突发声响。&quot;,
+    &quot;draws&quot;: [],
+    &quot;speech_selection&quot;: {
+      &quot;requested&quot;: false,
+      &quot;compatible_kinds&quot;: [],
+      &quot;selected_kind&quot;: null,
+      &quot;outcome&quot;: &quot;not_requested&quot;,
+      &quot;assessments&quot;: {
+        &quot;third_party&quot;: {
+          &quot;compatible&quot;: false,
+          &quot;reason&quot;: &quot;用户独自在家，当前故事中没有在场的第三方。&quot;,
+          &quot;source&quot;: null
+        },
+        &quot;machine&quot;: {
+          &quot;compatible&quot;: false,
+          &quot;reason&quot;: &quot;当前场景没有已建立的语音播报设备或其他机器旁语来源。&quot;,
+          &quot;source&quot;: null
+        }
+      }
+    }
+  }
+}</pre></details><div class="rx-actions"><a href="../../records/runs/20261107-v28-compaction-contract-chinese-hundred-g07-sample-009-v2-stage2/R01-V01/situation_knowledge.json" target="_blank" rel="noopener">Stage 2 声景计划与来源 ↗</a><a href="../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/ambient-provenance.json" target="_blank" rel="noopener">ambient-provenance.json ↗</a><a href="../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/frozen-ambient-plan.json" target="_blank" rel="noopener">frozen-ambient-plan.json ↗</a></div></div><p class="rx-small">MP3 压缩试听 · 时间轴沿用原始录音。<a href="../../audio/G07-N009-R01-V01/dialogue.mp3" download>下载压缩 MP3</a></p><div class="rx-metrics"><div class="rx-metric"><span>已交付主轮</span><strong>8 / 8</strong><small>只统计实际生成并播放的主表达</small></div><div class="rx-metric"><span>采样时间轴</span><strong>168.2 秒</strong><small>由实际 PCM 音频长度与明确静音构成</small></div><div class="rx-metric"><span>采样中途起声</span><strong>1 次</strong><small>按冻结文本锚点与对齐采样执行</small></div><div class="rx-metric"><span>本次运行的墙钟时间</span><strong>1480.6 秒</strong><small>含 API 等待；不计入上面的音频时间轴</small></div></div>
+<div class="rx-meaning"><strong>这一步在做什么：</strong>这是剧本驱动的静态目标数据。模型离线审查整段对话的因果与已听边界，冻结文本后并行 TTS；音频执行阶段不再生成台词，也不让观察器或收听模型决定触发。用户起声时已听到的前缀，与助手最终停播时已听到的前缀分别保存。</div>
+<div class="rx-alert"><strong>本轨迹实际发生 2 次用户附和，2 次保持原播报。</strong><p>附和位置在离线剧本中固定；混音保持助手原音轨连续。</p><div class="rx-actions"><button type="button" class="rx-button" data-rollout-segment="4">定位用户附和</button><a href="../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/integrity.json" target="_blank" rel="noopener">查看附和核验</a></div></div><h3>先听本次生成的对话</h3><audio id="rx-rollout-audio" class="rx-tts-player" controls preload="none" data-tts-audio="synthetic-dialogue" src="../../audio/G07-N009-R01-V01/dialogue.mp3" aria-label="用户与助手的合成双声道对话"></audio><p class="rx-small" id="rx-rollout-player-status" role="status">左声道包含用户主表达、附和、旁话与环境声，右声道为助手。A/U 文本跟随有台词片段；背景时段见上方声景明细。</p>
+<div class="rx-rollout-scroll"><div class="rx-rollout-chart" id="rx-rollout-chart" aria-label="合成音频时间轴"><span class="rx-rollout-lane user">用户</span><span class="rx-rollout-lane assistant">助手</span><div class="rx-rollout-bars" id="rx-rollout-bars"></div><div class="rx-rollout-playback" aria-hidden="true"><div class="rx-rollout-playhead at-start" id="rx-rollout-playhead"><span id="rx-rollout-playhead-time">00:00</span></div></div></div></div>
+<p class="rx-small rx-rollout-now" id="rx-rollout-now">竖线标记当前播放位置，下方 A/U 文本与列表自动跟随；重叠播放的片段会同时标亮。</p>
+<div class="rx-turn-layout"><div class="rx-turn-list" id="rx-rollout-segments" aria-label="选择已播放音频片段"></div><div class="rx-sim-detail"><div class="rx-turn-head"><h3 id="rx-rollout-title"></h3><span class="rx-chip blue" id="rx-rollout-kind"></span></div><p class="rx-small" id="rx-rollout-time"></p><div class="rx-utterance" id="rx-rollout-text"></div><p class="rx-small" id="rx-rollout-outcome"></p><button type="button" class="rx-button" data-rollout-seek>跳到这段前 1 秒试听</button><details class="rx-details" id="rx-rollout-tail" hidden><summary>未播出的助手后半段 · 仅归档，未进入双方已听记忆</summary><pre id="rx-rollout-unplayed"></pre></details><div class="rx-source" id="rx-rollout-files"></div></div></div>
+<div class="rx-grid"><div class="rx-card"><h3>中断到底取消了什么</h3><p class="rx-small">助手全文先完成 TTS。调度器把剧本指定的起声和停播文本锚点映射到真实音频采样，裁掉未播尾部；用户附和不裁剪助手语音。未播全文仅作原始来源归档，不计入已听历史。这里没有实时模型取消或停声延迟测量。</p></div><div class="rx-card"><h3>文字如何对应音频</h3><p class="rx-small">Qwen3-ForcedAligner 将冻结台词对齐到各段真实音频。调度器按对齐后的词/字边界定位起声、停播和附和，插入明确的 T02 静音，再混合双声道音频；不按字数估算时长。</p></div></div>
+
+<details class="rx-details"><summary>查看本次中途起声、旁语、句内停顿与停播事件</summary><pre>[
+  {
+    &quot;sequence&quot;: 1,
+    &quot;frame&quot;: 0,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_audio_started&quot;,
+    &quot;audio_id&quot;: &quot;U01&quot;,
+    &quot;focus_turn_id&quot;: &quot;U01&quot;,
+    &quot;overlap_with_assistant&quot;: false,
+    &quot;assistant_prefix_at_user_onset&quot;: &quot;&quot;,
+    &quot;planned_assistant_prefix_at_user_onset&quot;: &quot;&quot;
+  },
+  {
+    &quot;sequence&quot;: 2,
+    &quot;frame&quot;: 154880,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_audio_completed&quot;,
+    &quot;audio_id&quot;: &quot;U01&quot;
+  },
+  {
+    &quot;sequence&quot;: 3,
+    &quot;frame&quot;: 158720,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_buffer_ready&quot;,
+    &quot;response_id&quot;: &quot;A001&quot;,
+    &quot;generated_chars&quot;: 71,
+    &quot;received_frames&quot;: 229120,
+    &quot;api_generation_already_completed&quot;: true,
+    &quot;synthetic_playback_start_frame&quot;: 158720
+  },
+  {
+    &quot;sequence&quot;: 4,
+    &quot;frame&quot;: 387840,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_playback_ended&quot;,
+    &quot;response_id&quot;: &quot;A001&quot;,
+    &quot;outcome&quot;: &quot;drained&quot;,
+    &quot;audio_end_frame&quot;: 387840
+  },
+  {
+    &quot;sequence&quot;: 5,
+    &quot;frame&quot;: 391680,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_audio_started&quot;,
+    &quot;audio_id&quot;: &quot;U02&quot;,
+    &quot;focus_turn_id&quot;: &quot;U02&quot;,
+    &quot;overlap_with_assistant&quot;: false,
+    &quot;assistant_prefix_at_user_onset&quot;: &quot;定位会透露你去过或常在哪些地方，精确定位更细；麦克风在获准并被调用时可接触周围声音。申请权限不等于已经滥用，但若与当前功能无关，可以先不允许。&quot;,
+    &quot;planned_assistant_prefix_at_user_onset&quot;: &quot;定位会透露你去过或常在哪些地方，精确定位更细；麦克风在获准并被调用时可接触周围声音。申请权限不等于已经滥用，但若与当前功能无关，可以先不允许。&quot;
+  },
+  {
+    &quot;sequence&quot;: 6,
+    &quot;frame&quot;: 487680,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_audio_completed&quot;,
+    &quot;audio_id&quot;: &quot;U02&quot;
+  },
+  {
+    &quot;sequence&quot;: 7,
+    &quot;frame&quot;: 491520,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_buffer_ready&quot;,
+    &quot;response_id&quot;: &quot;A002&quot;,
+    &quot;generated_chars&quot;: 74,
+    &quot;received_frames&quot;: 259840,
+    &quot;api_generation_already_completed&quot;: true,
+    &quot;synthetic_playback_start_frame&quot;: 491520
+  },
+  {
+    &quot;sequence&quot;: 8,
+    &quot;frame&quot;: 605440,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;backchannel_onset&quot;,
+    &quot;identifier&quot;: &quot;BC01&quot;,
+    &quot;aid&quot;: &quot;A002&quot;,
+    &quot;assistant_prefix_at_onset&quot;: &quot;对。通讯录通常包含姓名、号码、邮箱等，也可能反映你和谁有联系；&quot;,
+    &quot;planned_assistant_prefix_at_onset&quot;: &quot;对。通讯录通常包含姓名、号码、邮箱等，也可能反映你和谁有联系；&quot;,
+    &quot;background_only&quot;: false
+  },
+  {
+    &quot;sequence&quot;: 9,
+    &quot;frame&quot;: 620800,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;backchannel_completed&quot;,
+    &quot;audio_id&quot;: &quot;BC01&quot;,
+    &quot;response_id&quot;: &quot;A002&quot;,
+    &quot;assistant_continues&quot;: true,
+    &quot;new_assistant_response&quot;: false,
+    &quot;advances_main_turn&quot;: false
+  },
+  {
+    &quot;sequence&quot;: 10,
+    &quot;frame&quot;: 751360,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_playback_ended&quot;,
+    &quot;response_id&quot;: &quot;A002&quot;,
+    &quot;outcome&quot;: &quot;drained&quot;,
+    &quot;audio_end_frame&quot;: 751360
+  },
+  {
+    &quot;sequence&quot;: 11,
+    &quot;frame&quot;: 755200,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_audio_started&quot;,
+    &quot;audio_id&quot;: &quot;U03&quot;,
+    &quot;focus_turn_id&quot;: &quot;U03&quot;,
+    &quot;overlap_with_assistant&quot;: false,
+    &quot;assistant_prefix_at_user_onset&quot;: &quot;对。通讯录通常包含姓名、号码、邮箱等，也可能反映你和谁有联系；应用如何处理仍要看说明，不能仅凭权限断定。若只是找熟人，账号搜索通常是更窄的替代方式。&quot;,
+    &quot;planned_assistant_prefix_at_user_onset&quot;: &quot;对。通讯录通常包含姓名、号码、邮箱等，也可能反映你和谁有联系；应用如何处理仍要看说明，不能仅凭权限断定。若只是找熟人，账号搜索通常是更窄的替代方式。&quot;
+  },
+  {
+    &quot;sequence&quot;: 12,
+    &quot;frame&quot;: 906240,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_audio_completed&quot;,
+    &quot;audio_id&quot;: &quot;U03&quot;
+  },
+  {
+    &quot;sequence&quot;: 13,
+    &quot;frame&quot;: 910080,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_buffer_ready&quot;,
+    &quot;response_id&quot;: &quot;A003&quot;,
+    &quot;generated_chars&quot;: 72,
+    &quot;received_frames&quot;: 218880,
+    &quot;api_generation_already_completed&quot;: true,
+    &quot;synthetic_playback_start_frame&quot;: 910080
+  },
+  {
+    &quot;sequence&quot;: 14,
+    &quot;frame&quot;: 1010400,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_audio_started&quot;,
+    &quot;audio_id&quot;: &quot;U04&quot;,
+    &quot;focus_turn_id&quot;: &quot;U04&quot;,
+    &quot;overlap_with_assistant&quot;: true,
+    &quot;assistant_prefix_at_user_onset&quot;: &quot;导航通常选“使用应用期间”，需要实时路线时再开精确位置；外卖&quot;,
+    &quot;planned_assistant_prefix_at_user_onset&quot;: &quot;导航通常选“使用应用期间”，需要实时路线时再开精确位置；外卖&quot;
+  },
+  {
+    &quot;sequence&quot;: 15,
+    &quot;frame&quot;: 1011200,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_queue_discard&quot;,
+    &quot;response_id&quot;: &quot;A003&quot;,
+    &quot;reason&quot;: &quot;frozen_exact_stop_prefix&quot;,
+    &quot;discarded_audio_frames&quot;: 117760,
+    &quot;discarded_text_chars&quot;: 41,
+    &quot;provider_request_cancelled&quot;: false,
+    &quot;native_stop_latency_measured&quot;: false
+  },
+  {
+    &quot;sequence&quot;: 16,
+    &quot;frame&quot;: 1011200,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_playback_ended&quot;,
+    &quot;response_id&quot;: &quot;A003&quot;,
+    &quot;outcome&quot;: &quot;queue_discarded&quot;,
+    &quot;audio_end_frame&quot;: 1011200
+  },
+  {
+    &quot;sequence&quot;: 17,
+    &quot;frame&quot;: 1112480,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_audio_completed&quot;,
+    &quot;audio_id&quot;: &quot;U04&quot;
+  },
+  {
+    &quot;sequence&quot;: 18,
+    &quot;frame&quot;: 1116320,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_buffer_ready&quot;,
+    &quot;response_id&quot;: &quot;A004&quot;,
+    &quot;generated_chars&quot;: 66,
+    &quot;received_frames&quot;: 199680,
+    &quot;api_generation_already_completed&quot;: true,
+    &quot;synthetic_playback_start_frame&quot;: 1116320
+  },
+  {
+    &quot;sequence&quot;: 19,
+    &quot;frame&quot;: 1316000,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_playback_ended&quot;,
+    &quot;response_id&quot;: &quot;A004&quot;,
+    &quot;outcome&quot;: &quot;drained&quot;,
+    &quot;audio_end_frame&quot;: 1316000
+  },
+  {
+    &quot;sequence&quot;: 20,
+    &quot;frame&quot;: 1319840,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_audio_started&quot;,
+    &quot;audio_id&quot;: &quot;U05&quot;,
+    &quot;focus_turn_id&quot;: &quot;U05&quot;,
+    &quot;overlap_with_assistant&quot;: false,
+    &quot;assistant_prefix_at_user_onset&quot;: &quot;可以。如果它也提供“下次询问或共享时”，优先选这个；若反复询问太麻烦，再用“使用应用期间”。也可以手动填地址，没必要给“始终允许”。&quot;,
+    &quot;planned_assistant_prefix_at_user_onset&quot;: &quot;可以。如果它也提供“下次询问或共享时”，优先选这个；若反复询问太麻烦，再用“使用应用期间”。也可以手动填地址，没必要给“始终允许”。&quot;
+  },
+  {
+    &quot;sequence&quot;: 21,
+    &quot;frame&quot;: 1422240,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_audio_completed&quot;,
+    &quot;audio_id&quot;: &quot;U05&quot;
+  },
+  {
+    &quot;sequence&quot;: 22,
+    &quot;frame&quot;: 1426080,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_buffer_ready&quot;,
+    &quot;response_id&quot;: &quot;A005&quot;,
+    &quot;generated_chars&quot;: 66,
+    &quot;received_frames&quot;: 221440,
+    &quot;api_generation_already_completed&quot;: true,
+    &quot;synthetic_playback_start_frame&quot;: 1426080
+  },
+  {
+    &quot;sequence&quot;: 23,
+    &quot;frame&quot;: 1647520,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_playback_ended&quot;,
+    &quot;response_id&quot;: &quot;A005&quot;,
+    &quot;outcome&quot;: &quot;drained&quot;,
+    &quot;audio_end_frame&quot;: 1647520
+  },
+  {
+    &quot;sequence&quot;: 24,
+    &quot;frame&quot;: 1651360,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_audio_started&quot;,
+    &quot;audio_id&quot;: &quot;U06&quot;,
+    &quot;focus_turn_id&quot;: &quot;U06&quot;,
+    &quot;overlap_with_assistant&quot;: false,
+    &quot;assistant_prefix_at_user_onset&quot;: &quot;按你只用裁剪、调色和滤镜的情况，这两项不像核心所需，可以先拒绝。若某个明确功能之后用不了，再看它为何需要，并只为那次或使用期间开放。&quot;,
+    &quot;planned_assistant_prefix_at_user_onset&quot;: &quot;按你只用裁剪、调色和滤镜的情况，这两项不像核心所需，可以先拒绝。若某个明确功能之后用不了，再看它为何需要，并只为那次或使用期间开放。&quot;
+  },
+  {
+    &quot;sequence&quot;: 25,
+    &quot;frame&quot;: 1724850,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_audio_completed&quot;,
+    &quot;audio_id&quot;: &quot;U06&quot;
+  },
+  {
+    &quot;sequence&quot;: 26,
+    &quot;frame&quot;: 1728690,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_buffer_ready&quot;,
+    &quot;response_id&quot;: &quot;A006&quot;,
+    &quot;generated_chars&quot;: 72,
+    &quot;received_frames&quot;: 253440,
+    &quot;api_generation_already_completed&quot;: true,
+    &quot;synthetic_playback_start_frame&quot;: 1728690
+  },
+  {
+    &quot;sequence&quot;: 27,
+    &quot;frame&quot;: 1982130,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_playback_ended&quot;,
+    &quot;response_id&quot;: &quot;A006&quot;,
+    &quot;outcome&quot;: &quot;drained&quot;,
+    &quot;audio_end_frame&quot;: 1982130
+  },
+  {
+    &quot;sequence&quot;: 28,
+    &quot;frame&quot;: 1985970,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_audio_started&quot;,
+    &quot;audio_id&quot;: &quot;U07&quot;,
+    &quot;focus_turn_id&quot;: &quot;U07&quot;,
+    &quot;overlap_with_assistant&quot;: false,
+    &quot;assistant_prefix_at_user_onset&quot;: &quot;能。相机只在需要现场拍摄时给；照片权限若有范围选项，优先只开放选中的照片，需要批量管理时再扩大。思路仍是与当前动作相关、范围尽量小、时间尽量短。&quot;,
+    &quot;planned_assistant_prefix_at_user_onset&quot;: &quot;能。相机只在需要现场拍摄时给；照片权限若有范围选项，优先只开放选中的照片，需要批量管理时再扩大。思路仍是与当前动作相关、范围尽量小、时间尽量短。&quot;
+  },
+  {
+    &quot;sequence&quot;: 29,
+    &quot;frame&quot;: 2079410,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_audio_completed&quot;,
+    &quot;audio_id&quot;: &quot;U07&quot;
+  },
+  {
+    &quot;sequence&quot;: 30,
+    &quot;frame&quot;: 2083250,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_buffer_ready&quot;,
+    &quot;response_id&quot;: &quot;A007&quot;,
+    &quot;generated_chars&quot;: 65,
+    &quot;received_frames&quot;: 227840,
+    &quot;api_generation_already_completed&quot;: true,
+    &quot;synthetic_playback_start_frame&quot;: 2083250
+  },
+  {
+    &quot;sequence&quot;: 31,
+    &quot;frame&quot;: 2175410,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;backchannel_onset&quot;,
+    &quot;identifier&quot;: &quot;BC02&quot;,
+    &quot;aid&quot;: &quot;A007&quot;,
+    &quot;assistant_prefix_at_onset&quot;: &quot;记四问：这权限是不是当前核心功能必需？能否手动完成？&quot;,
+    &quot;planned_assistant_prefix_at_onset&quot;: &quot;记四问：这权限是不是当前核心功能必需？能否手动完成？&quot;,
+    &quot;background_only&quot;: false
+  },
+  {
+    &quot;sequence&quot;: 32,
+    &quot;frame&quot;: 2197170,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;backchannel_completed&quot;,
+    &quot;audio_id&quot;: &quot;BC02&quot;,
+    &quot;response_id&quot;: &quot;A007&quot;,
+    &quot;assistant_continues&quot;: true,
+    &quot;new_assistant_response&quot;: false,
+    &quot;advances_main_turn&quot;: false
+  },
+  {
+    &quot;sequence&quot;: 33,
+    &quot;frame&quot;: 2311090,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_playback_ended&quot;,
+    &quot;response_id&quot;: &quot;A007&quot;,
+    &quot;outcome&quot;: &quot;drained&quot;,
+    &quot;audio_end_frame&quot;: 2311090
+  },
+  {
+    &quot;sequence&quot;: 34,
+    &quot;frame&quot;: 2314930,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_audio_started&quot;,
+    &quot;audio_id&quot;: &quot;U08&quot;,
+    &quot;focus_turn_id&quot;: &quot;U08&quot;,
+    &quot;overlap_with_assistant&quot;: false,
+    &quot;assistant_prefix_at_user_onset&quot;: &quot;记四问：这权限是不是当前核心功能必需？能否手动完成？能否只给部分内容？能否只给这一次或使用期间？先用最小授权，确有障碍再逐级放宽。&quot;,
+    &quot;planned_assistant_prefix_at_user_onset&quot;: &quot;记四问：这权限是不是当前核心功能必需？能否手动完成？能否只给部分内容？能否只给这一次或使用期间？先用最小授权，确有障碍再逐级放宽。&quot;
+  },
+  {
+    &quot;sequence&quot;: 35,
+    &quot;frame&quot;: 2417330,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;user_audio_completed&quot;,
+    &quot;audio_id&quot;: &quot;U08&quot;
+  },
+  {
+    &quot;sequence&quot;: 36,
+    &quot;frame&quot;: 2421170,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_buffer_ready&quot;,
+    &quot;response_id&quot;: &quot;A008&quot;,
+    &quot;generated_chars&quot;: 80,
+    &quot;received_frames&quot;: 270080,
+    &quot;api_generation_already_completed&quot;: true,
+    &quot;synthetic_playback_start_frame&quot;: 2421170
+  },
+  {
+    &quot;sequence&quot;: 37,
+    &quot;frame&quot;: 2691250,
+    &quot;clock&quot;: &quot;synthetic_pcm_16000&quot;,
+    &quot;kind&quot;: &quot;assistant_playback_ended&quot;,
+    &quot;response_id&quot;: &quot;A008&quot;,
+    &quot;outcome&quot;: &quot;drained&quot;,
+    &quot;audio_end_frame&quot;: 2691250
+  }
+]</pre></details>
+<p class="rx-small">这里验证连接、信息边界和音频证据。整份文本和事件锚点在 TTS 前经离线 Judge；音频阶段只执行冻结计划，不调用实时决策模型。本页呈现离线审查后的静态目标数据；不将它标为实时自主交互轨迹。 插话已去除前导静音，保留30毫秒起声保护；只在同一已听前缀范围内校准时机，助手停声锚点保持原样。</p>
+<div class="rx-actions"><a class="rx-button primary" href="../../workflow-records.zip" download>下载本次合成交互记录 ↓</a><a class="rx-button" href="../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/result.json" target="_blank" rel="noopener">运行结果 JSON ↗</a><a class="rx-button" href="../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/integrity.json" target="_blank" rel="noopener">因果与音频完整性核验 ↗</a><a class="rx-button" href="../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json" target="_blank" rel="noopener">完整采样时间轴 ↗</a></div><section class="fsr" data-final-script-reader aria-label="最终完整定稿剧本"><header class="fsr-header"><div><p class="fsr-eyebrow">FINAL SCRIPT · 逐轮阅读</p><h3>最终完整定稿剧本</h3><p>这里展示 TTS 前按本版规则定稿的完整台词与计划事件；灰色文字是计划中被打断后未播出的助手尾部。实际播放以音频和时间轴为准。</p></div><div class="fsr-count">8<small>主轮</small></div></header><div class="fsr-toolbar"><nav class="fsr-nav" aria-label="定位剧本轮次"><button type="button" data-final-jump="0">U01</button><button type="button" data-final-jump="1">U02</button><button type="button" data-final-jump="2">U03</button><button type="button" data-final-jump="3">U04</button><button type="button" data-final-jump="4">U05</button><button type="button" data-final-jump="5">U06</button><button type="button" data-final-jump="6">U07</button><button type="button" data-final-jump="7">U08</button></nav><div class="fsr-actions"><button type="button" data-final-action="expand">全部展开</button><button type="button" data-final-action="collapse">全部收起</button><a href="../../records/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g07-sample-009/R01-V01/script/script.json" target="_blank" rel="noopener">查看完整定稿 script.json ↗</a></div></div><p class="fsr-status" data-final-status aria-live="polite"></p><div class="fsr-list" data-final-list tabindex="0" aria-label="完整剧本轮次"><details open class="fsr-round" data-final-round="0"><summary><span class="fsr-number">01</span><span class="fsr-round-title">U01 / A001</span><span class="fsr-meta"><span class="fsr-chip">A01 · 建立 / 补充</span><span class="fsr-chip">T01 · 自然接话</span></span></summary><div class="fsr-round-body"><div class="fsr-speaker fsr-user"><div class="fsr-speaker-head"><strong>U01 · 用户</strong></div><p class="fsr-text">我刚装了个照片编辑应用，只想裁剪、调色和加滤镜，它却要定位和麦克风。这两项分别可能暴露什么？</p></div><div class="fsr-speaker fsr-assistant"><div class="fsr-speaker-head"><strong>A001 · 助手</strong></div><p class="fsr-text">定位会透露你去过或常在哪些地方，精确定位更细；麦克风在获准并被调用时可接触周围声音。申请权限不等于已经滥用，但若与当前功能无关，可以先不允许。</p></div><details class="fsr-intent"><summary>本轮意图与目标</summary><dl><div><dt>用户意图</dt><dd>询问定位和麦克风权限的隐私影响</dd></div><div><dt>助手意图</dt><dd>用日常语言解释两类权限可能涉及的信息，并避免把权限申请等同于实际滥用</dd></div><div><dt>本轮目标</dt><dd>理解照片编辑应用所申请权限的潜在隐私影响</dd></div></dl></details></div></details><details open class="fsr-round" data-final-round="1"><summary><span class="fsr-number">02</span><span class="fsr-round-title">U02 / A002</span><span class="fsr-meta"><span class="fsr-chip">A03 · 追问 / 核对</span><span class="fsr-chip">T01 · 自然接话</span></span></summary><div class="fsr-round-body"><div class="fsr-speaker fsr-user"><div class="fsr-speaker-head"><strong>U02 · 用户</strong></div><p class="fsr-text">那通讯录呢？是不是不只是看到号码，还可能把我的联系人关系也带出去？</p></div><div class="fsr-speaker fsr-assistant"><div class="fsr-speaker-head"><strong>A002 · 助手</strong></div><p class="fsr-text">对。通讯录通常包含姓名、号码、邮箱等，也可能反映你和谁有联系；<span class="fsr-event fsr-event-backchannel" data-final-event="backchannel">用户附和 · 嗯</span>应用如何处理仍要看说明，不能仅凭权限断定。若只是找熟人，账号搜索通常是更窄的替代方式。</p></div><details class="fsr-intent"><summary>本轮意图与目标</summary><dl><div><dt>用户意图</dt><dd>确认通讯录权限可能涉及的信息范围</dd></div><div><dt>助手意图</dt><dd>解释通讯录包含的信息及关系暴露风险，并指出较窄的替代操作</dd></div><div><dt>本轮目标</dt><dd>判断读取整本通讯录的便利是否值得相应隐私代价</dd></div></dl></details></div></details><details open class="fsr-round" data-final-round="2"><summary><span class="fsr-number">03</span><span class="fsr-round-title">U03 / A003</span><span class="fsr-meta"><span class="fsr-chip">A01 · 建立 / 补充</span><span class="fsr-chip">T01 · 自然接话</span></span></summary><div class="fsr-round-body"><div class="fsr-speaker fsr-user"><div class="fsr-speaker-head"><strong>U03 · 用户</strong></div><p class="fsr-text">我怕限太严影响使用。导航要实时路线，外卖只在下单时填位置，视频会议还要发言，怎么设比较合适？</p></div><div class="fsr-speaker fsr-assistant"><div class="fsr-speaker-head"><strong>A003 · 助手</strong></div><p class="fsr-text">导航通常选“使用应用期间”，需要实时路线时再开精确位置；外卖<span class="fsr-event fsr-event-onset" data-final-event="onset">用户 U04 起声</span>也<span class="fsr-event fsr-event-stop" data-final-event="stop">助手停声 · 后续未播</span><span class="fsr-unheard" data-final-unheard>可选使用期间，填好地址后不必长期开放；视频会议保留使用期间的麦克风，才能正常发言。</span></p></div><details class="fsr-intent"><summary>本轮意图与目标</summary><dl><div><dt>用户意图</dt><dd>结合日常核心功能询问合适的授权范围</dd></div><div><dt>助手意图</dt><dd>分别为导航、外卖和视频会议给出兼顾可用性与隐私的建议</dd></div><div><dt>本轮目标</dt><dd>避免过度限制，同时缩短定位和麦克风权限的开放时间</dd></div></dl></details></div></details><details open class="fsr-round" data-final-round="3"><summary><span class="fsr-number">04</span><span class="fsr-round-title">U04 / A004</span><span class="fsr-meta"><span class="fsr-chip">A02 · 控制播报</span><span class="fsr-chip">T03 · 播报中途起声</span></span></summary><div class="fsr-round-body"><div class="fsr-speaker fsr-user"><div class="fsr-speaker-head"><strong>U04 · 用户</strong></div><p class="fsr-text">等等，外卖我只是下单时填送达位置，不想让它一直知道位置。能不能再收窄？</p></div><div class="fsr-speaker fsr-assistant"><div class="fsr-speaker-head"><strong>A004 · 助手</strong></div><p class="fsr-text">可以。如果它也提供“下次询问或共享时”，优先选这个；若反复询问太麻烦，再用“使用应用期间”。也可以手动填地址，没必要给“始终允许”。</p></div><details class="fsr-intent"><summary>本轮意图与目标</summary><dl><div><dt>用户意图</dt><dd>打断当前建议并补充外卖定位的低频使用条件</dd></div><div><dt>助手意图</dt><dd>按新增条件把外卖定位调整为更窄的授权或手动替代方案</dd></div><div><dt>本轮目标</dt><dd>仅在下单需要时向外卖应用提供位置</dd></div></dl></details></div></details><details open class="fsr-round" data-final-round="4"><summary><span class="fsr-number">05</span><span class="fsr-round-title">U05 / A005</span><span class="fsr-meta"><span class="fsr-chip">A03 · 追问 / 核对</span><span class="fsr-chip">T01 · 自然接话</span></span></summary><div class="fsr-round-body"><div class="fsr-speaker fsr-user"><div class="fsr-speaker-head"><strong>U05 · 用户</strong></div><p class="fsr-text">那照片编辑应用现在就把定位和麦克风都拒绝，应该不影响我这几个功能吧？</p></div><div class="fsr-speaker fsr-assistant"><div class="fsr-speaker-head"><strong>A005 · 助手</strong></div><p class="fsr-text">按你只用裁剪、调色和滤镜的情况，这两项不像核心所需，可以先拒绝。若某个明确功能之后用不了，再看它为何需要，并只为那次或使用期间开放。</p></div><details class="fsr-intent"><summary>本轮意图与目标</summary><dl><div><dt>用户意图</dt><dd>确认能否先拒绝照片编辑应用的两项权限</dd></div><div><dt>助手意图</dt><dd>依据已知用途给出谨慎判断，并说明出现功能障碍后的重新评估方法</dd></div><div><dt>本轮目标</dt><dd>在不妨碍当前编辑需求的前提下减少不必要授权</dd></div></dl></details></div></details><details open class="fsr-round" data-final-round="5"><summary><span class="fsr-number">06</span><span class="fsr-round-title">U06 / A006</span><span class="fsr-meta"><span class="fsr-chip">A03 · 追问 / 核对</span><span class="fsr-chip">T01 · 自然接话</span><span class="fsr-chip">T02 · 句内停顿</span></span></summary><div class="fsr-round-body"><div class="fsr-speaker fsr-user"><div class="fsr-speaker-head"><strong>U06 · 用户</strong></div><p class="fsr-text">那相机和照片权限，<span class="fsr-event fsr-event-pause" data-final-event="pause">用户停顿 650 毫秒</span>我是不是也能照这个思路判断？</p></div><div class="fsr-speaker fsr-assistant"><div class="fsr-speaker-head"><strong>A006 · 助手</strong></div><p class="fsr-text">能。相机只在需要现场拍摄时给；照片权限若有范围选项，优先只开放选中的照片，需要批量管理时再扩大。思路仍是与当前动作相关、范围尽量小、时间尽量短。</p></div><details class="fsr-intent"><summary>本轮意图与目标</summary><dl><div><dt>用户意图</dt><dd>询问同一判断方法能否用于相机和照片权限</dd></div><div><dt>助手意图</dt><dd>把最小授权思路扩展到相机和照片访问范围</dd></div><div><dt>本轮目标</dt><dd>掌握可复用于相近权限的判断方式</dd></div></dl></details></div></details><details open class="fsr-round" data-final-round="6"><summary><span class="fsr-number">07</span><span class="fsr-round-title">U07 / A007</span><span class="fsr-meta"><span class="fsr-chip">A03 · 追问 / 核对</span><span class="fsr-chip">T01 · 自然接话</span></span></summary><div class="fsr-round-body"><div class="fsr-speaker fsr-user"><div class="fsr-speaker-head"><strong>U07 · 用户</strong></div><p class="fsr-text">我想要一套以后装新应用也能记住的判断法，最好就几句话。</p></div><div class="fsr-speaker fsr-assistant"><div class="fsr-speaker-head"><strong>A007 · 助手</strong></div><p class="fsr-text">记四问：这权限是不是当前核心功能必需？能否手动完成？<span class="fsr-event fsr-event-backchannel" data-final-event="backchannel">用户附和 · 嗯，明白</span>能否只给部分内容？能否只给这一次或使用期间？先用最小授权，确有障碍再逐级放宽。</p></div><details class="fsr-intent"><summary>本轮意图与目标</summary><dl><div><dt>用户意图</dt><dd>请求总结简短且可重复使用的授权原则</dd></div><div><dt>助手意图</dt><dd>把此前判断整理成容易记忆的四问原则</dd></div><div><dt>本轮目标</dt><dd>形成以后安装新应用时可直接套用的判断方法</dd></div></dl></details></div></details><details open class="fsr-round" data-final-round="7"><summary><span class="fsr-number">08</span><span class="fsr-round-title">U08 / A008</span><span class="fsr-meta"><span class="fsr-chip">A03 · 追问 / 核对</span><span class="fsr-chip">T01 · 自然接话</span></span></summary><div class="fsr-round-body"><div class="fsr-speaker fsr-user"><div class="fsr-speaker-head"><strong>U08 · 用户</strong></div><p class="fsr-text">如果拒绝后功能坏了，我怎么判断是该放宽，还是这个应用本身要得过头？</p></div><div class="fsr-speaker fsr-assistant"><div class="fsr-speaker-head"><strong>A008 · 助手</strong></div><p class="fsr-text">先确认失效的是否正是你需要的功能，再看提示能否说明权限用途。关系直接，就临时开最窄范围测试；若关系说不通，或坚持要长期、整库访问，就保留拒绝并换替代操作或应用。</p></div><details class="fsr-intent"><summary>本轮意图与目标</summary><dl><div><dt>用户意图</dt><dd>追问权限被拒后出现功能障碍时的处理标准</dd></div><div><dt>助手意图</dt><dd>说明如何验证功能与权限的关系，并决定有限放宽或继续拒绝</dd></div><div><dt>本轮目标</dt><dd>在功能可用性和过度授权之间作出可复核的选择</dd></div></dl></details></div></details></div></section></div></article></div><script type="application/json" id="results-explorer-data">{"view": "synthetic_rollout", "case_id": "G07-N009-R01-V01", "omit_canonical_case": true, "synthetic_rollout": {"execution_mode": "static_script_v2", "status": "completed", "public_view": true, "tts_backend": "qwen3", "segments": [{"speaker": "user", "speaker_label": "用户", "audio_id": "U01", "title": "U01 · 用户", "short_label": "U01", "kind": "deliver", "kind_label": "用户", "text": "我刚装了个照片编辑应用，只想裁剪、调色和加滤镜，它却要定位和麦克风。这两项分别可能暴露什么？", "unplayed_text": "", "start_seconds": 0.0, "duration_seconds": 9.68, "outcome_note": "按冻结锚点执行；原全文、已播前缀与对齐分别保留。", "files": [{"label": "timeline.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json"}, {"label": "assets.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/assets.json"}, {"label": "heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/heard-context.json"}, {"label": "event-heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/event-heard-context.json"}]}, {"speaker": "assistant", "speaker_label": "助手", "audio_id": "A001", "title": "A001 · 助手", "short_label": "A001", "kind": "deliver", "kind_label": "助手", "text": "定位会透露你去过或常在哪些地方，精确定位更细；麦克风在获准并被调用时可接触周围声音。申请权限不等于已经滥用，但若与当前功能无关，可以先不允许。", "unplayed_text": "", "start_seconds": 9.92, "duration_seconds": 14.32, "outcome_note": "按冻结锚点执行；原全文、已播前缀与对齐分别保留。", "files": [{"label": "timeline.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json"}, {"label": "assets.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/assets.json"}, {"label": "heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/heard-context.json"}, {"label": "event-heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/event-heard-context.json"}]}, {"speaker": "user", "speaker_label": "用户", "audio_id": "U02", "title": "U02 · 用户", "short_label": "U02", "kind": "deliver", "kind_label": "用户", "text": "那通讯录呢？是不是不只是看到号码，还可能把我的联系人关系也带出去？", "unplayed_text": "", "start_seconds": 24.48, "duration_seconds": 6.0, "outcome_note": "按冻结锚点执行；原全文、已播前缀与对齐分别保留。", "files": [{"label": "timeline.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json"}, {"label": "assets.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/assets.json"}, {"label": "heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/heard-context.json"}, {"label": "event-heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/event-heard-context.json"}]}, {"speaker": "assistant", "speaker_label": "助手", "audio_id": "A002", "title": "A002 · 助手", "short_label": "A002", "kind": "deliver", "kind_label": "助手", "text": "对。通讯录通常包含姓名、号码、邮箱等，也可能反映你和谁有联系；应用如何处理仍要看说明，不能仅凭权限断定。若只是找熟人，账号搜索通常是更窄的替代方式。", "unplayed_text": "", "start_seconds": 30.72, "duration_seconds": 16.24, "outcome_note": "按冻结锚点执行；原全文、已播前缀与对齐分别保留。", "files": [{"label": "timeline.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json"}, {"label": "assets.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/assets.json"}, {"label": "heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/heard-context.json"}, {"label": "event-heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/event-heard-context.json"}]}, {"speaker": "user", "speaker_label": "用户", "audio_id": "BC01", "title": "BC01 · 用户附和 · 助手继续", "short_label": "BC01", "kind": "backchannel", "kind_label": "用户附和 · 助手继续", "text": "嗯", "unplayed_text": "", "start_seconds": 37.84, "duration_seconds": 0.96, "outcome_note": "按冻结锚点执行；原全文、已播前缀与对齐分别保留。", "files": [{"label": "timeline.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json"}, {"label": "assets.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/assets.json"}, {"label": "heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/heard-context.json"}, {"label": "event-heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/event-heard-context.json"}]}, {"speaker": "user", "speaker_label": "用户", "audio_id": "U03", "title": "U03 · 用户", "short_label": "U03", "kind": "deliver", "kind_label": "用户", "text": "我怕限太严影响使用。导航要实时路线，外卖只在下单时填位置，视频会议还要发言，怎么设比较合适？", "unplayed_text": "", "start_seconds": 47.2, "duration_seconds": 9.44, "outcome_note": "按冻结锚点执行；原全文、已播前缀与对齐分别保留。", "files": [{"label": "timeline.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json"}, {"label": "assets.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/assets.json"}, {"label": "heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/heard-context.json"}, {"label": "event-heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/event-heard-context.json"}]}, {"speaker": "assistant", "speaker_label": "助手", "audio_id": "A003", "title": "A003 · 助手（被插话截断）", "short_label": "A003", "kind": "deliver", "kind_label": "助手（被插话截断）", "text": "导航通常选“使用应用期间”，需要实时路线时再开精确位置；外卖也", "unplayed_text": "可选使用期间，填好地址后不必长期开放；视频会议保留使用期间的麦克风，才能正常发言。", "start_seconds": 56.88, "duration_seconds": 6.32, "outcome_note": "按冻结锚点执行；原全文、已播前缀与对齐分别保留。", "files": [{"label": "timeline.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json"}, {"label": "assets.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/assets.json"}, {"label": "heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/heard-context.json"}, {"label": "event-heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/event-heard-context.json"}]}, {"speaker": "user", "speaker_label": "用户", "audio_id": "U04", "title": "U04 · 用户", "short_label": "U04", "kind": "deliver", "kind_label": "用户", "text": "等等，外卖我只是下单时填送达位置，不想让它一直知道位置。能不能再收窄？", "unplayed_text": "", "start_seconds": 63.15, "duration_seconds": 6.38, "outcome_note": "按冻结锚点执行；原全文、已播前缀与对齐分别保留。", "files": [{"label": "timeline.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json"}, {"label": "assets.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/assets.json"}, {"label": "heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/heard-context.json"}, {"label": "event-heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/event-heard-context.json"}]}, {"speaker": "assistant", "speaker_label": "助手", "audio_id": "A004", "title": "A004 · 助手", "short_label": "A004", "kind": "deliver", "kind_label": "助手", "text": "可以。如果它也提供“下次询问或共享时”，优先选这个；若反复询问太麻烦，再用“使用应用期间”。也可以手动填地址，没必要给“始终允许”。", "unplayed_text": "", "start_seconds": 69.77, "duration_seconds": 12.48, "outcome_note": "按冻结锚点执行；原全文、已播前缀与对齐分别保留。", "files": [{"label": "timeline.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json"}, {"label": "assets.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/assets.json"}, {"label": "heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/heard-context.json"}, {"label": "event-heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/event-heard-context.json"}]}, {"speaker": "user", "speaker_label": "用户", "audio_id": "U05", "title": "U05 · 用户", "short_label": "U05", "kind": "deliver", "kind_label": "用户", "text": "那照片编辑应用现在就把定位和麦克风都拒绝，应该不影响我这几个功能吧？", "unplayed_text": "", "start_seconds": 82.49, "duration_seconds": 6.4, "outcome_note": "按冻结锚点执行；原全文、已播前缀与对齐分别保留。", "files": [{"label": "timeline.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json"}, {"label": "assets.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/assets.json"}, {"label": "heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/heard-context.json"}, {"label": "event-heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/event-heard-context.json"}]}, {"speaker": "assistant", "speaker_label": "助手", "audio_id": "A005", "title": "A005 · 助手", "short_label": "A005", "kind": "deliver", "kind_label": "助手", "text": "按你只用裁剪、调色和滤镜的情况，这两项不像核心所需，可以先拒绝。若某个明确功能之后用不了，再看它为何需要，并只为那次或使用期间开放。", "unplayed_text": "", "start_seconds": 89.13, "duration_seconds": 13.84, "outcome_note": "按冻结锚点执行；原全文、已播前缀与对齐分别保留。", "files": [{"label": "timeline.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json"}, {"label": "assets.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/assets.json"}, {"label": "heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/heard-context.json"}, {"label": "event-heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/event-heard-context.json"}]}, {"speaker": "user", "speaker_label": "用户", "audio_id": "U06", "title": "U06 · 用户", "short_label": "U06", "kind": "deliver", "kind_label": "用户", "text": "那相机和照片权限，我是不是也能照这个思路判断？", "unplayed_text": "", "start_seconds": 103.21, "duration_seconds": 4.593125, "outcome_note": "按冻结锚点执行；原全文、已播前缀与对齐分别保留。", "files": [{"label": "timeline.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json"}, {"label": "assets.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/assets.json"}, {"label": "heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/heard-context.json"}, {"label": "event-heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/event-heard-context.json"}]}, {"speaker": "assistant", "speaker_label": "助手", "audio_id": "A006", "title": "A006 · 助手", "short_label": "A006", "kind": "deliver", "kind_label": "助手", "text": "能。相机只在需要现场拍摄时给；照片权限若有范围选项，优先只开放选中的照片，需要批量管理时再扩大。思路仍是与当前动作相关、范围尽量小、时间尽量短。", "unplayed_text": "", "start_seconds": 108.043125, "duration_seconds": 15.84, "outcome_note": "按冻结锚点执行；原全文、已播前缀与对齐分别保留。", "files": [{"label": "timeline.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json"}, {"label": "assets.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/assets.json"}, {"label": "heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/heard-context.json"}, {"label": "event-heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/event-heard-context.json"}]}, {"speaker": "user", "speaker_label": "用户", "audio_id": "U07", "title": "U07 · 用户", "short_label": "U07", "kind": "deliver", "kind_label": "用户", "text": "我想要一套以后装新应用也能记住的判断法，最好就几句话。", "unplayed_text": "", "start_seconds": 124.123125, "duration_seconds": 5.84, "outcome_note": "按冻结锚点执行；原全文、已播前缀与对齐分别保留。", "files": [{"label": "timeline.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json"}, {"label": "assets.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/assets.json"}, {"label": "heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/heard-context.json"}, {"label": "event-heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/event-heard-context.json"}]}, {"speaker": "assistant", "speaker_label": "助手", "audio_id": "A007", "title": "A007 · 助手", "short_label": "A007", "kind": "deliver", "kind_label": "助手", "text": "记四问：这权限是不是当前核心功能必需？能否手动完成？能否只给部分内容？能否只给这一次或使用期间？先用最小授权，确有障碍再逐级放宽。", "unplayed_text": "", "start_seconds": 130.203125, "duration_seconds": 14.24, "outcome_note": "按冻结锚点执行；原全文、已播前缀与对齐分别保留。", "files": [{"label": "timeline.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json"}, {"label": "assets.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/assets.json"}, {"label": "heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/heard-context.json"}, {"label": "event-heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/event-heard-context.json"}]}, {"speaker": "user", "speaker_label": "用户", "audio_id": "BC02", "title": "BC02 · 用户附和 · 助手继续", "short_label": "BC02", "kind": "backchannel", "kind_label": "用户附和 · 助手继续", "text": "嗯，明白", "unplayed_text": "", "start_seconds": 135.963125, "duration_seconds": 1.36, "outcome_note": "按冻结锚点执行；原全文、已播前缀与对齐分别保留。", "files": [{"label": "timeline.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json"}, {"label": "assets.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/assets.json"}, {"label": "heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/heard-context.json"}, {"label": "event-heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/event-heard-context.json"}]}, {"speaker": "user", "speaker_label": "用户", "audio_id": "U08", "title": "U08 · 用户", "short_label": "U08", "kind": "deliver", "kind_label": "用户", "text": "如果拒绝后功能坏了，我怎么判断是该放宽，还是这个应用本身要得过头？", "unplayed_text": "", "start_seconds": 144.683125, "duration_seconds": 6.4, "outcome_note": "按冻结锚点执行；原全文、已播前缀与对齐分别保留。", "files": [{"label": "timeline.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json"}, {"label": "assets.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/assets.json"}, {"label": "heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/heard-context.json"}, {"label": "event-heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/event-heard-context.json"}]}, {"speaker": "assistant", "speaker_label": "助手", "audio_id": "A008", "title": "A008 · 助手", "short_label": "A008", "kind": "deliver", "kind_label": "助手", "text": "先确认失效的是否正是你需要的功能，再看提示能否说明权限用途。关系直接，就临时开最窄范围测试；若关系说不通，或坚持要长期、整库访问，就保留拒绝并换替代操作或应用。", "unplayed_text": "", "start_seconds": 151.323125, "duration_seconds": 16.88, "outcome_note": "按冻结锚点执行；原全文、已播前缀与对齐分别保留。", "files": [{"label": "timeline.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json"}, {"label": "assets.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/assets.json"}, {"label": "heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/heard-context.json"}, {"label": "event-heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/event-heard-context.json"}]}], "failure_reason": "本案例尚未完成生成或音频核验。", "status_label": "尚未完成", "status_files": [{"label": "result.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/result.json"}, {"label": "integrity.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/integrity.json"}, {"label": "timeline.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json"}, {"label": "assets.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/assets.json"}, {"label": "heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/heard-context.json"}, {"label": "event-heard-context.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/event-heard-context.json"}, {"label": "interruption-onset.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/interruption-onset.json"}, {"label": "ambient-provenance.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/ambient-provenance.json"}, {"label": "frozen-ambient-plan.json", "path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/frozen-ambient-plan.json"}, {"label": "script/summary.json", "path": "../../records/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g07-sample-009/R01-V01/script/summary.json"}], "total_turns": 8, "delivered_turns": 8, "duration_seconds": 168.203125, "interruptions": 1, "wall_seconds": 1480.5798704195768, "event_summary": "[\n  {\n    \"sequence\": 1,\n    \"frame\": 0,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_audio_started\",\n    \"audio_id\": \"U01\",\n    \"focus_turn_id\": \"U01\",\n    \"overlap_with_assistant\": false,\n    \"assistant_prefix_at_user_onset\": \"\",\n    \"planned_assistant_prefix_at_user_onset\": \"\"\n  },\n  {\n    \"sequence\": 2,\n    \"frame\": 154880,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_audio_completed\",\n    \"audio_id\": \"U01\"\n  },\n  {\n    \"sequence\": 3,\n    \"frame\": 158720,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_buffer_ready\",\n    \"response_id\": \"A001\",\n    \"generated_chars\": 71,\n    \"received_frames\": 229120,\n    \"api_generation_already_completed\": true,\n    \"synthetic_playback_start_frame\": 158720\n  },\n  {\n    \"sequence\": 4,\n    \"frame\": 387840,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_playback_ended\",\n    \"response_id\": \"A001\",\n    \"outcome\": \"drained\",\n    \"audio_end_frame\": 387840\n  },\n  {\n    \"sequence\": 5,\n    \"frame\": 391680,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_audio_started\",\n    \"audio_id\": \"U02\",\n    \"focus_turn_id\": \"U02\",\n    \"overlap_with_assistant\": false,\n    \"assistant_prefix_at_user_onset\": \"定位会透露你去过或常在哪些地方，精确定位更细；麦克风在获准并被调用时可接触周围声音。申请权限不等于已经滥用，但若与当前功能无关，可以先不允许。\",\n    \"planned_assistant_prefix_at_user_onset\": \"定位会透露你去过或常在哪些地方，精确定位更细；麦克风在获准并被调用时可接触周围声音。申请权限不等于已经滥用，但若与当前功能无关，可以先不允许。\"\n  },\n  {\n    \"sequence\": 6,\n    \"frame\": 487680,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_audio_completed\",\n    \"audio_id\": \"U02\"\n  },\n  {\n    \"sequence\": 7,\n    \"frame\": 491520,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_buffer_ready\",\n    \"response_id\": \"A002\",\n    \"generated_chars\": 74,\n    \"received_frames\": 259840,\n    \"api_generation_already_completed\": true,\n    \"synthetic_playback_start_frame\": 491520\n  },\n  {\n    \"sequence\": 8,\n    \"frame\": 605440,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"backchannel_onset\",\n    \"identifier\": \"BC01\",\n    \"aid\": \"A002\",\n    \"assistant_prefix_at_onset\": \"对。通讯录通常包含姓名、号码、邮箱等，也可能反映你和谁有联系；\",\n    \"planned_assistant_prefix_at_onset\": \"对。通讯录通常包含姓名、号码、邮箱等，也可能反映你和谁有联系；\",\n    \"background_only\": false\n  },\n  {\n    \"sequence\": 9,\n    \"frame\": 620800,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"backchannel_completed\",\n    \"audio_id\": \"BC01\",\n    \"response_id\": \"A002\",\n    \"assistant_continues\": true,\n    \"new_assistant_response\": false,\n    \"advances_main_turn\": false\n  },\n  {\n    \"sequence\": 10,\n    \"frame\": 751360,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_playback_ended\",\n    \"response_id\": \"A002\",\n    \"outcome\": \"drained\",\n    \"audio_end_frame\": 751360\n  },\n  {\n    \"sequence\": 11,\n    \"frame\": 755200,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_audio_started\",\n    \"audio_id\": \"U03\",\n    \"focus_turn_id\": \"U03\",\n    \"overlap_with_assistant\": false,\n    \"assistant_prefix_at_user_onset\": \"对。通讯录通常包含姓名、号码、邮箱等，也可能反映你和谁有联系；应用如何处理仍要看说明，不能仅凭权限断定。若只是找熟人，账号搜索通常是更窄的替代方式。\",\n    \"planned_assistant_prefix_at_user_onset\": \"对。通讯录通常包含姓名、号码、邮箱等，也可能反映你和谁有联系；应用如何处理仍要看说明，不能仅凭权限断定。若只是找熟人，账号搜索通常是更窄的替代方式。\"\n  },\n  {\n    \"sequence\": 12,\n    \"frame\": 906240,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_audio_completed\",\n    \"audio_id\": \"U03\"\n  },\n  {\n    \"sequence\": 13,\n    \"frame\": 910080,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_buffer_ready\",\n    \"response_id\": \"A003\",\n    \"generated_chars\": 72,\n    \"received_frames\": 218880,\n    \"api_generation_already_completed\": true,\n    \"synthetic_playback_start_frame\": 910080\n  },\n  {\n    \"sequence\": 14,\n    \"frame\": 1010400,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_audio_started\",\n    \"audio_id\": \"U04\",\n    \"focus_turn_id\": \"U04\",\n    \"overlap_with_assistant\": true,\n    \"assistant_prefix_at_user_onset\": \"导航通常选“使用应用期间”，需要实时路线时再开精确位置；外卖\",\n    \"planned_assistant_prefix_at_user_onset\": \"导航通常选“使用应用期间”，需要实时路线时再开精确位置；外卖\"\n  },\n  {\n    \"sequence\": 15,\n    \"frame\": 1011200,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_queue_discard\",\n    \"response_id\": \"A003\",\n    \"reason\": \"frozen_exact_stop_prefix\",\n    \"discarded_audio_frames\": 117760,\n    \"discarded_text_chars\": 41,\n    \"provider_request_cancelled\": false,\n    \"native_stop_latency_measured\": false\n  },\n  {\n    \"sequence\": 16,\n    \"frame\": 1011200,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_playback_ended\",\n    \"response_id\": \"A003\",\n    \"outcome\": \"queue_discarded\",\n    \"audio_end_frame\": 1011200\n  },\n  {\n    \"sequence\": 17,\n    \"frame\": 1112480,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_audio_completed\",\n    \"audio_id\": \"U04\"\n  },\n  {\n    \"sequence\": 18,\n    \"frame\": 1116320,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_buffer_ready\",\n    \"response_id\": \"A004\",\n    \"generated_chars\": 66,\n    \"received_frames\": 199680,\n    \"api_generation_already_completed\": true,\n    \"synthetic_playback_start_frame\": 1116320\n  },\n  {\n    \"sequence\": 19,\n    \"frame\": 1316000,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_playback_ended\",\n    \"response_id\": \"A004\",\n    \"outcome\": \"drained\",\n    \"audio_end_frame\": 1316000\n  },\n  {\n    \"sequence\": 20,\n    \"frame\": 1319840,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_audio_started\",\n    \"audio_id\": \"U05\",\n    \"focus_turn_id\": \"U05\",\n    \"overlap_with_assistant\": false,\n    \"assistant_prefix_at_user_onset\": \"可以。如果它也提供“下次询问或共享时”，优先选这个；若反复询问太麻烦，再用“使用应用期间”。也可以手动填地址，没必要给“始终允许”。\",\n    \"planned_assistant_prefix_at_user_onset\": \"可以。如果它也提供“下次询问或共享时”，优先选这个；若反复询问太麻烦，再用“使用应用期间”。也可以手动填地址，没必要给“始终允许”。\"\n  },\n  {\n    \"sequence\": 21,\n    \"frame\": 1422240,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_audio_completed\",\n    \"audio_id\": \"U05\"\n  },\n  {\n    \"sequence\": 22,\n    \"frame\": 1426080,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_buffer_ready\",\n    \"response_id\": \"A005\",\n    \"generated_chars\": 66,\n    \"received_frames\": 221440,\n    \"api_generation_already_completed\": true,\n    \"synthetic_playback_start_frame\": 1426080\n  },\n  {\n    \"sequence\": 23,\n    \"frame\": 1647520,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_playback_ended\",\n    \"response_id\": \"A005\",\n    \"outcome\": \"drained\",\n    \"audio_end_frame\": 1647520\n  },\n  {\n    \"sequence\": 24,\n    \"frame\": 1651360,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_audio_started\",\n    \"audio_id\": \"U06\",\n    \"focus_turn_id\": \"U06\",\n    \"overlap_with_assistant\": false,\n    \"assistant_prefix_at_user_onset\": \"按你只用裁剪、调色和滤镜的情况，这两项不像核心所需，可以先拒绝。若某个明确功能之后用不了，再看它为何需要，并只为那次或使用期间开放。\",\n    \"planned_assistant_prefix_at_user_onset\": \"按你只用裁剪、调色和滤镜的情况，这两项不像核心所需，可以先拒绝。若某个明确功能之后用不了，再看它为何需要，并只为那次或使用期间开放。\"\n  },\n  {\n    \"sequence\": 25,\n    \"frame\": 1724850,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_audio_completed\",\n    \"audio_id\": \"U06\"\n  },\n  {\n    \"sequence\": 26,\n    \"frame\": 1728690,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_buffer_ready\",\n    \"response_id\": \"A006\",\n    \"generated_chars\": 72,\n    \"received_frames\": 253440,\n    \"api_generation_already_completed\": true,\n    \"synthetic_playback_start_frame\": 1728690\n  },\n  {\n    \"sequence\": 27,\n    \"frame\": 1982130,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_playback_ended\",\n    \"response_id\": \"A006\",\n    \"outcome\": \"drained\",\n    \"audio_end_frame\": 1982130\n  },\n  {\n    \"sequence\": 28,\n    \"frame\": 1985970,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_audio_started\",\n    \"audio_id\": \"U07\",\n    \"focus_turn_id\": \"U07\",\n    \"overlap_with_assistant\": false,\n    \"assistant_prefix_at_user_onset\": \"能。相机只在需要现场拍摄时给；照片权限若有范围选项，优先只开放选中的照片，需要批量管理时再扩大。思路仍是与当前动作相关、范围尽量小、时间尽量短。\",\n    \"planned_assistant_prefix_at_user_onset\": \"能。相机只在需要现场拍摄时给；照片权限若有范围选项，优先只开放选中的照片，需要批量管理时再扩大。思路仍是与当前动作相关、范围尽量小、时间尽量短。\"\n  },\n  {\n    \"sequence\": 29,\n    \"frame\": 2079410,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_audio_completed\",\n    \"audio_id\": \"U07\"\n  },\n  {\n    \"sequence\": 30,\n    \"frame\": 2083250,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_buffer_ready\",\n    \"response_id\": \"A007\",\n    \"generated_chars\": 65,\n    \"received_frames\": 227840,\n    \"api_generation_already_completed\": true,\n    \"synthetic_playback_start_frame\": 2083250\n  },\n  {\n    \"sequence\": 31,\n    \"frame\": 2175410,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"backchannel_onset\",\n    \"identifier\": \"BC02\",\n    \"aid\": \"A007\",\n    \"assistant_prefix_at_onset\": \"记四问：这权限是不是当前核心功能必需？能否手动完成？\",\n    \"planned_assistant_prefix_at_onset\": \"记四问：这权限是不是当前核心功能必需？能否手动完成？\",\n    \"background_only\": false\n  },\n  {\n    \"sequence\": 32,\n    \"frame\": 2197170,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"backchannel_completed\",\n    \"audio_id\": \"BC02\",\n    \"response_id\": \"A007\",\n    \"assistant_continues\": true,\n    \"new_assistant_response\": false,\n    \"advances_main_turn\": false\n  },\n  {\n    \"sequence\": 33,\n    \"frame\": 2311090,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_playback_ended\",\n    \"response_id\": \"A007\",\n    \"outcome\": \"drained\",\n    \"audio_end_frame\": 2311090\n  },\n  {\n    \"sequence\": 34,\n    \"frame\": 2314930,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_audio_started\",\n    \"audio_id\": \"U08\",\n    \"focus_turn_id\": \"U08\",\n    \"overlap_with_assistant\": false,\n    \"assistant_prefix_at_user_onset\": \"记四问：这权限是不是当前核心功能必需？能否手动完成？能否只给部分内容？能否只给这一次或使用期间？先用最小授权，确有障碍再逐级放宽。\",\n    \"planned_assistant_prefix_at_user_onset\": \"记四问：这权限是不是当前核心功能必需？能否手动完成？能否只给部分内容？能否只给这一次或使用期间？先用最小授权，确有障碍再逐级放宽。\"\n  },\n  {\n    \"sequence\": 35,\n    \"frame\": 2417330,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"user_audio_completed\",\n    \"audio_id\": \"U08\"\n  },\n  {\n    \"sequence\": 36,\n    \"frame\": 2421170,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_buffer_ready\",\n    \"response_id\": \"A008\",\n    \"generated_chars\": 80,\n    \"received_frames\": 270080,\n    \"api_generation_already_completed\": true,\n    \"synthetic_playback_start_frame\": 2421170\n  },\n  {\n    \"sequence\": 37,\n    \"frame\": 2691250,\n    \"clock\": \"synthetic_pcm_16000\",\n    \"kind\": \"assistant_playback_ended\",\n    \"response_id\": \"A008\",\n    \"outcome\": \"drained\",\n    \"audio_end_frame\": 2691250\n  }\n]", "audit_note": "本页呈现离线审查后的静态目标数据；不将它标为实时自主交互轨迹。 插话已去除前导静音，保留30毫秒起声保护；只在同一已听前缀范围内校准时机，助手停声锚点保持原样。", "result_path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/result.json", "integrity_path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/integrity.json", "timeline_path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/timeline.json", "archive_path": "../../workflow-records.zip", "audio_path": "../../audio/G07-N009-R01-V01/dialogue.mp3", "web_audio": {"original_path": "../../audio/G07-N009-R01-V01/dialogue-stereo.wav"}, "backchannel_summary": {"spoken": 2, "passed": 2, "note": "附和位置在离线剧本中固定；混音保持助手原音轨连续。", "first_segment_index": 4, "proof_path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/integrity.json"}, "soundscape": {"mode": "quiet", "summary": "安静样本 · 持续声层 0 层 · 离散旁音 0 次（环境音 0 / 旁话 0）", "plan": {"mode": "quiet", "ambient_layers": [], "environment_events": [], "schema": "duplex_v2.soundscape_plan.v3", "side_speech_sources": [], "side_speech_count": 0, "sampling": {"schema": "duplex_v2.ambient_draw.v2", "policy": {"schema": "duplex_v2.soundscape_policy.v2", "quiet_probability": 0.5, "discrete_targets_by_tier": {"short": [0, 1], "medium": [1, 2], "long": [2, 4]}, "discrete_count_includes": ["environment_events", "side_speech"], "max_ambient_layers": 2, "gain_range": [0.3, 0.7], "speech_request_probability": 0.5, "third_party_preference_probability": 0.8, "speech_requires_existing_scene_source": true, "environment_audio": "base_only", "stage2_repair": "atomic_scoped_patch", "stage2_max_judge_attempts": 3, "json_parse_max_retries": 3}, "preferences": {"schema": "duplex_v2.ambient_preferences.v1", "seed": 202611073007, "slot": 8, "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f", "categories": {"bed": ["rain", "traffic", "crowd", "wind", "birds", "fan"], "event": ["footsteps", "paper", "door", "keyboard", "doorbell", "water_tap"]}, "recordings": {"bed:birds": ["birds-fsd50k-eval-57907", "birds-fsd50k-eval-86343", "birds-fsd50k-eval-319512"], "bed:crowd": ["crowd-fsd50k-eval-340358", "crowd-fsd50k-eval-121877", "crowd-fsd50k-eval-185058"], "bed:fan": ["fan-fsd50k-eval-419427", "fan-fsd50k-eval-415925", "fan-fsd50k-eval-235362"], "bed:rain": ["rain-fsd50k-eval-21189", "rain-fsd50k-eval-382582", "rain-fsd50k-eval-238016"], "bed:traffic": ["traffic-fsd50k-eval-124020", "traffic-fsd50k-eval-235541", "traffic-fsd50k-eval-232686"], "bed:wind": ["wind-fsd50k-eval-113173", "wind-fsd50k-eval-113175", "wind-fsd50k-eval-113176"], "event:door": ["door-fsd50k-eval-119077", "door-fsd50k-eval-209519", "door-fsd50k-eval-71212"], "event:doorbell": ["doorbell-fsd50k-eval-426594", "doorbell-fsd50k-eval-332563", "doorbell-fsd50k-eval-348322"], "event:footsteps": ["footsteps-fsd50k-eval-392303", "footsteps-fsd50k-eval-153104", "footsteps-fsd50k-eval-272381"], "event:keyboard": ["keyboard-fsd50k-eval-399740", "keyboard-fsd50k-eval-411545", "keyboard-fsd50k-eval-233057"], "event:paper": ["paper-fsd50k-eval-121200", "paper-fsd50k-eval-82562", "paper-fsd50k-eval-343098"], "event:water_tap": ["water_tap-fsd50k-eval-402127", "water_tap-fsd50k-eval-402128", "water_tap-fsd50k-eval-232499"]}}, "control": {"schema": "duplex_v2.soundscape_control.v2", "seed": 4095711672, "mode": "quiet", "discrete_event_target": 0, "max_ambient_layers": 2, "side_speech_requested": false, "speech_kind_preferences": ["third_party", "machine"]}, "control_sha256": "0427d73b3adc19b84c16d41bb18b744dc57bd1e9df0f5a6bce31a4a90b3d4519", "candidate_plan": {"schema": "duplex_v2.soundscape_plan.v3", "mode": "quiet", "ambient_layers": [], "environment_events": [], "side_speech_eligibility": {"third_party": {"compatible": false, "reason": "用户独自在家，当前故事中没有在场的第三方。", "source": null}, "machine": {"compatible": false, "reason": "当前场景没有已建立的语音播报设备或其他机器旁语来源。", "source": null}}}, "base_environment_audio_sha256": "c09937737ad95b2a1fdf6ed03f5a86e1ac065438334fd5dfb2515a2af84c1538", "aggregate_environment_audio": "室内整体安静，近处只有几乎不可察觉的自然房间底噪。周围没有持续的人声、设备播报或突发声响。", "draws": [], "speech_selection": {"requested": false, "compatible_kinds": [], "selected_kind": null, "outcome": "not_requested", "assessments": {"third_party": {"compatible": false, "reason": "用户独自在家，当前故事中没有在场的第三方。", "source": null}, "machine": {"compatible": false, "reason": "当前场景没有已建立的语音播报设备或其他机器旁语来源。", "source": null}}}}}, "control": {"schema": "duplex_v2.soundscape_control.v2", "seed": 4095711672, "mode": "quiet", "discrete_event_target": 0, "max_ambient_layers": 2, "side_speech_requested": false, "speech_kind_preferences": ["third_party", "machine"]}, "recorded_counts": {"ambient_layers": 0, "environment_events": 0, "discrete_background_events": 0}, "schedule": [], "files": [{"path": "../../records/runs/20261107-v28-compaction-contract-chinese-hundred-g07-sample-009-v2-stage2/R01-V01/situation_knowledge.json", "source_path": "runs/20261107-v28-compaction-contract-chinese-hundred-g07-sample-009-v2-stage2/R01-V01/situation_knowledge.json", "sha256": "9679d58aeec34a67502917b6f0e2f21ff0c2f8293561647e768514e68275dbd4", "bytes": 9331, "label": "Stage 2 声景计划与来源"}, {"path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/ambient-provenance.json", "source_path": "duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/ambient-provenance.json", "sha256": "38b02d87c8f641f58aedcba107bf3bb271f6539d7ee00c6055950ff261901483", "bytes": 368, "label": "ambient-provenance.json"}, {"path": "../../records/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/frozen-ambient-plan.json", "source_path": "duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G07-N009-R01-V01/R01-V01/audio/frozen-ambient-plan.json", "sha256": "3529d15549e98e2c10ab23faf8cff808ec0edde93c20f37fcb0adecea173a76a", "bytes": 209, "label": "frozen-ambient-plan.json"}]}, "dialogue_length_summary": "短篇 · 目标 8 轮 · 实际剧本 8 轮", "user_interaction_profile": {"value": {"schema": "duplex_v2.interaction_profile.v1", "formality": "casual", "directness": "balanced", "emotional_expressiveness": "reserved", "verbosity": "brief", "initiative": "medium", "caution": "medium", "patience": "high", "behavioral_notes": ["通常先简短说明自己的疑问，再根据交流进展补充必要的背景。", "遇到不确定的概念会用日常说法复述，请求确认自己是否理解准确。", "愿意听完不同角度的解释，必要时会追问实际使用中的例外情况。"]}, "summary": "口语 · 直接度适中 · 克制 · 简洁 · 主动中 · 审慎中 · 耐心高", "source_path": "../../records/runs/20261107-v28-compaction-contract-chinese-hundred-g07-sample-009-v2-stage1/R01-V01/user_voice.json"}}}</script><script>
+(() => {
+  'use strict';
+  const root = document.querySelector('[data-results-explorer]');
+  const payload = document.getElementById('results-explorer-data');
+  if (!root || !payload) return;
+  const data = JSON.parse(payload.textContent);
+  const focusedRollout = data.view === 'synthetic_rollout';
+  const turns = focusedRollout ? [] : data.episode_script.episode_turns;
+  const enhanced = focusedRollout ? [] : data.enhanced_episode_script.episode_turns;
+  const rubrics = focusedRollout ? [] : data.actor_rubric.turn_rubrics;
+  const byID = new Map(turns.map(turn => [turn.turn_id, turn]));
+  const byEnhancedID = new Map(enhanced.map(turn => [turn.turn_id, turn]));
+  const byRubricID = new Map(rubrics.map(item => [item.turn_id, item]));
+  const state = {turn: byID.has('U03') ? 'U03' : turns[0]?.turn_id, filter: 'all'};
+  const actLabels = {A01:'建立 / 补充信息', A02:'控制播报', A03:'追问 / 核对', A04:'修改条件', A05:'异议 / 拒绝', A06:'支线 / 返回'};
+  const timingLabels = {T01:'自然接话', T02:'句内停顿', T03:'播报中途起声'};
+  const get = id => document.getElementById(id);
+  const setText = (id, text) => { get(id).textContent = text; };
+  const node = (tag, text, className) => { const item = document.createElement(tag); item.textContent = text; if (className) item.className = className; return item; };
+  const visibleTurns = () => turns.filter(turn => state.filter === 'all' || (turn.timing_refs || []).includes(state.filter === 't03' ? 'T03' : 'T02'));
+  const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const scrollTo = id => { const target = get(id); if (target) target.scrollIntoView({behavior:smooth ? 'smooth' : 'auto', block:'start'}); };
+
+  function renderTurn() {
+    const turn = byID.get(state.turn);
+    setText('rx-turn-title', `${turn.turn_id} · ${actLabels[turn.act_ref] || turn.act_ref}`);
+    setText('rx-turn-utterance', turn.user_utterance);
+    setText('rx-turn-goal', turn.semantic_goal);
+    setText('rx-turn-expected', turn.assistant_semantic_goal);
+    const badges = get('rx-turn-tags');
+    badges.replaceChildren(...turn.timing_refs.map(timing => node('span', `${timing} · ${timingLabels[timing] || timing}`, `rx-chip ${timing === 'T03' ? 'amber' : 'blue'}`)));
+    get('rx-interrupt').hidden = !turn.interrupt_anchor;
+    setText('rx-interrupt-text', turn.interrupt_anchor || '');
+    get('rx-pause').hidden = !turn.pause_cue;
+    setText('rx-pause-text', turn.pause_cue ? `在“${turn.pause_cue.after_text}”后停 ${turn.pause_cue.duration_ms} 毫秒，再继续表达。` : '');
+    setText('rx-turn-reading', (data.turn_annotations || {})[turn.turn_id] || '本轮原文与目标直接取自 Stage 3 的冻结剧本。');
+    const visible = new Set(visibleTurns().map(item => item.turn_id));
+    root.querySelectorAll('[data-turn-option]').forEach(button => {
+      button.hidden = !visible.has(button.dataset.turnOption);
+      button.setAttribute('aria-pressed', String(button.dataset.turnOption === state.turn));
+    });
+    root.querySelectorAll('[data-turn-filter]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.turnFilter === state.filter)));
+    setText('rx-turn-count', `当前显示 ${visible.size} / ${turns.length} 轮；点击轮次查看原文`);
+  }
+
+  function fillCriteria(id, criteria, emptyText) {
+    const container = get(id);
+    container.replaceChildren();
+    if (criteria.length) {
+      const list = document.createElement('ol'); list.className = 'rx-criteria';
+      criteria.forEach(text => list.append(node('li', text)));
+      container.append(list);
+    } else container.append(node('p', emptyText, 'rx-small'));
+  }
+
+  function renderRubric() {
+    const turn = byEnhancedID.get(state.turn);
+    const rubric = byRubricID.get(state.turn);
+    setText('rx-rubric-title', `${turn.turn_id} 的评分标准`);
+    setText('rx-rubric-utterance', turn.user_utterance);
+    setText('rx-semantic-count', `${rubric.semantic.length} 条`);
+    setText('rx-behavior-count', `${rubric.behavior.length} 条`);
+    fillCriteria('rx-semantic-items', rubric.semantic, '本轮没有语义标准。');
+    fillCriteria('rx-behavior-items', rubric.behavior, '本轮按现有规则不单列行为标准，保存的 behavior 为 []。');
+    root.querySelectorAll('[data-rubric-option]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.rubricOption === state.turn)));
+    const isAside = turn.turn_id === data.side_event.turn_id;
+    get('rx-rubric-aside').hidden = !isAside;
+    get('rx-rubric-review').hidden = !['U06','U09'].includes(turn.turn_id);
+    get('rx-rubric-voice').hidden = !turn.side_speech;
+    setText('rx-rubric-voice-text', turn.side_speech ? turn.side_speech.map(event => event.text).join('；') : '');
+  }
+
+  function selectTurn(id) {
+    if (!byID.has(id)) return;
+    state.turn = id;
+    if (!visibleTurns().some(turn => turn.turn_id === id)) state.filter = 'all';
+    renderTurn(); renderRubric();
+  }
+
+  const simulator = data.user_simulator;
+  const simState = {caseID:simulator ? simulator.cases[0].id : null, index:0};
+  const actionLabels = {deliver:'交付主轮', correct:'同轮纠错', clarify:'同轮澄清', unknown:'未知信息不编造', wait:'等待 · 不发言', end:'告别'};
+  const speech = data.user_speech;
+  const speechState = {caseID:speech ? speech.cases[0].id : null, index:0};
+
+  function renderSpeech() {
+    if (!speech) return;
+    const scenario=speech.cases.find(item=>item.id===speechState.caseID);
+    const item=scenario.events[speechState.index];
+    const event=item.event, rendered=item.render;
+    root.querySelectorAll('button[data-speech-case]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.speechCase===scenario.id)));
+    const list=get('rx-speech-events');list.replaceChildren();
+    scenario.events.forEach((entry,index)=>{
+      const button=node('button','', 'rx-turn-button');button.type='button';button.dataset.speechIndex=String(index);button.setAttribute('aria-pressed',String(index===speechState.index));
+      button.append(node('b',entry.event.focus_turn_id||'结束'),node('span',entry.label),node('small',actionLabels[entry.event.action]||entry.event.action));list.append(button);
+    });
+    setText('rx-speech-title',`${event.focus_turn_id||'结束'} · ${item.label}`);
+    setText('rx-speech-action',actionLabels[event.action]||event.action);
+    setText('rx-speech-text',event.action==='wait'?'（等待，不发言，不生成音频）':event.utterance);
+    setText('rx-speech-timing',(rendered.timing_refs||[]).map(value=>`${value} · ${timingLabels[value]||value}`).join(' / ')+'；这里展示用户音频资产，实际起声时机尚未执行。');
+    const main=get('rx-speech-audio'),side=get('rx-speech-side-audio');
+    setText('rx-speech-playback-note','');
+    [main,side].forEach(player=>{player.pause();player.removeAttribute('src');});
+    get('rx-speech-main').hidden=!rendered.main;
+    if(rendered.main) {
+      main.src=rendered.main.audio_path;main.setAttribute('aria-label',`${event.focus_turn_id} ${item.label}`);
+      get('rx-speech-download').href=rendered.main.audio_path;
+      setText('rx-speech-duration',`WAV · ${rendered.main.duration_seconds.toFixed(2)} 秒 · 16kHz · 单声道`);
+    }
+    const aside=rendered.side_speech[0];get('rx-speech-side').hidden=!aside;
+    if(aside) {side.src=aside.audio_path;get('rx-speech-side-download').href=aside.audio_path;setText('rx-speech-side-text',aside.text);}
+    [main,side].forEach(player=>player.load());
+    const pause=rendered.main?.pause;get('rx-speech-pause').hidden=!pause;
+    setText('rx-speech-pause-text',pause?`在“${pause.after_text}”后插入 ${pause.requested_ms} 毫秒静音（${pause.frames} 个采样）；当前音频中的停顿从 ${pause.start_seconds.toFixed(3)} 秒开始。`:'');
+    setText('rx-speech-pause-proof',pause?JSON.stringify({pause,segments:rendered.main.segments},null,2):'');
+    const files=get('rx-speech-files');files.replaceChildren(node('b','这条发言的来源'));
+    item.files.forEach(entry=>{const link=node('a',entry.label);link.href=entry.path;link.target='_blank';link.rel='noopener';files.append(link);});
+    get('rx-speech-back-script').dataset.selectTurn=event.focus_turn_id||'';
+    root.querySelector('[data-speech-prev]').disabled=speechState.index===0;
+    root.querySelector('[data-speech-next]').disabled=speechState.index===scenario.events.length-1;
+  }
+
+  function renderSimulator(sync=false) {
+    if (!simulator) return;
+    const scenario = simulator.cases.find(item=>item.id===simState.caseID);
+    const record = scenario.events[simState.index];
+    const event = record.event;
+    root.querySelectorAll('[data-sim-case]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.simCase===scenario.id)));
+    setText('rx-sim-case-description',scenario.description);
+    const timeline=get('rx-sim-events'); timeline.replaceChildren();
+    scenario.events.forEach((item,index)=>{
+      const button=document.createElement('button'); button.type='button'; button.className='rx-turn-button'; button.dataset.simIndex=String(index); button.setAttribute('aria-pressed',String(index===simState.index));
+      button.append(node('b',item.event.focus_turn_id||'结束'),node('span',item.label),node('small',actionLabels[item.event.action]||item.event.action));
+      timeline.append(button);
+    });
+    setText('rx-sim-title',`${event.focus_turn_id||'结束'} · ${record.label}`);
+    setText('rx-sim-action',actionLabels[event.action]||event.action);
+    setText('rx-sim-cursor',`待交付主轮：${event.pending_before||'全部已交付'} → ${event.pending_after||'全部已交付'}；本次处理 ${event.focus_turn_id||'结束'}。`);
+    setText('rx-sim-heard',event.observation.heard_text||'开场：尚无助手观测。');
+    setText('rx-sim-utterance',event.action==='wait'?'（等待，不向助手发送用户话语）':event.utterance);
+    setText('rx-sim-guard',record.rejudge?'同一候选复审通过：原 Judge 拒绝，修正规则说明后通过；用户输出和审查输入均未改动。':`独立语义检查：${event.semantic_guard.decision==='pass'?'通过':'未通过'}；${event.semantic_guard.findings.length} 条 finding。`);
+    get('rx-sim-rejudge').hidden=!record.rejudge;
+    setText('rx-sim-old-guard',record.rejudge?JSON.stringify(record.rejudge.old_guard,null,2):'');
+    setText('rx-sim-new-guard',record.rejudge?JSON.stringify(record.rejudge.new_guard,null,2):'');
+    setText('rx-sim-evidence',event.evidence||'本次不需要引用助手前缀；主表达依据当前冻结用户轮。');
+    const raw=record.raw_observation;
+    const unplayed=raw ? raw.text.slice(raw.played_chars) : '';
+    get('rx-sim-unplayed').hidden=!unplayed;
+    setText('rx-sim-unplayed-text',unplayed);
+    setText('rx-sim-model-input',JSON.stringify(record.model_input,null,2));
+    const dispatch=event.dispatch;
+    const notes=[];
+    if(dispatch?.pause_cue) notes.push(`保留的语音计划：在“${dispatch.pause_cue.after_text}”后暂停 ${dispatch.pause_cue.duration_ms} ms。`);
+    if(dispatch?.side_speech?.length) notes.push(`旁语单独保留：${dispatch.side_speech.map(item=>item.text).join('；')}。`);
+    if(notes.length) notes.push(data.tts_api_check ? '该模拟器事件仅记录计划；独立音频样本见“音频测试”试听区，尚未执行真实交互调度。' : '这些计划尚未合成或播放音频。');
+    get('rx-sim-dispatch').hidden=!notes.length; setText('rx-sim-dispatch',notes.join(' '));
+    const files=get('rx-sim-files'); files.replaceChildren(node('b','本次原始记录'));
+    record.files.forEach(item=>{const link=node('a',item.label);link.href=item.path;link.target='_blank';link.rel='noopener';files.append(link);});
+    ['rx-sim-back-script','rx-sim-back-rubric'].forEach(id=>{get(id).dataset.selectTurn=event.focus_turn_id||'';});
+    if(get('rx-sim-back-speech')) {get('rx-sim-back-speech').dataset.speechCase=scenario.id;get('rx-sim-back-speech').dataset.speechIndex=String(simState.index);}
+    if(sync && byID.has(event.focus_turn_id)) selectTurn(event.focus_turn_id);
+  }
+
+  const scoring=data.actual_scoring;
+  let scoreIndex=0;
+  const scoreLabels={pass:'通过',fail:'失败',not_triggered:'未触发',insufficient_evidence:'证据不足'};
+  function renderScoring() {
+    if(!scoring)return;
+    const list=get('rx-score-turns');list.replaceChildren();
+    scoring.turns.forEach((turn,index)=>{
+      const counts={};turn.criteria.forEach(c=>{counts[c.status]=(counts[c.status]||0)+1;});
+      const button=node('button','', 'rx-score-turn');button.type='button';button.dataset.scoreTurn=String(index);
+      button.setAttribute('aria-pressed',String(index===scoreIndex));
+      button.append(node('b',turn.turn_id),node('span',Object.entries(counts).map(([status,count])=>`${scoreLabels[status]} ${count}`).join(' · ')));
+      if(counts.fail)button.classList.add('has-failure');else if(counts.insufficient_evidence)button.classList.add('has-insufficient');
+      list.append(button);
+    });
+    const turn=scoring.turns[scoreIndex];
+    setText('rx-score-title',`${turn.turn_id} · 实际评分`);
+    setText('rx-score-time',`${(turn.clip_start_frame/16000).toFixed(3)} → ${(turn.clip_end_frame/16000).toFixed(3)} 秒`);
+    get('rx-score-turn-play').dataset.scoreSeek=String(turn.clip_start_frame);
+    get('rx-score-clip-download').href=turn.audio_path;
+    const criteria=get('rx-score-criteria');criteria.replaceChildren();
+    turn.criteria.forEach(c=>{
+      const card=node('div','','rx-score-criterion');card.dataset.criterionId=c.criterion_id;
+      const title=node('div','','rx-score-criterion-title');
+      title.append(node('b',`${c.criterion_id} · ${c.kind==='semantic'?'语义':'行为'}`),node('span',scoreLabels[c.status],`rx-score-status ${c.status}`));
+      card.append(title,node('p',c.text,'rx-score-original'),node('p',c.reason,'rx-small'));
+      c.evidence.forEach(e=>{
+        const quote=node('blockquote',e.quote,'rx-score-quote');
+        const button=node('button',`${e.response_id} · ${(e.start_frame/16000).toFixed(2)} 秒 · 试听引用`,'rx-button');
+        button.type='button';button.dataset.scoreSeek=String(e.start_frame);card.append(quote,button);
+      });
+      if(c.measurement){
+        const m=c.measurement;
+        const text=m.type==='T02'?`停顿 ${m.requested_ms} ms；用户继续到说完前，助手非零采样 ${m.assistant_samples_before_user_end} 个。`:
+          `用户起声至停止旧播报 ${m.onset_to_stop_ms?.toFixed(1)??'无记录'} ms；停止至用户说完，助手非零采样 ${m.assistant_samples_after_stop_before_user_end??'无记录'} 个。`;
+        card.append(node('p',text,'rx-small'));
+        const button=node('button',m.type==='T02'?'试听句内停顿':'试听起声、停播与恢复','rx-button');button.type='button';
+        button.dataset.scoreSeek=String(m.type==='T02'?m.pause_start_frame:m.user_start_frame);card.append(button);
+      }
+      criteria.append(card);
+    });
+    setText('rx-score-responses',turn.responses.map(r=>`${r.response_id} · ${r.interrupted?'中途停止':'完整播出'}\n${r.heard_text}`).join('\n\n'));
+    setText('rx-score-measurement',JSON.stringify(turn.measurement,null,2));
+    const files=get('rx-score-files');files.replaceChildren(node('b','本轮评分来源'));
+    [['Judge 实际输入',`calls/${turn.turn_id}/input.json`],['Judge 原始响应',`calls/${turn.turn_id}/raw_response.txt`],['本轮评分 JSON',`score-${turn.turn_id}.json`]].forEach(([label,path])=>{
+      const link=node('a',label);link.href=scoring.record_prefix+path;link.target='_blank';link.rel='noopener';files.append(link);
+    });
+  }
+
+  const rollout=data.synthetic_rollout;
+  let rolloutIndex=0;
+  let playbackFrame=0, playingSegments='', followedRolloutIndex=-1;
+  const playbackTime = seconds => `${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;
+  function updateRolloutPlayback(force=false, followText=false) {
+    const player=get('rx-rollout-audio'),head=get('rx-rollout-playhead');
+    if(!rollout || !player || !head)return;
+    const duration=rollout.duration_seconds;
+    const time=Math.min(duration,Math.max(0,player.currentTime||0));
+    const ratio=duration>0?time/duration:0;
+    head.style.left=(100*ratio)+'%';
+    head.classList.toggle('at-start',ratio<.05);head.classList.toggle('at-end',ratio>.95);
+    setText('rx-rollout-playhead-time',playbackTime(time));
+    const active=rollout.segments.map((segment,index)=>({segment,index})).filter(({segment})=>
+      segment.start_seconds<=time && time<segment.start_seconds+segment.duration_seconds);
+    const key=active.map(({index})=>index).join(',');
+    if(force || key!==playingSegments){
+      playingSegments=key;
+      const indices=new Set(active.map(({index})=>index));
+      root.querySelectorAll('#rx-rollout-bars [data-rollout-segment], #rx-rollout-segments [data-rollout-segment]').forEach(button=>
+        button.classList.toggle('is-playing',indices.has(Number(button.dataset.rolloutSegment))));
+    }
+    if(followText){
+      // Show the latest voice to start during overlap, then return to the
+      // still-playing segment. During silence keep the last preceding turn.
+      const candidates=active.length ? active : rollout.segments.map((segment,index)=>({segment,index})).filter(({segment})=>segment.start_seconds<=time);
+      const latest=candidates.reduce((current,item)=>!current || item.segment.start_seconds>=current.segment.start_seconds ? item : current,null);
+      if(latest && (force || latest.index!==followedRolloutIndex)){
+        followedRolloutIndex=latest.index;
+        selectRolloutSegment(latest.index,true);
+      }
+    }
+    const current=active.map(({segment})=>segment.title).join(' / ') || (time>=duration?'播放结束':'静音间隔');
+    const status=`播放位置 ${playbackTime(time)} / ${playbackTime(duration)} · ${current}`;
+    if(get('rx-rollout-now').textContent!==status)setText('rx-rollout-now',status);
+    // Follow the actual media clock; keep the cursor visible on narrow timelines.
+    const scroll=head.closest('.rx-rollout-scroll');
+    if(scroll && (!player.paused || player.seeking)){
+      const position=head.parentElement.offsetLeft+ratio*head.parentElement.clientWidth;
+      if(position<scroll.scrollLeft+16 || position>scroll.scrollLeft+scroll.clientWidth-16)
+        scroll.scrollLeft=Math.max(0,position-scroll.clientWidth/2);
+    }
+  }
+  function followRolloutPlayback() {
+    updateRolloutPlayback(false,true);
+    const player=get('rx-rollout-audio');
+    if(player && !player.paused && !player.ended)playbackFrame=requestAnimationFrame(followRolloutPlayback);
+  }
+  function renderRollout() {
+    if(!rollout || !get('rx-rollout-segments'))return;
+    const list=get('rx-rollout-segments'),bars=get('rx-rollout-bars');list.replaceChildren();bars.replaceChildren();
+    rollout.segments.forEach((segment,index)=>{
+      const button=node('button','', 'rx-turn-button');button.type='button';button.dataset.rolloutSegment=String(index);button.setAttribute('aria-pressed',String(index===rolloutIndex));
+      button.append(node('b',segment.speaker_label || (segment.speaker==='user'?'用户':'助手')),node('span',segment.title));list.append(button);
+      const bar=node('button',segment.short_label,'rx-rollout-bar'+(segment.speaker==='assistant'?' assistant':'')+(segment.kind==='side_speech'?' aside':'')+(segment.kind==='backchannel'?' backchannel':''));
+      bar.type='button';bar.dataset.rolloutSegment=String(index);bar.style.left=(100*segment.start_seconds/rollout.duration_seconds)+'%';bar.style.width=(100*segment.duration_seconds/rollout.duration_seconds)+'%';
+      bar.title=segment.title+' · '+segment.start_seconds.toFixed(2)+' 秒';bar.setAttribute('aria-label',bar.title);bar.setAttribute('aria-pressed',String(index===rolloutIndex));bars.append(bar);
+    });
+    selectRolloutSegment(rolloutIndex);
+    updateRolloutPlayback(true);
+  }
+  function selectRolloutSegment(index,follow=false) {
+    const segment=rollout?.segments[index];
+    if(!segment)return;
+    rolloutIndex=index;
+    root.querySelectorAll('#rx-rollout-bars [data-rollout-segment], #rx-rollout-segments [data-rollout-segment]').forEach(button=>
+      button.setAttribute('aria-pressed',String(Number(button.dataset.rolloutSegment)===index)));
+    setText('rx-rollout-title',segment.title);setText('rx-rollout-kind',segment.kind_label);
+    setText('rx-rollout-time',`${segment.start_seconds.toFixed(3)} → ${(segment.start_seconds+segment.duration_seconds).toFixed(3)} 秒 · 已消费 ${segment.duration_seconds.toFixed(3)} 秒音频`);
+    setText('rx-rollout-text',segment.text||'（本段在任何文字对应的音频消费前已被取消）');
+    setText('rx-rollout-outcome',segment.outcome_note||'原始输入与已消费音频可由下方记录核对。');
+    get('rx-rollout-tail').hidden=!segment.unplayed_text;setText('rx-rollout-unplayed',segment.unplayed_text||'');
+    const files=get('rx-rollout-files');files.replaceChildren();
+    segment.files.forEach(file=>{const link=node('a',file.label);link.href=file.path;link.target='_blank';link.rel='noopener';files.append(link);});
+    if(follow){
+      // Scroll only the turn list, so playback never pulls the whole page away.
+      const list=get('rx-rollout-segments'),button=list.querySelector(`[data-rollout-segment="${index}"]`);
+      if(button){
+        const viewport=list.getBoundingClientRect(),bounds=button.getBoundingClientRect();
+        if(bounds.top<viewport.top)list.scrollTop+=bounds.top-viewport.top-8;
+        else if(bounds.bottom>viewport.bottom)list.scrollTop+=bounds.bottom-viewport.bottom+8;
+        if(bounds.left<viewport.left)list.scrollLeft+=bounds.left-viewport.left-8;
+        else if(bounds.right>viewport.right)list.scrollLeft+=bounds.right-viewport.right+8;
+      }
+    }
+  }
+
+  root.addEventListener('play', event => {
+    if (!event.target.matches('audio[data-tts-audio]')) return;
+    root.querySelectorAll('audio[data-tts-audio]').forEach(player => {
+      if (player !== event.target) player.pause();
+    });
+  }, true);
+
+  root.addEventListener('click', event => {
+    const target = event.target.closest('button, a');
+    if (target && target.dataset.batchFilter) {
+      const panel = target.closest('.rx-details');
+      panel.querySelectorAll('[data-batch-criterion]').forEach(row => { row.hidden = target.dataset.batchFilter === 'issues' && row.dataset.batchCriterion === 'pass'; });
+      panel.querySelectorAll('[data-batch-filter]').forEach(button => button.setAttribute('aria-pressed', String(button === target)));
+    }
+    if (target && target.dataset.batchAudio) {
+      const player = get(target.dataset.batchAudio);
+      const seek = () => { player.currentTime = Number(target.dataset.batchFrame) / 16000; player.play().then(() => setText(player.id+'-status', '正在试听原交互引用。')).catch(() => setText(player.id+'-status', '已定位，请点击播放器继续。')); };
+      if (player.readyState >= 1) seek(); else { player.addEventListener('loadedmetadata', seek, {once:true}); player.load(); }
+    }
+    if (!target) return;
+    if(target.dataset.scoreTurn!==undefined && scoring){scoreIndex=Number(target.dataset.scoreTurn);renderScoring();}
+    if(target.dataset.scoreSeek!==undefined && scoring){
+      const player=get('rx-score-audio'),frame=Number(target.dataset.scoreSeek);
+      const seek=()=>{player.currentTime=Math.max(0,frame/16000-1);player.play().catch(()=>setText('rx-score-player-status','请点击播放器播放，或下载对应片段。'));};
+      setText('rx-score-player-status',`从 ${Math.max(0,frame/16000-1).toFixed(2)} 秒试听评分证据。`);
+      if(player.readyState>=1)seek();else{player.addEventListener('loadedmetadata',seek,{once:true});player.load();}
+    }
+    if(target.dataset.rolloutSegment!==undefined && rollout)selectRolloutSegment(Number(target.dataset.rolloutSegment));
+    if(target.hasAttribute('data-rollout-seek') && rollout){
+      const player=get('rx-rollout-audio'),index=rolloutIndex;
+      const seek=()=>{if(index!==rolloutIndex)return;player.currentTime=Math.max(0,rollout.segments[index].start_seconds-1);player.play().catch(()=>setText('rx-rollout-player-status','播放未开始，请点击播放器上的播放按钮，或下载音频。'));};
+      if(player.readyState>=1)seek();else{player.addEventListener('loadedmetadata',seek,{once:true});player.load();}
+    }
+    if (target.dataset.turnOption) selectTurn(target.dataset.turnOption);
+    if (target.dataset.rubricOption) selectTurn(target.dataset.rubricOption);
+    if (target.dataset.simCase) {simState.caseID=target.dataset.simCase;simState.index=0;renderSimulator(true);}
+    if (target.dataset.simIndex!==undefined) {simState.index=Number(target.dataset.simIndex);renderSimulator(true);}
+    if (target.dataset.speechCase && speech) {speechState.caseID=target.dataset.speechCase;speechState.index=0;renderSpeech();}
+    if (target.dataset.speechIndex!==undefined && speech) {speechState.index=Number(target.dataset.speechIndex);renderSpeech();}
+    if (target.hasAttribute('data-speech-prev') && speechState.index>0) {speechState.index--;renderSpeech();}
+    if (target.hasAttribute('data-speech-next') && speech) {const scenario=speech.cases.find(item=>item.id===speechState.caseID);if(speechState.index<scenario.events.length-1){speechState.index++;renderSpeech();}}
+    if (target.hasAttribute('data-speech-seek') && speech) {
+      const entry=speech.cases.find(item=>item.id===speechState.caseID).events[speechState.index];
+      const player=get('rx-speech-audio'),pause=entry.render.main?.pause;
+      if(pause) {
+        const source=player.src;
+        const seek=()=>{if(player.src!==source)return;player.currentTime=Math.max(0,pause.start_seconds-1);player.play().catch(()=>{setText('rx-speech-playback-note','播放未开始，请点击播放器上的播放按钮，或下载音频。');});};
+        if(player.readyState>=1)seek();else {player.addEventListener('loadedmetadata',seek,{once:true});player.load();}
+      }
+    }
+    if (target.dataset.turnFilter) {
+      state.filter = target.dataset.turnFilter;
+      const visible = visibleTurns();
+      if (visible.length && !visible.some(turn => turn.turn_id === state.turn)) state.turn = visible[0].turn_id;
+      renderTurn(); renderRubric();
+    }
+    if (target.dataset.personFilter) {
+      const filter = target.dataset.personFilter;
+      let count = 0;
+      root.querySelectorAll('[data-person-card]').forEach(card => { card.hidden = filter !== 'all' && card.dataset.personCard !== filter; if (!card.hidden) count += 1; });
+      root.querySelectorAll('[data-person-filter]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.personFilter === filter)));
+      setText('rx-person-count', `当前显示 ${count} 名员工的材料说明`);
+    }
+    if (target.dataset.openReference) {
+      event.preventDefault(); const detail = get(target.dataset.openReference); if (detail) { detail.open = true; scrollTo(detail.id); }
+    }
+    if (target.dataset.sideMode) {
+      const withAside = target.dataset.sideMode === 'with';
+      get('rx-side-event').hidden = !withAside;
+      root.querySelectorAll('[data-side-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.sideMode === target.dataset.sideMode)));
+      setText('rx-side-view-label', withAside ? 'Stage 3.5：原主表达 + 新增旁语' : 'Stage 3：仅原主表达，尚未附加旁语');
+    }
+    if (target.dataset.jump) { event.preventDefault(); if (target.dataset.selectTurn) selectTurn(target.dataset.selectTurn); scrollTo(target.dataset.jump); }
+  });
+
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver(entries => {
+      const current = entries.filter(entry => entry.isIntersecting).sort((a,b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!current) return;
+      root.querySelectorAll('[data-stage-nav]').forEach(link => {
+        if (link.dataset.stageNav === current.target.id) link.setAttribute('aria-current','step');
+        else link.removeAttribute('aria-current');
+      });
+    }, {rootMargin:'-105px 0px -45% 0px', threshold:[0,.1,.3,.6]});
+    root.querySelectorAll('[data-rx-stage]').forEach(stage => observer.observe(stage));
+  }
+  root.querySelectorAll('[data-batch-criterion="pass"]').forEach(row => { row.hidden = true; });
+  if (focusedRollout) renderRollout();
+  else {renderTurn(); renderRubric(); renderSimulator(); renderSpeech(); renderRollout(); renderScoring();}
+  const rolloutPlayer=get('rx-rollout-audio');
+  if(rolloutPlayer){
+    ['timeupdate','loadedmetadata','emptied'].forEach(event=>
+      rolloutPlayer.addEventListener(event,()=>updateRolloutPlayback(false,!rolloutPlayer.paused)));
+    ['seeking','seeked','ended'].forEach(event=>
+      rolloutPlayer.addEventListener(event,()=>updateRolloutPlayback(true,true)));
+    rolloutPlayer.addEventListener('play',()=>{cancelAnimationFrame(playbackFrame);followedRolloutIndex=-1;followRolloutPlayback();});
+    rolloutPlayer.addEventListener('pause',()=>{cancelAnimationFrame(playbackFrame);updateRolloutPlayback();});
+    window.addEventListener('pagehide',()=>cancelAnimationFrame(playbackFrame));
+  }
+  root.dataset.ready = 'true';
+})();
+
+(() => {
+  document.querySelectorAll('[data-final-script-reader]').forEach(root => {
+    const list = root.querySelector('[data-final-list]');
+    root.addEventListener('click', event => {
+      const button = event.target.closest('button');
+      if (!button || !root.contains(button)) return;
+      const rounds = [...root.querySelectorAll('[data-final-round]')];
+      if (button.dataset.finalAction === 'expand' || button.dataset.finalAction === 'collapse') {
+        rounds.forEach(round => { round.open = button.dataset.finalAction === 'expand'; });
+      }
+      if (button.dataset.finalJump !== undefined) {
+        const round = rounds.find(item => item.dataset.finalRound === button.dataset.finalJump);
+        if (!round) return;
+        round.open = true;
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        list.scrollTo({top: list.scrollTop + round.getBoundingClientRect().top - list.getBoundingClientRect().top - 8,
+          behavior: reducedMotion ? 'auto' : 'smooth'});
+        root.querySelector('[data-final-status]').textContent = '已定位到 ' + button.textContent + '。';
+      }
+    });
+  });
+})();
+
+</script>
+</main></body></html>

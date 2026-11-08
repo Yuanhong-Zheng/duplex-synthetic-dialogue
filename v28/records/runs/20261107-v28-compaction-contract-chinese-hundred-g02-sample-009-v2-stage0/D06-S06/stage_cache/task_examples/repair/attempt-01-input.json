@@ -1,0 +1,87 @@
+{
+  "scenario": {
+    "domain_id": "D06",
+    "domain": "购物、零售与消费决策",
+    "domain_definition": "Google Gemini Live 明确列出商品比较与穿搭建议，tau-Voice 和 IHBench 覆盖零售服务，Audio MultiChallenge 覆盖购物清单。",
+    "scenario_id": "D06-S06",
+    "scenario": "退换货信息咨询",
+    "requested_examples_per_style": 5,
+    "existing_example_task_seeds": [],
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "short",
+      "target_turns": 6,
+      "min_turns": 5,
+      "max_turns": 7
+    },
+    "dialogue_length_instruction": "本条完整对话目标为 6 个主轮，允许 5–7 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    }
+  },
+  "current_example_tasks": {
+    "开放式互动": [
+      "通过情景问答练习如何向商家清楚说明退货或换货诉求，并应对常见追问",
+      "弄清退货、换货、退款和补发之间通常有哪些区别，以及各自适合什么情况",
+      "围绕网购商品不合适、损坏或与描述不符等情形，讨论消费者可以如何判断下一步选择",
+      "模拟一次与客服沟通退换货的对话，练习礼貌而有效地表达问题和期望结果",
+      "共同梳理一套检查退换货说明时应关注的通用要点，帮助自己以后更快发现限制条件"
+    ],
+    "结构化整理": [
+      "根据随后提供的商品、购买和商家说明，整理出退货、换货及退款相关的关键信息",
+      "把我提供的退换货规则按适用条件、所需材料、时间要求和可能费用分类列成清单",
+      "核对我提供的订单情况与商家退换货说明，标出已经满足、尚未确认和存在冲突的条件",
+      "比较我随后提供的多个处理方案，按退款、换货、维修或补发等结果整理各自的要求与限制",
+      "根据我提供的商品问题、购买记录和沟通记录，整理一条可执行的退换货处理时间线"
+    ],
+    "混合型": [
+      "结合退换货的一般规则和我随后提供的商品状况，判断退货、换货或其他处理方式哪个更合适",
+      "我在几个处理方案之间拿不定主意，希望依据消费者权益和商家规则，比较我提供的具体条件后作出选择",
+      "针对我提供的客服回复和购买情况，运用判断退换货责任与证据充分性的通用框架，找出更合理的应对方向",
+      "结合通用的退换货沟通原则与我随后提供的争议细节，调整一段既能说明事实又能提出明确诉求的表达",
+      "依据退换货通常涉及的成本、便利性和风险，评估我提供的不同方案及个人限制，确定优先处理顺序"
+    ]
+  },
+  "judge_findings": [
+    {
+      "severity": "must_fix",
+      "path": "/example_tasks/开放式互动/3",
+      "problem": "与同组第1条明显重复，二者都是通过模拟商家或客服对话练习表达退换货诉求。",
+      "evidence": "模拟一次与客服沟通退换货的对话，练习礼貌而有效地表达问题和期望结果",
+      "repair": "改为不同的开放式任务方向，例如讨论沟通受阻时如何追问、协商或升级处理，避免再次以基础诉求表达练习为核心。"
+    }
+  ],
+  "repair_targets": [
+    {
+      "path": "/example_tasks/开放式互动/3",
+      "current_value": "模拟一次与客服沟通退换货的对话，练习礼貌而有效地表达问题和期望结果"
+    }
+  ]
+}

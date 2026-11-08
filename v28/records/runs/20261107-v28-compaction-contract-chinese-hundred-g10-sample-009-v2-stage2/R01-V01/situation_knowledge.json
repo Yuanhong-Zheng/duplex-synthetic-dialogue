@@ -1,0 +1,191 @@
+{
+  "episode_situation": "周三晚上九点，用户独自在刚搬入不久的公寓里，想趁下班后安静下来梳理一件小事。她周一把汇报草稿发给同事林悦，对方答应会在周二会议前帮忙看，但一直没有回复，会上又反问她为什么没有提前确认。她原本只是期待得到帮助，事后却反复想到那句反问，既有落空感，也隐约觉得自己承担了不该承担的责任。她尚不确定当下更接近失望还是委屈，也想辨认这种感受是否与胸口发紧、回避消息或反复回想等反应有关。",
+  "task_reference_data": [],
+  "environment_audio": "室内整体安静，近处只有很轻且稳定的房间底噪。远处没有清晰可辨的说话声或突发声响，整体音量保持平稳。",
+  "estimated_snr_db": 34,
+  "constraints": [],
+  "safety_limits": [],
+  "soundscape_plan": {
+    "mode": "quiet",
+    "ambient_layers": [],
+    "environment_events": [],
+    "schema": "duplex_v2.soundscape_plan.v3",
+    "side_speech_sources": [],
+    "side_speech_count": 0,
+    "sampling": {
+      "schema": "duplex_v2.ambient_draw.v2",
+      "policy": {
+        "schema": "duplex_v2.soundscape_policy.v2",
+        "quiet_probability": 0.5,
+        "discrete_targets_by_tier": {
+          "short": [
+            0,
+            1
+          ],
+          "medium": [
+            1,
+            2
+          ],
+          "long": [
+            2,
+            4
+          ]
+        },
+        "discrete_count_includes": [
+          "environment_events",
+          "side_speech"
+        ],
+        "max_ambient_layers": 2,
+        "gain_range": [
+          0.3,
+          0.7
+        ],
+        "speech_request_probability": 0.5,
+        "third_party_preference_probability": 0.8,
+        "speech_requires_existing_scene_source": true,
+        "environment_audio": "base_only",
+        "stage2_repair": "atomic_scoped_patch",
+        "stage2_max_judge_attempts": 3,
+        "json_parse_max_retries": 3
+      },
+      "preferences": {
+        "schema": "duplex_v2.ambient_preferences.v1",
+        "seed": 202611073010,
+        "slot": 8,
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "categories": {
+          "bed": [
+            "wind",
+            "birds",
+            "rain",
+            "crowd",
+            "fan",
+            "traffic"
+          ],
+          "event": [
+            "footsteps",
+            "paper",
+            "doorbell",
+            "water_tap",
+            "keyboard",
+            "door"
+          ]
+        },
+        "recordings": {
+          "bed:birds": [
+            "birds-fsd50k-eval-319512",
+            "birds-fsd50k-eval-86343",
+            "birds-fsd50k-eval-57907"
+          ],
+          "bed:crowd": [
+            "crowd-fsd50k-eval-121877",
+            "crowd-fsd50k-eval-340358",
+            "crowd-fsd50k-eval-185058"
+          ],
+          "bed:fan": [
+            "fan-fsd50k-eval-235362",
+            "fan-fsd50k-eval-419427",
+            "fan-fsd50k-eval-415925"
+          ],
+          "bed:rain": [
+            "rain-fsd50k-eval-21189",
+            "rain-fsd50k-eval-382582",
+            "rain-fsd50k-eval-238016"
+          ],
+          "bed:traffic": [
+            "traffic-fsd50k-eval-235541",
+            "traffic-fsd50k-eval-124020",
+            "traffic-fsd50k-eval-232686"
+          ],
+          "bed:wind": [
+            "wind-fsd50k-eval-113176",
+            "wind-fsd50k-eval-113173",
+            "wind-fsd50k-eval-113175"
+          ],
+          "event:door": [
+            "door-fsd50k-eval-119077",
+            "door-fsd50k-eval-209519",
+            "door-fsd50k-eval-71212"
+          ],
+          "event:doorbell": [
+            "doorbell-fsd50k-eval-426594",
+            "doorbell-fsd50k-eval-348322",
+            "doorbell-fsd50k-eval-332563"
+          ],
+          "event:footsteps": [
+            "footsteps-fsd50k-eval-272381",
+            "footsteps-fsd50k-eval-153104",
+            "footsteps-fsd50k-eval-392303"
+          ],
+          "event:keyboard": [
+            "keyboard-fsd50k-eval-233057",
+            "keyboard-fsd50k-eval-399740",
+            "keyboard-fsd50k-eval-411545"
+          ],
+          "event:paper": [
+            "paper-fsd50k-eval-343098",
+            "paper-fsd50k-eval-121200",
+            "paper-fsd50k-eval-82562"
+          ],
+          "event:water_tap": [
+            "water_tap-fsd50k-eval-402128",
+            "water_tap-fsd50k-eval-232499",
+            "water_tap-fsd50k-eval-402127"
+          ]
+        }
+      },
+      "control": {
+        "schema": "duplex_v2.soundscape_control.v2",
+        "seed": 2970774597,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "third_party",
+          "machine"
+        ]
+      },
+      "control_sha256": "26029b7f8b967bf20923e35f24a0b9c0425da87d46b1d9471e7b23f0b742013f",
+      "candidate_plan": {
+        "schema": "duplex_v2.soundscape_plan.v3",
+        "mode": "quiet",
+        "ambient_layers": [],
+        "environment_events": [],
+        "side_speech_eligibility": {
+          "third_party": {
+            "compatible": false,
+            "reason": "用户当前独自在公寓内，故事中没有已在场的第三方。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "当前场景没有已建立的可辨语音设备。",
+            "source": null
+          }
+        }
+      },
+      "base_environment_audio_sha256": "015a30ce5731b77faeaa4e321cfc623cf8c7df939324308d14356c823da31a31",
+      "aggregate_environment_audio": "室内整体安静，近处只有很轻且稳定的房间底噪。远处没有清晰可辨的说话声或突发声响，整体音量保持平稳。",
+      "draws": [],
+      "speech_selection": {
+        "requested": false,
+        "compatible_kinds": [],
+        "selected_kind": null,
+        "outcome": "not_requested",
+        "assessments": {
+          "third_party": {
+            "compatible": false,
+            "reason": "用户当前独自在公寓内，故事中没有已在场的第三方。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "当前场景没有已建立的可辨语音设备。",
+            "source": null
+          }
+        }
+      }
+    }
+  }
+}

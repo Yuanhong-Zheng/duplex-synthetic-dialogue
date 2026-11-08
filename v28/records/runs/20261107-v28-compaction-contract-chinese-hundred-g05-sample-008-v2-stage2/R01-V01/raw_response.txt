@@ -1,0 +1,139 @@
+{
+  "episode_situation": "周六晚上，用户独自在出租屋卫生间旁的洗衣区，前开门洗衣机刚在脱水阶段剧烈晃动并连续敲击机身侧面；她已取消程序、拔下插头，想在再次使用前判断问题是否能自行排除。她负责住处的日常维护，以前只处理过简单清洁，对洗衣机结构并不熟悉，但已记下本次衣物组成、异响开始的阶段以及机器是否伴有漏水或焦味。手边有纸质说明书和一把短气泡水平尺，可以检查机身、四只支脚与可见的地面接触情况，但洗衣区较窄，排水管和电源线限制了机器可移动的距离。她需要先弄懂水平、支脚松动、衣物偏在一侧和机械故障各自常见的表现，同时确认哪些现象允许重新均匀装载后低风险试机，哪些现象意味着应保持停机并联系房东安排检修。",
+  "task_reference_data": [
+    "来自用户刚才的亲眼观察，尚未向助手完整说明：敲击声在排水结束、滚筒开始明显加速后出现，低速翻滚和进水时没有听到同样的声音。",
+    "来自用户对本次衣物的回忆，当前可口头核对：滚筒内有一件双人被套、两条浴巾和四件短袖，被套取出时有一条浴巾卷在其中，衣物没有超过门口标示的最大装载线。",
+    "来自用户现场检查并记下的情况，仍需结合通用排查原则判断：机器没有焦味、冒烟或可见漏水，门封处也未夹住衣物；洗衣机此前数次洗少量日常衣物时未出现如此剧烈的晃动。"
+  ],
+  "environment_audio": "头顶排风扇持续发出低而稳定的机械风声，位于用户上方。右侧磨砂窗外有均匀细雨声，偶尔略微增强，但不盖过近距离说话。",
+  "estimated_snr_db": 26,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "洗衣机属于出租屋配套设备，用户未经房东同意不能拆卸外壳、配重或内部部件。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "排查应优先采用观察、重新分布衣物、检查水平和确认支脚接触等低风险且可恢复的方法。",
+      "kind": "soft"
+    }
+  ],
+  "safety_limits": [
+    {
+      "limit_id": "L01",
+      "text": "若再次出现机器明显移位、剧烈撞击，或发现漏水、焦味、冒烟、火花、金属摩擦声、滚筒明显松旷，应立即停止运行并断电，不再继续试机。",
+      "severity": "critical"
+    },
+    {
+      "limit_id": "L02",
+      "text": "机器运行时不得伸手扶住滚筒或机身底部，也不得在通电或转动状态下调整支脚、移动机器或触碰后方管线。",
+      "severity": "hard"
+    },
+    {
+      "limit_id": "L03",
+      "text": "涉及拆除面板、检查悬挂弹簧、减震器、配重、轴承或电气部件的工作，应交由获得房东授权的维修人员处理。",
+      "severity": "hard"
+    }
+  ],
+  "soundscape_plan": {
+    "schema": "duplex_v2.soundscape_plan.v3",
+    "mode": "layered",
+    "ambient_layers": [
+      {
+        "source_id": "AMB01",
+        "candidates": [
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "reason": "稳定机械风声与当前洗衣区头顶排风扇相容。",
+            "environment_audio": "头顶近处持续传来音量平稳的排风扇声。"
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "reason": "室内通风类底噪符合当前家庭洗衣区环境。",
+            "environment_audio": "上方排风设备保持低沉而连续的运转声。"
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "reason": "连续机械风声可作为已建立排风扇的替代录音。",
+            "environment_audio": "头顶排风扇发出持续、轻微起伏的机械风声。"
+          }
+        ]
+      },
+      {
+        "source_id": "AMB02",
+        "candidates": [
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "reason": "连续雨声与洗衣区右侧窗外的细雨相容。",
+            "environment_audio": "右侧窗外传来均匀而较轻的细雨声。"
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "reason": "家庭室内隔窗听到的雨声符合当前声景。",
+            "environment_audio": "隔着右侧磨砂窗可听见持续雨声，音量较低。"
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "reason": "该连续雨声可表现窗外偶有增强的降雨底色。",
+            "environment_audio": "右侧窗外雨声连续存在，强弱有轻微变化。"
+          }
+        ]
+      }
+    ],
+    "environment_events": [
+      {
+        "source_id": "ENV01",
+        "candidates": [
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "reason": "用户手边已有纸质说明书，短暂翻页声与当前排查场景相容。",
+            "environment_audio": "近处传来一次短促的说明书纸页翻动声。"
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "reason": "纸张轻响可来自用户现场持有的洗衣机说明书。",
+            "environment_audio": "用户近旁响起轻微而完整的纸页翻动声。"
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "reason": "较明显的纸张翻动仍符合现场查阅纸质说明书的情境。",
+            "environment_audio": "近距离出现一小段较清晰的说明书翻页声。"
+          }
+        ]
+      },
+      {
+        "source_id": "ENV02",
+        "candidates": [
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "reason": "用户可能在狭窄洗衣区内短距离挪步查看机器，室内脚步声与场景相容。",
+            "environment_audio": "洗衣机前方近处传来几步短促的室内脚步声。"
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "reason": "短段脚步声适合表现用户在机器正面与侧面之间移动。",
+            "environment_audio": "近处响起一小段缓慢挪动位置的脚步声。"
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "reason": "真实短脚步录音与当前室内检查空间兼容，不需要新增其他人物。",
+            "environment_audio": "用户附近出现数步清晰但音量不高的室内脚步声。"
+          }
+        ]
+      }
+    ],
+    "side_speech_eligibility": {
+      "third_party": {
+        "compatible": false,
+        "reason": "当前故事中用户独自在出租屋洗衣区，没有已建立的在场第三方旁语来源。",
+        "source": null
+      },
+      "machine": {
+        "compatible": false,
+        "reason": "洗衣机已断电，排风扇也不是已建立的语音设备，现场没有合理的机器旁语来源。",
+        "source": null
+      }
+    }
+  }
+}

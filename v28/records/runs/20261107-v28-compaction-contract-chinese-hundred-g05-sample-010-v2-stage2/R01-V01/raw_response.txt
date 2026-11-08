@@ -1,0 +1,112 @@
+{
+  "episode_situation": "周六下午四点二十分左右，用户带孩子在杭州市太子湾公园散步，孩子在步道旁的低矮灌木下发现一只体型不大的鸟，附近偶尔有行人经过。用户已带孩子退到约六米外，没有触碰或喂食，只看到鸟的身体大多已有羽毛、尾羽较短，能在地面跳动并短暂扑翅，但还没确认它能否持续飞行。用户暂未看见出血或明显垂落的翅膀，也不确定树上是否有亲鸟观察或喂食，周围经过的犬只则让她担心幼鸟可能受惊或遇险。她现在需要先弄清正常学飞与真正离巢遇困的区别，再根据安全距离内能观察到的行为、伤情和环境危险，判断应继续远观、做最低限度的保护，还是联系专业野生动物救助机构。",
+  "task_reference_data": [
+    "来自用户现场肉眼观察、当前已确认：幼鸟位于步道旁低矮灌木下，身体大多已有羽毛，尾羽较短，能够在地面跳动并短暂扑翅。",
+    "来自用户约六米外的初步观察、仍可能遗漏细小伤口：目前没有看到出血，也没有看到一侧翅膀明显垂落。",
+    "来自当前现场、尚未核实：幼鸟能否持续飞行、附近是否有亲鸟返回喂食、它是否曾撞击物体，以及是否存在呼吸异常或无法站立等情况都还不清楚。"
+  ],
+  "environment_audio": "近处树冠和灌木间有零散鸟鸣，叫声时断时续。微风从侧后方掠过树叶，形成持续但较轻的沙沙声，偶尔稍微增强。",
+  "estimated_snr_db": 24,
+  "constraints": [],
+  "safety_limits": [
+    {
+      "limit_id": "L01",
+      "text": "不得为测试飞行能力而抛起、追赶或反复抓取幼鸟，也不要强行向其喙内灌水或喂食。",
+      "severity": "hard"
+    },
+    {
+      "limit_id": "L02",
+      "text": "应让孩子和犬只与幼鸟保持距离；只有在车辆、犬只或人流构成迫近危险时，才考虑采取最低限度的临时移护。",
+      "severity": "hard"
+    },
+    {
+      "limit_id": "L03",
+      "text": "若发现持续出血、明显骨折或翅膀垂落、无法站立、呼吸困难、意识迟钝，或确认遭猫犬袭击，应尽快联系当地专业野生动物救助机构，不自行治疗。",
+      "severity": "critical"
+    }
+  ],
+  "soundscape_plan": {
+    "schema": "duplex_v2.soundscape_plan.v3",
+    "mode": "layered",
+    "ambient_layers": [
+      {
+        "source_id": "AMB01",
+        "candidates": [
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "reason": "真实公园鸟鸣与当前城市公园灌木和树冠环境相符。",
+            "environment_audio": "树木与灌木方向传来间歇性的自然鸟鸣。"
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "reason": "较短的真实鸟鸣底噪适合当前户外观察场景。",
+            "environment_audio": "附近树冠间有零散、自然的鸟叫声。"
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "reason": "连续长度适合铺设公园自然声底，且不引入额外事件。",
+            "environment_audio": "公园植被间持续传来疏密不一的鸟鸣。"
+          }
+        ]
+      },
+      {
+        "source_id": "AMB02",
+        "candidates": [
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "reason": "轻微户外风声可表现树叶受风的公园底色。",
+            "environment_audio": "侧后方有轻风掠过树叶的沙沙声。"
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "reason": "自然风声与开阔步道旁的植被环境兼容。",
+            "environment_audio": "周围树叶随微风发出轻而连续的摩擦声。"
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "reason": "较长的真实风声适合作为不抢占语音的户外背景。",
+            "environment_audio": "树冠上方的风声缓慢起伏，偶尔略有增强。"
+          }
+        ]
+      }
+    ],
+    "environment_events": [
+      {
+        "source_id": "ENV01",
+        "candidates": [
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "reason": "故事已说明步道附近偶尔有行人，短段户外脚步声与场景相符。",
+            "environment_audio": "一小段行人脚步从附近步道经过。"
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "reason": "真实短段脚步可表现公园步道上偶尔经过的行人。",
+            "environment_audio": "几步清晰但不急促的脚步声从一侧掠过。"
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "reason": "户外脚步事件不改变当前任务状态，也符合已有行人环境。",
+            "environment_audio": "步道方向响起一阵短暂的过路脚步声。"
+          }
+        ]
+      }
+    ],
+    "side_speech_eligibility": {
+      "third_party": {
+        "compatible": true,
+        "reason": "用户的孩子已在当前故事中同行并在场，可作为一次自然的低声旁语来源。",
+        "source": {
+          "speaker": "third_party",
+          "voice_profile": "自然清楚、音量较轻的儿童普通话声音",
+          "description": "与用户同行并已在公园现场的孩子"
+        }
+      },
+      "machine": {
+        "compatible": false,
+        "reason": "当前场景没有已建立的广播、提示器或其他可辨识语音设备。",
+        "source": null
+      }
+    }
+  }
+}

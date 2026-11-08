@@ -1,0 +1,1235 @@
+{
+  "frozen_source": {
+    "case_id": "R01-V01",
+    "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g08-sample-001-v2-stage2",
+    "language": "zh",
+    "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+    "script_execution_policy": {
+      "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+      "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+      "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+      "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+      "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+      "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+      "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+    },
+    "program_anchor_seed": 3918620642,
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    },
+    "relay_configuration": {
+      "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g08/relay-policy.json",
+      "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g08/relay-state",
+      "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+      "policy": {
+        "schema": "duplex_v2.timeout_relay_policy.v3",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "backup": {
+          "profile": "lianyu",
+          "endpoint": "https://api.openbili.com/v1/chat/completions",
+          "model_map": {
+            "openai/gpt-5.6-sol": "gpt-5.6-sol",
+            "openai/gpt-5.6-luna": "gpt-5.6-luna"
+          },
+          "verification": {
+            "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+            "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+          }
+        },
+        "trigger": {
+          "max_retries": 5,
+          "http_statuses": [
+            502,
+            503,
+            504
+          ],
+          "error_types": [
+            "TimeoutError",
+            "HTTP2DeadlineExceeded",
+            "ConnectionResetError",
+            "ConnectionAbortedError",
+            "BrokenPipeError",
+            "RemoteDisconnected",
+            "IncompleteRead"
+          ],
+          "http2_transport_errors": "negotiated_h2_only",
+          "require_all_attempts": true
+        },
+        "max_relay_switches": 1
+      }
+    },
+    "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+    "script_repair_policy": {
+      "schema": "duplex_v2.script_repair_policy.v1",
+      "mode": "json_patch",
+      "patch_schema": "duplex_v2.script_patch.v1",
+      "json_parse_max_retries": 3,
+      "content_max_repairs": 5,
+      "length_compaction_max_attempts": 3,
+      "overlength_after_compaction": "fail_case",
+      "judge_scope": "complete_script_and_heard_context"
+    },
+    "text_output_token_policy": "omit",
+    "scene_task": {
+      "scene": {
+        "domain_id": "D14",
+        "domain": "医疗、健康与福祉",
+        "scenario_id": "D14-S07",
+        "scenario": "就诊准备与康复随访"
+      },
+      "task_style": "常识问答",
+      "task_instance": {
+        "goal": "想弄清楚康复训练后怎样记录疼痛、疲劳和动作完成情况，并了解哪些变化适合在随访时重点告诉医疗人员。"
+      }
+    },
+    "user_voice": {
+      "user_seed": {
+        "role_relation": "正在接受膝部康复训练、准备参加复诊的上班族患者",
+        "task_familiarity": "low"
+      },
+      "voice_profile": "女性，感知年龄三十多岁，音色柔和，语气自然但略显疲惫，语速偏慢，遇到不确定的健康信息时会短暂迟疑。",
+      "interaction_profile": {
+        "schema": "duplex_v2.interaction_profile.v1",
+        "formality": "casual",
+        "directness": "indirect",
+        "emotional_expressiveness": "balanced",
+        "verbosity": "brief",
+        "initiative": "low",
+        "caution": "medium",
+        "patience": "low",
+        "behavioral_notes": [
+          "通常先简短描述自己的困惑，不太主动一次说完全部背景，等待对方用问题引导。",
+          "对不确定的说法会用较委婉的方式确认，回答后若信息较多容易希望对方换一种更简单的说法。",
+          "情绪表达有一定变化，但不会夸张，遇到难以判断的内容会直接说自己拿不准。"
+        ]
+      }
+    },
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "long",
+      "target_turns": 16,
+      "min_turns": 16,
+      "max_turns": 17
+    },
+    "ambient_catalog": {
+      "schema": "duplex_v2.ambient_catalog.v1",
+      "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+      "assets": [
+        {
+          "asset_id": "fan-fsd50k-eval-419427",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 10.3909375
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-235362",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 11.0
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-415925",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 7.178
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-235541",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 29.045875
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-232686",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 10.3445
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-124020",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 24.78875
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-382582",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.9788125
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-21189",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.962
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-238016",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 11.32
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-185058",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 5.2114375
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-121877",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 11.696
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-340358",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 4.2745
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-82562",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 1.0094375
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-121200",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.83525
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-343098",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.796
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-153104",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.4691875
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-392303",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.6849375
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-272381",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.933375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-71212",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.3638125
+        },
+        {
+          "asset_id": "door-fsd50k-eval-119077",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.7944375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-209519",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 1.0398125
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-399740",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.322
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-233057",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.4700625
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-411545",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.5686875
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-232499",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 0.842
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402127",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402128",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-86343",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 7.5366875
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-57907",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.5773125
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-319512",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.755625
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113173",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 11.2184375
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113175",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.8773125
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113176",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.6341875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-348322",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 1.625
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-426594",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 0.3666875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-332563",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 4.0
+        }
+      ]
+    },
+    "ambient_control": {
+      "schema": "duplex_v2.soundscape_control.v2",
+      "seed": 3786273219,
+      "mode": "quiet",
+      "discrete_event_target": 0,
+      "max_ambient_layers": 2,
+      "side_speech_requested": false,
+      "speech_kind_preferences": [
+        "third_party",
+        "machine"
+      ]
+    },
+    "situation_knowledge": {
+      "episode_situation": "周六晚上，用户在家完成当天的膝部康复训练后，想在下次复诊前养成稳定的记录习惯。她平日要上班，过去只在纸质笔记本里零散写过几句，训练后最多愿意花两分钟记录。她手边有康复人员给的动作单和笔记本，但没有穿戴设备，也不清楚疼痛应在训练前、训练后还是第二天记。她还拿不准疲劳、动作完成度和上下楼变化该怎样描述，以及哪些情况可以留到随访、哪些不宜等待。",
+      "task_reference_data": [
+        "来源于用户手边可现场读取的纸质动作单：每日一次，包括脚跟滑动每组10次、做2组；股四头肌收紧每次保持5秒、每组10次、做2组；坐站练习每组8次、做2组。",
+        "来源于用户已写下但未系统整理的笔记本：最近只有“做完有点酸”“第二天腿累”和“下楼时更疼”三句，没有日期、疼痛分值或持续时间。",
+        "用户目前能自行观察训练是否做完、是否减少次数、是否需要扶稳，以及训练前后和第二天的主观感受；动作角度等精确测量数据目前不可用。"
+      ],
+      "environment_audio": "室内整体安静，近处只有很轻且稳定的房间底噪。周围没有持续可辨的人声或突发声响。",
+      "estimated_snr_db": 35,
+      "constraints": [
+        {
+          "constraint_id": "C01",
+          "text": "记录方法应适合写在纸质笔记本中，并尽量控制在每次训练后两分钟以内。",
+          "kind": "hard"
+        }
+      ],
+      "safety_limits": [
+        {
+          "limit_id": "L01",
+          "text": "若出现胸痛、呼吸困难等急性危险表现，不应等待常规康复随访，应立即寻求紧急医疗帮助。",
+          "severity": "critical"
+        },
+        {
+          "limit_id": "L02",
+          "text": "若膝部疼痛或肿胀明显加重、突然不能负重，或出现明显发红发热、发热、单侧小腿异常肿痛，不应仅靠继续记录或勉强训练来观察，应及时联系医疗人员评估。",
+          "severity": "hard"
+        }
+      ],
+      "soundscape_plan": {
+        "mode": "quiet",
+        "ambient_layers": [],
+        "environment_events": [],
+        "schema": "duplex_v2.soundscape_plan.v3",
+        "side_speech_sources": [],
+        "side_speech_count": 0,
+        "sampling": {
+          "schema": "duplex_v2.ambient_draw.v2",
+          "policy": {
+            "schema": "duplex_v2.soundscape_policy.v2",
+            "quiet_probability": 0.5,
+            "discrete_targets_by_tier": {
+              "short": [
+                0,
+                1
+              ],
+              "medium": [
+                1,
+                2
+              ],
+              "long": [
+                2,
+                4
+              ]
+            },
+            "discrete_count_includes": [
+              "environment_events",
+              "side_speech"
+            ],
+            "max_ambient_layers": 2,
+            "gain_range": [
+              0.3,
+              0.7
+            ],
+            "speech_request_probability": 0.5,
+            "third_party_preference_probability": 0.8,
+            "speech_requires_existing_scene_source": true,
+            "environment_audio": "base_only",
+            "stage2_repair": "atomic_scoped_patch",
+            "stage2_max_judge_attempts": 3,
+            "json_parse_max_retries": 3
+          },
+          "preferences": {
+            "schema": "duplex_v2.ambient_preferences.v1",
+            "seed": 202611073008,
+            "slot": 0,
+            "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+            "categories": {
+              "bed": [
+                "wind",
+                "rain",
+                "crowd",
+                "birds",
+                "traffic",
+                "fan"
+              ],
+              "event": [
+                "footsteps",
+                "paper",
+                "keyboard",
+                "water_tap",
+                "doorbell",
+                "door"
+              ]
+            },
+            "recordings": {
+              "bed:birds": [
+                "birds-fsd50k-eval-319512",
+                "birds-fsd50k-eval-86343",
+                "birds-fsd50k-eval-57907"
+              ],
+              "bed:crowd": [
+                "crowd-fsd50k-eval-121877",
+                "crowd-fsd50k-eval-340358",
+                "crowd-fsd50k-eval-185058"
+              ],
+              "bed:fan": [
+                "fan-fsd50k-eval-419427",
+                "fan-fsd50k-eval-415925",
+                "fan-fsd50k-eval-235362"
+              ],
+              "bed:rain": [
+                "rain-fsd50k-eval-382582",
+                "rain-fsd50k-eval-238016",
+                "rain-fsd50k-eval-21189"
+              ],
+              "bed:traffic": [
+                "traffic-fsd50k-eval-232686",
+                "traffic-fsd50k-eval-124020",
+                "traffic-fsd50k-eval-235541"
+              ],
+              "bed:wind": [
+                "wind-fsd50k-eval-113175",
+                "wind-fsd50k-eval-113173",
+                "wind-fsd50k-eval-113176"
+              ],
+              "event:door": [
+                "door-fsd50k-eval-71212",
+                "door-fsd50k-eval-119077",
+                "door-fsd50k-eval-209519"
+              ],
+              "event:doorbell": [
+                "doorbell-fsd50k-eval-426594",
+                "doorbell-fsd50k-eval-348322",
+                "doorbell-fsd50k-eval-332563"
+              ],
+              "event:footsteps": [
+                "footsteps-fsd50k-eval-153104",
+                "footsteps-fsd50k-eval-392303",
+                "footsteps-fsd50k-eval-272381"
+              ],
+              "event:keyboard": [
+                "keyboard-fsd50k-eval-399740",
+                "keyboard-fsd50k-eval-233057",
+                "keyboard-fsd50k-eval-411545"
+              ],
+              "event:paper": [
+                "paper-fsd50k-eval-121200",
+                "paper-fsd50k-eval-82562",
+                "paper-fsd50k-eval-343098"
+              ],
+              "event:water_tap": [
+                "water_tap-fsd50k-eval-232499",
+                "water_tap-fsd50k-eval-402128",
+                "water_tap-fsd50k-eval-402127"
+              ]
+            }
+          },
+          "control": {
+            "schema": "duplex_v2.soundscape_control.v2",
+            "seed": 3786273219,
+            "mode": "quiet",
+            "discrete_event_target": 0,
+            "max_ambient_layers": 2,
+            "side_speech_requested": false,
+            "speech_kind_preferences": [
+              "third_party",
+              "machine"
+            ]
+          },
+          "control_sha256": "d4ce6c606136c7f509b395d2e46a0b27e7c957a889263fb619c74f21feb97269",
+          "candidate_plan": {
+            "schema": "duplex_v2.soundscape_plan.v3",
+            "mode": "quiet",
+            "ambient_layers": [],
+            "environment_events": [],
+            "side_speech_eligibility": {
+              "third_party": {
+                "compatible": false,
+                "reason": "当前故事中没有其他人在场，无法建立合理的第三方旁语来源。",
+                "source": null
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "当前场景没有已建立的可发出旁语的设备。",
+                "source": null
+              }
+            }
+          },
+          "base_environment_audio_sha256": "8b9e69223ff06df3a8b66058c0eb5093da306a295452a9eeee7c60218a91f278",
+          "aggregate_environment_audio": "室内整体安静，近处只有很轻且稳定的房间底噪。周围没有持续可辨的人声或突发声响。",
+          "draws": [],
+          "speech_selection": {
+            "requested": false,
+            "compatible_kinds": [],
+            "selected_kind": null,
+            "outcome": "not_requested",
+            "assessments": {
+              "third_party": {
+                "compatible": false,
+                "reason": "当前故事中没有其他人在场，无法建立合理的第三方旁语来源。",
+                "source": null
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "当前场景没有已建立的可发出旁语的设备。",
+                "source": null
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "schema_version": "duplex_v2.fixed_script.v2",
+  "owner_attempt": 2,
+  "previous_candidate": {
+    "schema_version": "duplex_v2.fixed_script.v2",
+    "title": "膝部康复两分钟记录法",
+    "rounds": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_utterance": "我做完膝盖训练后总不知道该记什么，想在复诊前稍微记得有用一点。",
+        "assistant_utterance": "可以，先把记录压成每天一小格。你更想先解决疼痛什么时候记，还是先定一套两分钟内能写完的格式？",
+        "user_intent": "提出康复训练记录困惑并寻求简单方法",
+        "assistant_intent": "确定用户最优先需要解决的记录问题",
+        "semantic_goal": "建立适合复诊使用的简短记录方案",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": null,
+        "pause_cue": null
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_utterance": "先说疼痛吧。我只用纸笔，而且训练后最多想花两分钟。疼痛到底是练前、练后，还是第二天记？",
+        "assistant_utterance": "最实用的是记三个时点：训练前、训练后几分钟内、第二天同一时段。来不及全记时，至少保留训练后和第二天。",
+        "user_intent": "说明纸笔和时间限制并询问疼痛记录时点",
+        "assistant_intent": "给出优先级明确的疼痛记录时点",
+        "semantic_goal": "确定何时记录疼痛且不超过两分钟",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A001",
+          "user_onset_after_text": "可以，先把记录压成每天一小格。你更想先解决疼痛什么时候记，还是先定一套两分钟内能写完的格式？",
+          "assistant_stop_after_text": "可以，先把记录压成每天一小格。你更想先解决疼痛什么时候记，还是先定一套两分钟内能写完的格式？"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_utterance": "那疼痛具体怎么写？我不太会判断分数。",
+        "assistant_utterance": "疼痛用零到十分：零是不痛，十是你能想象的最严重疼痛。再记部位、持续多久，以及是否影响走路或睡觉。",
+        "user_intent": "追问疼痛程度的记录方式",
+        "assistant_intent": "解释疼痛分值及可补充的关键信息",
+        "semantic_goal": "学会用一致方式描述疼痛",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A002",
+          "user_onset_after_text": "最实用的是记三个时点：训练前、训练后几分钟内、第二天同一时段。来不及全记时，至少保留训练后和第二天。",
+          "assistant_stop_after_text": "最实用的是记三个时点：训练前、训练后几分钟内、第二天同一时段。来不及全记时，至少保留训练后和第二天。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_utterance": "先等等，我每次写不了这么多，能不能压成一行？",
+        "assistant_utterance": "可以。每次只写：日期；训练前疼痛；训练后疼痛；是否全部做完；一句异常。第二天只在有残留疼痛或疲劳时补一句。",
+        "user_intent": "打断较复杂的说明并要求压缩格式",
+        "assistant_intent": "将记录内容精简为一行基础模板",
+        "semantic_goal": "获得两分钟内可完成的最简记录结构",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A003",
+          "user_onset_after_text": "疼痛用零到十分：零是不痛，十是你能想象的最严重疼痛。",
+          "assistant_stop_after_text": "疼痛用零到十分：零是不痛，十是你能想象的最严重疼痛。再记"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_utterance": "动作单上有三种动作，我经常不确定“做完”该怎么写。要逐项抄下来吗？",
+        "assistant_utterance": "不用逐项抄名称。给三项动作各画一个小框：完成打勾，少做写实际次数，需要扶稳就写“扶”。只记录和动作单不一样的地方。",
+        "user_intent": "询问多项动作完成度的简便记法",
+        "assistant_intent": "提供勾选和记录偏差的纸笔方法",
+        "semantic_goal": "快速记录动作是否完成及必要调整",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A004",
+          "user_onset_after_text": "可以。每次只写：日期；训练前疼痛；训练后疼痛；是否全部做完；一句异常。第二天只在有残留疼痛或疲劳时补一句。",
+          "assistant_stop_after_text": "可以。每次只写：日期；训练前疼痛；训练后疼痛；是否全部做完；一句异常。第二天只在有残留疼痛或疲劳时补一句。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_utterance": "单子上是脚跟滑动十次两组，股四头肌收紧五秒、十次两组，坐站八次两组。这么多数字怎么简写？",
+        "assistant_utterance": "正常完成就写“三项全勾”。若有变化再写，如“坐站八次加六次，第二组少两次；扶桌”。这样既保留完成度，也不用重抄整张单。",
+        "user_intent": "提供动作单内容并请求数字简写示例",
+        "assistant_intent": "示范只记录完成偏差的简写方式",
+        "semantic_goal": "把具体训练项目压缩成易写的完成记录",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A005",
+          "user_onset_after_text": "不用逐项抄名称。给三项动作各画一个小框：完成打勾，少做写实际次数，需要扶稳就写“扶”。只记录和动作单不一样的地方。",
+          "assistant_stop_after_text": "不用逐项抄名称。给三项动作各画一个小框：完成打勾，少做写实际次数，需要扶稳就写“扶”。只记录和动作单不一样的地方。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_utterance": "疲劳呢？我以前只写过第二天腿累，但不知道怎么算轻还是重。",
+        "assistant_utterance": "疲劳可以用四档：不累、轻、明显、影响日常活动。再写多久缓过来；若第二天还累，就在第二天那格补一句。",
+        "user_intent": "询问疲劳程度和持续情况的记录方法",
+        "assistant_intent": "给出简明疲劳分级及次日补记规则",
+        "semantic_goal": "用稳定标准描述训练后的疲劳",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A006",
+          "user_onset_after_text": "正常完成就写“三项全勾”。若有变化再写，如“坐站八次加六次，第二组少两次；扶桌”。这样既保留完成度，也不用重抄整张单。",
+          "assistant_stop_after_text": "正常完成就写“三项全勾”。若有变化再写，如“坐站八次加六次，第二组少两次；扶桌”。这样既保留完成度，也不用重抄整张单。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_utterance": "先停一下，疼痛是数字，疲劳又是四档，我怕记混。能都用词吗？",
+        "assistant_utterance": "可以：疼痛写轻、中、重；疲劳写不累、轻、明显、影响日常。为了看变化，尽量每天用同一套词，并补“多久缓解”。",
+        "user_intent": "打断说明并要求统一为更直白的文字等级",
+        "assistant_intent": "将疼痛和疲劳改成容易记忆的文字标记",
+        "semantic_goal": "避免混用不同量表而难以坚持记录",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A007",
+          "user_onset_after_text": "疲劳可以用四档：不累、轻、明显、影响日常活动。",
+          "assistant_stop_after_text": "疲劳可以用四档：不累、轻、明显、影响日常活动。再写多"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_utterance": "还有上下楼怎么写？我只知道下楼时有时候更疼。",
+        "assistant_utterance": "写成“上楼、下楼、平地”中的一项，再加“更好、一样、更差”和具体影响，例如“下楼更疼，要扶栏杆”。不用估动作角度。",
+        "user_intent": "询问上下楼功能变化的描述方式",
+        "assistant_intent": "提供活动场景、变化方向和功能影响的写法",
+        "semantic_goal": "把上下楼变化转成可用于随访的信息",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A008",
+          "user_onset_after_text": "可以：疼痛写轻、中、重；疲劳写不累、轻、明显、影响日常。为了看变化，尽量每天用同一套词，并补“多久缓解”。",
+          "assistant_stop_after_text": "可以：疼痛写轻、中、重；疲劳写不累、轻、明显、影响日常。为了看变化，尽量每天用同一套词，并补“多久缓解”。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_utterance": "我以前只写了“下楼时更疼”，连日期和持续多久都没有。那些要补吗？",
+        "assistant_utterance": "不用补猜过去的分值。从今天起加日期，并写“比昨天”或“比上周”更好、一样、更差；能记得持续多久就写，记不清就留空。",
+        "user_intent": "说明旧记录缺失并确认是否需要回忆补全",
+        "assistant_intent": "阻止猜测补记并建立从现在开始的比较基准",
+        "semantic_goal": "妥善处理不完整旧笔记并开始可靠记录",
+        "act_ref": "A04",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A009",
+          "user_onset_after_text": "写成“上楼、下楼、平地”中的一项，再加“更好、一样、更差”和具体影响，例如“下楼更疼，要扶栏杆”。不用估动作角度。",
+          "assistant_stop_after_text": "写成“上楼、下楼、平地”中的一项，再加“更好、一样、更差”和具体影响，例如“下楼更疼，要扶栏杆”。不用估动作角度。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U11",
+        "assistant_id": "A011",
+        "user_utterance": "到了复诊，我应该重点说哪些变化？总不能把每天都念一遍。",
+        "assistant_utterance": "复诊时重点说趋势和功能影响：疼痛或肿胀是否连续变重，疲劳是否拖到第二天，哪些动作常少做或需扶稳，上下楼和走路有没有变。带上笔记本和动作单即可。",
+        "user_intent": "询问复诊时需要提炼汇报的内容",
+        "assistant_intent": "概括医疗人员最需要了解的变化趋势和功能影响",
+        "semantic_goal": "形成简洁且有用的复诊汇报重点",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A010",
+          "user_onset_after_text": "不用补猜过去的分值。从今天起加日期，并写“比昨天”或“比上周”更好、一样、更差；能记得持续多久就写，记不清就留空。",
+          "assistant_stop_after_text": "不用补猜过去的分值。从今天起加日期，并写“比昨天”或“比上周”更好、一样、更差；能记得持续多久就写，记不清就留空。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U12",
+        "assistant_id": "A012",
+        "user_utterance": "哪些情况不能等到普通复诊，得早点联系人？",
+        "assistant_utterance": "膝痛或肿胀明显加重、突然不能负重、膝部明显发红发热、发热，或单侧小腿异常肿痛，都应及时联系医疗人员；胸痛或呼吸困难则立即寻求紧急医疗帮助。",
+        "user_intent": "询问不应等待常规随访的警示变化",
+        "assistant_intent": "区分需要及时评估和立即紧急求助的表现",
+        "semantic_goal": "知道何时停止单纯观察并尽快求助",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A011",
+          "user_onset_after_text": "复诊时重点说趋势和功能影响：疼痛或肿胀是否连续变重，疲劳是否拖到第二天，哪些动作常少做或需扶稳，上下楼和走路有没有变。带上笔记本和动作单即可。",
+          "assistant_stop_after_text": "复诊时重点说趋势和功能影响：疼痛或肿胀是否连续变重，疲劳是否拖到第二天，哪些动作常少做或需扶稳，上下楼和走路有没有变。带上笔记本和动作单即可。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U13",
+        "assistant_id": "A013",
+        "user_utterance": "等一下，“突然不能负重”是指完全踩不了地吗？",
+        "assistant_utterance": "不只限于完全踩不了地。若原本能走，后来突然无法承重，或承重能力明显变差、疼得不敢踩，都别勉强测试，应及时联系医疗人员评估。",
+        "user_intent": "打断警示说明并澄清不能负重的含义",
+        "assistant_intent": "解释负重能力突变并提醒不要勉强测试",
+        "semantic_goal": "正确识别需要及时评估的承重变化",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A012",
+          "user_onset_after_text": "膝痛或肿胀明显加重、突然不能负重",
+          "assistant_stop_after_text": "膝痛或肿胀明显加重、突然不能负重、膝部明"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U14",
+        "assistant_id": "A014",
+        "user_utterance": "如果只是第二天有点酸，但还能正常走路，这种可以先记着吗？",
+        "assistant_utterance": "轻微酸感且能正常活动、休息后逐渐缓解，可以先记录并观察。若一天比一天重、持续不退，或开始影响走路和训练，就提前联系康复或医疗人员。",
+        "user_intent": "确认轻微次日酸感是否可先观察记录",
+        "assistant_intent": "说明可观察的条件和需要升级联系的变化",
+        "semantic_goal": "区分一般训练反应与持续恶化",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A013",
+          "user_onset_after_text": "不只限于完全踩不了地。若原本能走，后来突然无法承重，或承重能力明显变差、疼得不敢踩，都别勉强测试，应及时联系医疗人员评估。",
+          "assistant_stop_after_text": "不只限于完全踩不了地。若原本能走，后来突然无法承重，或承重能力明显变差、疼得不敢踩，都别勉强测试，应及时联系医疗人员评估。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U15",
+        "assistant_id": "A015",
+        "user_utterance": "那我照着写的话，嗯，能不能把每天那一行完整念一遍？",
+        "assistant_utterance": "每天一行这样写：日期；训练前疼痛轻中重；训练后疼痛轻中重；三项全勾，或写少做几次、是否扶稳；疲劳不累、轻、明显或影响日常；异常一句。第二天若仍痛或累，再补恢复情况和上下楼变化。",
+        "user_intent": "请求完整回读每日纸笔记录模板",
+        "assistant_intent": "整合前述信息并给出可直接照抄的一行模板",
+        "semantic_goal": "获得可立即使用的完整记录格式",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01",
+          "T02"
+        ],
+        "timing": {
+          "target_assistant_id": "A014",
+          "user_onset_after_text": "轻微酸感且能正常活动、休息后逐渐缓解，可以先记录并观察。若一天比一天重、持续不退，或开始影响走路和训练，就提前联系康复或医疗人员。",
+          "assistant_stop_after_text": "轻微酸感且能正常活动、休息后逐渐缓解，可以先记录并观察。若一天比一天重、持续不退，或开始影响走路和训练，就提前联系康复或医疗人员。"
+        },
+        "pause_cue": {
+          "after_text": "那我照着写的话，",
+          "duration_ms": 650
+        }
+      },
+      {
+        "user_id": "U16",
+        "assistant_id": "A016",
+        "user_utterance": "这样清楚多了。那我记上一周后，复诊前怎么快速整理？",
+        "assistant_utterance": "复诊前翻一遍，把连续变差的日期圈出，再选一个最好和一个最差的例子。另写三句总结：疼痛趋势、完成度变化、上下楼或走路变化，然后连同原笔记一起带去。",
+        "user_intent": "询问一周记录如何整理成复诊摘要",
+        "assistant_intent": "提供快速筛选趋势和典型例子的整理步骤",
+        "semantic_goal": "把连续记录转化为简洁的随访材料",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A015",
+          "user_onset_after_text": "每天一行这样写：日期；训练前疼痛轻中重；训练后疼痛轻中重；三项全勾，或写少做几次、是否扶稳；疲劳不累、轻、明显或影响日常；异常一句。第二天若仍痛或累，再补恢复情况和上下楼变化。",
+          "assistant_stop_after_text": "每天一行这样写：日期；训练前疼痛轻中重；训练后疼痛轻中重；三项全勾，或写少做几次、是否扶稳；疲劳不累、轻、明显或影响日常；异常一句。第二天若仍痛或累，再补恢复情况和上下楼变化。"
+        },
+        "pause_cue": null
+      }
+    ],
+    "backchannels": [
+      {
+        "event_id": "BC01",
+        "target_assistant_id": "A002",
+        "after_text": "最实用的是记三个时点：训练前、训练后几分钟内、第二天同一时段。",
+        "text": "嗯，明白"
+      },
+      {
+        "event_id": "BC02",
+        "target_assistant_id": "A005",
+        "after_text": "不用逐项抄名称。",
+        "text": "嗯"
+      },
+      {
+        "event_id": "BC03",
+        "target_assistant_id": "A009",
+        "after_text": "写成“上楼、下楼、平地”中的一项，再加“更好、一样、更差”和具体影响，",
+        "text": "好"
+      },
+      {
+        "event_id": "BC04",
+        "target_assistant_id": "A011",
+        "after_text": "复诊时重点说趋势和功能影响：疼痛或肿胀是否连续变重，疲劳是否拖到第二天，",
+        "text": "嗯"
+      },
+      {
+        "event_id": "BC05",
+        "target_assistant_id": "A015",
+        "after_text": "每天一行这样写：日期；训练前疼痛轻中重；训练后疼痛轻中重；",
+        "text": "好"
+      }
+    ],
+    "side_speech": [],
+    "environment_events": []
+  },
+  "findings": [
+    {
+      "severity": "must_fix",
+      "path": "/rounds/0/assistant_utterance",
+      "problem": "助手在用户披露时间限制前，提前知道了隐藏的“两分钟”约束。",
+      "evidence": "A001作答前的已听历史只有U01“我做完膝盖训练后总不知道该记什么……”，其中没有两分钟限制；A001却说“先定一套两分钟内能写完的格式”。该限制直到U02才由用户说出。",
+      "repair": "把A001中的精确“两分钟内”改为不依赖隐藏事实的泛化说法，如询问是否先定简短、能快速写完的格式；保留U02首次披露两分钟限制。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/rounds/12/assistant_utterance",
+      "problem": "安全警示被打断后，助手只解释不能负重，未补回用户实际未听到的其余重要及紧急警示。",
+      "evidence": "U13起声时只听到A012的“膝痛或肿胀明显加重、突然不能负重”，其discarded_unheard_tail包含“明显发红发热、发热、单侧小腿异常肿痛”以及“胸痛或呼吸困难则立即寻求紧急医疗帮助”；A013及后续均未再传达这些内容，导致冻结的L01关键紧急限制在实际听觉对话中缺失。",
+      "repair": "A013先保留对“突然不能负重”的直接解释，再简短补充其余未听到的及时联系征象，并明确胸痛或呼吸困难应立即寻求紧急医疗帮助；不要假定A012尾部已经播放。"
+    }
+  ],
+  "anchor_dependencies": [
+    {
+      "target_id": "A001",
+      "path": "/rounds/1/timing/user_onset_after_text",
+      "value": "可以，先把记录压成每天一小格。你更想先解决疼痛什么时候记，还是先定一套两分钟内能写完的格式？",
+      "owner": "program"
+    },
+    {
+      "target_id": "A001",
+      "path": "/rounds/1/timing/assistant_stop_after_text",
+      "value": "可以，先把记录压成每天一小格。你更想先解决疼痛什么时候记，还是先定一套两分钟内能写完的格式？",
+      "owner": "program"
+    },
+    {
+      "target_id": "A012",
+      "path": "/rounds/12/timing/user_onset_after_text",
+      "value": "膝痛或肿胀明显加重、突然不能负重",
+      "owner": "model"
+    },
+    {
+      "target_id": "A012",
+      "path": "/rounds/12/timing/assistant_stop_after_text",
+      "value": "膝痛或肿胀明显加重、突然不能负重、膝部明",
+      "owner": "program"
+    },
+    {
+      "target_id": "A013",
+      "path": "/rounds/13/timing/user_onset_after_text",
+      "value": "不只限于完全踩不了地。若原本能走，后来突然无法承重，或承重能力明显变差、疼得不敢踩，都别勉强测试，应及时联系医疗人员评估。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A013",
+      "path": "/rounds/13/timing/assistant_stop_after_text",
+      "value": "不只限于完全踩不了地。若原本能走，后来突然无法承重，或承重能力明显变差、疼得不敢踩，都别勉强测试，应及时联系医疗人员评估。",
+      "owner": "program"
+    }
+  ],
+  "base_sha256": "5b9333e9c017b0faf8c03d30be3db24fd2fef1196d741f58f6b93910fec84ebb"
+}

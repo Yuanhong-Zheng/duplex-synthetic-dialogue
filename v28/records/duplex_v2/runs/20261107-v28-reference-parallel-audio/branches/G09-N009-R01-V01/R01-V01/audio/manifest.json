@@ -1,0 +1,158 @@
+{
+  "schema": "duplex_v2.audio_manifest.v1",
+  "identity_sha256": "248d19ad375a8801f711960f7cc7b97e3ab358f0b24e18752ea157373da46645",
+  "seed": 3098015823,
+  "qwen_options": {
+    "engine": "vllm_omni",
+    "service_url": "http://127.0.0.1:18766",
+    "health_timeout_seconds": 1800,
+    "health_policy": "cached_gateway_health_long_wait_v1",
+    "engine_identity": {
+      "vllm": "0.28.0+cu129",
+      "vllm_omni": "0.28.0",
+      "dtype": "bfloat16",
+      "dependency_versions": {
+        "torch": "2.13.0+cu129",
+        "vllm": "0.28.0+cu129",
+        "vllm-omni": "0.28.0",
+        "transformers": "5.14.1",
+        "tokenizers": "0.22.2"
+      },
+      "max_inflight_per_gpu": 8,
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "speech_source_revision": "v27",
+      "model_config_sha256": "b4f01752d15a488abde3e1ab44723ae4f4b9e68a4037257b098b3737893cc1f9",
+      "deploy_config_sha256": "faaf35e2136c852e7d8f2d9706ecc41a88054ccbe0ccf7e1a9244fc008b9f063",
+      "reference_preparation": {
+        "policy": "validated_reference_fast_path_singleflight_gpu_pool_v1",
+        "workers": 2,
+        "gpus": [
+          0,
+          1
+        ],
+        "cache": "reference_settings_manifest_and_audio_sha256",
+        "singleflight": "per_reference_key_with_retained_failures"
+      }
+    }
+  },
+  "voices": {
+    "user": {
+      "schema": "duplex-runtime.qwen3-voice-plan.v1",
+      "voice_profile": "男性，感知年龄三十多岁。音色偏温和但略显紧绷，吐字清楚，语速中等，遇到需要权衡时会有短暂停顿，整体带着持续赶时间后的轻微疲惫感。",
+      "voice_profile_sha256": "896571a2df80d637c5435a0e41a9460a7ca1d7d103ed45e4f1ade60b2c379fb4",
+      "identity_sha256": "c1cb3238b6bf219fc7e498f5baf7f957ca4aecaf8a9170b0987c4d4c70039a32",
+      "settings": {
+        "backend": "qwen3",
+        "endpoint": "local://qwen3-tts",
+        "model": "Qwen3-TTS-12Hz-1.7B-Base",
+        "voice_id": "qwen3-profile-c1cb3238b6bf219f",
+        "sample_rate": 16000,
+        "subtitle_type": "word",
+        "seed": 3098015823,
+        "language": "Chinese",
+        "voice_profile": "男性，感知年龄三十多岁。音色偏温和但略显紧绷，吐字清楚，语速中等，遇到需要权衡时会有短暂停顿，整体带着持续赶时间后的轻微疲惫感。",
+        "reference_text": "我们原订的西湖游船突然停航了，下午还有灵隐预约，我爸膝盖也有点僵。我现在最想先判断，灵隐到底要不要保留？",
+        "reference_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-reference-parallel-audio/branches/G09-N009-R01-V01/R01-V01/audio/voices/user-reference",
+        "instruct": ""
+      },
+      "mapping": {
+        "voice_id": "qwen3-profile-c1cb3238b6bf219f",
+        "reason": "由冻结的 Stage 1 声音画像生成固定参考音频，再由 Base 复用同一参考合成整条对话。"
+      },
+      "source": "frozen_stage1_voice_profile",
+      "fixed_for_whole_episode": true
+    },
+    "assistant": {
+      "settings": {
+        "backend": "qwen3",
+        "endpoint": "local://qwen3-tts",
+        "model": "Qwen3-TTS-12Hz-1.7B-Base",
+        "voice_id": "Serena",
+        "sample_rate": 16000,
+        "subtitle_type": "word",
+        "seed": 3098015823,
+        "language": "Chinese",
+        "voice_profile": null,
+        "reference_text": "我们先把已经确认的情况理清楚，再一步一步处理。需要补充的信息，可以接着告诉我。",
+        "reference_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261107-v28-reference-parallel-audio/fresh-batch-shared-assistant-reference/ac9cfa7b3cf77221ad8bf9f7f244ecb3d2dba752b00f51b216804b9380575b32",
+        "instruct": "",
+        "reference_preset": "Serena",
+        "reference_audio": null,
+        "reference_audio_sha256": null,
+        "reference_seed": 20261102,
+        "non_streaming_mode": true
+      },
+      "source": "shared_fixed_Serena_reference",
+      "fixed_for_whole_episode": true
+    },
+    "side_speech": {}
+  },
+  "mode": "frozen_script_parallel_TTS_static_PCM_timeline",
+  "tts_backend": "qwen3",
+  "clip_concurrency": 16,
+  "pool_capacity": 64,
+  "gap_ms": 240,
+  "runtime_text_model_calls": 0,
+  "api_wait_advances_synthetic_clock": false,
+  "native_realtime_latency_measured": false,
+  "native_server_cancellation": false,
+  "alignment_source": "qwen3_forced_aligner_0.6b_posthoc",
+  "background_audio_is_context": false,
+  "full_assistant_synthesized_before_prefix_crop": true,
+  "status": "completed",
+  "anchor_boundary_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+  "language": "zh",
+  "assistant_reference_root": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261107-v28-reference-parallel-audio/fresh-batch-shared-assistant-reference",
+  "backchannel_alignment_failure_policy": "warn_and_omit_exhausted_alignment_v1",
+  "speech_onset_policy": "cpu_vad_t03_outer_silence_preroll30ms_same_prefix_speech_start_calibration_v1",
+  "ambient_plan_sha256": "67bebe62059b65bd10d2aa90580c15356aa20ed462d8e97a8d8dc82040cda1df",
+  "planned_text_boundaries_exact": false,
+  "spoken_anchor_boundaries_exact": true,
+  "anchor_boundary_warnings": [
+    {
+      "code": "unspoken_punctuation_attached_to_aligned_word",
+      "label": "U03 onset",
+      "planned_prefix": "我会先保留灵隐预约，把游船从今天主线拿掉；父亲先休息",
+      "actual_heard_prefix": "我会先保留灵隐预约，把游船从今天主线拿掉；父亲先休息，",
+      "planned_end_char": 26,
+      "actual_end_char": 27,
+      "actual_end_frame": 94720,
+      "attached_unspoken_text": "，",
+      "planned_text_boundary_exact": false,
+      "spoken_boundary_exact": true,
+      "script_modified": false,
+      "word_boundary_moved": false
+    },
+    {
+      "code": "unspoken_punctuation_attached_to_aligned_word",
+      "label": "U07 onset",
+      "planned_prefix": "最晚十点四十五分结束等待。若届时可靠确认复航，且乘船不影响十三点前到餐厅和十五点前入灵隐，才走今天有船分支；否则放弃今天游船，按午餐、灵隐主线。若想改到明早",
+      "actual_heard_prefix": "最晚十点四十五分结束等待。若届时可靠确认复航，且乘船不影响十三点前到餐厅和十五点前入灵隐，才走今天有船分支；否则放弃今天游船，按午餐、灵隐主线。若想改到明早，",
+      "planned_end_char": 78,
+      "actual_end_char": 79,
+      "actual_end_frame": 268800,
+      "attached_unspoken_text": "，",
+      "planned_text_boundary_exact": false,
+      "spoken_boundary_exact": true,
+      "script_modified": false,
+      "word_boundary_moved": false
+    },
+    {
+      "code": "unspoken_punctuation_attached_to_aligned_word",
+      "label": "U12 onset",
+      "planned_prefix": "今天按这个节奏：十点四十五分停止等复航，父亲继续休息；十二点半午餐，十三点二十分左右乘车去灵隐，预约时段内入园，途中少走路多坐下。灵隐结束后根据体力决定是否还保留河坊街",
+      "actual_heard_prefix": "今天按这个节奏：十点四十五分停止等复航，父亲继续休息；十二点半午餐，十三点二十分左右乘车去灵隐，预约时段内入园，途中少走路多坐下。灵隐结束后根据体力决定是否还保留河坊街；",
+      "planned_end_char": 84,
+      "actual_end_char": 85,
+      "actual_end_frame": 273920,
+      "attached_unspoken_text": "；",
+      "planned_text_boundary_exact": false,
+      "spoken_boundary_exact": true,
+      "script_modified": false,
+      "word_boundary_moved": false
+    }
+  ]
+}

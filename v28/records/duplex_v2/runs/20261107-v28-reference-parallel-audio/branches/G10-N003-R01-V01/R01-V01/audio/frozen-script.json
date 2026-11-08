@@ -1,0 +1,369 @@
+{
+  "schema_version": "duplex_v2.fixed_script.v2",
+  "title": "续约前比较三档手机套餐",
+  "rounds": [
+    {
+      "user_id": "U01",
+      "assistant_id": "A001",
+      "user_utterance": "我现在套餐十一月十八日到期，三十九元含三十GB和三百分钟。最近三个月流量是二十七点四、三十四点八和四十六点一GB，通话最多才一百四十三分钟。",
+      "assistant_utterance": "通话额度明显够用，核心是流量已经超过现套餐。最近增长主要来自什么？未来几个月还会持续吗？",
+      "user_intent": "提供现套餐、到期时间及近期流量和通话数据",
+      "assistant_intent": "识别流量为主要矛盾并询问增长原因和持续性",
+      "semantic_goal": "建立实际用量基线并进入未来需求判断",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": null,
+      "pause_cue": null
+    },
+    {
+      "user_id": "U02",
+      "assistant_id": "A002",
+      "user_utterance": "主要是视频会议、通勤看视频，还有出差给电脑开热点。过去三个月平均每月两次短途出差，接下来四个月估计还会比较频繁。",
+      "assistant_utterance": "这说明新增流量主要和出行、热点有关。单次出差大约多用多少流量？另外把候选套餐的月费、流量和合约期依次告诉我。",
+      "user_intent": "说明流量增长来源及近期出行趋势",
+      "assistant_intent": "确认高流量成因并索取出差增量与候选方案信息",
+      "semantic_goal": "把历史增长与未来四个月需求关联起来",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A001",
+        "user_onset_after_text": "通话额度明显够用，核心是流量已经超过现套餐。最近增长主要来自什么？未来几个月还会持续吗？",
+        "assistant_stop_after_text": "通话额度明显够用，核心是流量已经超过现套餐。最近增长主要来自什么？未来几个月还会持续吗？"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U03",
+      "assistant_id": "A003",
+      "user_utterance": "一次出差大概额外用四到七GB。先说甲，前六个月三十九元，之后四十九元，含五十GB和五百分钟，没有固定合约，次月能降档或换方案。",
+      "assistant_utterance": "方案甲先看着比较贴合：50 GB略高于你十月用量，又能次月变更。关键要核对结转能留多久，以及超过50 GB后是收费还是限速。",
+      "user_intent": "补充出差流量并提供方案甲主要条款",
+      "assistant_intent": "初步评估方案甲并指出需要核对的小字",
+      "semantic_goal": "判断方案甲容量与灵活性的初步适配度",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A002",
+        "user_onset_after_text": "这说明新增流量主要和出行、热点有关。单次出差大约多用多少流量？另外把候选套餐的月费、流量和合约期依次告诉我。",
+        "assistant_stop_after_text": "这说明新增流量主要和出行、热点有关。单次出差大约多用多少流量？另外把候选套餐的月费、流量和合约期依次告诉我。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U04",
+      "assistant_id": "A004",
+      "user_utterance": "这条我正好看到了。只能结转到下一个自然月，上限五十GB，还得优先使用，不能再次结转。高速流量用完后降到1 Mbps，不收费。",
+      "assistant_utterance": "所以结转不是长期累积，只能跨一个月；低用量月之后最多能为下月增加缓冲。真正的短板是超过可用高速额度后，1 Mbps通常难以保证视频会议。再看乙吧。",
+      "user_intent": "打断并补充方案甲的结转与限速条款",
+      "assistant_intent": "纠正长期累积误解并指出甲的会议可靠性风险",
+      "semantic_goal": "明确方案甲结转边界和超量后的实际影响",
+      "act_ref": "A02",
+      "timing_refs": [
+        "T03"
+      ],
+      "timing": {
+        "target_assistant_id": "A003",
+        "user_onset_after_text": "方案甲先看着比较贴合：50 GB略高于你十月用量，又能次月变更。关键要核对结转",
+        "assistant_stop_after_text": "方案甲先看着比较贴合：50 GB略高于你十月用量，又能次月变更。关键要核对结转能留多"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U05",
+      "assistant_id": "A005",
+      "user_utterance": "乙是前十二个月每月四十九元，之后六十九元，含八十GB和一千分钟，但合约要二十四个月，也不结转流量。",
+      "assistant_utterance": "乙的80 GB足以覆盖你近期峰值和多数出差增量，但通话额度依然用不满。它是否值得，主要看超量速度、提前降档和解约成本。",
+      "user_intent": "提供方案乙价格、额度和合约信息",
+      "assistant_intent": "识别乙的容量优势并锁定长期合约风险",
+      "semantic_goal": "建立方案乙在可靠性和灵活性之间的取舍",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A004",
+        "user_onset_after_text": "所以结转不是长期累积，只能跨一个月；低用量月之后最多能为下月增加缓冲。真正的短板是超过可用高速额度后，1 Mbps通常难以保证视频会议。再看乙吧。",
+        "assistant_stop_after_text": "所以结转不是长期累积，只能跨一个月；低用量月之后最多能为下月增加缓冲。真正的短板是超过可用高速额度后，1 Mbps通常难以保证视频会议。再看乙吧。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U06",
+      "assistant_id": "A006",
+      "user_utterance": "乙超过八十GB后限速到3 Mbps，不额外收费。合约内能升档，不能免费降档；提前解约或换低价档，按剩余月费的百分之二十收费，最高二百元。",
+      "assistant_utterance": "乙的保障更强，但锁定成本也更高。即使用量回落，仍要付到第二年的69元；提前降档又可能承担最高200元。它更像用长期承诺换流量余量。方案丙呢？",
+      "user_intent": "补充方案乙限速和提前变更规则",
+      "assistant_intent": "说明乙的保障价值及长期锁定成本",
+      "semantic_goal": "明确选择乙需要承担的降档和退出代价",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A005",
+        "user_onset_after_text": "乙的80 GB足以覆盖你近期峰值和多数出差增量，但通话额度依然用不满。它是否值得，主要看超量速度、提前降档和解约成本。",
+        "assistant_stop_after_text": "乙的80 GB足以覆盖你近期峰值和多数出差增量，但通话额度依然用不满。它是否值得，主要看超量速度、提前降档和解约成本。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U07",
+      "assistant_id": "A007",
+      "user_utterance": "丙每月四十五元，含四十GB和三百分钟，价格不会到期上涨，合约十二个月，流量不能结转。",
+      "assistant_utterance": "丙的基础价稳定，但40 GB已经低于你十月用量。是否划算完全取决于超量怎么收费，以及加购后有没有更低的限速门槛。",
+      "user_intent": "提供方案丙基础价格、额度和合约期",
+      "assistant_intent": "指出丙的基础额度不足并询问超量机制",
+      "semantic_goal": "判断低价方案是否会因超量产生隐性成本",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A006",
+        "user_onset_after_text": "乙的保障更强，但锁定成本也更高。即使用量回落，仍要付到第二年的69元；提前降档又可能承担最高200元。它更像用长期承诺换流量余量。方案丙呢？",
+        "assistant_stop_after_text": "乙的保障更强，但锁定成本也更高。即使用量回落，仍要付到第二年的69元；提前降档又可能承担最高200元。它更像用长期承诺换流量余量。方案丙呢？"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U08",
+      "assistant_id": "A008",
+      "user_utterance": "丙的小字是，超过四十GB会自动买八元三GB的加油包，每月最多五次；第五个用完后限速到512 Kbps。提前换方案还要收八十元。三种套餐都允许开热点。",
+      "assistant_utterance": "按47至55 GB的高用量月估算，丙每月会触发三到五个包，实际月费变成69至85元；超过55 GB后，512 Kbps更不适合会议。你预计高用量月大概多少，能接受多长合约？",
+      "user_intent": "读取方案丙超量、限速、变更及热点条款",
+      "assistant_intent": "量化丙的高用量成本并追问频率与合约偏好",
+      "semantic_goal": "揭示方案丙低宣传价背后的费用和限速风险",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01",
+        "T02"
+      ],
+      "timing": {
+        "target_assistant_id": "A007",
+        "user_onset_after_text": "丙的基础价稳定，但40 GB已经低于你十月用量。是否划算完全取决于超量怎么收费，以及加购后有没有更低的限速门槛。",
+        "assistant_stop_after_text": "丙的基础价稳定，但40 GB已经低于你十月用量。是否划算完全取决于超量怎么收费，以及加购后有没有更低的限速门槛。"
+      },
+      "pause_cue": {
+        "after_text": "丙的小字是，",
+        "duration_ms": 650
+      }
+    },
+    {
+      "user_id": "U09",
+      "assistant_id": "A009",
+      "user_utterance": "未来四个月如果还是每月两次出差，我估计会在四十七到五十五GB。之后可能回到三十到四十GB。十二个月我能接受，二十四个月就有点犹豫，而且1 Mbps开会肯定不想忍。",
+      "assistant_utterance": "那要同时看两个阶段：前四个月甲可能贴近上限，乙最稳；之后若回落，甲的49元和自由变更更占优，乙却进入69元阶段。丙在高用量期既不便宜也不可靠。",
+      "user_intent": "给出高低用量情景及合约和限速偏好",
+      "assistant_intent": "按近期高需求和后期回落分别比较三方案",
+      "semantic_goal": "形成包含需求变化和个人底线的比较框架",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A008",
+        "user_onset_after_text": "按47至55 GB的高用量月估算，丙每月会触发三到五个包，实际月费变成69至85元；超过55 GB后，512 Kbps更不适合会议。你预计高用量月大概多少，能接受多长合约？",
+        "assistant_stop_after_text": "按47至55 GB的高用量月估算，丙每月会触发三到五个包，实际月费变成69至85元；超过55 GB后，512 Kbps更不适合会议。你预计高用量月大概多少，能接受多长合约？"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U10",
+      "assistant_id": "A010",
+      "user_utterance": "那先帮我排掉明显不合适的，我不想为了省几块钱老买加油包。",
+      "assistant_utterance": "按你的底线，丙风险最大：高用量时要反复买包，最高55 GB后还会降到512 Kbps。甲的1 Mbps也不适合视频会议，乙的3 Mbps相对可用，但最好仍把它当应急速度。",
+      "user_intent": "要求先排除明显不适合的方案",
+      "assistant_intent": "依据费用和会议可靠性筛除高风险方案",
+      "semantic_goal": "缩小候选范围并保留关键限速警示",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A009",
+        "user_onset_after_text": "那要同时看两个阶段：前四个月甲可能贴近上限，乙最稳；之后若回落，甲的49元和自由变更更占优，乙却进入69元阶段。丙在高用量期既不便宜也不可靠。",
+        "assistant_stop_after_text": "那要同时看两个阶段：前四个月甲可能贴近上限，乙最稳；之后若回落，甲的49元和自由变更更占优，乙却进入69元阶段。丙在高用量期既不便宜也不可靠。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U11",
+      "assistant_id": "A011",
+      "user_utterance": "对，丙先排除。甲和乙到底该怎么划线？",
+      "assistant_utterance": "分界线是高流量月是否经常超过50 GB。多数月份不超时，甲靠结转和灵活性更合适；若经常超过，且会议不能承担降到1 Mbps的风险，乙的80 GB才值这笔溢价。",
+      "user_intent": "打断确认排除丙并追问甲乙选择标准",
+      "assistant_intent": "给出甲乙之间可操作的用量与可靠性分界线",
+      "semantic_goal": "将剩余方案的取舍转化为明确判断条件",
+      "act_ref": "A02",
+      "timing_refs": [
+        "T03"
+      ],
+      "timing": {
+        "target_assistant_id": "A010",
+        "user_onset_after_text": "按你的底线，丙风险最大：高用量时要反复买包",
+        "assistant_stop_after_text": "按你的底线，丙风险最大：高用量时要反复买包，最高"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U12",
+      "assistant_id": "A012",
+      "user_utterance": "先按十二个月算一下吧，把前四个月高用量可能产生的费用也放进去。",
+      "assistant_utterance": "十二个月，甲为528元，乙为588元。丙基础费540元；若前四个月均用47至55 GB，每月加24至40元，全年约636至700元。因此丙反而最贵，甲比乙少60元。",
+      "user_intent": "要求计算十二个月总费用并计入可预见超量费",
+      "assistant_intent": "按已建立的高用量情景计算三方案一年成本",
+      "semantic_goal": "获得包含优惠期和超量费用的年度比较",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A011",
+        "user_onset_after_text": "分界线是高流量月是否经常超过50 GB。多数月份不超时，甲靠结转和灵活性更合适；若经常超过，且会议不能承担降到1 Mbps的风险，乙的80 GB才值这笔溢价。",
+        "assistant_stop_after_text": "分界线是高流量月是否经常超过50 GB。多数月份不超时，甲靠结转和灵活性更合适；若经常超过，且会议不能承担降到1 Mbps的风险，乙的80 GB才值这笔溢价。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U13",
+      "assistant_id": "A013",
+      "user_utterance": "两年呢？还是按只有前四个月高用量、后面不超过四十GB来算。",
+      "assistant_utterance": "二十四个月，甲是1116元，乙是1416元，相差300元。丙基础费1080元，加前四个月加油包后约1176至1240元，但还要承受十二个月合约和高用量期的限速风险。",
+      "user_intent": "要求按用量回落情景计算二十四个月费用",
+      "assistant_intent": "纳入优惠结束价格并计算两年总成本",
+      "semantic_goal": "看清长期价格差和需求回落后的成本负担",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A012",
+        "user_onset_after_text": "十二个月，甲为528元，乙为588元。丙基础费540元；若前四个月均用47至55 GB，每月加24至40元，全年约636至700元。因此丙反而最贵，甲比乙少60元。",
+        "assistant_stop_after_text": "十二个月，甲为528元，乙为588元。丙基础费540元；若前四个月均用47至55 GB，每月加24至40元，全年约636至700元。因此丙反而最贵，甲比乙少60元。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U14",
+      "assistant_id": "A014",
+      "user_utterance": "如果四个月后出差真的少了，甲是不是就更有优势？",
+      "assistant_utterance": "是。用量回到30至40 GB后，甲每月50 GB够用，还能把当月剩余额度带到下月一次；更重要的是可次月降档。乙仍需履行合约并进入69元阶段，闲置容量会越来越贵。",
+      "user_intent": "追问用量回落时方案甲的长期优势",
+      "assistant_intent": "说明低用量情景下甲的容量、结转和降档价值",
+      "semantic_goal": "确认需求下降后灵活性如何影响长期适配度",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A013",
+        "user_onset_after_text": "二十四个月，甲是1116元，乙是1416元，相差300元。丙基础费1080元，加前四个月加油包后约1176至1240元，但还要承受十二个月合约和高用量期的限速风险。",
+        "assistant_stop_after_text": "二十四个月，甲是1116元，乙是1416元，相差300元。丙基础费1080元，加前四个月加油包后约1176至1240元，但还要承受十二个月合约和高用量期的限速风险。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U15",
+      "assistant_id": "A015",
+      "user_utterance": "可我最担心的还是出差开会，万一甲超过五十GB，省下的钱可能不值。",
+      "assistant_utterance": "这个异议成立。若你预计前四个月多数都会超过50 GB，乙多出的60元首年费用可视为会议流量保险；若只是偶尔接近或超过，甲省下两年300元且能随时调整，更符合不确定性。",
+      "user_intent": "质疑仅按费用选择甲并强调会议可靠性",
+      "assistant_intent": "承认可靠性风险并量化乙的保险价值边界",
+      "semantic_goal": "在费用节省与关键会议保障之间做最终权衡",
+      "act_ref": "A05",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A014",
+        "user_onset_after_text": "是。用量回到30至40 GB后，甲每月50 GB够用，还能把当月剩余额度带到下月一次；更重要的是可次月降档。乙仍需履行合约并进入69元阶段，闲置容量会越来越贵。",
+        "assistant_stop_after_text": "是。用量回到30至40 GB后，甲每月50 GB够用，还能把当月剩余额度带到下月一次；更重要的是可次月降档。乙仍需履行合约并进入69元阶段，闲置容量会越来越贵。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U16",
+      "assistant_id": "A016",
+      "user_utterance": "我不想为可能用不到的流量多花三百元还锁两年。按现在这些信息，给我一个明确建议吧。",
+      "assistant_utterance": "建议选甲，丙排除，乙作为高流量确定持续时的备选。依据是近期峰值46.1 GB仍低于甲的50 GB，两年少付300元且可次月变更。前四个月重点观察是否反复超过50 GB；若确认会频繁超过，再改选乙。",
+      "user_intent": "表明不愿承担长期锁定并要求最终建议",
+      "assistant_intent": "给出明确选择、排除项、依据和改选触发条件",
+      "semantic_goal": "形成兼顾近期出行、长期费用和灵活性的最终决策",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A015",
+        "user_onset_after_text": "这个异议成立。若你预计前四个月多数都会超过50 GB，乙多出的60元首年费用可视为会议流量保险；若只是偶尔接近或超过，甲省下两年300元且能随时调整，更符合不确定性。",
+        "assistant_stop_after_text": "这个异议成立。若你预计前四个月多数都会超过50 GB，乙多出的60元首年费用可视为会议流量保险；若只是偶尔接近或超过，甲省下两年300元且能随时调整，更符合不确定性。"
+      },
+      "pause_cue": null
+    }
+  ],
+  "backchannels": [
+    {
+      "event_id": "BC01",
+      "target_assistant_id": "A002",
+      "after_text": "这说明新增流量主要和出行、热点有关。",
+      "text": "嗯，对"
+    },
+    {
+      "event_id": "BC02",
+      "target_assistant_id": "A006",
+      "after_text": "乙的保障更强，但锁定成本也更高。",
+      "text": "是"
+    },
+    {
+      "event_id": "BC03",
+      "target_assistant_id": "A009",
+      "after_text": "那要同时看两个阶段：前四个月甲可能贴近上限，乙最稳；",
+      "text": "嗯"
+    },
+    {
+      "event_id": "BC04",
+      "target_assistant_id": "A012",
+      "after_text": "十二个月，甲为528元，乙为588元。",
+      "text": "明白"
+    },
+    {
+      "event_id": "BC05",
+      "target_assistant_id": "A015",
+      "after_text": "这个异议成立。若你预计前四个月多数都会超过50 GB，乙多出的60元首年费用可视为会议流量保险；",
+      "text": "对"
+    }
+  ],
+  "side_speech": [],
+  "environment_events": [
+    {
+      "event_id": "ENV01",
+      "source_id": "ENV01",
+      "target_audio_id": "A002",
+      "placement_fraction": 0.18
+    },
+    {
+      "event_id": "ENV02",
+      "source_id": "ENV02",
+      "target_audio_id": "A006",
+      "placement_fraction": 0.47
+    },
+    {
+      "event_id": "ENV03",
+      "source_id": "ENV03",
+      "target_audio_id": "A011",
+      "placement_fraction": 0.31
+    },
+    {
+      "event_id": "ENV04",
+      "source_id": "ENV04",
+      "target_audio_id": "A015",
+      "placement_fraction": 0.56
+    }
+  ]
+}

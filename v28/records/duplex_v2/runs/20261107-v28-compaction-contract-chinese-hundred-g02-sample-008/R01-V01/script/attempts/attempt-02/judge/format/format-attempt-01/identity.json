@@ -1,0 +1,4019 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 14 轮，允许 13–15 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 旁语仅限第三方或机器，不包含用户说着说着转向旁人的模式；声音 profile 必须只描述声音。旁语不提供隐藏关键任务材料，不被助手当成正式用户新请求，不使助手停顿或另起回答。声景未支持此来源时不应凭空编人或设备。30%–70% 音量合规即可。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 和 voice_profile 必须逐字匹配对应源，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g02-sample-008-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 309606324,
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g02/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g02/relay-state",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D10",
+          "domain": "家庭、空间整理与日常维护",
+          "scenario_id": "D10-S07",
+          "scenario": "搬家准备"
+        },
+        "task_style": "结构化整理",
+        "task_instance": {
+          "goal": "我会陆续提供各个房间的物品、打包状态和搬家当天仍需使用的东西，请据此整理成一份分区清单：区分优先装箱、最后装箱和不应装箱的物品，标出尚未决定或需要我补充确认的项目，并按搬家前、搬家当天和到新住处后的顺序排列。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "第一次独立搬家的租客，负责整理自己的两居室住处和搬家当天的物品安排",
+          "task_familiarity": "low"
+        },
+        "voice_profile": "女性，二十多岁，音色清亮但略显拘谨，吐字清楚，语速偏快；整体状态克制，遇到需要核对的细节时会显得稍微紧绷。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "formal",
+          "directness": "direct",
+          "emotional_expressiveness": "balanced",
+          "verbosity": "brief",
+          "initiative": "low",
+          "caution": "high",
+          "patience": "low",
+          "behavioral_notes": [
+            "通常用简短、明确的句子提出当前问题，不主动展开过多背景。",
+            "对分类依据和未确认的信息较敏感，发现范围不清时会要求先厘清再继续。",
+            "等待时间过长时容易显出不耐烦，但表达仍保持克制和礼貌。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "medium",
+        "target_turns": 14,
+        "min_turns": 13,
+        "max_turns": 15
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v2",
+        "seed": 963994429,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "third_party",
+          "machine"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "现在是2026年11月7日星期六晚上，用户独自在杭州市一套两居室出租屋里清点物品，搬家公司约定于11月10日上午九点上门。她第一次独立负责整套住处的搬家，白天还要上班，实际可用于整理的时间只剩周末和周一晚上，因此希望先厘清装箱顺序，避免临时返工。屋内包括主卧、作为书房使用的次卧、客厅、厨房、卫生间和玄关，部分书籍与换季衣物已经装箱，但箱体标签尚未统一。她准备了十二个纸箱、两只透明收纳箱、封箱胶带、记号笔和三种颜色的标签贴，暂时不确定这些容器是否足够。日常床品、洗漱用品、工作电脑、网络设备、少量厨具和常用药仍在使用，不能因为提前打包而影响搬家前两天的生活与周一工作。身份证件、租赁文件、首饰和新旧住处钥匙已经集中到一个随身包旁，但尚未逐项复核。厨房里还有冷藏食物和正在使用的电热水壶，用户没有决定哪些食物要带走、吃完或处理。卫生间内既有日常用品，也有已经开封的清洁液，液体运输与分类需要格外谨慎。出租屋自带的微波炉不能随搬家物品带走，运营商提供的光猫也需要与用户自有设备区分。两盆绿植、落地镜和打印机是否由搬家公司承运尚未确认，因此不能直接归入普通纸箱。用户手边有一页按房间写下的初步盘点记录，但其中混有已装箱、仍在使用、应随身携带和归属不明的项目。她希望后续每补充一批信息，就能更新对应分区，而不是等全部盘点结束后一次重做。当前最优先的是形成清晰的时间顺序和待确认标记，同时保留搬家当天立即可用的基本物品。",
+        "task_reference_data": [
+          "用户手边的主卧盘点记录写着：换季衣物约二十件已经放入两个纸箱；日常衣物、枕头、被子和床单仍在使用；床头抽屉里还有眼镜盒、充电线和常用药。该页已由用户粗略核对，但纸箱尚未贴房间标签。",
+          "用户手边的次卧记录写着：二十六本书中已有十八本装箱，八本仍在书架；笔记本电脑、显示器、键盘和耳机需要使用到11月9日下班后；打印机尚未决定自行搬运还是交给搬家公司。该记录目前可现场读取。",
+          "用户手边的客厅记录写着：电视已断电但尚未拆线，路由器仍在使用；光猫属于运营商，不能与用户自有路由器混放；落地镜和两盆绿植尚未确认是否在搬家公司承运范围内。设备归属由用户根据机身标签做过初步核对。",
+          "用户手边的厨房记录写着：六只盘子中四只已用纸包好，另两只仍在使用；炒锅、菜刀、电热水壶和一套餐具尚未打包；冰箱里有鸡蛋六枚、牛奶一盒和两份冷冻食品。食物去留及搬家当天是否需要烧水尚未决定。",
+          "用户手边的卫生间记录写着：牙刷、毛巾、吹风机和基础洗漱用品每天使用；未拆封纸品可提前整理；一瓶开封的含氯漂白清洁剂和一瓶酸性洁厕剂仍分别放在洗手池下方。液体是否携带尚未决定。",
+          "用户手边的玄关记录写着：雨伞两把、常穿鞋三双、备用鞋六双、折叠购物袋四只；旧住处钥匙、新住处钥匙和门禁卡放在随身包旁。鞋和雨具还没有分配容器。",
+          "用户已经集中到随身包旁的物品包括身份证、租赁合同、新住处交接文件、首饰盒、钱包和充电宝；目前只确认了类别，没有逐件清点数量。该信息来自用户今晚的现场整理。",
+          "现有打包物资为十二个纸箱、两只透明收纳箱、两卷封箱胶带、一支黑色记号笔，以及红、蓝、黄色标签贴各一叠；用户尚未为颜色规定用途，也没有确认纸箱是否足够。数量来自用户今晚的现场点数。",
+          "出租屋厨房里的微波炉带有房东资产标签，不能作为用户物品搬走；该标签用户已经看到并记在盘点页边缘。"
+        ],
+        "environment_audio": "室内整体安静，近处只有用户轻微走动和整理物品时产生的自然底噪。关闭的窗户隔开了大部分室外声音，背景音量稳定且很低。",
+        "estimated_snr_db": 34,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "清单需按房间分区，并将物品分别标为优先装箱、最后装箱或不应装箱。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "整体安排需依次覆盖搬家前、搬家当天和到达新住处后三个阶段。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C03",
+            "text": "归属、去留、承运方式或使用时间尚不明确的项目必须保留待确认标记，不得代替用户作出假设。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C04",
+            "text": "截至11月9日下班仍需使用的工作与生活用品必须保持可取用，不能提前封入普通搬家箱。",
+            "kind": "hard"
+          }
+        ],
+        "safety_limits": [
+          {
+            "limit_id": "L01",
+            "text": "开封的含氯漂白清洁剂与酸性洁厕剂不得混装、混合或在同一密闭容器内泄漏接触；若运输，须分别直立密封。",
+            "severity": "critical"
+          },
+          {
+            "limit_id": "L02",
+            "text": "身份证件、钥匙、租赁文件、首饰、钱包和常用药不得放入交由搬家公司统一运输的普通纸箱，应由用户自行保管。",
+            "severity": "hard"
+          },
+          {
+            "limit_id": "L03",
+            "text": "仍在通电或运行的电器与网络设备不得直接拆卸装箱，应先正常关机或断电并确认不再需要使用。",
+            "severity": "hard"
+          }
+        ],
+        "soundscape_plan": {
+          "mode": "quiet",
+          "ambient_layers": [],
+          "environment_events": [],
+          "schema": "duplex_v2.soundscape_plan.v3",
+          "side_speech_sources": [],
+          "side_speech_count": 0,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v2",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v2",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611073002,
+              "slot": 7,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "crowd",
+                  "fan",
+                  "traffic",
+                  "wind",
+                  "birds",
+                  "rain"
+                ],
+                "event": [
+                  "doorbell",
+                  "water_tap",
+                  "keyboard",
+                  "footsteps",
+                  "paper",
+                  "door"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-86343",
+                  "birds-fsd50k-eval-319512",
+                  "birds-fsd50k-eval-57907"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-121877",
+                  "crowd-fsd50k-eval-340358",
+                  "crowd-fsd50k-eval-185058"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-419427",
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-235362"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-382582",
+                  "rain-fsd50k-eval-21189",
+                  "rain-fsd50k-eval-238016"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-124020",
+                  "traffic-fsd50k-eval-235541",
+                  "traffic-fsd50k-eval-232686"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113176",
+                  "wind-fsd50k-eval-113175",
+                  "wind-fsd50k-eval-113173"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-71212",
+                  "door-fsd50k-eval-119077",
+                  "door-fsd50k-eval-209519"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-332563",
+                  "doorbell-fsd50k-eval-426594",
+                  "doorbell-fsd50k-eval-348322"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-153104",
+                  "footsteps-fsd50k-eval-272381",
+                  "footsteps-fsd50k-eval-392303"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-399740",
+                  "keyboard-fsd50k-eval-411545"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-343098",
+                  "paper-fsd50k-eval-82562",
+                  "paper-fsd50k-eval-121200"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-232499",
+                  "water_tap-fsd50k-eval-402128",
+                  "water_tap-fsd50k-eval-402127"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v2",
+              "seed": 963994429,
+              "mode": "quiet",
+              "discrete_event_target": 0,
+              "max_ambient_layers": 2,
+              "side_speech_requested": false,
+              "speech_kind_preferences": [
+                "third_party",
+                "machine"
+              ]
+            },
+            "control_sha256": "8301f2b50916a57dcd80b631ae4dc61f44d17d8096a5d21f6a239421946e4884",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v3",
+              "mode": "quiet",
+              "ambient_layers": [],
+              "environment_events": [],
+              "side_speech_eligibility": {
+                "third_party": {
+                  "compatible": false,
+                  "reason": "用户独自在出租屋内整理，当前故事没有已建立的第三方在场。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "场景中的电器和网络设备未被设定为会发出可辨语音的设备。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "a1256ca71621eb41f71434b57542118e5cec3f04d5a8e81522bd04087041e10e",
+            "aggregate_environment_audio": "室内整体安静，近处只有用户轻微走动和整理物品时产生的自然底噪。关闭的窗户隔开了大部分室外声音，背景音量稳定且很低。",
+            "draws": [],
+            "speech_selection": {
+              "requested": false,
+              "compatible_kinds": [],
+              "selected_kind": null,
+              "outcome": "not_requested",
+              "assessments": {
+                "third_party": {
+                  "compatible": false,
+                  "reason": "用户独自在出租屋内整理，当前故事没有已建立的第三方在场。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "场景中的电器和网络设备未被设定为会发出可辨语音的设备。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v2",
+      "title": "两居室搬家分区装箱清单",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。",
+          "assistant_utterance": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。",
+          "user_intent": "说明搬家时间和整理方式，并提供首批主卧物品信息",
+          "assistant_intent": "建立持续更新的清单框架并完成主卧首批分类",
+          "semantic_goal": "形成按房间和装箱优先级更新的主卧清单",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。",
+          "assistant_utterance": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。",
+          "user_intent": "补充主卧抽屉物品和现有箱体标签状态",
+          "assistant_intent": "更新主卧分类并突出常用药的随身保管要求",
+          "semantic_goal": "明确抽屉物品去向并补上已装箱物品的标签任务",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。",
+            "assistant_stop_after_text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。",
+          "assistant_utterance": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标待确认承运方式，不并入普通纸箱。",
+          "user_intent": "提供次卧书籍、工作设备和打印机信息",
+          "assistant_intent": "按使用期限分类次卧物品，并为打印机保留待确认状态",
+          "semantic_goal": "在不影响周一工作的前提下安排次卧装箱顺序",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。",
+            "assistant_stop_after_text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。",
+          "assistant_utterance": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。",
+          "user_intent": "打断当前播报并限制打印机的分类范围",
+          "assistant_intent": "按用户要求撤除任何预设处理方式，仅保留待确认标记",
+          "semantic_goal": "避免在承运方式未定时提前安排打印机装箱",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机",
+            "assistant_stop_after_text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。",
+          "assistant_utterance": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。",
+          "user_intent": "提供客厅设备、运营商资产和特殊物品信息",
+          "assistant_intent": "分类客厅物品并保留镜子和绿植的承运待确认状态",
+          "semantic_goal": "避免提前拆除网络设备或误装非自有设备",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。",
+            "assistant_stop_after_text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U06",
+          "assistant_id": "A006",
+          "user_utterance": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。",
+          "assistant_utterance": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。",
+          "user_intent": "追问光猫在清单中的准确分类",
+          "assistant_intent": "区分使用时间、资产归属和最终去向，避免擅自判断",
+          "semantic_goal": "获得不混淆光猫归属与装箱顺序的明确标记",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A005",
+            "user_onset_after_text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。",
+            "assistant_stop_after_text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U07",
+          "assistant_id": "A007",
+          "user_utterance": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，冰箱里还有六枚鸡蛋、一盒牛奶和两份冷冻食品。",
+          "assistant_utterance": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。",
+          "user_intent": "提供厨房餐具、厨具和食品盘点",
+          "assistant_intent": "按当前使用状态分类厨房物品，并标出食品去留和刀具包装要求",
+          "semantic_goal": "形成厨房装箱顺序并保留食品决策空间",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A006",
+            "user_onset_after_text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。",
+            "assistant_stop_after_text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          },
+          "pause_cue": {
+            "after_text": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U08",
+          "assistant_id": "A008",
+          "user_utterance": "搬家当天我还要烧水，所以水壶确定最后装。食品怎么处理我现在还是没决定。",
+          "assistant_utterance": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。",
+          "user_intent": "确定水壶的使用需求，同时维持食品去留未定",
+          "assistant_intent": "修改水壶分类并保持食品的待确认状态",
+          "semantic_goal": "确保搬家当天和到新住处后都能及时使用水壶",
+          "act_ref": "A04",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A007",
+            "user_onset_after_text": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。",
+            "assistant_stop_after_text": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U09",
+          "assistant_id": "A009",
+          "user_utterance": "卫生间每天用牙刷、毛巾、吹风机和基础洗漱用品，未拆封纸品可以先收。洗手池下面还有开封的含氯漂白剂和酸性洁厕剂，都没决定带不带。",
+          "assistant_utterance": "卫生间：未拆封纸品优先装；牙刷、毛巾、吹风机和洗漱品最后装。两瓶清洁剂都标待确认；含氯漂白剂与酸性洁厕剂绝不能混装，若要运输，必须分别直立密封。",
+          "user_intent": "提供卫生间日用品、纸品和两种清洁剂信息",
+          "assistant_intent": "完成卫生间分类并明确两种清洁剂的关键安全限制",
+          "semantic_goal": "在保留日常使用物品的同时避免危险化学品接触",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A008",
+            "user_onset_after_text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。",
+            "assistant_stop_after_text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U10",
+          "assistant_id": "A010",
+          "user_utterance": "那即使都密封，也不能把这两瓶放进同一个透明收纳箱，对吗？",
+          "assistant_utterance": "对，不能放在同一密闭收纳箱里。若最终携带，应分别直立密封、各自使用独立防漏容器并分开放置；运输决定仍标待确认。",
+          "user_intent": "打断并核实两种清洁剂能否共用同一收纳箱",
+          "assistant_intent": "明确禁止共箱，并给出分别防漏和分开放置的安全边界",
+          "semantic_goal": "确认两种不相容清洁剂必须彻底分开运输",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A009",
+            "user_onset_after_text": "卫生间：未拆封纸品优先装；牙刷、毛巾、吹风机和洗漱品最后装。两瓶清洁剂都标待确认；含氯漂白剂与酸性洁厕剂绝不能混装",
+            "assistant_stop_after_text": "卫生间：未拆封纸品优先装；牙刷、毛巾、吹风机和洗漱品最后装。两瓶清洁剂都标待确认；含氯漂白剂与酸性洁厕剂绝不能混装，若"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U11",
+          "assistant_id": "A011",
+          "user_utterance": "玄关有两把雨伞、三双常穿鞋、六双备用鞋和四只折叠购物袋。随身包旁是身份证、合同、交接文件、首饰盒、钱包、充电宝、两处钥匙和门禁卡，还没逐件清点。",
+          "assistant_utterance": "玄关：备用鞋和折叠购物袋优先装；常穿鞋、雨伞最后装。证件、合同、交接文件、首饰、钱包、充电宝、两处钥匙和门禁卡全部随身，搬家前逐项清点。",
+          "user_intent": "补充玄关物品和随身重要物品的现状",
+          "assistant_intent": "分类鞋具雨具，并将重要物品列入随身清点任务",
+          "semantic_goal": "避免重要物品进入搬家公司运输的普通纸箱",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A010",
+            "user_onset_after_text": "对，不能放在同一密闭收纳箱里。若最终携带，应分别直立密封、各自使用独立防漏容器并分开放置；运输决定仍标待确认。",
+            "assistant_stop_after_text": "对，不能放在同一密闭收纳箱里。若最终携带，应分别直立密封、各自使用独立防漏容器并分开放置；运输决定仍标待确认。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U12",
+          "assistant_id": "A012",
+          "user_utterance": "我有十二个纸箱、两个透明收纳箱，还有红蓝黄三种标签。颜色怎么分？这些箱子够不够也请标出来。",
+          "assistant_utterance": "建议蓝色标优先装箱，红色标最后装箱，黄色标待确认；随身和不应装箱直接写字，避免混淆。容器是否足够暂列待确认，要等剩余物品体积和特殊物品承运方式明确。",
+          "user_intent": "询问标签配色并要求判断容器是否充足",
+          "assistant_intent": "建立清晰的标签规则，同时避免在体积未知时断言容器足够",
+          "semantic_goal": "统一箱体标识并保留容器数量的待确认项",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A011",
+            "user_onset_after_text": "玄关：备用鞋和折叠购物袋优先装；常穿鞋、雨伞最后装。证件、合同、交接文件、首饰、钱包、充电宝、两处钥匙和门禁卡全部随身，搬家前逐项清点。",
+            "assistant_stop_after_text": "玄关：备用鞋和折叠购物袋优先装；常穿鞋、雨伞最后装。证件、合同、交接文件、首饰、钱包、充电宝、两处钥匙和门禁卡全部随身，搬家前逐项清点。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U13",
+          "assistant_id": "A013",
+          "user_utterance": "现在请按搬家前、搬家当天、到新住处后三段，把各房间的清单完整回读一遍，待确认和不应装箱要明确。",
+          "assistant_utterance": "搬家前——主卧：两箱换季衣已装，补贴主卧和衣物标签；眼镜盒、充电线若仍使用，留到最后装；常用药随身。次卧：十八本书已装，八本优先装；打印机只标待确认承运，不进普通箱。客厅：落地镜和两盆绿植待确认承运；电视留待当天拆线，路由器和光猫继续使用。厨房：四只包好的盘子优先装；六枚鸡蛋、一盒牛奶和两份冷冻食品待确认去留。卫生间：未拆封纸品优先装；两瓶清洁剂待确认是否携带。玄关：六双备用鞋、四只购物袋优先装；十二个纸箱和两个透明箱是否够用待确认，按蓝色优先、红色最后、黄色待确认贴标。\n搬家当天——主卧：日常衣物、枕头、被子、床单及仍在用的眼镜盒、充电线最后装，常用药随身。次卧：电脑、显示器、键盘、耳机在十一月九日下班后停用、断电再装；打印机仍待确认。客厅：电视确认断电后拆线，路由器停网断电后最后装；光猫是运营商资产，单独保管、待确认处置，不进普通箱。厨房：两只盘子、炒锅、菜刀、电热水壶和一套餐具最后装，菜刀加护套或单独包裹。卫生间：牙刷、毛巾、吹风机和基础洗漱品最后装；若携带两瓶清洁剂，须分别直立密封、各用独立防漏容器并分开放置，不能共用同一密闭收纳箱。玄关：三双常穿鞋和两把雨伞最后装；身份证、合同、交接文件、首饰盒、钱包、充电宝、两处钥匙和门禁卡逐项清点并随身。随身物品均不进普通箱；当前没有已确认需留在原处的不应装箱物品。\n到新住处后——主卧先取床品、日常衣物和药；次卧先恢复工作设备；客厅按需恢复路由器，光猫仍按运营商处置结果处理；厨房先取水壶和餐具；卫生间先取洗漱品；玄关先核对随身包、钥匙和门禁卡，再按房间拆箱。",
+          "user_intent": "要求按三个时间阶段完整汇总当前清单",
+          "assistant_intent": "整合各房间分类、待确认事项、安全限制和新居取用顺序",
+          "semantic_goal": "获得可直接执行的分阶段搬家清单",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A012",
+            "user_onset_after_text": "建议蓝色标优先装箱，红色标最后装箱，黄色标待确认；随身和不应装箱直接写字，避免混淆。容器是否足够暂列待确认，要等剩余物品体积和特殊物品承运方式明确。",
+            "assistant_stop_after_text": "建议蓝色标优先装箱，红色标最后装箱，黄色标待确认；随身和不应装箱直接写字，避免混淆。容器是否足够暂列待确认，要等剩余物品体积和特殊物品承运方式明确。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U14",
+          "assistant_id": "A014",
+          "user_utterance": "还要补一项：厨房微波炉有房东资产标签，不能搬走。请把它明确放进不应装箱。",
+          "assistant_utterance": "已补入厨房不应装箱：房东微波炉留在原住处，不进入任何搬家箱。搬家前可在机身和清单上标注房东资产，退租交接时再核对。",
+          "user_intent": "补充房东微波炉并指定其分类",
+          "assistant_intent": "将微波炉明确列为不应装箱并保留资产标识",
+          "semantic_goal": "防止误搬出租屋附属资产",
+          "act_ref": "A04",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A013",
+            "user_onset_after_text": "搬家前——主卧：两箱换季衣已装，补贴主卧和衣物标签；眼镜盒、充电线若仍使用，留到最后装；常用药随身。次卧：十八本书已装，八本优先装；打印机只标待确认承运，不进普通箱。客厅：落地镜和两盆绿植待确认承运；电视留待当天拆线，路由器和光猫继续使用。厨房：四只包好的盘子优先装；六枚鸡蛋、一盒牛奶和两份冷冻食品待确认去留。卫生间：未拆封纸品优先装；两瓶清洁剂待确认是否携带。玄关：六双备用鞋、四只购物袋优先装；十二个纸箱和两个透明箱是否够用待确认，按蓝色优先、红色最后、黄色待确认贴标。\n搬家当天——主卧：日常衣物、枕头、被子、床单及仍在用的眼镜盒、充电线最后装，常用药随身。次卧：电脑、显示器、键盘、耳机在十一月九日下班后停用、断电再装；打印机仍待确认。客厅：电视确认断电后拆线，路由器停网断电后最后装；光猫是运营商资产，单独保管、待确认处置，不进普通箱。厨房：两只盘子、炒锅、菜刀、电热水壶和一套餐具最后装，菜刀加护套或单独包裹。卫生间：牙刷、毛巾、吹风机和基础洗漱品最后装；若携带两瓶清洁剂，须分别直立密封、各用独立防漏容器并分开放置，不能共用同一密闭收纳箱。玄关：三双常穿鞋和两把雨伞最后装；身份证、合同、交接文件、首饰盒、钱包、充电宝、两处钥匙和门禁卡逐项清点并随身。随身物品均不进普通箱；当前没有已确认需留在原处的不应装箱物品。\n到新住处后——主卧先取床品、日常衣物和药；次卧先恢复工作设备；客厅按需恢复路由器，光猫仍按运营商处置结果处理；厨房先取水壶和餐具；卫生间先取洗漱品；玄关先核对随身包、钥匙和门禁卡，再按房间拆箱。",
+            "assistant_stop_after_text": "搬家前——主卧：两箱换季衣已装，补贴主卧和衣物标签；眼镜盒、充电线若仍使用，留到最后装；常用药随身。次卧：十八本书已装，八本优先装；打印机只标待确认承运，不进普通箱。客厅：落地镜和两盆绿植待确认承运；电视留待当天拆线，路由器和光猫继续使用。厨房：四只包好的盘子优先装；六枚鸡蛋、一盒牛奶和两份冷冻食品待确认去留。卫生间：未拆封纸品优先装；两瓶清洁剂待确认是否携带。玄关：六双备用鞋、四只购物袋优先装；十二个纸箱和两个透明箱是否够用待确认，按蓝色优先、红色最后、黄色待确认贴标。\n搬家当天——主卧：日常衣物、枕头、被子、床单及仍在用的眼镜盒、充电线最后装，常用药随身。次卧：电脑、显示器、键盘、耳机在十一月九日下班后停用、断电再装；打印机仍待确认。客厅：电视确认断电后拆线，路由器停网断电后最后装；光猫是运营商资产，单独保管、待确认处置，不进普通箱。厨房：两只盘子、炒锅、菜刀、电热水壶和一套餐具最后装，菜刀加护套或单独包裹。卫生间：牙刷、毛巾、吹风机和基础洗漱品最后装；若携带两瓶清洁剂，须分别直立密封、各用独立防漏容器并分开放置，不能共用同一密闭收纳箱。玄关：三双常穿鞋和两把雨伞最后装；身份证、合同、交接文件、首饰盒、钱包、充电宝、两处钥匙和门禁卡逐项清点并随身。随身物品均不进普通箱；当前没有已确认需留在原处的不应装箱物品。\n到新住处后——主卧先取床品、日常衣物和药；次卧先恢复工作设备；客厅按需恢复路由器，光猫仍按运营商处置结果处理；厨房先取水壶和餐具；卫生间先取洗漱品；玄关先核对随身包、钥匙和门禁卡，再按房间拆箱。"
+          },
+          "pause_cue": null
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。",
+          "text": "嗯，明白"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A005",
+          "after_text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。",
+          "text": "好"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A008",
+          "after_text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。",
+          "text": "嗯"
+        },
+        {
+          "event_id": "BC04",
+          "target_assistant_id": "A011",
+          "after_text": "玄关：备用鞋和折叠购物袋优先装；常穿鞋、雨伞最后装。",
+          "text": "明白"
+        },
+        {
+          "event_id": "BC05",
+          "target_assistant_id": "A013",
+          "after_text": "搬家前——主卧：两箱换季衣已装，补贴主卧和衣物标签；眼镜盒、充电线若仍使用，留到最后装；常用药随身。次卧：十八本书已装，八本优先装；打印机只标待确认承运，不进普通箱。",
+          "text": "嗯，继续"
+        }
+      ],
+      "side_speech": [],
+      "environment_events": []
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。",
+          "final_shared_played_prefix": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。",
+          "final_shared_played_prefix": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标待确认承运方式，不并入普通纸箱。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机",
+          "final_shared_played_prefix": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标",
+          "discarded_unheard_tail": "待确认承运方式，不并入普通纸箱。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。",
+          "final_shared_played_prefix": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A005",
+          "at_user_onset_heard_prefix": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。",
+          "final_shared_played_prefix": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，冰箱里还有六枚鸡蛋、一盒牛奶和两份冷冻食品。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A006",
+          "at_user_onset_heard_prefix": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。",
+          "final_shared_played_prefix": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，冰箱里还有六枚鸡蛋、一盒牛奶和两份冷冻食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，冰箱里还有六枚鸡蛋、一盒牛奶和两份冷冻食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "搬家当天我还要烧水，所以水壶确定最后装。食品怎么处理我现在还是没决定。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A007",
+          "at_user_onset_heard_prefix": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。",
+          "final_shared_played_prefix": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，冰箱里还有六枚鸡蛋、一盒牛奶和两份冷冻食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "搬家当天我还要烧水，所以水壶确定最后装。食品怎么处理我现在还是没决定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，冰箱里还有六枚鸡蛋、一盒牛奶和两份冷冻食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "搬家当天我还要烧水，所以水壶确定最后装。食品怎么处理我现在还是没决定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "卫生间每天用牙刷、毛巾、吹风机和基础洗漱用品，未拆封纸品可以先收。洗手池下面还有开封的含氯漂白剂和酸性洁厕剂，都没决定带不带。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A008",
+          "at_user_onset_heard_prefix": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。",
+          "final_shared_played_prefix": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "卫生间：未拆封纸品优先装；牙刷、毛巾、吹风机和洗漱品最后装。两瓶清洁剂都标待确认；含氯漂白剂与酸性洁厕剂绝不能混装，若要运输，必须分别直立密封。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，冰箱里还有六枚鸡蛋、一盒牛奶和两份冷冻食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "搬家当天我还要烧水，所以水壶确定最后装。食品怎么处理我现在还是没决定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "卫生间每天用牙刷、毛巾、吹风机和基础洗漱用品，未拆封纸品可以先收。洗手池下面还有开封的含氯漂白剂和酸性洁厕剂，都没决定带不带。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "卫生间：未拆封纸品优先装；牙刷、毛巾、吹风机和洗漱品最后装。两瓶清洁剂都标待确认；含氯漂白剂与酸性洁厕剂绝不能混装"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，冰箱里还有六枚鸡蛋、一盒牛奶和两份冷冻食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "搬家当天我还要烧水，所以水壶确定最后装。食品怎么处理我现在还是没决定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "卫生间每天用牙刷、毛巾、吹风机和基础洗漱用品，未拆封纸品可以先收。洗手池下面还有开封的含氯漂白剂和酸性洁厕剂，都没决定带不带。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "卫生间：未拆封纸品优先装；牙刷、毛巾、吹风机和洗漱品最后装。两瓶清洁剂都标待确认；含氯漂白剂与酸性洁厕剂绝不能混装，若"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "那即使都密封，也不能把这两瓶放进同一个透明收纳箱，对吗？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A009",
+          "at_user_onset_heard_prefix": "卫生间：未拆封纸品优先装；牙刷、毛巾、吹风机和洗漱品最后装。两瓶清洁剂都标待确认；含氯漂白剂与酸性洁厕剂绝不能混装",
+          "final_shared_played_prefix": "卫生间：未拆封纸品优先装；牙刷、毛巾、吹风机和洗漱品最后装。两瓶清洁剂都标待确认；含氯漂白剂与酸性洁厕剂绝不能混装，若",
+          "discarded_unheard_tail": "要运输，必须分别直立密封。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "对，不能放在同一密闭收纳箱里。若最终携带，应分别直立密封、各自使用独立防漏容器并分开放置；运输决定仍标待确认。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U11",
+        "assistant_id": "A011",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，冰箱里还有六枚鸡蛋、一盒牛奶和两份冷冻食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "搬家当天我还要烧水，所以水壶确定最后装。食品怎么处理我现在还是没决定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "卫生间每天用牙刷、毛巾、吹风机和基础洗漱用品，未拆封纸品可以先收。洗手池下面还有开封的含氯漂白剂和酸性洁厕剂，都没决定带不带。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "卫生间：未拆封纸品优先装；牙刷、毛巾、吹风机和洗漱品最后装。两瓶清洁剂都标待确认；含氯漂白剂与酸性洁厕剂绝不能混装，若"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "那即使都密封，也不能把这两瓶放进同一个透明收纳箱，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "对，不能放在同一密闭收纳箱里。若最终携带，应分别直立密封、各自使用独立防漏容器并分开放置；运输决定仍标待确认。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，冰箱里还有六枚鸡蛋、一盒牛奶和两份冷冻食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "搬家当天我还要烧水，所以水壶确定最后装。食品怎么处理我现在还是没决定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "卫生间每天用牙刷、毛巾、吹风机和基础洗漱用品，未拆封纸品可以先收。洗手池下面还有开封的含氯漂白剂和酸性洁厕剂，都没决定带不带。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "卫生间：未拆封纸品优先装；牙刷、毛巾、吹风机和洗漱品最后装。两瓶清洁剂都标待确认；含氯漂白剂与酸性洁厕剂绝不能混装，若"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "那即使都密封，也不能把这两瓶放进同一个透明收纳箱，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "对，不能放在同一密闭收纳箱里。若最终携带，应分别直立密封、各自使用独立防漏容器并分开放置；运输决定仍标待确认。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "玄关有两把雨伞、三双常穿鞋、六双备用鞋和四只折叠购物袋。随身包旁是身份证、合同、交接文件、首饰盒、钱包、充电宝、两处钥匙和门禁卡，还没逐件清点。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A010",
+          "at_user_onset_heard_prefix": "对，不能放在同一密闭收纳箱里。若最终携带，应分别直立密封、各自使用独立防漏容器并分开放置；运输决定仍标待确认。",
+          "final_shared_played_prefix": "对，不能放在同一密闭收纳箱里。若最终携带，应分别直立密封、各自使用独立防漏容器并分开放置；运输决定仍标待确认。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "玄关：备用鞋和折叠购物袋优先装；常穿鞋、雨伞最后装。证件、合同、交接文件、首饰、钱包、充电宝、两处钥匙和门禁卡全部随身，搬家前逐项清点。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U12",
+        "assistant_id": "A012",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，冰箱里还有六枚鸡蛋、一盒牛奶和两份冷冻食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "搬家当天我还要烧水，所以水壶确定最后装。食品怎么处理我现在还是没决定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "卫生间每天用牙刷、毛巾、吹风机和基础洗漱用品，未拆封纸品可以先收。洗手池下面还有开封的含氯漂白剂和酸性洁厕剂，都没决定带不带。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "卫生间：未拆封纸品优先装；牙刷、毛巾、吹风机和洗漱品最后装。两瓶清洁剂都标待确认；含氯漂白剂与酸性洁厕剂绝不能混装，若"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "那即使都密封，也不能把这两瓶放进同一个透明收纳箱，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "对，不能放在同一密闭收纳箱里。若最终携带，应分别直立密封、各自使用独立防漏容器并分开放置；运输决定仍标待确认。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "玄关有两把雨伞、三双常穿鞋、六双备用鞋和四只折叠购物袋。随身包旁是身份证、合同、交接文件、首饰盒、钱包、充电宝、两处钥匙和门禁卡，还没逐件清点。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "玄关：备用鞋和折叠购物袋优先装；常穿鞋、雨伞最后装。证件、合同、交接文件、首饰、钱包、充电宝、两处钥匙和门禁卡全部随身，搬家前逐项清点。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，冰箱里还有六枚鸡蛋、一盒牛奶和两份冷冻食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "搬家当天我还要烧水，所以水壶确定最后装。食品怎么处理我现在还是没决定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "卫生间每天用牙刷、毛巾、吹风机和基础洗漱用品，未拆封纸品可以先收。洗手池下面还有开封的含氯漂白剂和酸性洁厕剂，都没决定带不带。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "卫生间：未拆封纸品优先装；牙刷、毛巾、吹风机和洗漱品最后装。两瓶清洁剂都标待确认；含氯漂白剂与酸性洁厕剂绝不能混装，若"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "那即使都密封，也不能把这两瓶放进同一个透明收纳箱，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "对，不能放在同一密闭收纳箱里。若最终携带，应分别直立密封、各自使用独立防漏容器并分开放置；运输决定仍标待确认。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "玄关有两把雨伞、三双常穿鞋、六双备用鞋和四只折叠购物袋。随身包旁是身份证、合同、交接文件、首饰盒、钱包、充电宝、两处钥匙和门禁卡，还没逐件清点。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "玄关：备用鞋和折叠购物袋优先装；常穿鞋、雨伞最后装。证件、合同、交接文件、首饰、钱包、充电宝、两处钥匙和门禁卡全部随身，搬家前逐项清点。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "我有十二个纸箱、两个透明收纳箱，还有红蓝黄三种标签。颜色怎么分？这些箱子够不够也请标出来。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A011",
+          "at_user_onset_heard_prefix": "玄关：备用鞋和折叠购物袋优先装；常穿鞋、雨伞最后装。证件、合同、交接文件、首饰、钱包、充电宝、两处钥匙和门禁卡全部随身，搬家前逐项清点。",
+          "final_shared_played_prefix": "玄关：备用鞋和折叠购物袋优先装；常穿鞋、雨伞最后装。证件、合同、交接文件、首饰、钱包、充电宝、两处钥匙和门禁卡全部随身，搬家前逐项清点。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A011",
+            "after_text": "玄关：备用鞋和折叠购物袋优先装；常穿鞋、雨伞最后装。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "建议蓝色标优先装箱，红色标最后装箱，黄色标待确认；随身和不应装箱直接写字，避免混淆。容器是否足够暂列待确认，要等剩余物品体积和特殊物品承运方式明确。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U13",
+        "assistant_id": "A013",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，冰箱里还有六枚鸡蛋、一盒牛奶和两份冷冻食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "搬家当天我还要烧水，所以水壶确定最后装。食品怎么处理我现在还是没决定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "卫生间每天用牙刷、毛巾、吹风机和基础洗漱用品，未拆封纸品可以先收。洗手池下面还有开封的含氯漂白剂和酸性洁厕剂，都没决定带不带。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "卫生间：未拆封纸品优先装；牙刷、毛巾、吹风机和洗漱品最后装。两瓶清洁剂都标待确认；含氯漂白剂与酸性洁厕剂绝不能混装，若"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "那即使都密封，也不能把这两瓶放进同一个透明收纳箱，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "对，不能放在同一密闭收纳箱里。若最终携带，应分别直立密封、各自使用独立防漏容器并分开放置；运输决定仍标待确认。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "玄关有两把雨伞、三双常穿鞋、六双备用鞋和四只折叠购物袋。随身包旁是身份证、合同、交接文件、首饰盒、钱包、充电宝、两处钥匙和门禁卡，还没逐件清点。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "玄关：备用鞋和折叠购物袋优先装；常穿鞋、雨伞最后装。证件、合同、交接文件、首饰、钱包、充电宝、两处钥匙和门禁卡全部随身，搬家前逐项清点。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "我有十二个纸箱、两个透明收纳箱，还有红蓝黄三种标签。颜色怎么分？这些箱子够不够也请标出来。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "建议蓝色标优先装箱，红色标最后装箱，黄色标待确认；随身和不应装箱直接写字，避免混淆。容器是否足够暂列待确认，要等剩余物品体积和特殊物品承运方式明确。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，冰箱里还有六枚鸡蛋、一盒牛奶和两份冷冻食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "搬家当天我还要烧水，所以水壶确定最后装。食品怎么处理我现在还是没决定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "卫生间每天用牙刷、毛巾、吹风机和基础洗漱用品，未拆封纸品可以先收。洗手池下面还有开封的含氯漂白剂和酸性洁厕剂，都没决定带不带。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "卫生间：未拆封纸品优先装；牙刷、毛巾、吹风机和洗漱品最后装。两瓶清洁剂都标待确认；含氯漂白剂与酸性洁厕剂绝不能混装，若"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "那即使都密封，也不能把这两瓶放进同一个透明收纳箱，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "对，不能放在同一密闭收纳箱里。若最终携带，应分别直立密封、各自使用独立防漏容器并分开放置；运输决定仍标待确认。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "玄关有两把雨伞、三双常穿鞋、六双备用鞋和四只折叠购物袋。随身包旁是身份证、合同、交接文件、首饰盒、钱包、充电宝、两处钥匙和门禁卡，还没逐件清点。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "玄关：备用鞋和折叠购物袋优先装；常穿鞋、雨伞最后装。证件、合同、交接文件、首饰、钱包、充电宝、两处钥匙和门禁卡全部随身，搬家前逐项清点。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "我有十二个纸箱、两个透明收纳箱，还有红蓝黄三种标签。颜色怎么分？这些箱子够不够也请标出来。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "建议蓝色标优先装箱，红色标最后装箱，黄色标待确认；随身和不应装箱直接写字，避免混淆。容器是否足够暂列待确认，要等剩余物品体积和特殊物品承运方式明确。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "现在请按搬家前、搬家当天、到新住处后三段，把各房间的清单完整回读一遍，待确认和不应装箱要明确。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A012",
+          "at_user_onset_heard_prefix": "建议蓝色标优先装箱，红色标最后装箱，黄色标待确认；随身和不应装箱直接写字，避免混淆。容器是否足够暂列待确认，要等剩余物品体积和特殊物品承运方式明确。",
+          "final_shared_played_prefix": "建议蓝色标优先装箱，红色标最后装箱，黄色标待确认；随身和不应装箱直接写字，避免混淆。容器是否足够暂列待确认，要等剩余物品体积和特殊物品承运方式明确。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A011",
+            "after_text": "玄关：备用鞋和折叠购物袋优先装；常穿鞋、雨伞最后装。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "搬家前——主卧：两箱换季衣已装，补贴主卧和衣物标签；眼镜盒、充电线若仍使用，留到最后装；常用药随身。次卧：十八本书已装，八本优先装；打印机只标待确认承运，不进普通箱。客厅：落地镜和两盆绿植待确认承运；电视留待当天拆线，路由器和光猫继续使用。厨房：四只包好的盘子优先装；六枚鸡蛋、一盒牛奶和两份冷冻食品待确认去留。卫生间：未拆封纸品优先装；两瓶清洁剂待确认是否携带。玄关：六双备用鞋、四只购物袋优先装；十二个纸箱和两个透明箱是否够用待确认，按蓝色优先、红色最后、黄色待确认贴标。\n搬家当天——主卧：日常衣物、枕头、被子、床单及仍在用的眼镜盒、充电线最后装，常用药随身。次卧：电脑、显示器、键盘、耳机在十一月九日下班后停用、断电再装；打印机仍待确认。客厅：电视确认断电后拆线，路由器停网断电后最后装；光猫是运营商资产，单独保管、待确认处置，不进普通箱。厨房：两只盘子、炒锅、菜刀、电热水壶和一套餐具最后装，菜刀加护套或单独包裹。卫生间：牙刷、毛巾、吹风机和基础洗漱品最后装；若携带两瓶清洁剂，须分别直立密封、各用独立防漏容器并分开放置，不能共用同一密闭收纳箱。玄关：三双常穿鞋和两把雨伞最后装；身份证、合同、交接文件、首饰盒、钱包、充电宝、两处钥匙和门禁卡逐项清点并随身。随身物品均不进普通箱；当前没有已确认需留在原处的不应装箱物品。\n到新住处后——主卧先取床品、日常衣物和药；次卧先恢复工作设备；客厅按需恢复路由器，光猫仍按运营商处置结果处理；厨房先取水壶和餐具；卫生间先取洗漱品；玄关先核对随身包、钥匙和门禁卡，再按房间拆箱。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U14",
+        "assistant_id": "A014",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，冰箱里还有六枚鸡蛋、一盒牛奶和两份冷冻食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "搬家当天我还要烧水，所以水壶确定最后装。食品怎么处理我现在还是没决定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "卫生间每天用牙刷、毛巾、吹风机和基础洗漱用品，未拆封纸品可以先收。洗手池下面还有开封的含氯漂白剂和酸性洁厕剂，都没决定带不带。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "卫生间：未拆封纸品优先装；牙刷、毛巾、吹风机和洗漱品最后装。两瓶清洁剂都标待确认；含氯漂白剂与酸性洁厕剂绝不能混装，若"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "那即使都密封，也不能把这两瓶放进同一个透明收纳箱，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "对，不能放在同一密闭收纳箱里。若最终携带，应分别直立密封、各自使用独立防漏容器并分开放置；运输决定仍标待确认。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "玄关有两把雨伞、三双常穿鞋、六双备用鞋和四只折叠购物袋。随身包旁是身份证、合同、交接文件、首饰盒、钱包、充电宝、两处钥匙和门禁卡，还没逐件清点。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "玄关：备用鞋和折叠购物袋优先装；常穿鞋、雨伞最后装。证件、合同、交接文件、首饰、钱包、充电宝、两处钥匙和门禁卡全部随身，搬家前逐项清点。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "我有十二个纸箱、两个透明收纳箱，还有红蓝黄三种标签。颜色怎么分？这些箱子够不够也请标出来。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "建议蓝色标优先装箱，红色标最后装箱，黄色标待确认；随身和不应装箱直接写字，避免混淆。容器是否足够暂列待确认，要等剩余物品体积和特殊物品承运方式明确。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "现在请按搬家前、搬家当天、到新住处后三段，把各房间的清单完整回读一遍，待确认和不应装箱要明确。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "搬家前——主卧：两箱换季衣已装，补贴主卧和衣物标签；眼镜盒、充电线若仍使用，留到最后装；常用药随身。次卧：十八本书已装，八本优先装；打印机只标待确认承运，不进普通箱。客厅：落地镜和两盆绿植待确认承运；电视留待当天拆线，路由器和光猫继续使用。厨房：四只包好的盘子优先装；六枚鸡蛋、一盒牛奶和两份冷冻食品待确认去留。卫生间：未拆封纸品优先装；两瓶清洁剂待确认是否携带。玄关：六双备用鞋、四只购物袋优先装；十二个纸箱和两个透明箱是否够用待确认，按蓝色优先、红色最后、黄色待确认贴标。\n搬家当天——主卧：日常衣物、枕头、被子、床单及仍在用的眼镜盒、充电线最后装，常用药随身。次卧：电脑、显示器、键盘、耳机在十一月九日下班后停用、断电再装；打印机仍待确认。客厅：电视确认断电后拆线，路由器停网断电后最后装；光猫是运营商资产，单独保管、待确认处置，不进普通箱。厨房：两只盘子、炒锅、菜刀、电热水壶和一套餐具最后装，菜刀加护套或单独包裹。卫生间：牙刷、毛巾、吹风机和基础洗漱品最后装；若携带两瓶清洁剂，须分别直立密封、各用独立防漏容器并分开放置，不能共用同一密闭收纳箱。玄关：三双常穿鞋和两把雨伞最后装；身份证、合同、交接文件、首饰盒、钱包、充电宝、两处钥匙和门禁卡逐项清点并随身。随身物品均不进普通箱；当前没有已确认需留在原处的不应装箱物品。\n到新住处后——主卧先取床品、日常衣物和药；次卧先恢复工作设备；客厅按需恢复路由器，光猫仍按运营商处置结果处理；厨房先取水壶和餐具；卫生间先取洗漱品；玄关先核对随身包、钥匙和门禁卡，再按房间拆箱。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，冰箱里还有六枚鸡蛋、一盒牛奶和两份冷冻食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "搬家当天我还要烧水，所以水壶确定最后装。食品怎么处理我现在还是没决定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "卫生间每天用牙刷、毛巾、吹风机和基础洗漱用品，未拆封纸品可以先收。洗手池下面还有开封的含氯漂白剂和酸性洁厕剂，都没决定带不带。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "卫生间：未拆封纸品优先装；牙刷、毛巾、吹风机和洗漱品最后装。两瓶清洁剂都标待确认；含氯漂白剂与酸性洁厕剂绝不能混装，若"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "那即使都密封，也不能把这两瓶放进同一个透明收纳箱，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "对，不能放在同一密闭收纳箱里。若最终携带，应分别直立密封、各自使用独立防漏容器并分开放置；运输决定仍标待确认。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "玄关有两把雨伞、三双常穿鞋、六双备用鞋和四只折叠购物袋。随身包旁是身份证、合同、交接文件、首饰盒、钱包、充电宝、两处钥匙和门禁卡，还没逐件清点。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "玄关：备用鞋和折叠购物袋优先装；常穿鞋、雨伞最后装。证件、合同、交接文件、首饰、钱包、充电宝、两处钥匙和门禁卡全部随身，搬家前逐项清点。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "我有十二个纸箱、两个透明收纳箱，还有红蓝黄三种标签。颜色怎么分？这些箱子够不够也请标出来。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "建议蓝色标优先装箱，红色标最后装箱，黄色标待确认；随身和不应装箱直接写字，避免混淆。容器是否足够暂列待确认，要等剩余物品体积和特殊物品承运方式明确。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "现在请按搬家前、搬家当天、到新住处后三段，把各房间的清单完整回读一遍，待确认和不应装箱要明确。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "搬家前——主卧：两箱换季衣已装，补贴主卧和衣物标签；眼镜盒、充电线若仍使用，留到最后装；常用药随身。次卧：十八本书已装，八本优先装；打印机只标待确认承运，不进普通箱。客厅：落地镜和两盆绿植待确认承运；电视留待当天拆线，路由器和光猫继续使用。厨房：四只包好的盘子优先装；六枚鸡蛋、一盒牛奶和两份冷冻食品待确认去留。卫生间：未拆封纸品优先装；两瓶清洁剂待确认是否携带。玄关：六双备用鞋、四只购物袋优先装；十二个纸箱和两个透明箱是否够用待确认，按蓝色优先、红色最后、黄色待确认贴标。\n搬家当天——主卧：日常衣物、枕头、被子、床单及仍在用的眼镜盒、充电线最后装，常用药随身。次卧：电脑、显示器、键盘、耳机在十一月九日下班后停用、断电再装；打印机仍待确认。客厅：电视确认断电后拆线，路由器停网断电后最后装；光猫是运营商资产，单独保管、待确认处置，不进普通箱。厨房：两只盘子、炒锅、菜刀、电热水壶和一套餐具最后装，菜刀加护套或单独包裹。卫生间：牙刷、毛巾、吹风机和基础洗漱品最后装；若携带两瓶清洁剂，须分别直立密封、各用独立防漏容器并分开放置，不能共用同一密闭收纳箱。玄关：三双常穿鞋和两把雨伞最后装；身份证、合同、交接文件、首饰盒、钱包、充电宝、两处钥匙和门禁卡逐项清点并随身。随身物品均不进普通箱；当前没有已确认需留在原处的不应装箱物品。\n到新住处后——主卧先取床品、日常衣物和药；次卧先恢复工作设备；客厅按需恢复路由器，光猫仍按运营商处置结果处理；厨房先取水壶和餐具；卫生间先取洗漱品；玄关先核对随身包、钥匙和门禁卡，再按房间拆箱。"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "还要补一项：厨房微波炉有房东资产标签，不能搬走。请把它明确放进不应装箱。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A013",
+          "at_user_onset_heard_prefix": "搬家前——主卧：两箱换季衣已装，补贴主卧和衣物标签；眼镜盒、充电线若仍使用，留到最后装；常用药随身。次卧：十八本书已装，八本优先装；打印机只标待确认承运，不进普通箱。客厅：落地镜和两盆绿植待确认承运；电视留待当天拆线，路由器和光猫继续使用。厨房：四只包好的盘子优先装；六枚鸡蛋、一盒牛奶和两份冷冻食品待确认去留。卫生间：未拆封纸品优先装；两瓶清洁剂待确认是否携带。玄关：六双备用鞋、四只购物袋优先装；十二个纸箱和两个透明箱是否够用待确认，按蓝色优先、红色最后、黄色待确认贴标。\n搬家当天——主卧：日常衣物、枕头、被子、床单及仍在用的眼镜盒、充电线最后装，常用药随身。次卧：电脑、显示器、键盘、耳机在十一月九日下班后停用、断电再装；打印机仍待确认。客厅：电视确认断电后拆线，路由器停网断电后最后装；光猫是运营商资产，单独保管、待确认处置，不进普通箱。厨房：两只盘子、炒锅、菜刀、电热水壶和一套餐具最后装，菜刀加护套或单独包裹。卫生间：牙刷、毛巾、吹风机和基础洗漱品最后装；若携带两瓶清洁剂，须分别直立密封、各用独立防漏容器并分开放置，不能共用同一密闭收纳箱。玄关：三双常穿鞋和两把雨伞最后装；身份证、合同、交接文件、首饰盒、钱包、充电宝、两处钥匙和门禁卡逐项清点并随身。随身物品均不进普通箱；当前没有已确认需留在原处的不应装箱物品。\n到新住处后——主卧先取床品、日常衣物和药；次卧先恢复工作设备；客厅按需恢复路由器，光猫仍按运营商处置结果处理；厨房先取水壶和餐具；卫生间先取洗漱品；玄关先核对随身包、钥匙和门禁卡，再按房间拆箱。",
+          "final_shared_played_prefix": "搬家前——主卧：两箱换季衣已装，补贴主卧和衣物标签；眼镜盒、充电线若仍使用，留到最后装；常用药随身。次卧：十八本书已装，八本优先装；打印机只标待确认承运，不进普通箱。客厅：落地镜和两盆绿植待确认承运；电视留待当天拆线，路由器和光猫继续使用。厨房：四只包好的盘子优先装；六枚鸡蛋、一盒牛奶和两份冷冻食品待确认去留。卫生间：未拆封纸品优先装；两瓶清洁剂待确认是否携带。玄关：六双备用鞋、四只购物袋优先装；十二个纸箱和两个透明箱是否够用待确认，按蓝色优先、红色最后、黄色待确认贴标。\n搬家当天——主卧：日常衣物、枕头、被子、床单及仍在用的眼镜盒、充电线最后装，常用药随身。次卧：电脑、显示器、键盘、耳机在十一月九日下班后停用、断电再装；打印机仍待确认。客厅：电视确认断电后拆线，路由器停网断电后最后装；光猫是运营商资产，单独保管、待确认处置，不进普通箱。厨房：两只盘子、炒锅、菜刀、电热水壶和一套餐具最后装，菜刀加护套或单独包裹。卫生间：牙刷、毛巾、吹风机和基础洗漱品最后装；若携带两瓶清洁剂，须分别直立密封、各用独立防漏容器并分开放置，不能共用同一密闭收纳箱。玄关：三双常穿鞋和两把雨伞最后装；身份证、合同、交接文件、首饰盒、钱包、充电宝、两处钥匙和门禁卡逐项清点并随身。随身物品均不进普通箱；当前没有已确认需留在原处的不应装箱物品。\n到新住处后——主卧先取床品、日常衣物和药；次卧先恢复工作设备；客厅按需恢复路由器，光猫仍按运营商处置结果处理；厨房先取水壶和餐具；卫生间先取洗漱品；玄关先核对随身包、钥匙和门禁卡，再按房间拆箱。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A011",
+            "after_text": "玄关：备用鞋和折叠购物袋优先装；常穿鞋、雨伞最后装。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC05",
+            "target_assistant_id": "A013",
+            "after_text": "搬家前——主卧：两箱换季衣已装，补贴主卧和衣物标签；眼镜盒、充电线若仍使用，留到最后装；常用药随身。次卧：十八本书已装，八本优先装；打印机只标待确认承运，不进普通箱。",
+            "text": "嗯，继续",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "已补入厨房不应装箱：房东微波炉留在原住处，不进入任何搬家箱。搬家前可在机身和清单上标注房东资产，退租交接时再核对。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A002",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。",
+        "event_text": "嗯，明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC02",
+        "kind": "backchannels",
+        "target_assistant_id": "A005",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。",
+        "event_text": "好",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC03",
+        "kind": "backchannels",
+        "target_assistant_id": "A008",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，冰箱里还有六枚鸡蛋、一盒牛奶和两份冷冻食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "搬家当天我还要烧水，所以水壶确定最后装。食品怎么处理我现在还是没决定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。",
+        "event_text": "嗯",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC04",
+        "kind": "backchannels",
+        "target_assistant_id": "A011",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，冰箱里还有六枚鸡蛋、一盒牛奶和两份冷冻食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "搬家当天我还要烧水，所以水壶确定最后装。食品怎么处理我现在还是没决定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "卫生间每天用牙刷、毛巾、吹风机和基础洗漱用品，未拆封纸品可以先收。洗手池下面还有开封的含氯漂白剂和酸性洁厕剂，都没决定带不带。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "卫生间：未拆封纸品优先装；牙刷、毛巾、吹风机和洗漱品最后装。两瓶清洁剂都标待确认；含氯漂白剂与酸性洁厕剂绝不能混装，若"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "那即使都密封，也不能把这两瓶放进同一个透明收纳箱，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "对，不能放在同一密闭收纳箱里。若最终携带，应分别直立密封、各自使用独立防漏容器并分开放置；运输决定仍标待确认。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "玄关有两把雨伞、三双常穿鞋、六双备用鞋和四只折叠购物袋。随身包旁是身份证、合同、交接文件、首饰盒、钱包、充电宝、两处钥匙和门禁卡，还没逐件清点。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "玄关：备用鞋和折叠购物袋优先装；常穿鞋、雨伞最后装。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "玄关：备用鞋和折叠购物袋优先装；常穿鞋、雨伞最后装。",
+        "event_text": "明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC05",
+        "kind": "backchannels",
+        "target_assistant_id": "A013",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我十一月十日上午九点搬家，想边报物品边更新清单。先记主卧：换季衣物约二十件已装了两箱，日常衣物、枕头、被子和床单还在用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以，我会按房间持续更新，并分成优先装箱、最后装箱、不应装箱和待确认。主卧先记：两箱换季衣物已装箱；日常衣物和床品最后装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "床头抽屉还有眼镜盒、充电线和常用药。那两箱换季衣物还没贴房间标签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "主卧更新：眼镜盒和充电线若这两天还用，列最后装箱；常用药改列随身保管，不进普通搬家箱。两箱换季衣物在搬家前补贴主卧和衣物标签。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "次卧有二十六本书，十八本已经装箱，八本还在书架。电脑、显示器、键盘和耳机要用到十一月九日下班后。打印机也在次卧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "次卧先这样记：十八本书已装箱，八本列优先装箱；电脑、显示器、键盘和耳机列最后装箱，十一月九日下班后再处理。打印机先标"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "等一下，打印机我还没决定自行搬还是交给搬家公司，先只保留待确认。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "好，打印机只记为待确认承运方式，暂不归入优先装箱或最后装箱，也不放进普通纸箱。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "客厅的电视已经断电但没拆线，路由器还在用。光猫是运营商的，落地镜和两盆绿植也没确认搬家公司是否承运。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "客厅：电视列最后装箱，拆线前确认断电；路由器留到搬家当天。光猫标运营商资产，与自有路由器分开。落地镜和两盆绿植只标待确认承运，不先装箱。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "光猫到底算最后装箱，还是不应装箱？这个范围请先说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "先列为最后处理加待确认运营商处置，不归入普通搬家箱。停用网络后再断电，单独保管并保留资产标识；是否带到新住处不能替你确定。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "厨房是六只盘子，四只包好了，两只还在用；炒锅、菜刀、电热水壶和一套餐具没装，冰箱里还有六枚鸡蛋、一盒牛奶和两份冷冻食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "厨房：四只已包盘子可优先装，两只盘子、炒锅、菜刀、水壶和餐具先列最后装箱。冷藏冷冻食品全部标待确认去留；菜刀需加护套或单独包裹。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "搬家当天我还要烧水，所以水壶确定最后装。食品怎么处理我现在还是没决定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "已更新：电热水壶明确为搬家当天最后装箱，并放在到新住处后优先取用区。鸡蛋、牛奶和冷冻食品继续保留待确认，不替你决定带走或处理。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "卫生间每天用牙刷、毛巾、吹风机和基础洗漱用品，未拆封纸品可以先收。洗手池下面还有开封的含氯漂白剂和酸性洁厕剂，都没决定带不带。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "卫生间：未拆封纸品优先装；牙刷、毛巾、吹风机和洗漱品最后装。两瓶清洁剂都标待确认；含氯漂白剂与酸性洁厕剂绝不能混装，若"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "那即使都密封，也不能把这两瓶放进同一个透明收纳箱，对吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "对，不能放在同一密闭收纳箱里。若最终携带，应分别直立密封、各自使用独立防漏容器并分开放置；运输决定仍标待确认。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "玄关有两把雨伞、三双常穿鞋、六双备用鞋和四只折叠购物袋。随身包旁是身份证、合同、交接文件、首饰盒、钱包、充电宝、两处钥匙和门禁卡，还没逐件清点。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "玄关：备用鞋和折叠购物袋优先装；常穿鞋、雨伞最后装。证件、合同、交接文件、首饰、钱包、充电宝、两处钥匙和门禁卡全部随身，搬家前逐项清点。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "我有十二个纸箱、两个透明收纳箱，还有红蓝黄三种标签。颜色怎么分？这些箱子够不够也请标出来。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "建议蓝色标优先装箱，红色标最后装箱，黄色标待确认；随身和不应装箱直接写字，避免混淆。容器是否足够暂列待确认，要等剩余物品体积和特殊物品承运方式明确。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "现在请按搬家前、搬家当天、到新住处后三段，把各房间的清单完整回读一遍，待确认和不应装箱要明确。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "搬家前——主卧：两箱换季衣已装，补贴主卧和衣物标签；眼镜盒、充电线若仍使用，留到最后装；常用药随身。次卧：十八本书已装，八本优先装；打印机只标待确认承运，不进普通箱。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "搬家前——主卧：两箱换季衣已装，补贴主卧和衣物标签；眼镜盒、充电线若仍使用，留到最后装；常用药随身。次卧：十八本书已装，八本优先装；打印机只标待确认承运，不进普通箱。",
+        "event_text": "嗯，继续",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

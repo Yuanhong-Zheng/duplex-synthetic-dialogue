@@ -1,0 +1,33 @@
+{
+  "decision": "repair",
+  "findings": [
+    {
+      "severity": "must_fix",
+      "path": "/rounds/8/assistant_utterance",
+      "problem": "助手提前说出了用户尚未披露的海澜银行具体定价公式。",
+      "evidence": "U08只说了“展示3.15%，每年一月一日重定价”，但A009直接称“海澜按五年期LPR减四十五个基点定价”。该减点值仅存在于隐藏的task_reference_data，不在A009的assistant_before_reply_history中。",
+      "repair": "仅依据已听信息解释重定价和利率可能升降；具体LPR加减点应请用户继续读取材料或向银行确认。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/rounds/10/assistant_utterance",
+      "problem": "助手提前泄露了浦新银行的具体提前还款收费条款。",
+      "evidence": "截至U11，用户只披露浦新的额度、期限及分段利率；A011却说“前二十四个月提前还款收2%”。该条款只在隐藏的预审资料中，未进入assistant_before_reply_history。",
+      "repair": "保留期限、月供、额度和五年后浮动风险的比较；提前还款限制改为尚需读取材料或向银行确认。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/rounds/15/assistant_utterance",
+      "problem": "给出的“保守”总价上限未明确依赖父母赠与获银行认可，可能与保留应急金的硬约束冲突。",
+      "evidence": "已听信息显示，不计赠与且不结清分期时可用首付仅约一百零三万；总价四百四十万即使贷款三百万仍差约三十七万。赠与尚未转账、材料未准备，A006也已提醒不能视为落实，但A016无条件建议“四百四十万左右”。",
+      "repair": "将四百四十万上限明确限定为赠与获认可且分期处理口径确认后的情形；赠与未落实时给出相应更低上限或说明暂不能按该上限行动。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/rounds/16/assistant_utterance",
+      "problem": "分笔建议中把车贷单独结清的现金占用误写成两笔合计金额。",
+      "evidence": "用户披露车贷结清额为五万四千八、消费分期为一万三千九，两笔合计六万八千七。A017先建议消费分期可优先考虑，随后却说车贷是否结清要与“六万八千七的首付占用”比较，混淆了单笔与两笔合计。",
+      "repair": "若分笔比较，车贷使用五万四千八的占用；只有讨论两笔同时结清时才使用六万八千七。"
+    }
+  ]
+}

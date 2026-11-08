@@ -1,0 +1,1179 @@
+{
+  "frozen_source": {
+    "case_id": "R01-V01",
+    "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g04-sample-005-v2-stage2",
+    "language": "zh",
+    "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+    "script_execution_policy": {
+      "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+      "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+      "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+      "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+      "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+      "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+      "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+    },
+    "program_anchor_seed": 3918761902,
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    },
+    "relay_configuration": {
+      "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g04/relay-policy.json",
+      "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g04/relay-state",
+      "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+      "policy": {
+        "schema": "duplex_v2.timeout_relay_policy.v3",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "backup": {
+          "profile": "lianyu",
+          "endpoint": "https://api.openbili.com/v1/chat/completions",
+          "model_map": {
+            "openai/gpt-5.6-sol": "gpt-5.6-sol",
+            "openai/gpt-5.6-luna": "gpt-5.6-luna"
+          },
+          "verification": {
+            "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+            "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+          }
+        },
+        "trigger": {
+          "max_retries": 5,
+          "http_statuses": [
+            502,
+            503,
+            504
+          ],
+          "error_types": [
+            "TimeoutError",
+            "HTTP2DeadlineExceeded",
+            "ConnectionResetError",
+            "ConnectionAbortedError",
+            "BrokenPipeError",
+            "RemoteDisconnected",
+            "IncompleteRead"
+          ],
+          "http2_transport_errors": "negotiated_h2_only",
+          "require_all_attempts": true
+        },
+        "max_relay_switches": 1
+      }
+    },
+    "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+    "script_repair_policy": {
+      "schema": "duplex_v2.script_repair_policy.v1",
+      "mode": "json_patch",
+      "patch_schema": "duplex_v2.script_patch.v1",
+      "json_parse_max_retries": 3,
+      "content_max_repairs": 5,
+      "length_compaction_max_attempts": 3,
+      "overlength_after_compaction": "fail_case",
+      "judge_scope": "complete_script_and_heard_context"
+    },
+    "text_output_token_policy": "omit",
+    "scene_task": {
+      "scene": {
+        "domain_id": "D07",
+        "domain": "餐饮、烹饪与饮食",
+        "scenario_id": "D07-S06",
+        "scenario": "过敏与饮食限制"
+      },
+      "task_style": "结构化整理",
+      "task_instance": {
+        "goal": "为一次全天培训准备餐饮选择时，根据随后提供的盒饭菜单、配料说明和参与者的饮食限制，把每道餐食归入可直接考虑、需要向供餐方核实和应暂时排除三类；同时按每项限制整理对应依据、可能的交叉接触疑点、可替换空间及仍缺失的关键信息，形成便于最终确认的清单。"
+      }
+    },
+    "user_voice": {
+      "user_seed": {
+        "role_relation": "负责协调一家小型设计工作室员工培训日餐饮安排的行政专员",
+        "task_familiarity": "low"
+      },
+      "voice_profile": "女性，感知年龄在二十多岁，音色偏清亮，吐字整齐但语气克制，整体能量中等偏低，语速较快。",
+      "interaction_profile": {
+        "schema": "duplex_v2.interaction_profile.v1",
+        "formality": "formal",
+        "directness": "indirect",
+        "emotional_expressiveness": "reserved",
+        "verbosity": "brief",
+        "initiative": "high",
+        "caution": "low",
+        "patience": "low",
+        "behavioral_notes": [
+          "通常会迅速补充自己认为关键的背景，但会用较委婉的措辞提出请求或修正方向。",
+          "表达简短克制，倾向于先给出当前最想解决的部分，不太愿意长时间停留在已经明确的内容上。",
+          "遇到不确定处会直接说明自己还缺什么信息，并期待尽快得到可继续处理的判断依据。"
+        ]
+      }
+    },
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "medium",
+      "target_turns": 12,
+      "min_turns": 11,
+      "max_turns": 13
+    },
+    "ambient_catalog": {
+      "schema": "duplex_v2.ambient_catalog.v1",
+      "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+      "assets": [
+        {
+          "asset_id": "fan-fsd50k-eval-419427",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 10.3909375
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-235362",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 11.0
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-415925",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 7.178
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-235541",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 29.045875
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-232686",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 10.3445
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-124020",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 24.78875
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-382582",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.9788125
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-21189",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.962
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-238016",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 11.32
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-185058",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 5.2114375
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-121877",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 11.696
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-340358",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 4.2745
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-82562",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 1.0094375
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-121200",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.83525
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-343098",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.796
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-153104",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.4691875
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-392303",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.6849375
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-272381",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.933375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-71212",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.3638125
+        },
+        {
+          "asset_id": "door-fsd50k-eval-119077",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.7944375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-209519",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 1.0398125
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-399740",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.322
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-233057",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.4700625
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-411545",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.5686875
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-232499",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 0.842
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402127",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402128",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-86343",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 7.5366875
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-57907",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.5773125
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-319512",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.755625
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113173",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 11.2184375
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113175",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.8773125
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113176",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.6341875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-348322",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 1.625
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-426594",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 0.3666875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-332563",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 4.0
+        }
+      ]
+    },
+    "ambient_control": {
+      "schema": "duplex_v2.soundscape_control.v2",
+      "seed": 2419121938,
+      "mode": "quiet",
+      "discrete_event_target": 0,
+      "max_ambient_layers": 2,
+      "side_speech_requested": false,
+      "speech_kind_preferences": [
+        "third_party",
+        "machine"
+      ]
+    },
+    "situation_knowledge": {
+      "episode_situation": "2026年11月10日周二下午三点二十分，用户独自在设计工作室的小会议室里，为11月13日周五一场十四人参加的全天培训整理餐饮选择。她负责汇总需求并把最终确认内容交给供餐方，但此前只处理过普通偏好，没有系统核对过严重过敏、乳糖不耐受、乳糜泻和宗教饮食要求。报名表中有五名参与者提出限制，其中花生及腰果过敏和乳糜泻都明确要求关注交叉接触，不能只看菜名。供餐方发来早餐、午餐和茶歇的盒餐菜单，另附一页配料说明、一份通用过敏原声明和一封替换选项邮件。用户已经快速看过菜名，注意到有些食品看似素食或天然无麸质，却使用含小麦酱油、未认证燕麦或与坚果共用的器具。她也发现供餐方把“无奶制品”和“去掉奶酪”混在一起描述，而苏曼的实际要求是无乳糖，不能把这些表述当成同一标准。工作室要求每人在早餐和午餐各选一份，茶歇则统一订购两款供大家取用，因此同一餐食可能需要同时对照多项限制。供餐方允许部分替换，但现有材料没有覆盖所有品牌标签、肉类认证、独立操作台和清洁流程，用户手边也没有实物包装可查。订单需要在11月11日周三中午前确认，而供餐方电话受理时段今天已经结束，尚缺的问题只能先整理成次日集中询问的清单。用户希望先按“可直接考虑、需要核实、暂时排除”建立保守分类，再逐项记录依据、交叉接触疑点和可能替换方式，避免重复追问已经写明的内容。她准备把口头整理结果记入自己的表格，但不希望在关键配料或操作方式未知时凭菜名作乐观判断。当前仍未解决的问题包括哪些替换会改变过敏原状态、哪些食品有可靠认证，以及供餐方能否为高风险参与者使用独立器具和密封包装。",
+      "task_reference_data": [
+        "报名表中已确认的限制：林澄对花生和腰果有严重过敏，备注为“微量接触也须避免，需确认共用锅具、刀具和操作台”；高玥患乳糜泻，要求严格无麸质并避免与含小麦食品交叉接触。用户已读到这两条。",
+        "报名表中已确认的其他限制：唐宁为蛋奶素，不吃肉、禽类、鱼和海鲜，鸡蛋及奶制品可以；韩启不吃猪肉和酒精，肉类须有清真认证，纯素餐可接受；苏曼为乳糖不耐受，不是牛奶蛋白过敏，可接受标注无乳糖的奶制品，但不希望用“少量普通奶油”替代。用户已读到这些条目。",
+        "早餐菜单页列出“鸡蛋奶酪恰巴塔”：恰巴塔面包、鸡蛋、切达奶酪、蛋黄酱和生菜；可去掉奶酪，但没有无麸质面包选项。菜单页还列出“隔夜燕麦杯”：普通压片燕麦、杏仁饮、原味酸奶、奇亚籽、蓝莓和蜂蜜，燕麦未标注无麸质认证。用户只浏览过菜名，配料可在纸页上继续逐项读取。",
+        "午餐菜单页列出“照烧鸡肉饭”：鸡腿肉、西兰花、胡萝卜、白米饭及照烧汁；配料附页注明照烧汁含普通酱油、小麦和味醂，鸡肉供应商未提供清真认证。供餐方邮件写明可把照烧汁换成瓶装无麸质酱油，但没有说明换酱后是否使用独立锅具。",
+        "午餐菜单页列出“藜麦鹰嘴豆沙拉”：藜麦、鹰嘴豆、黄瓜、番茄、欧芹、南瓜籽和柠檬橄榄油汁，不含肉、蛋或奶；过敏原声明称其配料表没有含麸质原料，但冷菜均在同一备餐台组装，是否能为该餐单独清洁台面及更换手套尚未说明。",
+        "午餐菜单页列出“芝麻豆腐蔬菜饭”：豆腐、青菜、彩椒、白米饭、芝麻油及普通酱油；配料附页标明普通酱油含小麦。通用声明另称热菜炒锅也用于腰果炒蔬菜，餐次之间会常规清洗，但未说明是否达到严重坚果过敏或乳糜泻所需的隔离标准。",
+        "午餐菜单页列出“黑椒牛肉面”：牛肉、小麦面、洋葱、彩椒、黑椒汁和黄油；黑椒汁含普通酱油，牛肉没有清真认证。供餐方没有为这道餐写出无麸质、无乳糖或素食替换方式。",
+        "茶歇菜单页列出“独立封杯鲜果”和“巧克力布朗尼”。鲜果杯包含葡萄、橙子、哈密瓜和蓝莓，通用声明只写“水果在冷菜区切配”，未说明刀具或台面是否与坚果食品共用；布朗尼含小麦粉、黄油、鸡蛋和牛奶，并标注“同一烘焙间处理花生及树坚果”。",
+        "供餐方替换邮件写明：普通酸奶可换成独立包装的无乳糖酸奶；早餐三明治可以去奶酪但蛋黄酱不变；沙拉的南瓜籽可以省略；所有临时替换均须在下单前确认。邮件没有提供无乳糖酸奶的品牌配料、清真认证文件、独立器具承诺或密封单独装盒说明。"
+      ],
+      "environment_audio": "小会议室里整体安静，只有轻微而稳定的室内底噪。门外走廊没有持续人声，室内说话清晰，不需要提高音量。",
+      "estimated_snr_db": 34,
+      "constraints": [
+        {
+          "constraint_id": "C01",
+          "text": "每道早餐、午餐和茶歇食品都须归入“可直接考虑、需要向供餐方核实、应暂时排除”三类之一；信息不足时不得按可直接考虑处理。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C02",
+          "text": "若同一道食品涉及多名参与者，应分别按各自限制记录依据，不能把乳糖不耐受、无麸质、素食和清真要求合并判断。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C03",
+          "text": "分类时既要核对明确配料，也要单列共用锅具、刀具、操作台、烘焙间或包装方式造成的交叉接触疑点。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C04",
+          "text": "替换选项只有在替换后的配料与操作方式均有依据时，才能改变原餐食的分类；仅写“可去掉某种配料”不能自动消除其它风险。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C05",
+          "text": "最终待确认清单应优先保留会影响周三中午下单决定的问题，已在现有材料中明确的信息不再重复询问。",
+          "kind": "soft"
+        }
+      ],
+      "safety_limits": [
+        {
+          "limit_id": "L01",
+          "text": "对林澄的严重花生及腰果过敏，凡含相关坚果、明确标注同环境处理，或共用器具与清洁隔离情况未知的食品，都不得在未核实前视为可安全食用。",
+          "severity": "critical"
+        },
+        {
+          "limit_id": "L02",
+          "text": "对高玥的乳糜泻，不能仅凭配料表中没有小麦就认定安全；未认证燕麦、含小麦酱油以及操作台或锅具交叉接触均须纳入判断。",
+          "severity": "hard"
+        }
+      ],
+      "soundscape_plan": {
+        "mode": "quiet",
+        "ambient_layers": [],
+        "environment_events": [],
+        "schema": "duplex_v2.soundscape_plan.v3",
+        "side_speech_sources": [],
+        "side_speech_count": 0,
+        "sampling": {
+          "schema": "duplex_v2.ambient_draw.v2",
+          "policy": {
+            "schema": "duplex_v2.soundscape_policy.v2",
+            "quiet_probability": 0.5,
+            "discrete_targets_by_tier": {
+              "short": [
+                0,
+                1
+              ],
+              "medium": [
+                1,
+                2
+              ],
+              "long": [
+                2,
+                4
+              ]
+            },
+            "discrete_count_includes": [
+              "environment_events",
+              "side_speech"
+            ],
+            "max_ambient_layers": 2,
+            "gain_range": [
+              0.3,
+              0.7
+            ],
+            "speech_request_probability": 0.5,
+            "third_party_preference_probability": 0.8,
+            "speech_requires_existing_scene_source": true,
+            "environment_audio": "base_only",
+            "stage2_repair": "atomic_scoped_patch",
+            "stage2_max_judge_attempts": 3,
+            "json_parse_max_retries": 3
+          },
+          "preferences": {
+            "schema": "duplex_v2.ambient_preferences.v1",
+            "seed": 202611073004,
+            "slot": 4,
+            "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+            "categories": {
+              "bed": [
+                "birds",
+                "fan",
+                "rain",
+                "traffic",
+                "crowd",
+                "wind"
+              ],
+              "event": [
+                "door",
+                "doorbell",
+                "paper",
+                "keyboard",
+                "footsteps",
+                "water_tap"
+              ]
+            },
+            "recordings": {
+              "bed:birds": [
+                "birds-fsd50k-eval-319512",
+                "birds-fsd50k-eval-57907",
+                "birds-fsd50k-eval-86343"
+              ],
+              "bed:crowd": [
+                "crowd-fsd50k-eval-340358",
+                "crowd-fsd50k-eval-121877",
+                "crowd-fsd50k-eval-185058"
+              ],
+              "bed:fan": [
+                "fan-fsd50k-eval-415925",
+                "fan-fsd50k-eval-419427",
+                "fan-fsd50k-eval-235362"
+              ],
+              "bed:rain": [
+                "rain-fsd50k-eval-238016",
+                "rain-fsd50k-eval-382582",
+                "rain-fsd50k-eval-21189"
+              ],
+              "bed:traffic": [
+                "traffic-fsd50k-eval-232686",
+                "traffic-fsd50k-eval-235541",
+                "traffic-fsd50k-eval-124020"
+              ],
+              "bed:wind": [
+                "wind-fsd50k-eval-113173",
+                "wind-fsd50k-eval-113176",
+                "wind-fsd50k-eval-113175"
+              ],
+              "event:door": [
+                "door-fsd50k-eval-119077",
+                "door-fsd50k-eval-71212",
+                "door-fsd50k-eval-209519"
+              ],
+              "event:doorbell": [
+                "doorbell-fsd50k-eval-332563",
+                "doorbell-fsd50k-eval-426594",
+                "doorbell-fsd50k-eval-348322"
+              ],
+              "event:footsteps": [
+                "footsteps-fsd50k-eval-153104",
+                "footsteps-fsd50k-eval-392303",
+                "footsteps-fsd50k-eval-272381"
+              ],
+              "event:keyboard": [
+                "keyboard-fsd50k-eval-233057",
+                "keyboard-fsd50k-eval-411545",
+                "keyboard-fsd50k-eval-399740"
+              ],
+              "event:paper": [
+                "paper-fsd50k-eval-343098",
+                "paper-fsd50k-eval-82562",
+                "paper-fsd50k-eval-121200"
+              ],
+              "event:water_tap": [
+                "water_tap-fsd50k-eval-402128",
+                "water_tap-fsd50k-eval-232499",
+                "water_tap-fsd50k-eval-402127"
+              ]
+            }
+          },
+          "control": {
+            "schema": "duplex_v2.soundscape_control.v2",
+            "seed": 2419121938,
+            "mode": "quiet",
+            "discrete_event_target": 0,
+            "max_ambient_layers": 2,
+            "side_speech_requested": false,
+            "speech_kind_preferences": [
+              "third_party",
+              "machine"
+            ]
+          },
+          "control_sha256": "a02d272bc2326eadcc289d5d29ba8cc8b8dc607e40188862e0d2abe19f868ab4",
+          "candidate_plan": {
+            "schema": "duplex_v2.soundscape_plan.v3",
+            "mode": "quiet",
+            "ambient_layers": [],
+            "environment_events": [],
+            "side_speech_eligibility": {
+              "third_party": {
+                "compatible": false,
+                "reason": "用户独自在小会议室整理材料，当前故事中没有已建立的在场第三方。",
+                "source": null
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "当前场景没有已建立且会发出可辨语音的设备。",
+                "source": null
+              }
+            }
+          },
+          "base_environment_audio_sha256": "16124b1c473db59f5f7cf6e82b22b47333ece07da9bcb38a37b66d17a9895c8c",
+          "aggregate_environment_audio": "小会议室里整体安静，只有轻微而稳定的室内底噪。门外走廊没有持续人声，室内说话清晰，不需要提高音量。",
+          "draws": [],
+          "speech_selection": {
+            "requested": false,
+            "compatible_kinds": [],
+            "selected_kind": null,
+            "outcome": "not_requested",
+            "assessments": {
+              "third_party": {
+                "compatible": false,
+                "reason": "用户独自在小会议室整理材料，当前故事中没有已建立的在场第三方。",
+                "source": null
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "当前场景没有已建立且会发出可辨语音的设备。",
+                "source": null
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "schema_version": "duplex_v2.fixed_script.v2",
+  "owner_attempt": 2,
+  "previous_candidate": {
+    "schema_version": "duplex_v2.fixed_script.v2",
+    "title": "培训日餐饮限制保守分类",
+    "rounds": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_utterance": "我要整理十四人培训日的餐饮。麻烦先按可直接考虑、需要核实和应暂时排除三类判断。林澄严重过敏花生和腰果，高玥患乳糜泻，两人都要求关注交叉接触。",
+        "assistant_utterance": "可以。先逐道告诉我配料、替换说明和共用设备信息。我会给每道定一类，再分别记录林澄的坚果风险与高玥的麸质及交叉接触依据。",
+        "user_intent": "建立保守分类任务并说明两项高风险饮食限制",
+        "assistant_intent": "确认分类方法并索取逐道判断所需信息",
+        "semantic_goal": "形成按餐食分类且分人记录风险的整理框架",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": null,
+        "pause_cue": null
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_utterance": "早餐先看鸡蛋奶酪恰巴塔，配料是恰巴塔、鸡蛋、切达奶酪、蛋黄酱和生菜。可以去奶酪，但没有无麸质面包。",
+        "assistant_utterance": "鸡蛋奶酪恰巴塔先列“应暂时排除”：面包含小麦且没有无麸质面包，高玥不能选。对林澄还缺蛋黄酱原料及备餐器具、台面是否接触花生或腰果的信息。",
+        "user_intent": "提供第一款早餐的配料和有限替换条件",
+        "assistant_intent": "分类该早餐并分别记录麸质依据和坚果交叉接触缺口",
+        "semantic_goal": "确定鸡蛋奶酪恰巴塔的当前分类与待核实事项",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A001",
+          "user_onset_after_text": "可以。先逐道告诉我配料、替换说明和共用设备信息。我会给每道定一类，再分别记录林澄的坚果风险与高玥的麸质及交叉接触依据。",
+          "assistant_stop_after_text": "可以。先逐道告诉我配料、替换说明和共用设备信息。我会给每道定一类，再分别记录林澄的坚果风险与高玥的麸质及交叉接触依据。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_utterance": "另一款是隔夜燕麦杯，含普通压片燕麦、杏仁饮、原味酸奶、奇亚籽、蓝莓和蜂蜜，燕麦没有无麸质认证。",
+        "assistant_utterance": "隔夜燕麦也先列“应暂时排除”：未认证燕麦不能供高玥；杏仁不等于腰果，但林澄是严重过敏，仍须核实饮品标签、共用器具和分装方式。",
+        "user_intent": "补充第二款早餐及其未认证燕麦信息",
+        "assistant_intent": "判断燕麦杯的麸质风险并保留严重过敏核实项",
+        "semantic_goal": "确定隔夜燕麦杯的分类和风险依据",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A002",
+          "user_onset_after_text": "鸡蛋奶酪恰巴塔先列“应暂时排除”：面包含小麦且没有无麸质面包，高玥不能选。对林澄还缺蛋黄酱原料及备餐器具、台面是否接触花生或腰果的信息。",
+          "assistant_stop_after_text": "鸡蛋奶酪恰巴塔先列“应暂时排除”：面包含小麦且没有无麸质面包，高玥不能选。对林澄还缺蛋黄酱原料及备餐器具、台面是否接触花生或腰果的信息。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_utterance": "另外三人是：唐宁吃蛋奶素；韩启不吃猪肉和酒精，肉要有清真认证，纯素餐也可以；苏曼是乳糖不耐受，可吃标注无乳糖的奶制品。邮件说燕麦杯能换独立包装无乳糖酸奶，三明治只能去奶酪。请更新早餐。",
+        "assistant_utterance": "分人补记：唐宁按明示配料可考虑这两款；苏曼的燕麦杯只有换成已核清配料的无乳糖酸奶才可考虑，三明治去奶酪后仍需核实蛋黄酱。韩启方面还要核实品牌配料有无酒精，早餐总分类不变。",
+        "user_intent": "补齐其余参与者限制并要求更新早餐判断",
+        "assistant_intent": "按素食、清真和乳糖限制分别补充早餐依据",
+        "semantic_goal": "得到不混同各项限制的早餐分人备注",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A003",
+          "user_onset_after_text": "隔夜燕麦也先列“应暂时排除”：未认证燕麦不能供高玥；杏仁不等于腰果，但林澄是严重过敏，仍须核实饮品标签、共用器具和分装方式。",
+          "assistant_stop_after_text": "隔夜燕麦也先列“应暂时排除”：未认证燕麦不能供高玥；杏仁不等于腰果，但林澄是严重过敏，仍须核实饮品标签、共用器具和分装方式。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_utterance": "午餐的照烧鸡肉饭有鸡腿肉、蔬菜、白米饭和照烧汁。照烧汁含普通酱油、小麦和味醂，鸡肉也没有清真认证。",
+        "assistant_utterance": "原版照烧鸡肉饭应暂时排除：普通酱油含小麦，高玥不能选；味醂也不符合韩启的无酒精要求。即使能换无麸质酱油，也只能先转入“需要核实”，还要确认锅具和清真认证。",
+        "user_intent": "提供照烧鸡肉饭的配料、酒精和认证信息",
+        "assistant_intent": "依据麸质、酒精和清真要求分类原版餐食",
+        "semantic_goal": "明确原版照烧鸡肉饭的排除依据",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A004",
+          "user_onset_after_text": "分人补记：唐宁按明示配料可考虑这两款；苏曼的燕麦杯只有换成已核清配料的无乳糖酸奶才可考虑，三明治去奶酪后仍需核实蛋黄酱。韩启方面还要核实品牌配料有无酒精，早餐总分类不变。",
+          "assistant_stop_after_text": "分人补记：唐宁按明示配料可考虑这两款；苏曼的燕麦杯只有换成已核清配料的无乳糖酸奶才可考虑，三明治去奶酪后仍需核实蛋黄酱。韩启方面还要核实品牌配料有无酒精，早餐总分类不变。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_utterance": "对，邮件正好说可以换瓶装无麸质酱油，但没写是否用独立锅具。那请把原版和换酱版分开记。",
+        "assistant_utterance": "那就保留两行：原版仍“应暂时排除”；换酱版仅“需要核实”，重点问独立锅具和酱油品牌标签。鸡肉无清真认证，韩启不能选；唐宁也不能选鸡肉。",
+        "user_intent": "打断补充换酱条件并要求拆分两个版本",
+        "assistant_intent": "分别分类原版与换酱版并保留操作和认证缺口",
+        "semantic_goal": "避免仅凭换酱就错误改变整道餐食的安全判断",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A005",
+          "user_onset_after_text": "原版照烧鸡肉饭应暂时排除：普通酱油含小麦，高玥不能选；味醂也不符合韩启的无酒精要求。即使能换无麸质酱油",
+          "assistant_stop_after_text": "原版照烧鸡肉饭应暂时排除：普通酱油含小麦，高玥不能选；味醂也不符合韩启的无酒精要求。即使能换无麸质酱油，也只"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_utterance": "还有藜麦鹰嘴豆沙拉，不含肉、蛋、奶，也没有含麸质原料。可是冷菜都在同一备餐台组装，能否单独清洁台面和换手套没写。",
+        "assistant_utterance": "藜麦鹰嘴豆沙拉列“需要核实”。唐宁、韩启和苏曼按已知配料可直接考虑；高玥需确认清洁台面和换手套，林澄还要确认台面、器具及单独密封。",
+        "user_intent": "提供纯素沙拉及冷菜共用操作台信息",
+        "assistant_intent": "按不同限制区分直接依据和交叉接触疑点",
+        "semantic_goal": "确定沙拉的总体分类与分人判断",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A006",
+          "user_onset_after_text": "那就保留两行：原版仍“应暂时排除”；换酱版仅“需要核实”，重点问独立锅具和酱油品牌标签。鸡肉无清真认证，韩启不能选；唐宁也不能选鸡肉。",
+          "assistant_stop_after_text": "那就保留两行：原版仍“应暂时排除”；换酱版仅“需要核实”，重点问独立锅具和酱油品牌标签。鸡肉无清真认证，韩启不能选；唐宁也不能选鸡肉。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_utterance": "芝麻豆腐蔬菜饭用了普通酱油。热菜炒锅也做腰果炒蔬菜，只说餐次间常规清洗，没有更具体的隔离标准。",
+        "assistant_utterance": "这道列“应暂时排除”：普通酱油已排除高玥，共用腰果炒锅且隔离清洁不明，也不能给林澄。唐宁、苏曼可按配料考虑；韩启若按纯素方案，还需确认酱油无酒精成分。",
+        "user_intent": "补充豆腐饭的含麦酱油及共用腰果炒锅情况",
+        "assistant_intent": "结合明确配料和锅具交叉接触进行分类",
+        "semantic_goal": "确定豆腐饭对各项限制的适用性",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A007",
+          "user_onset_after_text": "藜麦鹰嘴豆沙拉列“需要核实”。唐宁、韩启和苏曼按已知配料可直接考虑；高玥需确认清洁台面和换手套，林澄还要确认台面、器具及单独密封。",
+          "assistant_stop_after_text": "藜麦鹰嘴豆沙拉列“需要核实”。唐宁、韩启和苏曼按已知配料可直接考虑；高玥需确认清洁台面和换手套，林澄还要确认台面、器具及单独密封。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_utterance": "黑椒牛肉面有小麦面、牛肉、含普通酱油的黑椒汁和黄油。牛肉没有清真认证，也没有无麸质、无乳糖或素食替换。",
+        "assistant_utterance": "黑椒牛肉面应暂时排除：小麦面和含小麦酱油不适合高玥，黄油不适合苏曼，牛肉无清真认证，不适合韩启，也不符合唐宁的蛋奶素。现有材料又没有替换方案。",
+        "user_intent": "提供牛肉面的多项明确冲突和无替换情况",
+        "assistant_intent": "综合麸质、乳糖、清真和素食限制完成分类",
+        "semantic_goal": "确认黑椒牛肉面应排除且无需继续寻找现有替换",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A008",
+          "user_onset_after_text": "这道列“应暂时排除”：普通酱油已排除高玥，共用腰果炒锅且隔离清洁不明，也不能给林澄。唐宁、苏曼可按配料考虑；韩启若按纯素方案，还需确认酱油无酒精成分。",
+          "assistant_stop_after_text": "这道列“应暂时排除”：普通酱油已排除高玥，共用腰果炒锅且隔离清洁不明，也不能给林澄。唐宁、苏曼可按配料考虑；韩启若按纯素方案，还需确认酱油无酒精成分。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_utterance": "这道先记排除，不用展开了。茶歇是独立封杯鲜果和巧克力布朗尼。鲜果在冷菜区切配，刀具台面不明；布朗尼含小麦、黄油、鸡蛋和牛奶，同一烘焙间还处理花生及树坚果。",
+        "assistant_utterance": "茶歇中，鲜果杯列“需要核实”：封杯不消除切配阶段风险，要问刀具、台面和封装流程。布朗尼列“应暂时排除”：含小麦和普通乳制品，且同烘焙间处理花生、树坚果。",
+        "user_intent": "制止展开已明确项目并转入两款茶歇食品",
+        "assistant_intent": "简洁分类鲜果杯与布朗尼并指出交叉接触阶段",
+        "semantic_goal": "完成茶歇食品的保守分类",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A009",
+          "user_onset_after_text": "黑椒牛肉面应暂时排除：",
+          "assistant_stop_after_text": "黑椒牛肉面应暂时排除：小麦"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U11",
+        "assistant_id": "A011",
+        "user_utterance": "替换邮件还说，无乳糖酸奶是独立包装，但品牌配料没给；南瓜籽可以省略。请帮我压成明天必须问供餐方的问题，已经明确的就别重复。",
+        "assistant_utterance": "明天优先问四组：一，独立台面、锅具、刀具、手套及清洁流程；二，高风险餐能否单独密封；三，无乳糖酸奶和无麸质酱油的品牌配料、认证；四，清真认证。省略南瓜籽本身不改变分类。",
+        "user_intent": "补充替换细节并要求提炼高优先级询问清单",
+        "assistant_intent": "只保留会影响下单分类的关键缺失信息",
+        "semantic_goal": "形成次日集中询问供餐方的精简问题",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01",
+          "T02"
+        ],
+        "timing": {
+          "target_assistant_id": "A010",
+          "user_onset_after_text": "茶歇中，鲜果杯列“需要核实”：封杯不消除切配阶段风险，要问刀具、台面和封装流程。布朗尼列“应暂时排除”：含小麦和普通乳制品，且同烘焙间处理花生、树坚果。",
+          "assistant_stop_after_text": "茶歇中，鲜果杯列“需要核实”：封杯不消除切配阶段风险，要问刀具、台面和封装流程。布朗尼列“应暂时排除”：含小麦和普通乳制品，且同烘焙间处理花生、树坚果。"
+        },
+        "pause_cue": {
+          "after_text": "替换邮件还说，无乳糖酸奶是独立包装，但品牌配料没给；南瓜籽可以省略。",
+          "duration_ms": 650
+        }
+      },
+      {
+        "user_id": "U12",
+        "assistant_id": "A012",
+        "user_utterance": "好，最后请按食品分类和五个人的判断重点完整回读一遍，我直接记进表格。",
+        "assistant_utterance": "最终分类：可直接考虑暂空。需要核实：藜麦鹰嘴豆沙拉、独立封杯鲜果；换酱照烧饭另列待核实。应暂时排除：鸡蛋奶酪恰巴塔、隔夜燕麦、原版照烧鸡肉饭、芝麻豆腐蔬菜饭、黑椒牛肉面、布朗尼。林澄看坚果共用与密封，高玥看认证、含麦酱油及操作隔离，唐宁排肉鱼海鲜，韩启排酒精和无认证肉，苏曼只接受无乳糖成品。替换须同时核清配料与操作方式后才能改类。",
+        "user_intent": "请求完整回读最终分类及分人判断重点",
+        "assistant_intent": "汇总全部食品分类、参与者依据和替换生效条件",
+        "semantic_goal": "得到可直接录入表格的最终确认清单",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A011",
+          "user_onset_after_text": "明天优先问四组：一，独立台面、锅具、刀具、手套及清洁流程；二，高风险餐能否单独密封；三，无乳糖酸奶和无麸质酱油的品牌配料、认证；四，清真认证。省略南瓜籽本身不改变分类。",
+          "assistant_stop_after_text": "明天优先问四组：一，独立台面、锅具、刀具、手套及清洁流程；二，高风险餐能否单独密封；三，无乳糖酸奶和无麸质酱油的品牌配料、认证；四，清真认证。省略南瓜籽本身不改变分类。"
+        },
+        "pause_cue": null
+      }
+    ],
+    "backchannels": [
+      {
+        "event_id": "BC01",
+        "target_assistant_id": "A003",
+        "after_text": "隔夜燕麦也先列“应暂时排除”：未认证燕麦不能供高玥；",
+        "text": "嗯，明白"
+      },
+      {
+        "event_id": "BC02",
+        "target_assistant_id": "A004",
+        "after_text": "分人补记：唐宁按明示配料可考虑这两款；",
+        "text": "好"
+      },
+      {
+        "event_id": "BC03",
+        "target_assistant_id": "A007",
+        "after_text": "藜麦鹰嘴豆沙拉列“需要核实”。",
+        "text": "嗯"
+      },
+      {
+        "event_id": "BC04",
+        "target_assistant_id": "A011",
+        "after_text": "明天优先问四组：一，独立台面、锅具、刀具、手套及清洁流程；二，高风险餐能否单独密封；",
+        "text": "好，记下了"
+      }
+    ],
+    "side_speech": [],
+    "environment_events": []
+  },
+  "findings": [
+    {
+      "severity": "must_fix",
+      "path": "/rounds/10/assistant_utterance",
+      "problem": "次日必问清单遗漏了对早餐分类仍有影响的已识别缺口，未完整承接用户要求。",
+      "evidence": "A002已记录“三明治还缺蛋黄酱原料”，A003已记录燕麦杯须核实“饮品标签”，A004又明确“三明治去奶酪后仍需核实蛋黄酱”；但A011只列无乳糖酸奶、无麸质酱油、操作隔离、密封和清真认证，没有蛋黄酱配料及杏仁饮标签问题。",
+      "repair": "保留四组式精简结构，把蛋黄酱和杏仁饮的品牌配料/过敏原标签纳入明日必问项，并将“清真认证”表述为是否能提供合规认证或可用替代，避免只重复已知缺失。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/rounds/11/assistant_utterance",
+      "problem": "没有按请求完整回读五个人对各食品的判断重点，且对苏曼的总结失真。",
+      "evidence": "U12明确要求“按食品分类和五个人的判断重点完整回读一遍”；A012虽列出食品总分类，却只用“林澄看……高玥看……”作泛化概括，未回读此前各食品对各人的可考虑、待核实或排除依据。“苏曼只接受无乳糖成品”也把其限制扩大了；冻结事实是乳糖不耐受，可接受标注无乳糖的奶制品，并非所有食品都必须是“无乳糖成品”。",
+      "repair": "保留现有食品三类汇总，随后按五人简洁回读各相关食品的可考虑、待核实和排除重点；将苏曼准确表述为普通含乳糖奶制品需排除或替换、标注无乳糖的奶制品可考虑，不限制本来不含奶的食品。"
+    }
+  ],
+  "anchor_dependencies": [
+    {
+      "target_id": "A010",
+      "path": "/rounds/10/timing/user_onset_after_text",
+      "value": "茶歇中，鲜果杯列“需要核实”：封杯不消除切配阶段风险，要问刀具、台面和封装流程。布朗尼列“应暂时排除”：含小麦和普通乳制品，且同烘焙间处理花生、树坚果。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A010",
+      "path": "/rounds/10/timing/assistant_stop_after_text",
+      "value": "茶歇中，鲜果杯列“需要核实”：封杯不消除切配阶段风险，要问刀具、台面和封装流程。布朗尼列“应暂时排除”：含小麦和普通乳制品，且同烘焙间处理花生、树坚果。",
+      "owner": "program"
+    },
+    {
+      "target_id": "U11",
+      "path": "/rounds/10/pause_cue/after_text",
+      "value": "替换邮件还说，无乳糖酸奶是独立包装，但品牌配料没给；南瓜籽可以省略。",
+      "owner": "model"
+    },
+    {
+      "target_id": "A011",
+      "path": "/rounds/11/timing/user_onset_after_text",
+      "value": "明天优先问四组：一，独立台面、锅具、刀具、手套及清洁流程；二，高风险餐能否单独密封；三，无乳糖酸奶和无麸质酱油的品牌配料、认证；四，清真认证。省略南瓜籽本身不改变分类。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A011",
+      "path": "/rounds/11/timing/assistant_stop_after_text",
+      "value": "明天优先问四组：一，独立台面、锅具、刀具、手套及清洁流程；二，高风险餐能否单独密封；三，无乳糖酸奶和无麸质酱油的品牌配料、认证；四，清真认证。省略南瓜籽本身不改变分类。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A011",
+      "path": "/backchannels/3/after_text",
+      "value": "明天优先问四组：一，独立台面、锅具、刀具、手套及清洁流程；二，高风险餐能否单独密封；",
+      "owner": "model"
+    }
+  ],
+  "base_sha256": "dab5845962396177fbeaf59682baa8e65fb7d42b9baf2f581de6ef4f32ccba12"
+}

@@ -1,0 +1,107 @@
+{
+  "schema_version": "duplex_v2.fixed_script.v2",
+  "title": "六批农产品采后分类整理",
+  "rounds": [
+    {
+      "user_id": "U01",
+      "assistant_id": "A001",
+      "user_utterance": "我先读两批番茄。这里A级是外形整齐、无明显损伤，B级只是有轻微外观瑕疵，不代表耐储。FT-1107-1今天上午采，A级，放在分拣间阴凉货架，整体较硬，最迟明天卖，包装完成时间没填。FT-1105-2是五日下午采的，B级，放在分拣间周转筐，最迟今天卖，部分已经变软，比例没记。",
+      "assistant_utterance": "FT-1105-2列为需要尽快处理：今天到期且已有软化，补核软果比例。FT-1107-1列为可立即销售：整体较硬、明天到期，补核包装完成时间。",
+      "user_intent": "先提供两批番茄的记录及外观分级含义，请助手开始分类。",
+      "assistant_intent": "依据销售时限和软化情况分类两批番茄，并标出缺失记录。",
+      "semantic_goal": "明确两批番茄所属类别及各自待核信息。",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": null,
+      "pause_cue": null
+    },
+    {
+      "user_id": "U02",
+      "assistant_id": "A002",
+      "user_utterance": "再补叶菜和苹果。LG-1107-1今天清晨采，A级，暂放冷藏间门内侧周转区，最迟今晚卖，预冷和叶面失水都没填。AP-1101-1是十一月一日采的，A级，在冷藏间二号架，最迟十一月十二日，没记当天温度，也没注明有没有失水皱缩。",
+      "assistant_utterance": "LG-1107-1列为需要尽快处理：今晚到期，先核对预冷是否完成、叶面是否失水。AP-1101-1可先列为适合短期储存，但要补查冷藏间当天温度和是否失水皱缩。",
+      "user_intent": "继续提供叶菜和苹果的采收、存放、时限及记录缺口。",
+      "assistant_intent": "优先判断当天到期的叶菜，再判断苹果并列出核对项。",
+      "semantic_goal": "把叶菜和苹果纳入同一分类框架。",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A001",
+        "user_onset_after_text": "FT-1105-2列为需要尽快处理：今天到期且已有软化，补核软果比例。FT-1107-1列为可立即销售：整体较硬、明天到期，补核包装完成时间。",
+        "assistant_stop_after_text": "FT-1105-2列为需要尽快处理：今天到期且已有软化，补核软果比例。FT-1107-1列为可立即销售：整体较硬、明天到期，补核包装完成时间。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U03",
+      "assistant_id": "A003",
+      "user_utterance": "苹果那批先别展开，我还剩两批没读，等我读完再一起归类。",
+      "assistant_utterance": "好，苹果先留到总表，暂不下结论。叶菜这一项仍按刚才的结果保留。你把剩下两批读给我。",
+      "user_intent": "打断当前播报，要求暂缓苹果结论并先继续补充批次。",
+      "assistant_intent": "停止展开苹果，保留已完整说明的叶菜结论并邀请用户继续。",
+      "semantic_goal": "调整整理顺序，待全部批次提供后再处理苹果。",
+      "act_ref": "A02",
+      "timing_refs": [
+        "T03"
+      ],
+      "timing": {
+        "target_assistant_id": "A002",
+        "user_onset_after_text": "LG-1107-1列为需要尽快处理：今晚到期，先核对预冷是否完成、叶面是否失水。",
+        "assistant_stop_after_text": "LG-1107-1列为需要尽快处理：今晚到期，先核对预冷是否完成、叶面是否失水。AP-1101-1"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U04",
+      "assistant_id": "A004",
+      "user_utterance": "甘薯SP-1103-1，十一月三日采，A级和B级混合，在通风棚，最迟十一月十四日，愈伤栏空着，两个等级数量也没分。南瓜PK-1029-1，十月二十九日采，B级，放在干燥库房木托盘，最迟十一月二十日，写着个别表皮擦伤，没写数量、深度和结痂情况。",
+      "assistant_utterance": "SP-1103-1暂列适合短期储存，核对是否做过愈伤处理，并补分A级、B级数量。PK-1029-1也暂列适合短期储存，核对擦伤数量、深度和是否结痂；核清前优先检查。",
+      "user_intent": "补齐甘薯和南瓜的现有记录及不明确之处。",
+      "assistant_intent": "给两批销售窗口较长的产品分类，同时保留关键核对项。",
+      "semantic_goal": "完成全部六批产品的信息披露，为总表汇总做准备。",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A003",
+        "user_onset_after_text": "好，苹果先留到总表，暂不下结论。叶菜这一项仍按刚才的结果保留。你把剩下两批读给我。",
+        "assistant_stop_after_text": "好，苹果先留到总表，暂不下结论。叶菜这一项仍按刚才的结果保留。你把剩下两批读给我。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U05",
+      "assistant_id": "A005",
+      "user_utterance": "那现在按三类把六批完整回读一遍，每批把要补核的也带上。",
+      "assistant_utterance": "汇总如下。需要尽快处理：FT-1105-2，核对软果比例；LG-1107-1，核对预冷和叶面失水。可立即销售：FT-1107-1，核对包装完成时间。适合短期储存：AP-1101-1，核对冷藏温度和皱缩；SP-1103-1，核对愈伤及分级数量；PK-1029-1，核对擦伤数量、深度和结痂。",
+      "user_intent": "要求按规定的三类完整汇总六批产品及待核信息。",
+      "assistant_intent": "形成保留全部批次编号的最终分类清单，并逐批标明记录缺口。",
+      "semantic_goal": "获得可直接用于后续逐批核对的完整分类结果。",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A004",
+        "user_onset_after_text": "SP-1103-1暂列适合短期储存，核对是否做过愈伤处理，并补分A级、B级数量。PK-1029-1也暂列适合短期储存，核对擦伤数量、深度和是否结痂；核清前优先检查。",
+        "assistant_stop_after_text": "SP-1103-1暂列适合短期储存，核对是否做过愈伤处理，并补分A级、B级数量。PK-1029-1也暂列适合短期储存，核对擦伤数量、深度和是否结痂；核清前优先检查。"
+      },
+      "pause_cue": null
+    }
+  ],
+  "backchannels": [
+    {
+      "event_id": "BC01",
+      "target_assistant_id": "A005",
+      "after_text": "汇总如下。需要尽快处理：FT-1105-2，核对软果比例；LG-1107-1，核对预冷和叶面失水。",
+      "text": "嗯，清楚"
+    }
+  ],
+  "side_speech": [],
+  "environment_events": []
+}

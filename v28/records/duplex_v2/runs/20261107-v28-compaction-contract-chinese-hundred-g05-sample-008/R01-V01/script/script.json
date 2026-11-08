@@ -1,0 +1,407 @@
+{
+  "schema_version": "duplex_v2.fixed_script.v2",
+  "title": "出租屋洗衣机脱水晃动排查",
+  "rounds": [
+    {
+      "user_id": "U01",
+      "assistant_id": "A001",
+      "user_utterance": "我家的前开门洗衣机刚才一到脱水就剧烈晃动，还一直敲机身，吓得我把程序取消了，也拔了插头。再次使用前，我应该先检查什么？",
+      "assistant_utterance": "先保持断电，别立刻重启。先确认有没有漏水、焦味、冒烟、火花或金属摩擦声；若有任何一项，直接联系房东报修。若都没有，再查衣物分布、机身水平和四只支脚。",
+      "user_intent": "说明洗衣机异常并询问安全排查顺序",
+      "assistant_intent": "先建立停机边界，再给出低风险检查框架",
+      "semantic_goal": "明确再次使用前应优先检查的常见原因和危险信号",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": null,
+      "pause_cue": null
+    },
+    {
+      "user_id": "U02",
+      "assistant_id": "A002",
+      "user_utterance": "没有漏水、焦味、冒烟或火花，也没听见金属摩擦声，门封处没有夹衣物。以前洗少量日常衣物时也没晃得这么厉害。",
+      "assistant_utterance": "这些情况暂时降低了紧急故障的可能。敲击若只在滚筒加速时出现，常见于负载偏在一侧或机器不稳；若低速也持续响，更需考虑机械问题。声音具体从什么时候开始？",
+      "user_intent": "补充危险信号和既往运行情况",
+      "assistant_intent": "依据新增信息缩小范围，并追问声音出现时机",
+      "semantic_goal": "判断异常更接近偶发负载问题还是持续机械故障",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A001",
+        "user_onset_after_text": "先保持断电，别立刻重启。先确认有没有漏水、焦味、冒烟、火花或金属摩擦声；若有任何一项，直接联系房东报修。若都没有，再查衣物分布、机身水平和四只支脚。",
+        "assistant_stop_after_text": "先保持断电，别立刻重启。先确认有没有漏水、焦味、冒烟、火花或金属摩擦声；若有任何一项，直接联系房东报修。若都没有，再查衣物分布、机身水平和四只支脚。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U03",
+      "assistant_id": "A003",
+      "user_utterance": "是在排水结束以后，滚筒开始明显加速时才出现的。进水和低速翻滚时没有同样的声音。",
+      "assistant_utterance": "这个时机更像高速时失衡被放大。先看滚筒里的衣物是否缠成一团，再核对是否混有吸水后很重的大件；这些都要在断电、滚筒完全停住后做。",
+      "user_intent": "说明敲击声与洗衣程序阶段的关系",
+      "assistant_intent": "根据声音时机优先指向高速失衡，并引导检查衣物",
+      "semantic_goal": "利用声音出现时机初步区分负载失衡和机械问题",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A002",
+        "user_onset_after_text": "这些情况暂时降低了紧急故障的可能。敲击若只在滚筒加速时出现，常见于负载偏在一侧或机器不稳；若低速也持续响，更需考虑机械问题。声音具体从什么时候开始？",
+        "assistant_stop_after_text": "这些情况暂时降低了紧急故障的可能。敲击若只在滚筒加速时出现，常见于负载偏在一侧或机器不稳；若低速也持续响，更需考虑机械问题。声音具体从什么时候开始？"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U04",
+      "assistant_id": "A004",
+      "user_utterance": "对，一条浴巾正好卷在被套里。里面是一件双人被套、两条浴巾和四件短袖，没有超过门口的最大装载线。",
+      "assistant_utterance": "这很符合负载不均：没超装载线不代表分布均匀，湿被套裹住浴巾会形成很重的一团。把它们完全解开、抖散，大件不要包住小件。",
+      "user_intent": "打断并补充本次衣物构成和缠绕情况",
+      "assistant_intent": "确认负载不均的具体机制，并给出直接处理原则",
+      "semantic_goal": "判断本次剧烈晃动是否很可能由湿重大件缠绕引起",
+      "act_ref": "A02",
+      "timing_refs": [
+        "T03"
+      ],
+      "timing": {
+        "target_assistant_id": "A003",
+        "user_onset_after_text": "这个时机更像高速时失衡被放大。先看滚筒里的衣物是否缠成一团，",
+        "assistant_stop_after_text": "这个时机更像高速时失衡被放大。先看滚筒里的衣物是否缠成一团，再核对"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U05",
+      "assistant_id": "A005",
+      "user_utterance": "那我具体应该怎么重新放？被套、浴巾和短袖是一起留着，还是要拿掉一些？",
+      "assistant_utterance": "把被套展开松放，两条浴巾分开放在滚筒不同位置，短袖逐件散开。不要塞紧，也别只留一件湿重的大件；如果被套仍容易裹住其他衣物，分批洗更稳妥。",
+      "user_intent": "追问重新分布衣物的具体方法",
+      "assistant_intent": "提供可恢复的衣物重排和分批原则",
+      "semantic_goal": "形成可实际执行的负载调整方案",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A004",
+        "user_onset_after_text": "这很符合负载不均：没超装载线不代表分布均匀，湿被套裹住浴巾会形成很重的一团。把它们完全解开、抖散，大件不要包住小件。",
+        "assistant_stop_after_text": "这很符合负载不均：没超装载线不代表分布均匀，湿被套裹住浴巾会形成很重的一团。把它们完全解开、抖散，大件不要包住小件。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U06",
+      "assistant_id": "A006",
+      "user_utterance": "衣物我能重新整理。不过既然晃得那么厉害，我是不是也该检查机器有没有放平？我手边有短气泡水平尺。",
+      "assistant_utterance": "要。拔掉插头后，把水平尺先横放机顶，再前后放；气泡应落在两条基准线之间。然后轻推机器四角，看是否有某只支脚悬空或机身跷动。不要在通电时调整。",
+      "user_intent": "提出使用水平尺检查机器摆放",
+      "assistant_intent": "说明断电状态下检查水平和支脚接触的方法",
+      "semantic_goal": "判断机器晃动是否还与倾斜或支脚悬空有关",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A005",
+        "user_onset_after_text": "把被套展开松放，两条浴巾分开放在滚筒不同位置，短袖逐件散开。不要塞紧，也别只留一件湿重的大件；如果被套仍容易裹住其他衣物，分批洗更稳妥。",
+        "assistant_stop_after_text": "把被套展开松放，两条浴巾分开放在滚筒不同位置，短袖逐件散开。不要塞紧，也别只留一件湿重的大件；如果被套仍容易裹住其他衣物，分批洗更稳妥。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U07",
+      "assistant_id": "A007",
+      "user_utterance": "等一下，气泡只是碰到其中一条线，也算不平吗？我不太懂这个怎么看。",
+      "assistant_utterance": "只要气泡完整落在两条线之间，通常可视为水平；若气泡压线或越线，就有倾斜。即使气泡居中，只要按四角会跷动，也说明支脚接触不实。",
+      "user_intent": "打断并要求用直白方式解释水平尺读数",
+      "assistant_intent": "澄清气泡压线的含义，并区分水平与支脚接触",
+      "semantic_goal": "正确读取水平尺并避免只凭气泡忽略机身跷动",
+      "act_ref": "A02",
+      "timing_refs": [
+        "T03"
+      ],
+      "timing": {
+        "target_assistant_id": "A006",
+        "user_onset_after_text": "要。拔掉插头后，把水平尺先横放机顶，再前后放；气泡应落在两条基准线之间。",
+        "assistant_stop_after_text": "要。拔掉插头后，把水平尺先横放机顶，再前后放；气泡应落在两条基准线之间。然"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U08",
+      "assistant_id": "A008",
+      "user_utterance": "那我检查时，是先看地面和前脚，再想办法看后脚吗？后面不好够，我怕操作不安全。",
+      "assistant_utterance": "可以先目视地面是否坚硬平整、四脚是否都贴地，再轻推四角看会不会跷动。后脚看不清就别伸手摸、别倾斜机器或钻到后面；把能看到的情况拍下来即可。",
+      "user_intent": "询问检查地面和支脚的安全顺序",
+      "assistant_intent": "说明安全检查地面、支脚接触和机身跷动的方法",
+      "semantic_goal": "在不接触难以够到的位置时检查机器是否水平和稳定",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01",
+        "T02"
+      ],
+      "timing": {
+        "target_assistant_id": "A007",
+        "user_onset_after_text": "只要气泡完整落在两条线之间，通常可视为水平；若气泡压线或越线，就有倾斜。即使气泡居中，只要按四角会跷动，也说明支脚接触不实。",
+        "assistant_stop_after_text": "只要气泡完整落在两条线之间，通常可视为水平；若气泡压线或越线，就有倾斜。即使气泡居中，只要按四角会跷动，也说明支脚接触不实。"
+      },
+      "pause_cue": {
+        "after_text": "那我检查时，是先看地面和前脚，再想办法看后脚吗？",
+        "duration_ms": 650
+      }
+    },
+    {
+      "user_id": "U09",
+      "assistant_id": "A009",
+      "user_utterance": "如果只是气泡偏向一边，或者按某个角会跷，但我看不出是哪只脚，该怎么处理？",
+      "assistant_utterance": "这说明可能存在倾斜或支脚接触不实，但不能锁定具体哪只脚。若从外侧无法安全确认，就保持断电，记录水平尺和跷动情况，联系房东安排调平。",
+      "user_intent": "询问无法定位具体支脚时应如何处理",
+      "assistant_intent": "给出条件判断并阻止为定位支脚而进行危险操作",
+      "semantic_goal": "明确无法安全定位倾斜或跷动来源时应交由房东处理",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A008",
+        "user_onset_after_text": "可以先目视地面是否坚硬平整、四脚是否都贴地，再轻推四角看会不会跷动。后脚看不清就别伸手摸、别倾斜机器或钻到后面；把能看到的情况拍下来即可。",
+        "assistant_stop_after_text": "可以先目视地面是否坚硬平整、四脚是否都贴地，再轻推四角看会不会跷动。后脚看不清就别伸手摸、别倾斜机器或钻到后面；把能看到的情况拍下来即可。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U10",
+      "assistant_id": "A010",
+      "user_utterance": "如果支脚从外面能够到，我自己拧一下算拆机吗？这是出租屋的机器，我不能随便拆。",
+      "assistant_utterance": "只调外露支脚通常不算拆机，但要以租约和房东要求为准。必须断电、机器静止，且不搬抬、不碰后方管线；后脚难够到就不要自己做。",
+      "user_intent": "确认调整外露支脚是否超出租屋维护权限",
+      "assistant_intent": "区分外部调平与拆机，并重申安全和授权边界",
+      "semantic_goal": "明确用户可做与不可做的操作范围",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A009",
+        "user_onset_after_text": "这说明可能存在倾斜或支脚接触不实，但不能锁定具体哪只脚。若从外侧无法安全确认，就保持断电，记录水平尺和跷动情况，联系房东安排调平。",
+        "assistant_stop_after_text": "这说明可能存在倾斜或支脚接触不实，但不能锁定具体哪只脚。若从外侧无法安全确认，就保持断电，记录水平尺和跷动情况，联系房东安排调平。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U11",
+      "assistant_id": "A011",
+      "user_utterance": "我不想冒险。那如果发现某只支脚没有贴地，能不能先在下面塞一小片纸板或薄橡胶垫，让它别跷？",
+      "assistant_utterance": "不建议用纸板、毛巾或随手找的薄垫临时塞脚，受潮或受振后会移位。应通过支脚和锁紧螺母正规调平；你这里最好由房东授权的人处理。",
+      "user_intent": "打断并提出临时垫脚方案",
+      "assistant_intent": "否定不稳定的临时垫物，并指向正规调平",
+      "semantic_goal": "避免使用可能移位或受潮的临时支撑物",
+      "act_ref": "A02",
+      "timing_refs": [
+        "T03"
+      ],
+      "timing": {
+        "target_assistant_id": "A010",
+        "user_onset_after_text": "只调外露支脚通常不算拆机，但要以租约和房东要求为准。",
+        "assistant_stop_after_text": "只调外露支脚通常不算拆机，但要以租约和房东要求为准。必须"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U12",
+      "assistant_id": "A012",
+      "user_utterance": "如果房东让人把支脚调稳了，我之后怎样试机风险比较低？还是直接把这批衣物重新放回去吗？",
+      "assistant_utterance": "确认四脚都压实、机身水平后，可按说明书选较低转速，用少量、材质相近且分布均匀的衣物试一次。人站在可断电的位置观察，不要扶机器；一旦剧烈撞击或移位，立即取消并断电。",
+      "user_intent": "询问调平后的低风险试机方法",
+      "assistant_intent": "给出有前提的单次低速试机方案和停止条件",
+      "semantic_goal": "明确何时可以试机以及试机时如何降低风险",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A011",
+        "user_onset_after_text": "不建议用纸板、毛巾或随手找的薄垫临时塞脚，受潮或受振后会移位。应通过支脚和锁紧螺母正规调平；你这里最好由房东授权的人处理。",
+        "assistant_stop_after_text": "不建议用纸板、毛巾或随手找的薄垫临时塞脚，受潮或受振后会移位。应通过支脚和锁紧螺母正规调平；你这里最好由房东授权的人处理。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U13",
+      "assistant_id": "A013",
+      "user_utterance": "还有一个问题，什么样的敲击更像衣物不均，什么样的声音说明别再自己排查了？",
+      "assistant_utterance": "负载不均常在加速时出现不规则闷响，重新分布后会减轻。若固定位置每转一圈都响，或有金属摩擦、滚筒明显松旷、剧烈撞击和机身移位，就应停机报修。",
+      "user_intent": "追问如何根据声音特征区分负载问题和故障",
+      "assistant_intent": "对比典型声音模式并明确升级报修信号",
+      "semantic_goal": "能从敲击规律和伴随现象判断是否停止自行排查",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A012",
+        "user_onset_after_text": "确认四脚都压实、机身水平后，可按说明书选较低转速，用少量、材质相近且分布均匀的衣物试一次。人站在可断电的位置观察，不要扶机器；一旦剧烈撞击或移位，立即取消并断电。",
+        "assistant_stop_after_text": "确认四脚都压实、机身水平后，可按说明书选较低转速，用少量、材质相近且分布均匀的衣物试一次。人站在可断电的位置观察，不要扶机器；一旦剧烈撞击或移位，立即取消并断电。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U14",
+      "assistant_id": "A014",
+      "user_utterance": "如果以后低速试机时机器还是剧烈撞击，或者往前挪了哪怕几厘米，我都应该马上停，对吗？",
+      "assistant_utterance": "对。试机中只要机器明显移位或再次剧烈撞击，就立即取消并断电，不再继续试；即使只移动几厘米，也应联系房东安排调平和检修。",
+      "user_intent": "确认试机时发生撞击或移位的停止条件",
+      "assistant_intent": "以条件式说明移位或剧烈撞击时必须停机报修",
+      "semantic_goal": "明确未来试机中何种现象要求立即终止自行排查",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A013",
+        "user_onset_after_text": "负载不均常在加速时出现不规则闷响，重新分布后会减轻。若固定位置每转一圈都响，或有金属摩擦、滚筒明显松旷、剧烈撞击和机身移位，就应停机报修。",
+        "assistant_stop_after_text": "负载不均常在加速时出现不规则闷响，重新分布后会减轻。若固定位置每转一圈都响，或有金属摩擦、滚筒明显松旷、剧烈撞击和机身移位，就应停机报修。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U15",
+      "assistant_id": "A015",
+      "user_utterance": "即使这次很可能是浴巾卷进被套造成的，也必须先确认机器水平、四脚压实，再考虑低速试机，对吗？",
+      "assistant_utterance": "对。先解开并均匀分布衣物，同时确认机器水平、四脚压实；只有低速试机未出现剧烈撞击或移位，才可继续。任何异常都应立即取消、断电并联系房东。",
+      "user_intent": "确认找到负载诱因后仍需满足摆放稳定条件才能试机",
+      "assistant_intent": "区分负载诱因与试机前提，并重申异常时的停止条件",
+      "semantic_goal": "避免因发现衣物缠绕就忽略机器水平和支脚稳定性",
+      "act_ref": "A05",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A014",
+        "user_onset_after_text": "对。试机中只要机器明显移位或再次剧烈撞击，就立即取消并断电，不再继续试；即使只移动几厘米，也应联系房东安排调平和检修。",
+        "assistant_stop_after_text": "对。试机中只要机器明显移位或再次剧烈撞击，就立即取消并断电，不再继续试；即使只移动几厘米，也应联系房东安排调平和检修。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U16",
+      "assistant_id": "A016",
+      "user_utterance": "好，那我联系房东时怎么说比较清楚？请帮我整理成一段，不要写得太绕。",
+      "assistant_utterance": "可以这样说：洗衣机在排水结束、脱水加速后剧烈晃动并敲击；本次有被套裹住浴巾。已停机断电，请确认是否需要安排人员检查水平、支脚并判断是否检修。",
+      "user_intent": "请求整理给房东的简明故障说明",
+      "assistant_intent": "汇总时间、负载、摆放和安全处置等关键信息",
+      "semantic_goal": "获得可直接转述给房东的报修描述",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A015",
+        "user_onset_after_text": "对。先解开并均匀分布衣物，同时确认机器水平、四脚压实；只有低速试机未出现剧烈撞击或移位，才可继续。任何异常都应立即取消、断电并联系房东。",
+        "assistant_stop_after_text": "对。先解开并均匀分布衣物，同时确认机器水平、四脚压实；只有低速试机未出现剧烈撞击或移位，才可继续。任何异常都应立即取消、断电并联系房东。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U17",
+      "assistant_id": "A017",
+      "user_utterance": "要不要再补充以前洗少量衣物没出现过，还有这次没有漏水、焦味和冒烟？",
+      "assistant_utterance": "要，这两点有判断价值。可以补一句：此前洗少量日常衣物时运行正常，本次未见漏水、焦味或冒烟。也可拍下衣物缠绕情况和机身外观，供房东参考。",
+      "user_intent": "确认是否应补充既往表现和无危险征象",
+      "assistant_intent": "说明补充信息的价值，并建议保留现场记录",
+      "semantic_goal": "让报修信息既完整又便于判断轻重缓急",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A016",
+        "user_onset_after_text": "可以这样说：洗衣机在排水结束、脱水加速后剧烈晃动并敲击；本次有被套裹住浴巾。已停机断电，请确认是否需要安排人员检查水平、支脚并判断是否检修。",
+        "assistant_stop_after_text": "可以这样说：洗衣机在排水结束、脱水加速后剧烈晃动并敲击；本次有被套裹住浴巾。已停机断电，请确认是否需要安排人员检查水平、支脚并判断是否检修。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U18",
+      "assistant_id": "A018",
+      "user_utterance": "明白。等房东安排人之前，我还能在断电状态下看些什么，又有哪些地方绝对不要碰？",
+      "assistant_utterance": "可以目视地面是否开裂或湿滑、四脚是否明显悬空、进排水管外部是否折扁或渗水，并拍照记录。不要拆面板、配重或外壳，不要检查内部减震器、弹簧、轴承和电气部件，也不要独自倾斜机器。",
+      "user_intent": "确认等待检修期间可做的外观检查和禁区",
+      "assistant_intent": "划定低风险观察范围与必须交给维修人员的项目",
+      "semantic_goal": "在不拆机和不增加风险的前提下保留有用现场信息",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A017",
+        "user_onset_after_text": "要，这两点有判断价值。可以补一句：此前洗少量日常衣物时运行正常，本次未见漏水、焦味或冒烟。也可拍下衣物缠绕情况和机身外观，供房东参考。",
+        "assistant_stop_after_text": "要，这两点有判断价值。可以补一句：此前洗少量日常衣物时运行正常，本次未见漏水、焦味或冒烟。也可拍下衣物缠绕情况和机身外观，供房东参考。"
+      },
+      "pause_cue": null
+    }
+  ],
+  "backchannels": [
+    {
+      "event_id": "BC01",
+      "target_assistant_id": "A001",
+      "after_text": "先保持断电，别立刻重启。先确认有没有漏水、焦味、冒烟、火花或金属摩擦声；",
+      "text": "嗯"
+    },
+    {
+      "event_id": "BC02",
+      "target_assistant_id": "A005",
+      "after_text": "把被套展开松放，两条浴巾分开放在滚筒不同位置，短袖逐件散开。",
+      "text": "好"
+    },
+    {
+      "event_id": "BC03",
+      "target_assistant_id": "A006",
+      "after_text": "要。拔掉插头后，把水平尺先横放机顶，",
+      "text": "明白"
+    },
+    {
+      "event_id": "BC04",
+      "target_assistant_id": "A009",
+      "after_text": "这说明可能存在倾斜或支脚接触不实，",
+      "text": "嗯"
+    },
+    {
+      "event_id": "BC05",
+      "target_assistant_id": "A012",
+      "after_text": "确认四脚都压实、机身水平后，可按说明书选较低转速，",
+      "text": "好"
+    },
+    {
+      "event_id": "BC06",
+      "target_assistant_id": "A013",
+      "after_text": "负载不均常在加速时出现不规则闷响，重新分布后会减轻。",
+      "text": "明白"
+    },
+    {
+      "event_id": "BC07",
+      "target_assistant_id": "A016",
+      "after_text": "可以这样说：洗衣机在排水结束、脱水加速后剧烈晃动并敲击；",
+      "text": "嗯，好"
+    }
+  ],
+  "side_speech": [],
+  "environment_events": [
+    {
+      "event_id": "ENV01",
+      "source_id": "ENV01",
+      "target_audio_id": "U08",
+      "placement_fraction": 0.18
+    },
+    {
+      "event_id": "ENV02",
+      "source_id": "ENV02",
+      "target_audio_id": "A016",
+      "placement_fraction": 0.55
+    }
+  ]
+}

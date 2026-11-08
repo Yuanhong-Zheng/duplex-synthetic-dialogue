@@ -1,0 +1,128 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "[SYSTEM ROLE]\n你是 taxonomy Stage-00 任务方向的语义 Judge。只检查当前 Scenario 的任务方向是否可用；每组条数由输入 `requested_examples_per_style` 指定。不重写 Domain/Scenario，不评价用户画像或声音，也不做分布配额审查。\n\n[INPUT]\n输入包含 Domain、Scenario、已有示例任务、`requested_examples_per_style` 和待审查的 `example_tasks`。`example_tasks` 应有三组，每组条数必须与 `requested_examples_per_style` 一致。\n\n[CHECK]\n- 每条是否确实属于当前 Scenario，而不是另一个领域的任务。\n- 开放式互动是否主要依赖通用知识或讨论，而不是要求已有材料。\n- 结构化整理是否有明确的材料处理和结构化结果。\n- 混合型是否同时包含通用框架和后续材料判断，且两段关系清楚。\n- 是否出现具体事实、工具依赖、Assistant 行为、完整答案或安全/评分字段。\n- 同组是否有明显的语义重复；只换实体或句式不算新的方向。\n- 是否出现表达入口塌缩：若同组有三个或以上条目沿用相同的泛化句首、知识获取表达或叙述骨架，例如连续“我想”“了解”“先……再……”，且这种重复不是当前 Scenario 自然要求，应判为 must-fix。重点是同组条目是否呈现不同的用户需求、互动方式和问题入口，不要求每条句式都不同。\n\n不要因为任务风格、职业或主题偏好不同而提出审美性意见。只报告会影响任务方向库使用的 must-fix 问题。\n\n[OUTPUT]\n只输出合法 JSON：\n{\n  \"decision\": \"pass\",\n  \"findings\": []\n}\n\n发现问题时：\n{\n  \"decision\": \"repair\",\n  \"findings\": [\n    {\n      \"severity\": \"must_fix\",\n      \"path\": \"/example_tasks/开放式互动/2\",\n      \"problem\": \"一个可定位的问题\",\n      \"evidence\": \"相关任务文本\",\n      \"repair\": \"最小修复方向\"\n    }\n  ]\n}\n",
+  "context": {
+    "scenario": {
+      "domain_id": "D06",
+      "domain": "购物、零售与消费决策",
+      "domain_definition": "Google Gemini Live 明确列出商品比较与穿搭建议，tau-Voice 和 IHBench 覆盖零售服务，Audio MultiChallenge 覆盖购物清单。",
+      "scenario_id": "D06-S02",
+      "scenario": "参数比较",
+      "requested_examples_per_style": 5,
+      "existing_example_task_seeds": [],
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "long",
+        "target_turns": 16,
+        "min_turns": 16,
+        "max_turns": 17
+      },
+      "dialogue_length_instruction": "本条完整对话目标为 16 个主轮，允许 16–17 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      }
+    },
+    "example_tasks": {
+      "开放式互动": [
+        "弄清楚比较电子产品参数时，性能、续航、耐用性和易用性之间通常该怎样权衡。",
+        "通过一轮口头情境练习，学会根据不同使用需求判断哪些商品参数真正重要。",
+        "讨论商品宣传中的专业参数、测试数据和用户体验各自能说明什么，以及它们可能遗漏什么。",
+        "模拟一场关于参数取舍的消费决策辩论，在不同立场之间练习解释选择理由。",
+        "共同设计一套适用于日常购物的参数比较思路，能够应对参数互相矛盾或难以直接换算的商品。"
+      ],
+      "结构化整理": [
+        "把我随后提供的几款商品规格整理成统一维度的对比表，并标出缺失或无法直接比较的参数。",
+        "根据我提供的商品页面和筛选条件，比较候选商品的关键参数，筛出符合条件的选项。",
+        "核对我收集的商品参数与宣传描述，整理出数值冲突、单位不一致和需要进一步确认的地方。",
+        "按照我随后给出的权重和候选清单，对商品进行分项评分、排序并列出各自的优缺点。",
+        "把我提供的多份商品记录按核心性能、便携性、维护要求和附加功能分类，形成便于选择的候选清单。"
+      ],
+      "混合型": [
+        "结合我的使用场景和随后提供的候选商品，判断哪些参数应当优先，并比较不同取舍带来的实际影响。",
+        "我在几款参数各有优势的商品之间难以选择，希望结合通用的性价比和适配性判断原则，分析我提供的候选方案。",
+        "先建立一套区分参数对实际体验影响与宣传性优势的通用判断框架，再用它分析我随后提供的商品规格和个人限制。",
+        "面对候选商品之间的续航、性能和便携性冲突，结合参数解读方法和我的使用习惯，确定更合适的选择方向。",
+        "我想复盘自己过去购买商品时只看单一参数的问题，并用更完整的比较框架重新评估随后提供的候选产品。"
+      ]
+    }
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

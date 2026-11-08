@@ -1,0 +1,365 @@
+{
+  "status": "passed",
+  "content_repair_budget": 5,
+  "content_max_attempts": 6,
+  "content_repairs_used": 2,
+  "v2_controls": {
+    "model_token_budgets": {
+      "generation": null,
+      "judge": null,
+      "compact": null
+    },
+    "output_token_budget": null,
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    },
+    "reasoning_effort_policy": "default",
+    "script_execution_policy": {
+      "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+      "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+      "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+      "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+      "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+      "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+      "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+    },
+    "program_anchor_seed": 3151691379,
+    "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+    "text_output_token_policy": "omit",
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "short",
+      "target_turns": 5,
+      "min_turns": 5,
+      "max_turns": 6
+    },
+    "interaction_profile": {
+      "schema": "duplex_v2.interaction_profile.v1",
+      "formality": "casual",
+      "directness": "direct",
+      "emotional_expressiveness": "expressive",
+      "verbosity": "balanced",
+      "initiative": "high",
+      "caution": "medium",
+      "patience": "medium",
+      "behavioral_notes": [
+        "通常主动补充观察到的现象和限制，希望尽快缩小排查范围。",
+        "会直接表达困惑或着急，也愿意在不确定时询问判断依据。",
+        "信息较多时会按自己的记忆顺序说明，接受对方通过问题帮助整理。"
+      ]
+    },
+    "soundscape_plan": {
+      "mode": "layered",
+      "ambient_layers": [
+        {
+          "source_id": "AMB01",
+          "asset_id": "fan-fsd50k-eval-415925",
+          "reason": "稳定的室内机械风扇声与当前客厅环境相符，可作为低音量连续底噪。"
+        }
+      ],
+      "environment_events": [],
+      "schema": "duplex_v2.soundscape_plan.v3",
+      "side_speech_sources": [],
+      "side_speech_count": 0,
+      "sampling": {
+        "schema": "duplex_v2.ambient_draw.v2",
+        "policy": {
+          "schema": "duplex_v2.soundscape_policy.v2",
+          "quiet_probability": 0.5,
+          "discrete_targets_by_tier": {
+            "short": [
+              0,
+              1
+            ],
+            "medium": [
+              1,
+              2
+            ],
+            "long": [
+              2,
+              4
+            ]
+          },
+          "discrete_count_includes": [
+            "environment_events",
+            "side_speech"
+          ],
+          "max_ambient_layers": 2,
+          "gain_range": [
+            0.3,
+            0.7
+          ],
+          "speech_request_probability": 0.5,
+          "third_party_preference_probability": 0.8,
+          "speech_requires_existing_scene_source": true,
+          "environment_audio": "base_only",
+          "stage2_repair": "atomic_scoped_patch",
+          "stage2_max_judge_attempts": 3,
+          "json_parse_max_retries": 3
+        },
+        "preferences": {
+          "schema": "duplex_v2.ambient_preferences.v1",
+          "seed": 202611073001,
+          "slot": 0,
+          "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+          "categories": {
+            "bed": [
+              "rain",
+              "crowd",
+              "traffic",
+              "wind",
+              "fan",
+              "birds"
+            ],
+            "event": [
+              "door",
+              "doorbell",
+              "paper",
+              "keyboard",
+              "footsteps",
+              "water_tap"
+            ]
+          },
+          "recordings": {
+            "bed:birds": [
+              "birds-fsd50k-eval-57907",
+              "birds-fsd50k-eval-86343",
+              "birds-fsd50k-eval-319512"
+            ],
+            "bed:crowd": [
+              "crowd-fsd50k-eval-121877",
+              "crowd-fsd50k-eval-185058",
+              "crowd-fsd50k-eval-340358"
+            ],
+            "bed:fan": [
+              "fan-fsd50k-eval-415925",
+              "fan-fsd50k-eval-235362",
+              "fan-fsd50k-eval-419427"
+            ],
+            "bed:rain": [
+              "rain-fsd50k-eval-238016",
+              "rain-fsd50k-eval-382582",
+              "rain-fsd50k-eval-21189"
+            ],
+            "bed:traffic": [
+              "traffic-fsd50k-eval-124020",
+              "traffic-fsd50k-eval-235541",
+              "traffic-fsd50k-eval-232686"
+            ],
+            "bed:wind": [
+              "wind-fsd50k-eval-113175",
+              "wind-fsd50k-eval-113173",
+              "wind-fsd50k-eval-113176"
+            ],
+            "event:door": [
+              "door-fsd50k-eval-71212",
+              "door-fsd50k-eval-209519",
+              "door-fsd50k-eval-119077"
+            ],
+            "event:doorbell": [
+              "doorbell-fsd50k-eval-332563",
+              "doorbell-fsd50k-eval-348322",
+              "doorbell-fsd50k-eval-426594"
+            ],
+            "event:footsteps": [
+              "footsteps-fsd50k-eval-392303",
+              "footsteps-fsd50k-eval-272381",
+              "footsteps-fsd50k-eval-153104"
+            ],
+            "event:keyboard": [
+              "keyboard-fsd50k-eval-399740",
+              "keyboard-fsd50k-eval-233057",
+              "keyboard-fsd50k-eval-411545"
+            ],
+            "event:paper": [
+              "paper-fsd50k-eval-82562",
+              "paper-fsd50k-eval-121200",
+              "paper-fsd50k-eval-343098"
+            ],
+            "event:water_tap": [
+              "water_tap-fsd50k-eval-402128",
+              "water_tap-fsd50k-eval-402127",
+              "water_tap-fsd50k-eval-232499"
+            ]
+          }
+        },
+        "control": {
+          "schema": "duplex_v2.soundscape_control.v2",
+          "seed": 1908551510,
+          "mode": "layered",
+          "discrete_event_target": 0,
+          "max_ambient_layers": 2,
+          "side_speech_requested": false,
+          "speech_kind_preferences": [
+            "third_party",
+            "machine"
+          ]
+        },
+        "control_sha256": "dc066a8062c75679618efb53d56600c9476e821107f09e622a057185d3e715da",
+        "candidate_plan": {
+          "schema": "duplex_v2.soundscape_plan.v3",
+          "mode": "layered",
+          "ambient_layers": [
+            {
+              "source_id": "AMB01",
+              "candidates": [
+                {
+                  "asset_id": "fan-fsd50k-eval-415925",
+                  "reason": "稳定的室内机械风扇声与当前客厅环境相符，可作为低音量连续底噪。",
+                  "environment_audio": "左后方约两米处传来持续而平稳的低速风扇声。"
+                },
+                {
+                  "asset_id": "fan-fsd50k-eval-235362",
+                  "reason": "连续通风声适合表现家中客厅正在运转的风扇，不引入新的场景事件。",
+                  "environment_audio": "左后方约两米处有低声运转的风扇，声音保持稳定。"
+                },
+                {
+                  "asset_id": "fan-fsd50k-eval-419427",
+                  "reason": "真实机械风扇底噪与已建立的安静室内声景兼容。",
+                  "environment_audio": "室内左后方传来音量较低的机械风声，节奏均匀。"
+                }
+              ]
+            }
+          ],
+          "environment_events": [],
+          "side_speech_eligibility": {
+            "third_party": {
+              "compatible": false,
+              "reason": "母亲和孩子虽在家中使用网络，但当前背景未建立他们在录音附近交谈或可辨发声。",
+              "source": null
+            },
+            "machine": {
+              "compatible": false,
+              "reason": "当前仅建立了风扇等非语音设备，没有可合理产生机器旁语的设备。",
+              "source": null
+            }
+          }
+        },
+        "base_environment_audio_sha256": "b84c6e6aa33feb7a36f6cf393895eb7b4be19bdff2049cabec3905677715c696",
+        "aggregate_environment_audio": "左后方约两米处有一台风扇持续低速运转，机械风声平稳且音量较低。室内其余声音较轻，近距离说话清晰可辨。 左后方约两米处传来持续而平稳的低速风扇声。",
+        "draws": [
+          {
+            "source_id": "AMB01",
+            "category": "fan",
+            "asset_id": "fan-fsd50k-eval-415925",
+            "eligible_categories": [
+              "fan"
+            ],
+            "eligible_assets": [
+              "fan-fsd50k-eval-235362",
+              "fan-fsd50k-eval-415925",
+              "fan-fsd50k-eval-419427"
+            ]
+          }
+        ],
+        "speech_selection": {
+          "requested": false,
+          "compatible_kinds": [],
+          "selected_kind": null,
+          "outcome": "not_requested",
+          "assessments": {
+            "third_party": {
+              "compatible": false,
+              "reason": "母亲和孩子虽在家中使用网络，但当前背景未建立他们在录音附近交谈或可辨发声。",
+              "source": null
+            },
+            "machine": {
+              "compatible": false,
+              "reason": "当前仅建立了风扇等非语音设备，没有可合理产生机器旁语的设备。",
+              "source": null
+            }
+          }
+        }
+      }
+    },
+    "ambient_control": {
+      "schema": "duplex_v2.soundscape_control.v2",
+      "seed": 1908551510,
+      "mode": "layered",
+      "discrete_event_target": 0,
+      "max_ambient_layers": 2,
+      "side_speech_requested": false,
+      "speech_kind_preferences": [
+        "third_party",
+        "machine"
+      ]
+    },
+    "ambient_catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f"
+  },
+  "script_repair_policy": {
+    "schema": "duplex_v2.script_repair_policy.v1",
+    "mode": "json_patch",
+    "patch_schema": "duplex_v2.script_patch.v1",
+    "json_parse_max_retries": 3,
+    "content_max_repairs": 5,
+    "length_compaction_max_attempts": 3,
+    "overlength_after_compaction": "fail_case",
+    "judge_scope": "complete_script_and_heard_context"
+  },
+  "json_parse_max_retries": 3,
+  "repair_output": "changed_fields_only",
+  "script_execution_policy": {
+    "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+    "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+    "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+    "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+    "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+    "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+    "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+  },
+  "program_anchor_seed": 3151691379,
+  "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+  "attempts": [
+    {
+      "attempt": 1,
+      "decision": "repair",
+      "directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g01-sample-001/R01-V01/script/attempts/attempt-01"
+    },
+    {
+      "attempt": 2,
+      "decision": "repair",
+      "directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g01-sample-001/R01-V01/script/attempts/attempt-02"
+    },
+    {
+      "attempt": 3,
+      "decision": "pass",
+      "directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g01-sample-001/R01-V01/script/attempts/attempt-03"
+    }
+  ],
+  "rounds": 5,
+  "backchannels": 1,
+  "side_speech": 0,
+  "environment_events": 0,
+  "interruptions": 1,
+  "length_warnings": [],
+  "script_path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g01-sample-001/R01-V01/script/script.json",
+  "semantic_waivers": [],
+  "semantic_review_status": "passed"
+}

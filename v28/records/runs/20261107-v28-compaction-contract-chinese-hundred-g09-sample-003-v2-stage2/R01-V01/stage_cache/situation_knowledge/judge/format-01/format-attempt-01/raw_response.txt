@@ -1,0 +1,26 @@
+{
+  "decision": "repair",
+  "findings": [
+    {
+      "severity": "must_fix",
+      "path": "/constraints/1",
+      "problem": "同一禁止伪造材料的边界同时出现在 constraints 和 safety_limits 中，职责重复。",
+      "evidence": "C02规定“不补写、倒签或改造材料以迎合要求”，L02又规定“不得伪造、补造或倒签产权证明、设备凭证、制度文件及现场照片”，两者表达的是同一安全边界。",
+      "repair": "删除C02并将后续constraint_id连续重编号，保留更适合作为安全边界的L02。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/soundscape_candidate_plan/environment_events/1",
+      "problem": "键盘事件及其候选引入了故事中未建立的电脑和输入活动，实际解析结果也选中了该事件。",
+      "evidence": "episode_situation只说明用户在桌上查看纸质文件和照片，没有电脑或键盘；ENV02却写用户“可能在店铺后间电脑旁整理现有材料”，program_resolved_soundscape_plan随后选中了keyboard-fsd50k-eval-411545。",
+      "repair": "将ENV02替换为由现有场景直接支持的事件候选，例如再次翻动纸质文件或用户在店内取放材料，不要新增电脑或电子操作事实。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/soundscape_candidate_plan/side_speech_eligibility/machine/reason",
+      "problem": "机器旁语不适配理由声称场景已经建立“普通电脑”，与故事事实不符。",
+      "evidence": "该理由写着“当前场景仅建立了纸质材料、普通电脑和环境声”，但episode_situation并未出现电脑。",
+      "repair": "删除对普通电脑的陈述，仅说明当前场景没有已建立的语音播报设备或其他可辨机器语音来源。"
+    }
+  ]
+}

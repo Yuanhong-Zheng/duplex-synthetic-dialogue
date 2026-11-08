@@ -1,0 +1,225 @@
+{
+  "episode_situation": "周日晚上八点半，用户独自在家里的书桌旁，准备为第二天下午第一次向社区医生说明近期反复出现的胸口不适。过去三周里，他记得这种闷胀感大约出现过五六次，但当时没有逐次记录，所以次数、日期和诱因都只能先按印象复盘。他能确认不适主要在胸口中间，通常持续几分钟到十几分钟，但很难准确描述强度，也不确定每次感受是否完全相同。有一次是在快步上楼后出现，另外几次似乎发生在久坐工作或晚饭后，不过这些情境是否真正相关仍需区分。他没有注意到昏厥，但对于是否同时心跳变快、气短，以及不适有没有延伸到别处都拿不准，担心自己把猜测说成事实。最近他偶尔会因为留意胸口感觉而推迟入睡，白天也开始回避赶路，并为此调整过一次工作安排。他已经在纸上写了几条零散提示，可用来唤起记忆，但没有血压、心率等同步测量记录，也没有完整的症状日记。当前优先事项是把能够确认的感受、持续与缓解情况、可能相关的活动以及生活影响分开说清，同时明确标出仍不确定之处。尚待逐步确认的问题包括发作频率和时间分布、伴随感受、什么情况下会缓解，以及就诊时应先向医生说明和询问哪些重点。",
+  "task_reference_data": [
+    "来自用户今晚手写提示、目前可现场读取：“近三周，大约五六次；具体日期没记。”次数是回忆估计，尚未逐次核实。",
+    "来自用户今晚手写提示、目前可现场读取：“胸口中间闷、胀，像被压着；每次大概几分钟到十几分钟。”强度和各次是否一致没有记录。",
+    "来自用户今晚手写提示、目前可现场读取：“一次快步上楼后；有几次可能是久坐工作或晚饭后。”这些活动与不适是否相关仍不确定。",
+    "来自用户今晚手写提示、目前可现场读取：“坐下休息后好像会慢慢缓解；没有记药物或其他处理。”缓解所需的准确时间尚未核实。",
+    "来自用户今晚手写提示、目前可现场读取：“没注意到昏厥；心跳变快、气短、向别处延伸都不太确定。”这些是待向医生说明的不确定项。",
+    "来自用户今晚手写提示、目前可现场读取：“偶尔因为留意胸口感觉而晚睡；白天开始避免赶路；调整过一次工作安排。”具体受影响的日期未记录。"
+  ],
+  "environment_audio": "房间内整体安静，近处没有持续可辨的设备声或人声。门窗方向也没有突出的间歇声，录音底色保持平稳而低。",
+  "estimated_snr_db": 35,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "复盘时要明确区分用户能够确认的经历、仅凭印象的估计和目前完全不确定的信息。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "整理结果应适合首次社区就诊时口头说明，优先突出症状特征、持续与缓解、相关情境、伴随感受和生活影响。",
+      "kind": "soft"
+    },
+    {
+      "constraint_id": "C03",
+      "text": "现有手写提示只能作为回忆线索，不能把缺少记录的日期、次数、强度或诱因补写成确定事实。",
+      "kind": "hard"
+    }
+  ],
+  "safety_limits": [
+    {
+      "limit_id": "L01",
+      "text": "如果用户此刻出现持续或明显加重的胸痛或胸闷，尤其伴呼吸困难、冷汗、昏厥，或不适向手臂、下颌、背部扩散，应停止常规复盘并立即寻求急救医疗帮助。",
+      "severity": "critical"
+    },
+    {
+      "limit_id": "L02",
+      "text": "口头整理不能替代医疗评估，也不能仅凭这些回忆确定病因或排除心肺等紧急问题。",
+      "severity": "hard"
+    }
+  ],
+  "soundscape_plan": {
+    "mode": "quiet",
+    "ambient_layers": [],
+    "environment_events": [],
+    "schema": "duplex_v2.soundscape_plan.v3",
+    "side_speech_sources": [],
+    "side_speech_count": 0,
+    "sampling": {
+      "schema": "duplex_v2.ambient_draw.v2",
+      "policy": {
+        "schema": "duplex_v2.soundscape_policy.v2",
+        "quiet_probability": 0.5,
+        "discrete_targets_by_tier": {
+          "short": [
+            0,
+            1
+          ],
+          "medium": [
+            1,
+            2
+          ],
+          "long": [
+            2,
+            4
+          ]
+        },
+        "discrete_count_includes": [
+          "environment_events",
+          "side_speech"
+        ],
+        "max_ambient_layers": 2,
+        "gain_range": [
+          0.3,
+          0.7
+        ],
+        "speech_request_probability": 0.5,
+        "third_party_preference_probability": 0.8,
+        "speech_requires_existing_scene_source": true,
+        "environment_audio": "base_only",
+        "stage2_repair": "atomic_scoped_patch",
+        "stage2_max_judge_attempts": 3,
+        "json_parse_max_retries": 3
+      },
+      "preferences": {
+        "schema": "duplex_v2.ambient_preferences.v1",
+        "seed": 202611073010,
+        "slot": 1,
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "categories": {
+          "bed": [
+            "traffic",
+            "wind",
+            "birds",
+            "rain",
+            "crowd",
+            "fan"
+          ],
+          "event": [
+            "door",
+            "footsteps",
+            "paper",
+            "doorbell",
+            "water_tap",
+            "keyboard"
+          ]
+        },
+        "recordings": {
+          "bed:birds": [
+            "birds-fsd50k-eval-57907",
+            "birds-fsd50k-eval-319512",
+            "birds-fsd50k-eval-86343"
+          ],
+          "bed:crowd": [
+            "crowd-fsd50k-eval-185058",
+            "crowd-fsd50k-eval-121877",
+            "crowd-fsd50k-eval-340358"
+          ],
+          "bed:fan": [
+            "fan-fsd50k-eval-415925",
+            "fan-fsd50k-eval-235362",
+            "fan-fsd50k-eval-419427"
+          ],
+          "bed:rain": [
+            "rain-fsd50k-eval-238016",
+            "rain-fsd50k-eval-21189",
+            "rain-fsd50k-eval-382582"
+          ],
+          "bed:traffic": [
+            "traffic-fsd50k-eval-232686",
+            "traffic-fsd50k-eval-235541",
+            "traffic-fsd50k-eval-124020"
+          ],
+          "bed:wind": [
+            "wind-fsd50k-eval-113175",
+            "wind-fsd50k-eval-113176",
+            "wind-fsd50k-eval-113173"
+          ],
+          "event:door": [
+            "door-fsd50k-eval-71212",
+            "door-fsd50k-eval-119077",
+            "door-fsd50k-eval-209519"
+          ],
+          "event:doorbell": [
+            "doorbell-fsd50k-eval-332563",
+            "doorbell-fsd50k-eval-426594",
+            "doorbell-fsd50k-eval-348322"
+          ],
+          "event:footsteps": [
+            "footsteps-fsd50k-eval-392303",
+            "footsteps-fsd50k-eval-272381",
+            "footsteps-fsd50k-eval-153104"
+          ],
+          "event:keyboard": [
+            "keyboard-fsd50k-eval-411545",
+            "keyboard-fsd50k-eval-233057",
+            "keyboard-fsd50k-eval-399740"
+          ],
+          "event:paper": [
+            "paper-fsd50k-eval-82562",
+            "paper-fsd50k-eval-343098",
+            "paper-fsd50k-eval-121200"
+          ],
+          "event:water_tap": [
+            "water_tap-fsd50k-eval-402127",
+            "water_tap-fsd50k-eval-402128",
+            "water_tap-fsd50k-eval-232499"
+          ]
+        }
+      },
+      "control": {
+        "schema": "duplex_v2.soundscape_control.v2",
+        "seed": 2737358261,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "third_party",
+          "machine"
+        ]
+      },
+      "control_sha256": "de368100033ed8013fdc6f864c84ca0bf8e66d22246418aabe845c9cd8bf750a",
+      "candidate_plan": {
+        "schema": "duplex_v2.soundscape_plan.v3",
+        "mode": "quiet",
+        "ambient_layers": [],
+        "environment_events": [],
+        "side_speech_eligibility": {
+          "third_party": {
+            "compatible": false,
+            "reason": "用户独自在家，当前故事中没有已建立的在场第三方。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "当前场景没有已建立的语音播报设备或其他可辨机器旁语来源。",
+            "source": null
+          }
+        }
+      },
+      "base_environment_audio_sha256": "9bf8e79fca67deec868efbefa201ae0cedee260ba36df514d6d89ccef4b254ff",
+      "aggregate_environment_audio": "房间内整体安静，近处没有持续可辨的设备声或人声。门窗方向也没有突出的间歇声，录音底色保持平稳而低。",
+      "draws": [],
+      "speech_selection": {
+        "requested": false,
+        "compatible_kinds": [],
+        "selected_kind": null,
+        "outcome": "not_requested",
+        "assessments": {
+          "third_party": {
+            "compatible": false,
+            "reason": "用户独自在家，当前故事中没有已建立的在场第三方。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "当前场景没有已建立的语音播报设备或其他可辨机器旁语来源。",
+            "source": null
+          }
+        }
+      }
+    }
+  }
+}

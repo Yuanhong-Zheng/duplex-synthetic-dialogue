@@ -1,0 +1,1648 @@
+{
+  "frozen_source": {
+    "case_id": "R01-V01",
+    "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g06-sample-001-v2-stage2",
+    "language": "zh",
+    "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+    "script_execution_policy": {
+      "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+      "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+      "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+      "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+      "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+      "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+      "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+    },
+    "program_anchor_seed": 1623795542,
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    },
+    "relay_configuration": {
+      "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g06/relay-policy.json",
+      "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g06/relay-state",
+      "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+      "policy": {
+        "schema": "duplex_v2.timeout_relay_policy.v3",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "backup": {
+          "profile": "lianyu",
+          "endpoint": "https://api.openbili.com/v1/chat/completions",
+          "model_map": {
+            "openai/gpt-5.6-sol": "gpt-5.6-sol",
+            "openai/gpt-5.6-luna": "gpt-5.6-luna"
+          },
+          "verification": {
+            "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+            "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+          }
+        },
+        "trigger": {
+          "max_retries": 5,
+          "http_statuses": [
+            502,
+            503,
+            504
+          ],
+          "error_types": [
+            "TimeoutError",
+            "HTTP2DeadlineExceeded",
+            "ConnectionResetError",
+            "ConnectionAbortedError",
+            "BrokenPipeError",
+            "RemoteDisconnected",
+            "IncompleteRead"
+          ],
+          "http2_transport_errors": "negotiated_h2_only",
+          "require_all_attempts": true
+        },
+        "max_relay_switches": 1
+      }
+    },
+    "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+    "script_repair_policy": {
+      "schema": "duplex_v2.script_repair_policy.v1",
+      "mode": "json_patch",
+      "patch_schema": "duplex_v2.script_patch.v1",
+      "json_parse_max_retries": 3,
+      "content_max_repairs": 5,
+      "length_compaction_max_attempts": 3,
+      "overlength_after_compaction": "fail_case",
+      "judge_scope": "complete_script_and_heard_context"
+    },
+    "text_output_token_policy": "omit",
+    "scene_task": {
+      "scene": {
+        "domain_id": "D13",
+        "domain": "金融、银行与保险",
+        "scenario_id": "D13-S05",
+        "scenario": "贷款与房贷知识"
+      },
+      "task_style": "混合型",
+      "task_instance": {
+        "goal": "我准备和伴侣共同申请首套房贷款，之后会提供我们的收入、现有分期、首付款来源以及几份银行预审条件。希望结合家庭支持资金是否计入首付、共同借款人的责任、月供与应急储备等通用原则，判断目前适合关注的总借款范围和预算上限；再比较不同方案在固定或浮动利率、期限、提前还款限制及潜在风险上的差异，最后形成一个更稳妥的选择思路，并列出仍需向银行确认的关键问题。"
+      }
+    },
+    "user_voice": {
+      "user_seed": {
+        "role_relation": "正在与伴侣筹备首次购房的互联网公司产品经理",
+        "task_familiarity": "low"
+      },
+      "voice_profile": "男性，二十多岁，音色偏明亮，吐字清楚但语速较快，情绪外露，谈到财务压力时会明显紧绷，偶尔带着急于确认结论的语气。",
+      "interaction_profile": {
+        "schema": "duplex_v2.interaction_profile.v1",
+        "formality": "casual",
+        "directness": "direct",
+        "emotional_expressiveness": "expressive",
+        "verbosity": "brief",
+        "initiative": "low",
+        "caution": "low",
+        "patience": "low",
+        "behavioral_notes": [
+          "通常用很短的句子直接抛出当前最想确认的问题，不太主动铺陈背景。",
+          "遇到听不懂的金融术语会马上显露困惑或焦躁，并要求换成更直白的说法。",
+          "更愿意先听到一个清晰的初步判断，再补充自己遗漏的条件或材料。"
+        ]
+      }
+    },
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "long",
+      "target_turns": 21,
+      "min_turns": 20,
+      "max_turns": 22
+    },
+    "ambient_catalog": {
+      "schema": "duplex_v2.ambient_catalog.v1",
+      "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+      "assets": [
+        {
+          "asset_id": "fan-fsd50k-eval-419427",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 10.3909375
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-235362",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 11.0
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-415925",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 7.178
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-235541",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 29.045875
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-232686",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 10.3445
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-124020",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 24.78875
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-382582",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.9788125
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-21189",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.962
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-238016",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 11.32
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-185058",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 5.2114375
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-121877",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 11.696
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-340358",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 4.2745
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-82562",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 1.0094375
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-121200",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.83525
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-343098",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.796
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-153104",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.4691875
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-392303",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.6849375
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-272381",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.933375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-71212",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.3638125
+        },
+        {
+          "asset_id": "door-fsd50k-eval-119077",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.7944375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-209519",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 1.0398125
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-399740",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.322
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-233057",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.4700625
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-411545",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.5686875
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-232499",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 0.842
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402127",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402128",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-86343",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 7.5366875
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-57907",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.5773125
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-319512",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.755625
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113173",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 11.2184375
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113175",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.8773125
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113176",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.6341875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-348322",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 1.625
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-426594",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 0.3666875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-332563",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 4.0
+        }
+      ]
+    },
+    "ambient_control": {
+      "schema": "duplex_v2.soundscape_control.v2",
+      "seed": 3752656529,
+      "mode": "layered",
+      "discrete_event_target": 3,
+      "max_ambient_layers": 2,
+      "side_speech_requested": true,
+      "speech_kind_preferences": [
+        "third_party",
+        "machine"
+      ]
+    },
+    "situation_knowledge": {
+      "episode_situation": "2026年11月7日周六晚上八点半，用户和伴侣林悦坐在上海浦东租住房的餐桌旁，准备在下周三分别联系三家银行前先把购房贷款思路理清。两人正在筹备首次共同购房，尚未确定具体房源，也没有签订认购书或支付定金。用户已打开家庭预算表，林悦把工资记录、现有分期信息和三份预审条件打印在桌上，二人可以在对话中逐项读取这些材料。两人的稳定税后月工资合计为五万元，另有金额波动且并非每年都能拿到的绩效奖金，因此不希望靠乐观奖金支撑长期月供。目前两笔分期每月合计五千元，其中一笔还剩十八个月，另一笔还剩八个月，是否提前结清以及银行如何计入负债仍需比较。两人现有共同储蓄一百四十八万元，用户父母另表示愿意赠与六十万元且不要求偿还，但这笔钱尚未转账，银行需要什么赠与证明和资金流水还不明确。他们希望交易完成后至少保留三十万元应急资金，预算表还暂列十五万元用于税费、中介费和搬家装修等支出，但实际费用要等房源确定后核实。近期关注的房源总价集中在四百万元至四百八十万元之间，较高总价的户型更合适，却会明显压缩现金余量。三家银行给出的都只是附条件预审信息，最高额度、利率结构、期限和提前还款规则并不相同，不能直接当作最终批贷承诺。用户对固定利率、浮动利率和重定价周期的实际影响还不熟悉，容易把当前展示利率误当成整个期限不变的成本。两人都没有名下住房，也没有既往住房贷款记录，但当地和各银行最终如何认定首套资格仍待书面确认。用户更在意先得到一个保守的借款区间和预算上限，林悦则尤其担心共同借款责任、收入中断时的月供压力以及提前还款受限。两人已约定基础测算不把奖金视为必然收入，并希望常规月供尽量不超过稳定税后月收入的百分之三十五。当前仍需逐步厘清父母赠与能否完整计入首付、两笔分期是否值得提前结清、不同期限下的现金流压力，以及三份预审条件中哪些条款必须向银行再次确认。由于房价范围、首付来源和贷款产品彼此牵连，用户此刻有些急于得到明确结论，但现有材料更适合先分开核对再形成稳妥的选择框架。",
+      "task_reference_data": [
+        "来源：两人当前打开的家庭收入表，用户已读。用户稳定税后工资为每月28000元，林悦稳定税后工资为每月22000元，稳定税后月收入合计50000元。",
+        "来源：近两年奖金记录，打印件可现场读取。用户过去两年税后绩效奖金分别为42000元和76000元；林悦分别为28000元和34000元，奖金均不保证发放，双方已决定不把奖金计入基础月供能力。",
+        "来源：两人的分期账单，用户已核对。用户有一笔每月3200元的汽车分期，剩余18个月，当前一次性结清金额为54800元；林悦有一笔每月1800元的消费分期，剩余8个月，当前一次性结清金额为13900元。",
+        "来源：家庭预算表，当前可见。共同储蓄为1480000元；计划至少保留300000元应急资金；税费、中介费、搬家和基础装修暂按合计150000元预留，该费用只是初步估算。",
+        "来源：用户父母的家庭聊天记录，双方已读但银行尚未核实。父母愿意赠与600000元用于首付，明确表示不要求偿还；资金尚未转账，也尚未准备赠与声明、亲属关系材料或完整转账流水。",
+        "来源：近期看房笔记，用户已读。两人关注的房源总价为4000000元至4800000元，其中较满意的两套分别约为4380000元和4680000元，均未签约或支付定金。",
+        "来源：海澜银行2026年11月5日预审页，打印件可现场读取且尚未由客户经理复核。条件显示最高贷款3100000元、最长30年、等额本息；利率为五年期LPR减45个基点，页面按当期数值展示首年参考年利率3.15%，每年1月1日重定价；放款满12个月后可申请提前还款，每次不少于100000元，前12个月提前还款按提前偿还本金的1%收费。页面注明直系亲属赠与可作为首付来源，但需赠与声明和可追溯转账记录。",
+        "来源：浦新商业银行2026年11月6日预审页，打印件可现场读取且可能因正式审查变化。条件显示最高贷款2900000元、最长25年、等额本息；前5年固定年利率3.35%，此后按五年期LPR减30个基点浮动并每年重定价；前24个月提前还款按提前偿还本金的2%收费，之后免违约金。页面要求首付款来源接受专项审核，并写明家庭支持资金是否认可需由经办行结合赠与证明、资金停留时间和流水判断。",
+        "来源：安泰银行2026年11月6日预审摘要，电子页面当前可读取但并非正式合同。条件显示最高贷款3300000元、最长20年、全期限固定年利率3.45%、等额本息；放款满6个月后可提前还款，每年最多两次，每次不少于50000元，单个自然年提前偿还本金不得超过年初贷款余额的20%。摘要写明首付可来自自有资金或直系亲属赠与，但未列出赠与材料、资金停留期限和收入认定细则。",
+        "来源：三份预审页共同免责声明，用户已看到。预审额度和展示利率不构成最终批贷承诺，正式结果仍取决于征信、收入证明、现有负债、首付款来源、房屋评估、首套资格和最终合同条款。"
+      ],
+      "environment_audio": "右后方约两米处有持续而低沉的通风扇声，音量稳定。窗外近处传来均匀雨声，偶尔有稍密的雨点敲在玻璃上，但不会盖住近距离说话。",
+      "estimated_snr_db": 27,
+      "constraints": [
+        {
+          "constraint_id": "C01",
+          "text": "完成首付及暂估交易支出后，至少保留300000元可动用应急资金。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C02",
+          "text": "基础偿付能力测算不得把双方绩效奖金当作必然收入。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C03",
+          "text": "常规月供尽量控制在稳定税后月收入50000元的35%以内，即不高于17500元。",
+          "kind": "soft"
+        },
+        {
+          "constraint_id": "C04",
+          "text": "比较方案时需同时考虑现有每月5000元分期负担及其剩余期限，不能只比较房贷月供。",
+          "kind": "hard"
+        }
+      ],
+      "safety_limits": [
+        {
+          "limit_id": "L01",
+          "text": "三份材料均为附条件预审；在银行完成正式审批并书面确认关键条款前，不得将预审额度视为确定可贷金额或据此承担不可退定金等不可逆义务。",
+          "severity": "hard"
+        },
+        {
+          "limit_id": "L02",
+          "text": "共同借款责任不得自行理解为按收入或首付比例各自承担一部分，实际责任范围须以共同借款合同及银行书面说明为准。",
+          "severity": "advisory"
+        }
+      ],
+      "soundscape_plan": {
+        "mode": "layered",
+        "ambient_layers": [
+          {
+            "source_id": "AMB01",
+            "asset_id": "fan-fsd50k-eval-419427",
+            "reason": "适合作为租住房餐桌附近持续运行的通风设备底噪。"
+          },
+          {
+            "source_id": "AMB02",
+            "asset_id": "rain-fsd50k-eval-21189",
+            "reason": "与夜间居家、窗外下雨的现有场景相容。"
+          }
+        ],
+        "environment_events": [
+          {
+            "source_id": "ENV01",
+            "asset_id": "paper-fsd50k-eval-121200",
+            "reason": "桌上已有打印的工资记录和银行预审材料，短暂翻页与场景一致。"
+          },
+          {
+            "source_id": "ENV02",
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "reason": "用户已在电脑上打开家庭预算表，短暂输入与当前准备活动相容。"
+          }
+        ],
+        "schema": "duplex_v2.soundscape_plan.v3",
+        "side_speech_sources": [
+          {
+            "source_id": "SP01",
+            "speaker": "third_party",
+            "voice_profile": "自然清晰、音量较低的成年普通话声音",
+            "description": "当前故事中在场并共同筹备购房的伴侣林悦"
+          }
+        ],
+        "side_speech_count": 1,
+        "sampling": {
+          "schema": "duplex_v2.ambient_draw.v2",
+          "policy": {
+            "schema": "duplex_v2.soundscape_policy.v2",
+            "quiet_probability": 0.5,
+            "discrete_targets_by_tier": {
+              "short": [
+                0,
+                1
+              ],
+              "medium": [
+                1,
+                2
+              ],
+              "long": [
+                2,
+                4
+              ]
+            },
+            "discrete_count_includes": [
+              "environment_events",
+              "side_speech"
+            ],
+            "max_ambient_layers": 2,
+            "gain_range": [
+              0.3,
+              0.7
+            ],
+            "speech_request_probability": 0.5,
+            "third_party_preference_probability": 0.8,
+            "speech_requires_existing_scene_source": true,
+            "environment_audio": "base_only",
+            "stage2_repair": "atomic_scoped_patch",
+            "stage2_max_judge_attempts": 3,
+            "json_parse_max_retries": 3
+          },
+          "preferences": {
+            "schema": "duplex_v2.ambient_preferences.v1",
+            "seed": 202611073006,
+            "slot": 0,
+            "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+            "categories": {
+              "bed": [
+                "birds",
+                "rain",
+                "wind",
+                "traffic",
+                "crowd",
+                "fan"
+              ],
+              "event": [
+                "footsteps",
+                "paper",
+                "doorbell",
+                "keyboard",
+                "door",
+                "water_tap"
+              ]
+            },
+            "recordings": {
+              "bed:birds": [
+                "birds-fsd50k-eval-319512",
+                "birds-fsd50k-eval-57907",
+                "birds-fsd50k-eval-86343"
+              ],
+              "bed:crowd": [
+                "crowd-fsd50k-eval-121877",
+                "crowd-fsd50k-eval-185058",
+                "crowd-fsd50k-eval-340358"
+              ],
+              "bed:fan": [
+                "fan-fsd50k-eval-419427",
+                "fan-fsd50k-eval-235362",
+                "fan-fsd50k-eval-415925"
+              ],
+              "bed:rain": [
+                "rain-fsd50k-eval-21189",
+                "rain-fsd50k-eval-382582",
+                "rain-fsd50k-eval-238016"
+              ],
+              "bed:traffic": [
+                "traffic-fsd50k-eval-124020",
+                "traffic-fsd50k-eval-232686",
+                "traffic-fsd50k-eval-235541"
+              ],
+              "bed:wind": [
+                "wind-fsd50k-eval-113173",
+                "wind-fsd50k-eval-113175",
+                "wind-fsd50k-eval-113176"
+              ],
+              "event:door": [
+                "door-fsd50k-eval-209519",
+                "door-fsd50k-eval-119077",
+                "door-fsd50k-eval-71212"
+              ],
+              "event:doorbell": [
+                "doorbell-fsd50k-eval-348322",
+                "doorbell-fsd50k-eval-332563",
+                "doorbell-fsd50k-eval-426594"
+              ],
+              "event:footsteps": [
+                "footsteps-fsd50k-eval-153104",
+                "footsteps-fsd50k-eval-272381",
+                "footsteps-fsd50k-eval-392303"
+              ],
+              "event:keyboard": [
+                "keyboard-fsd50k-eval-411545",
+                "keyboard-fsd50k-eval-233057",
+                "keyboard-fsd50k-eval-399740"
+              ],
+              "event:paper": [
+                "paper-fsd50k-eval-121200",
+                "paper-fsd50k-eval-343098",
+                "paper-fsd50k-eval-82562"
+              ],
+              "event:water_tap": [
+                "water_tap-fsd50k-eval-402128",
+                "water_tap-fsd50k-eval-232499",
+                "water_tap-fsd50k-eval-402127"
+              ]
+            }
+          },
+          "control": {
+            "schema": "duplex_v2.soundscape_control.v2",
+            "seed": 3752656529,
+            "mode": "layered",
+            "discrete_event_target": 3,
+            "max_ambient_layers": 2,
+            "side_speech_requested": true,
+            "speech_kind_preferences": [
+              "third_party",
+              "machine"
+            ]
+          },
+          "control_sha256": "422cec3ddc4b55d3265aaa1fcddc72a4c2b6b15888c59566c7c862214d5701ae",
+          "candidate_plan": {
+            "schema": "duplex_v2.soundscape_plan.v3",
+            "mode": "layered",
+            "ambient_layers": [
+              {
+                "source_id": "AMB01",
+                "candidates": [
+                  {
+                    "asset_id": "fan-fsd50k-eval-419427",
+                    "reason": "适合作为租住房餐桌附近持续运行的通风设备底噪。",
+                    "environment_audio": "右后方持续传来低沉稳定的机械通风声。"
+                  },
+                  {
+                    "asset_id": "fan-fsd50k-eval-235362",
+                    "reason": "室内家用环境兼容，可提供不抢占语音的稳定机械底色。",
+                    "environment_audio": "室内较远处有均匀、连续的风扇运转声。"
+                  },
+                  {
+                    "asset_id": "fan-fsd50k-eval-415925",
+                    "reason": "短时循环后仍能形成稳定的室内通风背景。",
+                    "environment_audio": "右后方约两米处保持轻微通风设备声。"
+                  }
+                ]
+              },
+              {
+                "source_id": "AMB02",
+                "candidates": [
+                  {
+                    "asset_id": "rain-fsd50k-eval-21189",
+                    "reason": "与夜间居家、窗外下雨的现有场景相容。",
+                    "environment_audio": "窗外有连续而均匀的雨声。"
+                  },
+                  {
+                    "asset_id": "rain-fsd50k-eval-382582",
+                    "reason": "可表现雨点落在住宅窗外的平稳背景。",
+                    "environment_audio": "近窗方向传来稳定雨声，偶有较密雨点。"
+                  },
+                  {
+                    "asset_id": "rain-fsd50k-eval-238016",
+                    "reason": "连续雨声可与室内低声交谈自然叠加。",
+                    "environment_audio": "窗外雨声持续，整体音量较低且变化缓慢。"
+                  }
+                ]
+              }
+            ],
+            "environment_events": [
+              {
+                "source_id": "ENV01",
+                "candidates": [
+                  {
+                    "asset_id": "paper-fsd50k-eval-121200",
+                    "reason": "桌上已有打印的工资记录和银行预审材料，短暂翻页与场景一致。",
+                    "environment_audio": "近处传来一次短促的纸张翻动声。"
+                  },
+                  {
+                    "asset_id": "paper-fsd50k-eval-343098",
+                    "reason": "适合表现伴侣在餐桌旁整理预审打印件。",
+                    "environment_audio": "桌面方向响起轻微的纸页整理声。"
+                  },
+                  {
+                    "asset_id": "paper-fsd50k-eval-82562",
+                    "reason": "现有纸质材料允许出现完整但短暂的翻动声。",
+                    "environment_audio": "麦克风近处出现一小段纸张翻动声。"
+                  }
+                ]
+              },
+              {
+                "source_id": "ENV02",
+                "candidates": [
+                  {
+                    "asset_id": "keyboard-fsd50k-eval-411545",
+                    "reason": "用户已在电脑上打开家庭预算表，短暂输入与当前准备活动相容。",
+                    "environment_audio": "桌面前方传来一小段电脑键盘输入声。"
+                  },
+                  {
+                    "asset_id": "keyboard-fsd50k-eval-233057",
+                    "reason": "可表现核对预算表时进行少量输入，不引入新的设备或任务事实。",
+                    "environment_audio": "近处响起数秒轻快的键盘敲击声。"
+                  },
+                  {
+                    "asset_id": "keyboard-fsd50k-eval-399740",
+                    "reason": "室内餐桌旁已有打开的电子预算表，短段键盘声合理。",
+                    "environment_audio": "正前方出现短暂而清晰的键盘输入声。"
+                  }
+                ]
+              }
+            ],
+            "side_speech_eligibility": {
+              "third_party": {
+                "compatible": true,
+                "reason": "伴侣林悦已在当前故事中与用户同坐餐桌旁核对贷款材料，可成为一次自然的低声旁语来源。",
+                "source": {
+                  "speaker": "third_party",
+                  "voice_profile": "自然清晰、音量较低的成年普通话声音",
+                  "description": "当前故事中在场并共同筹备购房的伴侣林悦"
+                }
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "当前场景只有打开的预算表和纸质材料，没有已建立的语音播报设备或机器语音来源。",
+                "source": null
+              }
+            }
+          },
+          "base_environment_audio_sha256": "2da8fc75266b46a93af3b5ecb140dbca275a2d7af864eb0026fc7a95c0d73eaa",
+          "aggregate_environment_audio": "右后方约两米处有持续而低沉的通风扇声，音量稳定。窗外近处传来均匀雨声，偶尔有稍密的雨点敲在玻璃上，但不会盖住近距离说话。 右后方持续传来低沉稳定的机械通风声。 窗外有连续而均匀的雨声。 近处传来一次短促的纸张翻动声。 桌面前方传来一小段电脑键盘输入声。",
+          "draws": [
+            {
+              "source_id": "AMB01",
+              "category": "fan",
+              "asset_id": "fan-fsd50k-eval-419427",
+              "eligible_categories": [
+                "fan"
+              ],
+              "eligible_assets": [
+                "fan-fsd50k-eval-235362",
+                "fan-fsd50k-eval-415925",
+                "fan-fsd50k-eval-419427"
+              ]
+            },
+            {
+              "source_id": "AMB02",
+              "category": "rain",
+              "asset_id": "rain-fsd50k-eval-21189",
+              "eligible_categories": [
+                "rain"
+              ],
+              "eligible_assets": [
+                "rain-fsd50k-eval-21189",
+                "rain-fsd50k-eval-238016",
+                "rain-fsd50k-eval-382582"
+              ]
+            },
+            {
+              "source_id": "ENV01",
+              "category": "paper",
+              "asset_id": "paper-fsd50k-eval-121200",
+              "eligible_categories": [
+                "paper"
+              ],
+              "eligible_assets": [
+                "paper-fsd50k-eval-121200",
+                "paper-fsd50k-eval-343098",
+                "paper-fsd50k-eval-82562"
+              ]
+            },
+            {
+              "source_id": "ENV02",
+              "category": "keyboard",
+              "asset_id": "keyboard-fsd50k-eval-411545",
+              "eligible_categories": [
+                "keyboard"
+              ],
+              "eligible_assets": [
+                "keyboard-fsd50k-eval-233057",
+                "keyboard-fsd50k-eval-399740",
+                "keyboard-fsd50k-eval-411545"
+              ]
+            }
+          ],
+          "speech_selection": {
+            "requested": true,
+            "compatible_kinds": [
+              "third_party"
+            ],
+            "selected_kind": "third_party",
+            "outcome": "selected",
+            "assessments": {
+              "third_party": {
+                "compatible": true,
+                "reason": "伴侣林悦已在当前故事中与用户同坐餐桌旁核对贷款材料，可成为一次自然的低声旁语来源。",
+                "source": {
+                  "speaker": "third_party",
+                  "voice_profile": "自然清晰、音量较低的成年普通话声音",
+                  "description": "当前故事中在场并共同筹备购房的伴侣林悦"
+                }
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "当前场景只有打开的预算表和纸质材料，没有已建立的语音播报设备或机器语音来源。",
+                "source": null
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "schema_version": "duplex_v2.fixed_script.v2",
+  "owner_attempt": 2,
+  "previous_candidate": {
+    "schema_version": "duplex_v2.fixed_script.v2",
+    "title": "首套房共同贷款稳健预算比较",
+    "rounds": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_utterance": "我们准备一起买首套房，先帮我定个保守的贷款和总价上限。",
+        "assistant_utterance": "可以。先给我稳定税后月收入、现有分期、可用储蓄，以及必须保留的应急金和交易支出。奖金等不稳定收入先单列。",
+        "user_intent": "请求建立首套房贷款与购房预算的保守测算框架",
+        "assistant_intent": "索取计算借款范围和预算上限所需的核心财务信息",
+        "semantic_goal": "开始形成不依赖乐观收入的购房承受能力判断",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": null,
+        "pause_cue": null
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_utterance": "我税后两万八，她两万二。奖金不稳定，我们不想算进去，月供最好别超过收入的35%。",
+        "assistant_utterance": "先得到一万七千五这个月供目标，但还不能定借款额。现有分期会占用偿付空间；把每月金额和剩余期限告诉我。",
+        "user_intent": "补充稳定收入、奖金处理方式和目标月供比例",
+        "assistant_intent": "计算目标房贷月供上限并继续核实现有负债",
+        "semantic_goal": "确定基础月供目标为一万七千五",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A001",
+          "user_onset_after_text": "可以。先给我稳定税后月收入、现有分期、可用储蓄，以及必须保留的应急金和交易支出。奖金等不稳定收入先单列。",
+          "assistant_stop_after_text": "可以。先给我稳定税后月收入、现有分期、可用储蓄，以及必须保留的应急金和交易支出。奖金等不稳定收入先单列。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_utterance": "车贷每月三千二，还剩十八个月。她的消费分期每月一千八，还剩八个月。",
+        "assistant_utterance": "目前每月总承诺会到两万二千五，约占稳定收入的45%。在分期未结束前，房贷月供先按一万二千五以内更稳；还要比较提前结清成本和银行负债口径。",
+        "user_intent": "披露两笔现有分期的月供和剩余期限",
+        "assistant_intent": "把现有分期纳入偿付压力并给出过渡期房贷月供参考",
+        "semantic_goal": "了解分期未结束时真实的月度负担",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A002",
+          "user_onset_after_text": "先得到一万七千五这个月供目标，但还不能定借款额。现有分期会占用偿付空间；把每月金额和剩余期限告诉我。",
+          "assistant_stop_after_text": "先得到一万七千五这个月供目标，但还不能定借款额。现有分期会占用偿付空间；把每月金额和剩余期限告诉我。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_utterance": "等等，那两笔可以直接结清。车贷要五万四千八，消费分期要一万三千九。",
+        "assistant_utterance": "两笔合计结清要六万八千七，能立刻释放每月五千现金流。是否值得结清，还要看银行会不会按月供全额计负债；先给我储蓄、保留资金和交易预留。",
+        "user_intent": "打断当前分析并补充两笔分期的结清金额",
+        "assistant_intent": "计算结清所需现金及释放的月度现金流，并索取现金预算",
+        "semantic_goal": "判断提前结清分期对贷款能力和现金的影响",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A003",
+          "user_onset_after_text": "目前每月总承诺会到两万二千五，约占稳定收入的45%。",
+          "assistant_stop_after_text": "目前每月总承诺会到两万二千五，约占稳定收入的45%。在"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_utterance": "共同储蓄一百四十八万。应急金至少留三十万，税费、中介和装修先留十五万。",
+        "assistant_utterance": "不算家庭支持，也不结清分期时，可用于首付的现金约一百零三万。十五万只是暂估，房源确定后要重算，不能挤占三十万应急金。",
+        "user_intent": "提供储蓄、应急储备和交易相关支出预算",
+        "assistant_intent": "计算当前自有资金可用于首付的金额并强调费用不确定性",
+        "semantic_goal": "明确仅靠现有储蓄可动用的首付规模",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A004",
+          "user_onset_after_text": "两笔合计结清要六万八千七，能立刻释放每月五千现金流。是否值得结清，还要看银行会不会按月供全额计负债；先给我储蓄、保留资金和交易预留。",
+          "assistant_stop_after_text": "两笔合计结清要六万八千七，能立刻释放每月五千现金流。是否值得结清，还要看银行会不会按月供全额计负债；先给我储蓄、保留资金和交易预留。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_utterance": "我父母还愿意赠与六十万，不用还，但钱还没转，也没准备证明。",
+        "assistant_utterance": "若银行完整认可这六十万，可用于首付的资金约一百六十三万；若同时结清两笔分期，则约一百五十六万一千三。材料和流水未确认前，先别把赠与当成已落实。",
+        "user_intent": "补充父母赠与资金及尚未转账和准备材料的状态",
+        "assistant_intent": "分别测算赠与获认可及结清分期后的可用首付",
+        "semantic_goal": "了解家庭支持资金对首付能力的条件性影响",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A005",
+          "user_onset_after_text": "不算家庭支持，也不结清分期时，可用于首付的现金约一百零三万。十五万只是暂估，房源确定后要重算，不能挤占三十万应急金。",
+          "assistant_stop_after_text": "不算家庭支持，也不结清分期时，可用于首付的现金约一百零三万。十五万只是暂估，房源确定后要重算，不能挤占三十万应急金。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_utterance": "我们看的总价是四百万到四百八十万，比较喜欢的是四百三十八万和四百六十八万。",
+        "assistant_utterance": "按赠与获认可、暂不结清分期算，两套分别需贷款约二百七十五万和三百零五万。若先结清分期，贷款需求各增加六万八千七，还得核对银行最高额度。",
+        "user_intent": "提供关注房源的总价范围和两个重点价位",
+        "assistant_intent": "把可用首付转换为两套房源对应的贷款需求",
+        "semantic_goal": "确定重点房源大致需要借多少贷款",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01",
+          "T02"
+        ],
+        "timing": {
+          "target_assistant_id": "A006",
+          "user_onset_after_text": "若银行完整认可这六十万，可用于首付的资金约一百六十三万；若同时结清两笔分期，则约一百五十六万一千三。材料和流水未确认前，先别把赠与当成已落实。",
+          "assistant_stop_after_text": "若银行完整认可这六十万，可用于首付的资金约一百六十三万；若同时结清两笔分期，则约一百五十六万一千三。材料和流水未确认前，先别把赠与当成已落实。"
+        },
+        "pause_cue": {
+          "after_text": "我们看的总价是四百万到四百八十万，",
+          "duration_ms": 650
+        }
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_utterance": "海澜最高三百一十万，三十年，等额本息。现在展示3.15%，每年一月一日重定价。",
+        "assistant_utterance": "按当前展示利率粗算，贷款二百七十五万月供约一万一千八，三百零五万约一万三千一，都低于目标。若先结清分期，高价房所需贷款会略超其预审上限。",
+        "user_intent": "读取海澜银行的额度、期限、还款方式和重定价条件",
+        "assistant_intent": "估算海澜方案月供并识别高价房与预审额度的冲突",
+        "semantic_goal": "判断海澜方案能否覆盖两个重点房源",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A007",
+          "user_onset_after_text": "按赠与获认可、暂不结清分期算，两套分别需贷款约二百七十五万和三百零五万。若先结清分期，贷款需求各增加六万八千七，还得核对银行最高额度。",
+          "assistant_stop_after_text": "按赠与获认可、暂不结清分期算，两套分别需贷款约二百七十五万和三百零五万。若先结清分期，贷款需求各增加六万八千七，还得核对银行最高额度。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_utterance": "重定价到底什么意思？3.15%不是三十年都不变吗？",
+        "assistant_utterance": "浮动不是首年利率永久不变。海澜按五年期LPR减四十五个基点定价，每年一月一日用届时的LPR重新计算；LPR升，后续月供可能升，降则可能降。",
+        "user_intent": "追问浮动利率和重定价的直白含义",
+        "assistant_intent": "解释展示利率、定价公式和未来月供变化的关系",
+        "semantic_goal": "避免把当前展示利率误认为全期限固定",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A008",
+          "user_onset_after_text": "按当前展示利率粗算，贷款二百七十五万月供约一万一千八，三百零五万约一万三千一，都低于目标。若先结清分期，高价房所需贷款会略超其预审上限。",
+          "assistant_stop_after_text": "按当前展示利率粗算，贷款二百七十五万月供约一万一千八，三百零五万约一万三千一，都低于目标。若先结清分期，高价房所需贷款会略超其预审上限。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_utterance": "浦新最高二百九十万，二十五年。前五年固定3.35%，之后是LPR减三十个基点，每年重定价。",
+        "assistant_utterance": "浦新的前五年月供更可预测，但额度较低。贷款二百七十五万时月供约一万三千五；四百六十八万那套需要补更多现金，而且五年后仍有利率上行风险。",
+        "user_intent": "读取浦新银行的额度、期限和分段利率结构",
+        "assistant_intent": "估算浦新方案月供并说明额度与五年后浮动风险",
+        "semantic_goal": "判断浦新方案的稳定性和对高价房的覆盖能力",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A009",
+          "user_onset_after_text": "浮动不是首年利率永久不变。海澜按五年期LPR减四十五个基点定价，每年一月一日用届时的LPR重新计算；LPR升，后续月供可能升，降则可能降。",
+          "assistant_stop_after_text": "浮动不是首年利率永久不变。海澜按五年期LPR减四十五个基点定价，每年一月一日用届时的LPR重新计算；LPR升，后续月供可能升，降则可能降。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U11",
+        "assistant_id": "A011",
+        "user_utterance": "那前五年固定，是不是肯定比海澜稳？",
+        "assistant_utterance": "前五年利率风险确实更小，但不等于整体更稳。浦新期限短、月供更高、额度更低，且前二十四个月提前还款收2%；还要看你们是否可能提前还款或收入波动。",
+        "user_intent": "确认五年固定方案是否必然更稳妥",
+        "assistant_intent": "纠正只按固定期限判断安全性的片面比较",
+        "semantic_goal": "综合月供、额度和提前还款限制评价浦新方案",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A010",
+          "user_onset_after_text": "浦新的前五年月供更可预测，但额度较低。贷款二百七十五万时月供约一万三千五；四百六十八万那套需要补更多现金，而且五年后仍有利率上行风险。",
+          "assistant_stop_after_text": "浦新的前五年月供更可预测，但额度较低。贷款二百七十五万时月供约一万三千五；四百六十八万那套需要补更多现金，而且五年后仍有利率上行风险。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U12",
+        "assistant_id": "A012",
+        "user_utterance": "安泰最高三百三十万，二十年，全期限固定3.45%，也是等额本息。",
+        "assistant_utterance": "按三点四五、二十年估算，贷款二百七十五万月供约一万五千九，三百一十二万约一万八千，后者已超过你们目标。固定利率省去重定价波动，但期限短、月供高。",
+        "user_intent": "读取安泰银行的额度、期限和全期限固定利率",
+        "assistant_intent": "估算安泰在不同借款规模下的月供并指出期限压力",
+        "semantic_goal": "判断安泰固定利率方案是否符合月供目标",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A011",
+          "user_onset_after_text": "前五年利率风险确实更小，但不等于整体更稳。浦新期限短、月供更高、额度更低，且前二十四个月提前还款收2%；还要看你们是否可能提前还款或收入波动。",
+          "assistant_stop_after_text": "前五年利率风险确实更小，但不等于整体更稳。浦新期限短、月供更高、额度更低，且前二十四个月提前还款收2%；还要看你们是否可能提前还款或收入波动。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U13",
+        "assistant_id": "A013",
+        "user_utterance": "先别算第二个了，安泰到底要不要排除？",
+        "assistant_utterance": "不直接排除。若贷款控制在二百八十万左右，它的固定利率能换来确定性；若借到三百一十万上下，月供就会突破目标，现金流明显偏紧。",
+        "user_intent": "打断详细计算并要求给出安泰方案的直接结论",
+        "assistant_intent": "按借款规模给出安泰方案是否保留的清晰判断",
+        "semantic_goal": "获得安泰方案的简单筛选标准",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A012",
+          "user_onset_after_text": "按三点四五、二十年估算，贷款二百七十五万月供约一万五千九，",
+          "assistant_stop_after_text": "按三点四五、二十年估算，贷款二百七十五万月供约一万五千九，三百"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U14",
+        "assistant_id": "A014",
+        "user_utterance": "共同借款是不是我还我的，她还她的？",
+        "assistant_utterance": "通常不能理解为按收入或首付比例各还一部分。若合同约定共同或连带责任，银行可能向任一借款人主张合同范围内的还款；具体责任、退出和房屋处分必须让银行书面说明。",
+        "user_intent": "转向确认共同借款人的责任是否可以自然拆分",
+        "assistant_intent": "说明共同借款责任不能自行按比例理解并提示书面核实",
+        "semantic_goal": "正确认识双方可能承担的共同还款责任",
+        "act_ref": "A06",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A013",
+          "user_onset_after_text": "不直接排除。若贷款控制在二百八十万左右，它的固定利率能换来确定性；若借到三百一十万上下，月供就会突破目标，现金流明显偏紧。",
+          "assistant_stop_after_text": "不直接排除。若贷款控制在二百八十万左右，它的固定利率能换来确定性；若借到三百一十万上下，月供就会突破目标，现金流明显偏紧。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U15",
+        "assistant_id": "A015",
+        "user_utterance": "如果有一个人突然没收入，怎么判断扛不扛得住？",
+        "assistant_utterance": "分别用两万八和两万二的单人收入做压力测试：扣除房贷、未结清分期和必要生活费后，若持续为负，就要靠应急金。三十万应按家庭必要支出折算可支撑月数。",
+        "user_intent": "追问单方收入中断时的房贷承受能力",
+        "assistant_intent": "提供单收入压力测试方法并连接应急资金使用期限",
+        "semantic_goal": "评估收入中断情形下的现金流韧性",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A014",
+          "user_onset_after_text": "通常不能理解为按收入或首付比例各还一部分。若合同约定共同或连带责任，银行可能向任一借款人主张合同范围内的还款；具体责任、退出和房屋处分必须让银行书面说明。",
+          "assistant_stop_after_text": "通常不能理解为按收入或首付比例各还一部分。若合同约定共同或连带责任，银行可能向任一借款人主张合同范围内的还款；具体责任、退出和房屋处分必须让银行书面说明。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U16",
+        "assistant_id": "A016",
+        "user_utterance": "行，那你直接给我一个保守的总价和借款区间。",
+        "assistant_utterance": "目前更稳的是把借款关注区间放在二百八十万到三百万，总价上限先守在四百四十万左右，最好成交价更低。这样较容易保住应急金，也给费用误差留一点余地。",
+        "user_intent": "要求基于已披露条件给出明确的保守预算结论",
+        "assistant_intent": "形成当前阶段的建议借款区间和总价上限",
+        "semantic_goal": "获得可用于筛选房源的具体预算边界",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A015",
+          "user_onset_after_text": "分别用两万八和两万二的单人收入做压力测试：扣除房贷、未结清分期和必要生活费后，若持续为负，就要靠应急金。三十万应按家庭必要支出折算可支撑月数。",
+          "assistant_stop_after_text": "分别用两万八和两万二的单人收入做压力测试：扣除房贷、未结清分期和必要生活费后，若持续为负，就要靠应急金。三十万应按家庭必要支出折算可支撑月数。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U17",
+        "assistant_id": "A017",
+        "user_utterance": "那两笔分期到底先不先结清？",
+        "assistant_utterance": "先别一起结清。优先问三家银行分别如何计入负债，以及结清后多久更新征信。消费分期金额小、释放月供快，可优先考虑；车贷是否结清要和六万八千七的首付占用一起比较。",
+        "user_intent": "要求给出两笔分期是否提前结清的行动建议",
+        "assistant_intent": "提出分笔处理和先核实银行负债口径的策略",
+        "semantic_goal": "在改善负债率与保留首付现金之间取得平衡",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A016",
+          "user_onset_after_text": "目前更稳的是把借款关注区间放在二百八十万到三百万，总价上限先守在四百四十万左右，最好成交价更低。这样较容易保住应急金，也给费用误差留一点余地。",
+          "assistant_stop_after_text": "目前更稳的是把借款关注区间放在二百八十万到三百万，总价上限先守在四百四十万左右，最好成交价更低。这样较容易保住应急金，也给费用误差留一点余地。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U18",
+        "assistant_id": "A018",
+        "user_utterance": "父母这六十万，下周问银行时具体问什么？",
+        "assistant_utterance": "先问经办行是否认可直系亲属赠与，再确认赠与声明格式、亲属关系材料、转账路径、资金停留期，以及是否要提供父母资金来源证明。不要先随意转账。",
+        "user_intent": "索取家庭赠与资金的银行核实事项",
+        "assistant_intent": "列出赠与认可、证明材料和资金流水方面的关键问题",
+        "semantic_goal": "避免错误转账导致赠与资金无法计入首付",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A017",
+          "user_onset_after_text": "先别一起结清。优先问三家银行分别如何计入负债，以及结清后多久更新征信。消费分期金额小、释放月供快，可优先考虑；车贷是否结清要和六万八千七的首付占用一起比较。",
+          "assistant_stop_after_text": "先别一起结清。优先问三家银行分别如何计入负债，以及结清后多久更新征信。消费分期金额小、释放月供快，可优先考虑；车贷是否结清要和六万八千七的首付占用一起比较。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U19",
+        "assistant_id": "A019",
+        "user_utterance": "等下，资金停留期是什么意思？",
+        "assistant_utterance": "就是赠与款转入你们账户后，银行是否要求放满一段时间才认可为合格首付。各行、各经办行可能不同，所以要问清起算日、最低天数和能否直接进入监管账户。",
+        "user_intent": "打断清单并要求用直白语言解释资金停留期",
+        "assistant_intent": "解释资金停留期及需要向银行确认的具体口径",
+        "semantic_goal": "理解赠与款到账时间可能影响首付认可",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A018",
+          "user_onset_after_text": "先问经办行是否认可直系亲属赠与，再确认赠与声明格式、亲属关系材料、转账路径、资金停留期，",
+          "assistant_stop_after_text": "先问经办行是否认可直系亲属赠与，再确认赠与声明格式、亲属关系材料、转账路径、资金停留期，以"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U20",
+        "assistant_id": "A020",
+        "user_utterance": "我们都没房也没贷过，首套资格还需要问吗？",
+        "assistant_utterance": "仍要问，而且要书面确认。首套认定可能受当地政策、家庭口径、征信记录和房屋性质影响；同时确认最低首付比例、评估价不足时的差额，以及资格变化是否影响利率。",
+        "user_intent": "确认无房无房贷记录时是否仍需核实首套资格",
+        "assistant_intent": "说明首套资格仍存在政策与银行口径风险",
+        "semantic_goal": "避免自行认定首套并据此承担不可逆购房义务",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A019",
+          "user_onset_after_text": "就是赠与款转入你们账户后，银行是否要求放满一段时间才认可为合格首付。各行、各经办行可能不同，所以要问清起算日、最低天数和能否直接进入监管账户。",
+          "assistant_stop_after_text": "就是赠与款转入你们账户后，银行是否要求放满一段时间才认可为合格首付。各行、各经办行可能不同，所以要问清起算日、最低天数和能否直接进入监管账户。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U21",
+        "assistant_id": "A021",
+        "user_utterance": "最后帮我排个选择顺序，再把三家都要问的问题一次说全。",
+        "assistant_utterance": "顺序建议：先以四百四十万左右、贷款二百八十万到三百万筛房；优先比较海澜的低月供与浮动风险，再看浦新的五年固定，安泰仅在借款较低时保留。三家都问：最终额度和利率、首套及首付比例、赠与材料与停留期、分期计负债及结清更新时间、提前还款费用和次数、重定价规则、收入认定、房屋评估不足处理、共同借款责任。正式批贷和书面条款确认前，不把预审当承诺，也别付不可退定金。",
+        "user_intent": "要求汇总方案优先级和银行核实问题",
+        "assistant_intent": "形成稳妥选择顺序、完整询问清单和不可逆决策提醒",
+        "semantic_goal": "获得可直接用于下周联系三家银行的最终行动框架",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A020",
+          "user_onset_after_text": "仍要问，而且要书面确认。首套认定可能受当地政策、家庭口径、征信记录和房屋性质影响；同时确认最低首付比例、评估价不足时的差额，以及资格变化是否影响利率。",
+          "assistant_stop_after_text": "仍要问，而且要书面确认。首套认定可能受当地政策、家庭口径、征信记录和房屋性质影响；同时确认最低首付比例、评估价不足时的差额，以及资格变化是否影响利率。"
+        },
+        "pause_cue": null
+      }
+    ],
+    "backchannels": [
+      {
+        "event_id": "BC01",
+        "target_assistant_id": "A002",
+        "after_text": "先得到一万七千五这个月供目标，但还不能定借款额。",
+        "text": "嗯"
+      },
+      {
+        "event_id": "BC02",
+        "target_assistant_id": "A004",
+        "after_text": "两笔合计结清要六万八千七，能立刻释放每月五千现金流。",
+        "text": "明白"
+      },
+      {
+        "event_id": "BC03",
+        "target_assistant_id": "A006",
+        "after_text": "若银行完整认可这六十万，可用于首付的资金约一百六十三万；",
+        "text": "嗯"
+      },
+      {
+        "event_id": "BC04",
+        "target_assistant_id": "A009",
+        "after_text": "浮动不是首年利率永久不变。",
+        "text": "哦"
+      },
+      {
+        "event_id": "BC05",
+        "target_assistant_id": "A011",
+        "after_text": "前五年利率风险确实更小，但不等于整体更稳。",
+        "text": "对"
+      },
+      {
+        "event_id": "BC06",
+        "target_assistant_id": "A014",
+        "after_text": "通常不能理解为按收入或首付比例各还一部分。",
+        "text": "嗯"
+      },
+      {
+        "event_id": "BC07",
+        "target_assistant_id": "A016",
+        "after_text": "目前更稳的是把借款关注区间放在二百八十万到三百万，",
+        "text": "好"
+      },
+      {
+        "event_id": "BC08",
+        "target_assistant_id": "A020",
+        "after_text": "仍要问，而且要书面确认。",
+        "text": "明白"
+      }
+    ],
+    "side_speech": [
+      {
+        "event_id": "S01",
+        "source_id": "SP01",
+        "target_assistant_id": "A013",
+        "after_text": "不直接排除。",
+        "text": "共同借款责任也得问清楚。",
+        "speaker": "third_party",
+        "voice_profile": "自然清晰、音量较低的成年普通话声音",
+        "gain": 0.46
+      }
+    ],
+    "environment_events": [
+      {
+        "event_id": "ENV01",
+        "source_id": "ENV01",
+        "target_audio_id": "A008",
+        "placement_fraction": 0.28
+      },
+      {
+        "event_id": "ENV02",
+        "source_id": "ENV02",
+        "target_audio_id": "A016",
+        "placement_fraction": 0.54
+      }
+    ]
+  },
+  "findings": [
+    {
+      "severity": "must_fix",
+      "path": "/rounds/8/assistant_utterance",
+      "problem": "助手提前说出了用户尚未披露的海澜银行具体定价公式。",
+      "evidence": "U08只说了“展示3.15%，每年一月一日重定价”，但A009直接称“海澜按五年期LPR减四十五个基点定价”。该减点值仅存在于隐藏的task_reference_data，不在A009的assistant_before_reply_history中。",
+      "repair": "仅依据已听信息解释重定价和利率可能升降；具体LPR加减点应请用户继续读取材料或向银行确认。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/rounds/10/assistant_utterance",
+      "problem": "助手提前泄露了浦新银行的具体提前还款收费条款。",
+      "evidence": "截至U11，用户只披露浦新的额度、期限及分段利率；A011却说“前二十四个月提前还款收2%”。该条款只在隐藏的预审资料中，未进入assistant_before_reply_history。",
+      "repair": "保留期限、月供、额度和五年后浮动风险的比较；提前还款限制改为尚需读取材料或向银行确认。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/rounds/15/assistant_utterance",
+      "problem": "给出的“保守”总价上限未明确依赖父母赠与获银行认可，可能与保留应急金的硬约束冲突。",
+      "evidence": "已听信息显示，不计赠与且不结清分期时可用首付仅约一百零三万；总价四百四十万即使贷款三百万仍差约三十七万。赠与尚未转账、材料未准备，A006也已提醒不能视为落实，但A016无条件建议“四百四十万左右”。",
+      "repair": "将四百四十万上限明确限定为赠与获认可且分期处理口径确认后的情形；赠与未落实时给出相应更低上限或说明暂不能按该上限行动。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/rounds/16/assistant_utterance",
+      "problem": "分笔建议中把车贷单独结清的现金占用误写成两笔合计金额。",
+      "evidence": "用户披露车贷结清额为五万四千八、消费分期为一万三千九，两笔合计六万八千七。A017先建议消费分期可优先考虑，随后却说车贷是否结清要与“六万八千七的首付占用”比较，混淆了单笔与两笔合计。",
+      "repair": "若分笔比较，车贷使用五万四千八的占用；只有讨论两笔同时结清时才使用六万八千七。"
+    }
+  ],
+  "anchor_dependencies": [
+    {
+      "target_id": "A008",
+      "path": "/rounds/8/timing/user_onset_after_text",
+      "value": "按当前展示利率粗算，贷款二百七十五万月供约一万一千八，三百零五万约一万三千一，都低于目标。若先结清分期，高价房所需贷款会略超其预审上限。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A008",
+      "path": "/rounds/8/timing/assistant_stop_after_text",
+      "value": "按当前展示利率粗算，贷款二百七十五万月供约一万一千八，三百零五万约一万三千一，都低于目标。若先结清分期，高价房所需贷款会略超其预审上限。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A009",
+      "path": "/rounds/9/timing/user_onset_after_text",
+      "value": "浮动不是首年利率永久不变。海澜按五年期LPR减四十五个基点定价，每年一月一日用届时的LPR重新计算；LPR升，后续月供可能升，降则可能降。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A009",
+      "path": "/rounds/9/timing/assistant_stop_after_text",
+      "value": "浮动不是首年利率永久不变。海澜按五年期LPR减四十五个基点定价，每年一月一日用届时的LPR重新计算；LPR升，后续月供可能升，降则可能降。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A010",
+      "path": "/rounds/10/timing/user_onset_after_text",
+      "value": "浦新的前五年月供更可预测，但额度较低。贷款二百七十五万时月供约一万三千五；四百六十八万那套需要补更多现金，而且五年后仍有利率上行风险。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A010",
+      "path": "/rounds/10/timing/assistant_stop_after_text",
+      "value": "浦新的前五年月供更可预测，但额度较低。贷款二百七十五万时月供约一万三千五；四百六十八万那套需要补更多现金，而且五年后仍有利率上行风险。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A011",
+      "path": "/rounds/11/timing/user_onset_after_text",
+      "value": "前五年利率风险确实更小，但不等于整体更稳。浦新期限短、月供更高、额度更低，且前二十四个月提前还款收2%；还要看你们是否可能提前还款或收入波动。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A011",
+      "path": "/rounds/11/timing/assistant_stop_after_text",
+      "value": "前五年利率风险确实更小，但不等于整体更稳。浦新期限短、月供更高、额度更低，且前二十四个月提前还款收2%；还要看你们是否可能提前还款或收入波动。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A015",
+      "path": "/rounds/15/timing/user_onset_after_text",
+      "value": "分别用两万八和两万二的单人收入做压力测试：扣除房贷、未结清分期和必要生活费后，若持续为负，就要靠应急金。三十万应按家庭必要支出折算可支撑月数。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A015",
+      "path": "/rounds/15/timing/assistant_stop_after_text",
+      "value": "分别用两万八和两万二的单人收入做压力测试：扣除房贷、未结清分期和必要生活费后，若持续为负，就要靠应急金。三十万应按家庭必要支出折算可支撑月数。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A016",
+      "path": "/rounds/16/timing/user_onset_after_text",
+      "value": "目前更稳的是把借款关注区间放在二百八十万到三百万，总价上限先守在四百四十万左右，最好成交价更低。这样较容易保住应急金，也给费用误差留一点余地。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A016",
+      "path": "/rounds/16/timing/assistant_stop_after_text",
+      "value": "目前更稳的是把借款关注区间放在二百八十万到三百万，总价上限先守在四百四十万左右，最好成交价更低。这样较容易保住应急金，也给费用误差留一点余地。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A017",
+      "path": "/rounds/17/timing/user_onset_after_text",
+      "value": "先别一起结清。优先问三家银行分别如何计入负债，以及结清后多久更新征信。消费分期金额小、释放月供快，可优先考虑；车贷是否结清要和六万八千七的首付占用一起比较。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A017",
+      "path": "/rounds/17/timing/assistant_stop_after_text",
+      "value": "先别一起结清。优先问三家银行分别如何计入负债，以及结清后多久更新征信。消费分期金额小、释放月供快，可优先考虑；车贷是否结清要和六万八千七的首付占用一起比较。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A009",
+      "path": "/backchannels/3/after_text",
+      "value": "浮动不是首年利率永久不变。",
+      "owner": "model"
+    },
+    {
+      "target_id": "A011",
+      "path": "/backchannels/4/after_text",
+      "value": "前五年利率风险确实更小，但不等于整体更稳。",
+      "owner": "model"
+    },
+    {
+      "target_id": "A016",
+      "path": "/backchannels/6/after_text",
+      "value": "目前更稳的是把借款关注区间放在二百八十万到三百万，",
+      "owner": "model"
+    }
+  ],
+  "base_sha256": "fc007557ddcce6fe26fae5cae4ece8c29cfd8b5bcda2f2e55f28fbedbe1be452"
+}

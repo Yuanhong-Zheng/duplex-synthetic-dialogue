@@ -1,0 +1,1285 @@
+{
+  "frozen_source": {
+    "case_id": "R01-V01",
+    "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g01-sample-010-v2-stage2",
+    "language": "zh",
+    "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+    "script_execution_policy": {
+      "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+      "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+      "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+      "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+      "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+      "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+      "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+    },
+    "program_anchor_seed": 3812436835,
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    },
+    "relay_configuration": {
+      "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g01/relay-policy.json",
+      "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g01/relay-state",
+      "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+      "policy": {
+        "schema": "duplex_v2.timeout_relay_policy.v3",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "backup": {
+          "profile": "lianyu",
+          "endpoint": "https://api.openbili.com/v1/chat/completions",
+          "model_map": {
+            "openai/gpt-5.6-sol": "gpt-5.6-sol",
+            "openai/gpt-5.6-luna": "gpt-5.6-luna"
+          },
+          "verification": {
+            "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+            "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+          }
+        },
+        "trigger": {
+          "max_retries": 5,
+          "http_statuses": [
+            502,
+            503,
+            504
+          ],
+          "error_types": [
+            "TimeoutError",
+            "HTTP2DeadlineExceeded",
+            "ConnectionResetError",
+            "ConnectionAbortedError",
+            "BrokenPipeError",
+            "RemoteDisconnected",
+            "IncompleteRead"
+          ],
+          "http2_transport_errors": "negotiated_h2_only",
+          "require_all_attempts": true
+        },
+        "max_relay_switches": 1
+      }
+    },
+    "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+    "script_repair_policy": {
+      "schema": "duplex_v2.script_repair_policy.v1",
+      "mode": "json_patch",
+      "patch_schema": "duplex_v2.script_patch.v1",
+      "json_parse_max_retries": 3,
+      "content_max_repairs": 5,
+      "length_compaction_max_attempts": 3,
+      "overlength_after_compaction": "fail_case",
+      "judge_scope": "complete_script_and_heard_context"
+    },
+    "text_output_token_policy": "omit",
+    "scene_task": {
+      "scene": {
+        "domain_id": "D09",
+        "domain": "交通、导航与车载",
+        "scenario_id": "D09-S05",
+        "scenario": "交通状况与行程建议"
+      },
+      "task_style": "结构化整理",
+      "task_instance": {
+        "goal": "我会提供几组前往同一目的地的出行记录、可接受的到达时间、必须避开的路段以及途中需要处理的事项；希望据此把各方案按预计耗时、拥堵波动、换乘或驾驶复杂度和途中便利性整理成对比结果，标出不同交通状况下更适合的方案，并指出还缺哪些信息才能作出稳妥选择。"
+      }
+    },
+    "user_voice": {
+      "user_seed": {
+        "role_relation": "负责为家人安排定期往返行程的家庭成员",
+        "task_familiarity": "medium"
+      },
+      "voice_profile": "男性，四十至五十多岁，音色偏低而稳，吐字清楚，语速适中，整体听感克制平和。",
+      "interaction_profile": {
+        "schema": "duplex_v2.interaction_profile.v1",
+        "formality": "formal",
+        "directness": "indirect",
+        "emotional_expressiveness": "reserved",
+        "verbosity": "brief",
+        "initiative": "low",
+        "caution": "medium",
+        "patience": "medium",
+        "behavioral_notes": [
+          "通常先礼貌地交代一小段背景，再委婉说明希望核对或整理的重点。",
+          "表达较为简短克制，遇到信息不完整时会承认不确定，并等待对方提示需要补充的内容。",
+          "不急于下结论，倾向于逐项确认关键条件后再接受比较结果。"
+        ]
+      }
+    },
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "medium",
+      "target_turns": 13,
+      "min_turns": 12,
+      "max_turns": 14
+    },
+    "ambient_catalog": {
+      "schema": "duplex_v2.ambient_catalog.v1",
+      "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+      "assets": [
+        {
+          "asset_id": "fan-fsd50k-eval-419427",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 10.3909375
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-235362",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 11.0
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-415925",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 7.178
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-235541",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 29.045875
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-232686",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 10.3445
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-124020",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 24.78875
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-382582",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.9788125
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-21189",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.962
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-238016",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 11.32
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-185058",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 5.2114375
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-121877",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 11.696
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-340358",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 4.2745
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-82562",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 1.0094375
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-121200",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.83525
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-343098",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.796
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-153104",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.4691875
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-392303",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.6849375
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-272381",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.933375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-71212",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.3638125
+        },
+        {
+          "asset_id": "door-fsd50k-eval-119077",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.7944375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-209519",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 1.0398125
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-399740",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.322
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-233057",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.4700625
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-411545",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.5686875
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-232499",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 0.842
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402127",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402128",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-86343",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 7.5366875
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-57907",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.5773125
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-319512",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.755625
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113173",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 11.2184375
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113175",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.8773125
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113176",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.6341875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-348322",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 1.625
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-426594",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 0.3666875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-332563",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 4.0
+        }
+      ]
+    },
+    "ambient_control": {
+      "schema": "duplex_v2.soundscape_control.v2",
+      "seed": 1097321575,
+      "mode": "layered",
+      "discrete_event_target": 1,
+      "max_ambient_layers": 2,
+      "side_speech_requested": true,
+      "speech_kind_preferences": [
+        "third_party",
+        "machine"
+      ]
+    },
+    "situation_knowledge": {
+      "episode_situation": "2026年11月7日星期六晚上，用户在杭州市钱塘区金沙湖公园附近的家中整理下周三陪父亲复诊的行程，父亲坐在餐桌另一侧核对随身材料。复诊地点是浙江省人民医院朝晖院区，预约时间为上午9点，但家属希望最迟8点35分进入门诊楼，以便办理报到。出发后还要先到杭州东站西广场服务台交一个文件袋，服务台7点开放，过去几次办理用时约5至12分钟。父亲膝盖不适，能够自行上下车和乘坐地铁，但连续步行最好不超过800米，携带的文件袋和随身药品也使长距离步行不太方便。用户已经把四种走法以及此前八次实际行程的时间写在纸上，其中既有晴天记录，也有雨天或道路排队时的记录。两条自驾方案都能绕开必须避开的德胜快速路东新路至上塘高架段，但医院停车耗时不稳定；地铁和停车换乘方案受道路拥堵影响较小，却增加了安检、步行或取车环节。用户平时熟悉杭州东站和医院周边的大致方向，但不确定各段耗时应该按平均值、较慢记录还是额外缓冲来估算。此次比较不仅要看抵达医院的时间，还要分别考虑道路拥堵波动、驾驶或换乘复杂度、交文件是否顺路、父亲的步行负担以及返程取车是否麻烦。计划出行日的天气、当天道路施工或事故情况、医院停车场早间余位都还不知道，现有材料只能支持基于历史记录的条件化比较。用户没有准备实时导航页面，只能口头提供纸面记录，并在需要时逐项核对数字。由于这是定期往返行程，用户希望整理方式以后仍能复用，但本次首先要判断下周三在正常、明显拥堵和下雨三类情况下哪些方案更合适。用户不急于立即定案，更希望先找出记录之间可比和不可比的部分，再确认哪些缺失信息会真正改变选择。",
+      "task_reference_data": [
+        "预约卡与家属便签上写明：2026年11月11日星期三上午9点在浙江省人民医院朝晖院区复诊；家属设定的门诊楼到达上限为8点35分。用户已读，可现场复述核对。",
+        "方案A纸面记录为“全程自驾，经艮山东路、新塘路进入杭州东站西广场，再走环城北路、上塘路前往医院，全程避开德胜快速路东新路至上塘高架段”。一次晴天周二6点50分出发，7点20分到服务台附近，交文件9分钟，8点03分到医院下客点，8点17分停好车；一次雨天周三同为6点50分出发，7点28分到服务台附近，交文件12分钟，8点26分到下客点，8点43分停好车。用户已读，停车完成时间与进入门诊楼时间并非同一口径。",
+        "方案B纸面记录为“全程自驾，经九沙大道、秋石高架、绍兴路，绕行杭州东站办理事项后前往医院，不经过必须避开的德胜快速路路段”。一次晴天周四6点45分出发，7点18分到服务台附近，交文件8分钟，8点整到医院下客点，8点11分停好车；一次周一早高峰遇高架排队，6点45分出发，7点22分到服务台附近，8点18分到下客点，8点32分停好车，但该次没有记下交文件实际用时。用户已读，可用于识别缺项和拥堵波动。",
+        "方案C纸面记录为“从金沙湖站乘地铁1号线到火车东站，出站去西广场服务台交文件，再次安检进站，乘1号线到西湖文化广场站后步行至医院”。晴天记录为6点42分从金沙湖站进站，7点06分到东站，7点14分交完文件，7点19分重新进站，7点34分到西湖文化广场站，7点52分到门诊楼；雨天记录为6点40分进站，8点02分到门诊楼。便签估计全程步行约760米，但没有分段测量。用户已读，雨天记录缺少各中间节点。",
+        "方案D纸面记录为“自驾到杭州东站停车，交文件后从火车东站乘地铁1号线到西湖文化广场站，再步行到医院，返程需回东站取车”。晴天一次6点45分出发，7点15分停好车，7点25分到服务台，7点33分交完文件，8点02分到门诊楼；雨天一次6点40分出发，8点19分到门诊楼。便签估计步行约620米，但没有记录东站停车费、返程取车总耗时或雨天各节点。",
+        "父亲自己在便签上注明：连续步行最好控制在800米以内，可以乘扶梯和普通地铁；早晨需要随身携带药品并在7点30分左右用少量早餐送服，因此能够方便买到早餐或短暂停留的方案更省事。该便签用户已读，但当天膝盖状态尚无法提前确定。",
+        "用户的待核实便签列有：出发日天气、两条自驾路线当天是否有施工或事故、医院停车场8点前后的排队情况、杭州东站服务台当天是否仍按7点开放、方案C约760米步行是否测量准确，以及方案B缺失的交文件用时。这些项目目前均未核实，不代表外部状态已有结论。"
+      ],
+      "environment_audio": "室内有一层稳定而低沉的风扇声，从餐桌侧后方持续传来。关着的窗外能听见较远的道路车流，音量平缓，偶尔随车辆经过略微升高。纸面记录放在桌上，但当前基础声景中没有持续的翻纸声。",
+      "estimated_snr_db": 27,
+      "constraints": [
+        {
+          "constraint_id": "C01",
+          "text": "2026年11月11日应在上午8点35分前进入浙江省人民医院朝晖院区门诊楼。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C02",
+          "text": "途中必须先到杭州东站西广场服务台交文件，且办理不能早于服务台便签所记的7点开放时间。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C03",
+          "text": "自驾方案必须避开德胜快速路东新路至上塘高架段。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C04",
+          "text": "应优先把父亲的连续步行距离控制在800米以内，并优先考虑便于短暂停留或购买早餐的方案。",
+          "kind": "soft"
+        },
+        {
+          "constraint_id": "C05",
+          "text": "在预计耗时接近时，优先考虑波动较小、环节较少且能留出适当缓冲的方案。",
+          "kind": "soft"
+        }
+      ],
+      "safety_limits": [
+        {
+          "limit_id": "L01",
+          "text": "若父亲当天膝盖不适加重，不应为了节省时间强行采用步行距离接近上限或缺少休息点的方案。",
+          "severity": "hard"
+        }
+      ],
+      "soundscape_plan": {
+        "mode": "layered",
+        "ambient_layers": [
+          {
+            "source_id": "AMB01",
+            "asset_id": "fan-fsd50k-eval-235362",
+            "reason": "与家中餐桌旁持续运转的风扇底噪相容，声音稳定，不会引入额外事件。"
+          },
+          {
+            "source_id": "AMB02",
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "reason": "适合作为隔着关闭窗户传入的远处道路车流底噪，不改变室内场景。"
+          }
+        ],
+        "environment_events": [],
+        "schema": "duplex_v2.soundscape_plan.v3",
+        "side_speech_sources": [
+          {
+            "source_id": "SP01",
+            "speaker": "third_party",
+            "voice_profile": "音量较低、吐字稍慢、自然清晰的普通话声音",
+            "description": "坐在餐桌另一侧、与用户共同核对复诊行程的父亲"
+          }
+        ],
+        "side_speech_count": 1,
+        "sampling": {
+          "schema": "duplex_v2.ambient_draw.v2",
+          "policy": {
+            "schema": "duplex_v2.soundscape_policy.v2",
+            "quiet_probability": 0.5,
+            "discrete_targets_by_tier": {
+              "short": [
+                0,
+                1
+              ],
+              "medium": [
+                1,
+                2
+              ],
+              "long": [
+                2,
+                4
+              ]
+            },
+            "discrete_count_includes": [
+              "environment_events",
+              "side_speech"
+            ],
+            "max_ambient_layers": 2,
+            "gain_range": [
+              0.3,
+              0.7
+            ],
+            "speech_request_probability": 0.5,
+            "third_party_preference_probability": 0.8,
+            "speech_requires_existing_scene_source": true,
+            "environment_audio": "base_only",
+            "stage2_repair": "atomic_scoped_patch",
+            "stage2_max_judge_attempts": 3,
+            "json_parse_max_retries": 3
+          },
+          "preferences": {
+            "schema": "duplex_v2.ambient_preferences.v1",
+            "seed": 202611073001,
+            "slot": 9,
+            "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+            "categories": {
+              "bed": [
+                "wind",
+                "fan",
+                "birds",
+                "rain",
+                "crowd",
+                "traffic"
+              ],
+              "event": [
+                "keyboard",
+                "footsteps",
+                "water_tap",
+                "door",
+                "doorbell",
+                "paper"
+              ]
+            },
+            "recordings": {
+              "bed:birds": [
+                "birds-fsd50k-eval-86343",
+                "birds-fsd50k-eval-319512",
+                "birds-fsd50k-eval-57907"
+              ],
+              "bed:crowd": [
+                "crowd-fsd50k-eval-185058",
+                "crowd-fsd50k-eval-340358",
+                "crowd-fsd50k-eval-121877"
+              ],
+              "bed:fan": [
+                "fan-fsd50k-eval-235362",
+                "fan-fsd50k-eval-419427",
+                "fan-fsd50k-eval-415925"
+              ],
+              "bed:rain": [
+                "rain-fsd50k-eval-382582",
+                "rain-fsd50k-eval-21189",
+                "rain-fsd50k-eval-238016"
+              ],
+              "bed:traffic": [
+                "traffic-fsd50k-eval-235541",
+                "traffic-fsd50k-eval-232686",
+                "traffic-fsd50k-eval-124020"
+              ],
+              "bed:wind": [
+                "wind-fsd50k-eval-113173",
+                "wind-fsd50k-eval-113176",
+                "wind-fsd50k-eval-113175"
+              ],
+              "event:door": [
+                "door-fsd50k-eval-209519",
+                "door-fsd50k-eval-119077",
+                "door-fsd50k-eval-71212"
+              ],
+              "event:doorbell": [
+                "doorbell-fsd50k-eval-348322",
+                "doorbell-fsd50k-eval-426594",
+                "doorbell-fsd50k-eval-332563"
+              ],
+              "event:footsteps": [
+                "footsteps-fsd50k-eval-272381",
+                "footsteps-fsd50k-eval-153104",
+                "footsteps-fsd50k-eval-392303"
+              ],
+              "event:keyboard": [
+                "keyboard-fsd50k-eval-233057",
+                "keyboard-fsd50k-eval-411545",
+                "keyboard-fsd50k-eval-399740"
+              ],
+              "event:paper": [
+                "paper-fsd50k-eval-121200",
+                "paper-fsd50k-eval-343098",
+                "paper-fsd50k-eval-82562"
+              ],
+              "event:water_tap": [
+                "water_tap-fsd50k-eval-402127",
+                "water_tap-fsd50k-eval-232499",
+                "water_tap-fsd50k-eval-402128"
+              ]
+            }
+          },
+          "control": {
+            "schema": "duplex_v2.soundscape_control.v2",
+            "seed": 1097321575,
+            "mode": "layered",
+            "discrete_event_target": 1,
+            "max_ambient_layers": 2,
+            "side_speech_requested": true,
+            "speech_kind_preferences": [
+              "third_party",
+              "machine"
+            ]
+          },
+          "control_sha256": "c79e239702e1d8e0a7a9127e22fa06f04b2d1361c776011db84c718fe4ac5a49",
+          "candidate_plan": {
+            "schema": "duplex_v2.soundscape_plan.v3",
+            "mode": "layered",
+            "ambient_layers": [
+              {
+                "source_id": "AMB01",
+                "candidates": [
+                  {
+                    "asset_id": "fan-fsd50k-eval-235362",
+                    "reason": "与家中餐桌旁持续运转的风扇底噪相容，声音稳定，不会引入额外事件。",
+                    "environment_audio": "餐桌侧后方传来稳定、低沉的机械风扇声。"
+                  },
+                  {
+                    "asset_id": "fan-fsd50k-eval-419427",
+                    "reason": "可作为同一室内风扇声的另一录音候选，与安静家庭环境相容。",
+                    "environment_audio": "室内风扇持续低声运转，音量变化很小。"
+                  },
+                  {
+                    "asset_id": "fan-fsd50k-eval-415925",
+                    "reason": "短时稳定的通风或风扇录音与当前家庭室内底色一致。",
+                    "environment_audio": "侧后方有轻微而连续的风扇运转声。"
+                  }
+                ]
+              },
+              {
+                "source_id": "AMB02",
+                "candidates": [
+                  {
+                    "asset_id": "traffic-fsd50k-eval-235541",
+                    "reason": "适合作为隔着关闭窗户传入的远处道路车流底噪，不改变室内场景。",
+                    "environment_audio": "窗外远处的车流声隔着玻璃持续传入，整体较轻。"
+                  },
+                  {
+                    "asset_id": "traffic-fsd50k-eval-124020",
+                    "reason": "较长的道路环境录音可表现窗外平缓车流，与住宅附近的晚间声景相容。",
+                    "environment_audio": "较远的道路车流保持平缓，偶尔有车辆经过时稍响。"
+                  },
+                  {
+                    "asset_id": "traffic-fsd50k-eval-232686",
+                    "reason": "可替代为较短的真实车流底噪，仍保持声音来源位于窗外远处。",
+                    "environment_audio": "关闭的窗外隐约传来短段车流声，距离较远。"
+                  }
+                ]
+              }
+            ],
+            "environment_events": [],
+            "side_speech_eligibility": {
+              "third_party": {
+                "compatible": true,
+                "reason": "父亲已在当前故事中坐在餐桌另一侧核对材料，是合理且已建立的旁语来源。",
+                "source": {
+                  "speaker": "third_party",
+                  "voice_profile": "音量较低、吐字稍慢、自然清晰的普通话声音",
+                  "description": "坐在餐桌另一侧、与用户共同核对复诊行程的父亲"
+                }
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "当前场景没有已建立的导航播报、广播或其他可发出语音的设备。",
+                "source": null
+              }
+            }
+          },
+          "base_environment_audio_sha256": "4152f9a1f9ee31dcdde969288af6328bab0acf5e072f42cd976772bf6c2bdb01",
+          "aggregate_environment_audio": "室内有一层稳定而低沉的风扇声，从餐桌侧后方持续传来。关着的窗外能听见较远的道路车流，音量平缓，偶尔随车辆经过略微升高。纸面记录放在桌上，但当前基础声景中没有持续的翻纸声。 餐桌侧后方传来稳定、低沉的机械风扇声。 窗外远处的车流声隔着玻璃持续传入，整体较轻。",
+          "draws": [
+            {
+              "source_id": "AMB01",
+              "category": "fan",
+              "asset_id": "fan-fsd50k-eval-235362",
+              "eligible_categories": [
+                "fan"
+              ],
+              "eligible_assets": [
+                "fan-fsd50k-eval-235362",
+                "fan-fsd50k-eval-415925",
+                "fan-fsd50k-eval-419427"
+              ]
+            },
+            {
+              "source_id": "AMB02",
+              "category": "traffic",
+              "asset_id": "traffic-fsd50k-eval-235541",
+              "eligible_categories": [
+                "traffic"
+              ],
+              "eligible_assets": [
+                "traffic-fsd50k-eval-124020",
+                "traffic-fsd50k-eval-232686",
+                "traffic-fsd50k-eval-235541"
+              ]
+            }
+          ],
+          "speech_selection": {
+            "requested": true,
+            "compatible_kinds": [
+              "third_party"
+            ],
+            "selected_kind": "third_party",
+            "outcome": "selected",
+            "assessments": {
+              "third_party": {
+                "compatible": true,
+                "reason": "父亲已在当前故事中坐在餐桌另一侧核对材料，是合理且已建立的旁语来源。",
+                "source": {
+                  "speaker": "third_party",
+                  "voice_profile": "音量较低、吐字稍慢、自然清晰的普通话声音",
+                  "description": "坐在餐桌另一侧、与用户共同核对复诊行程的父亲"
+                }
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "当前场景没有已建立的导航播报、广播或其他可发出语音的设备。",
+                "source": null
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "schema_version": "duplex_v2.fixed_script.v2",
+  "owner_attempt": 6,
+  "previous_candidate": {
+    "schema_version": "duplex_v2.fixed_script.v2",
+    "title": "陪父亲复诊的四种出行方案比较",
+    "rounds": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_utterance": "想请您帮我比较四种走法。下周三九点复诊，最好八点三十五分前进门；途中要先去杭州东站西广场交文件，服务台七点开放。自驾还必须避开德胜快速路东新路至上塘高架那一段。",
+        "assistant_utterance": "可以。请按方案分别告诉我出发时间、到服务台、办完文件、到医院及停车时间，并注明天气或拥堵情况。我会统一口径后比较耗时、波动、复杂度和途中便利性。",
+        "user_intent": "交代行程目标、硬性时间和路线限制，请求结构化比较",
+        "assistant_intent": "确认比较框架并引导用户逐项提供可比记录",
+        "semantic_goal": "建立四种方案的统一比较口径",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": null,
+        "pause_cue": null
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_utterance": "先说A，全程自驾，经艮山东路、新塘路到东站，再走环城北路、上塘路去医院，能避开那一段。晴天六点五十出发，七点二十到服务台附近，办了九分钟，八点零三分到下客点，八点十七分停好车。雨天同样六点五十出发，七点二十八到，办了十二分钟，八点二十六到下客点，八点四十三停好车。",
+        "assistant_utterance": "方案A晴天能在八点零三分到下客点，雨天要到八点二十六分。但目前不能把停车完成直接当作进门时间，雨天停车已超过八点三十五分，风险较高。",
+        "user_intent": "提供方案A的路线及晴雨两次记录",
+        "assistant_intent": "提取方案A的时间表现并指出记录口径问题",
+        "semantic_goal": "判断方案A在正常和雨天条件下的时限风险",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A001",
+          "user_onset_after_text": "可以。请按方案分别告诉我出发时间、到服务台、办完文件、到医院及停车时间，并注明天气或拥堵情况。我会统一口径后比较耗时、波动、复杂度和途中便利性。",
+          "assistant_stop_after_text": "可以。请按方案分别告诉我出发时间、到服务台、办完文件、到医院及停车时间，并注明天气或拥堵情况。我会统一口径后比较耗时、波动、复杂度和途中便利性。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_utterance": "A的进门时间没有记录。我接着说B：六点四十五出发，晴天七点十八到服务台附近，办了八分钟，八点整到下客点，八点十一停好车。另一次高架排队，七点二十二到，八点十八到下客点，八点三十二停好车，但没记交文件用了多久。路线不经过必须避开的那一段。",
+        "assistant_utterance": "B的晴天记录略快于A，且两条路线都避开了指定路段；但高架排队时，下客推迟到八点十八分，停车到八点三十二分。那次交文件用时缺失，所以无法把道路与办理波动分开。",
+        "user_intent": "打断对方案A的展开并补充方案B记录",
+        "assistant_intent": "承接新增方案，比较其正常与拥堵表现并标出缺项",
+        "semantic_goal": "明确方案B的速度优势、拥堵波动和数据缺口",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A002",
+          "user_onset_after_text": "方案A晴天能在八点零三分到下客点，雨天要到八点二十六分。",
+          "assistant_stop_after_text": "方案A晴天能在八点零三分到下客点，雨天要到八点二十六分。但目前"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_utterance": "C是全程地铁。晴天六点四十二从金沙湖站进站，七点零六到东站，七点十四交完文件，七点十九重新进站，七点三十四到西湖文化广场站，七点五十二到门诊楼。雨天六点四十进站，八点零二到门诊楼，中间节点没记。估计步行七百六十米，没有实测。",
+        "assistant_utterance": "C的优势是直接记录到门诊楼，晴天和雨天都早于八点三十五分，且较少受道路拥堵影响。代价是出站交文件后需再次安检、重新进站乘车，步行七百六十米也接近上限，雨天记录还无法定位延误发生在哪一段。",
+        "user_intent": "提供方案C的晴雨记录、换乘过程和步行估计",
+        "assistant_intent": "评估地铁方案的准时性、复杂度及步行不确定性",
+        "semantic_goal": "确定方案C的可靠性优势和身体负担",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A003",
+          "user_onset_after_text": "B的晴天记录略快于A，且两条路线都避开了指定路段；但高架排队时，下客推迟到八点十八分，停车到八点三十二分。那次交文件用时缺失，所以无法把道路与办理波动分开。",
+          "assistant_stop_after_text": "B的晴天记录略快于A，且两条路线都避开了指定路段；但高架排队时，下客推迟到八点十八分，停车到八点三十二分。那次交文件用时缺失，所以无法把道路与办理波动分开。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_utterance": "D是先开车到东站停车，交完文件再坐地铁。晴天六点四十五出发，七点十五停好车，七点二十五到服务台，七点三十三交完，八点零二到门诊楼。雨天六点四十出发，八点十九到门诊楼，中间没细记。估计步行六百二十米，停车费和返程取车时间也没记。",
+        "assistant_utterance": "D两次都在时限内，步行估计少于C，也避开了医院停车的不确定性；但它同时包含开车、东站停车、交件、地铁和步行，环节最多，返程还必须回东站取车。雨天节点和停车成本缺失，便利性暂时不能完整评价。",
+        "user_intent": "补充方案D的记录及停车、返程缺项",
+        "assistant_intent": "完成四方案基础信息整理并识别D的复合环节",
+        "semantic_goal": "明确方案D的准时表现、步行优势和返程负担",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A004",
+          "user_onset_after_text": "C的优势是直接记录到门诊楼，晴天和雨天都早于八点三十五分，且较少受道路拥堵影响。代价是出站交文件后需再次安检、重新进站乘车，步行七百六十米也接近上限，雨天记录还无法定位延误发生在哪一段。",
+          "assistant_stop_after_text": "C的优势是直接记录到门诊楼，晴天和雨天都早于八点三十五分，且较少受道路拥堵影响。代价是出站交文件后需再次安检、重新进站乘车，步行七百六十米也接近上限，雨天记录还无法定位延误发生在哪一段。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_utterance": "还有一个条件，父亲膝盖不太好，连续步行最好不超过八百米，可以正常上下车和坐地铁。早晨带着药，七点半左右要吃一点早餐送服，所以能买早餐或短暂停留会省事。",
+        "assistant_utterance": "这会改变排序：步行接近八百米的方案只能在膝盖状态稳定时优先，C约七百六十米虽未超上限，但余量很小；D约六百二十米较轻。早餐便利应单列，不能仅凭总耗时推断。",
+        "user_intent": "补充父亲的步行限制和早餐用药需求",
+        "assistant_intent": "把身体负担与途中停留便利纳入比较标准",
+        "semantic_goal": "调整方案评价权重，避免只按到达时间排序",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01",
+          "T02"
+        ],
+        "timing": {
+          "target_assistant_id": "A005",
+          "user_onset_after_text": "D两次都在时限内，步行估计少于C，也避开了医院停车的不确定性；但它同时包含开车、东站停车、交件、地铁和步行，环节最多，返程还必须回东站取车。雨天节点和停车成本缺失，便利性暂时不能完整评价。",
+          "assistant_stop_after_text": "D两次都在时限内，步行估计少于C，也避开了医院停车的不确定性；但它同时包含开车、东站停车、交件、地铁和步行，环节最多，返程还必须回东站取车。雨天节点和停车成本缺失，便利性暂时不能完整评价。"
+        },
+        "pause_cue": {
+          "after_text": "还有一个条件，",
+          "duration_ms": 650
+        }
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_utterance": "那么先按天气正常、道路也没有明显排队来排，哪种更合适？",
+        "assistant_utterance": "正常情况下，若膝盖状态稳定，C的门诊楼到达记录最早且口径最完整；若更看重少走路，D约六百二十米的估计可供参考，但尚未实测。B正常路况下可能较快，但步行负担、停车和进楼时间仍需核实。A现有记录整体不占优。",
+        "user_intent": "询问正常交通条件下的优先顺序",
+        "assistant_intent": "根据准时性、步行和环节复杂度给出条件化排序",
+        "semantic_goal": "获得正常情况下可执行的方案倾向",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A006",
+          "user_onset_after_text": "这会改变排序：步行接近八百米的方案只能在膝盖状态稳定时优先，C约七百六十米虽未超上限，但余量很小；D约六百二十米较轻。早餐便利应单列，不能仅凭总耗时推断。",
+          "assistant_stop_after_text": "这会改变排序：步行接近八百米的方案只能在膝盖状态稳定时优先，C约七百六十米虽未超上限，但余量很小；D约六百二十米较轻。早餐便利应单列，不能仅凭总耗时推断。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_utterance": "先不定正常情况，麻烦再说说明显拥堵和下雨时怎么选。",
+        "assistant_utterance": "明显拥堵时，C受道路影响最小，现有记录也最容易核对，膝盖允许时可优先；D次之，但开车到东站和停车仍有波动。下雨时，C八点零二到楼的余量大于D的八点十九；A雨天风险最高，B缺少可比的雨天完整记录。",
+        "user_intent": "打断正常情形的后续排序，转而询问拥堵与雨天选择",
+        "assistant_intent": "按明显拥堵和下雨两类条件分别比较方案",
+        "semantic_goal": "获得不利交通和天气下的条件化建议",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A007",
+          "user_onset_after_text": "正常情况下，若膝盖状态稳定，C的门诊楼到达记录最早且口径最完整；若更看重少走路，",
+          "assistant_stop_after_text": "正常情况下，若膝盖状态稳定，C的门诊楼到达记录最早且口径最完整；若更看重少走路，D"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_utterance": "七点半吃早餐这件事，会不会让C或D反而更方便？",
+        "assistant_utterance": "D在七点二十五至三十三分办理文件，较便于安排早餐；C七点十九已重新进站，七点半在乘地铁，只能在交件后、重新进站前预先停留，这会增加原记录外的时间。营业点和排队仍未核实，稳妥起见可自带少量早餐。",
+        "user_intent": "追问早餐用药需求对地铁及停车换乘方案的影响",
+        "assistant_intent": "区分路线结构上的停留便利与尚未核实的购买条件",
+        "semantic_goal": "确定如何在不依赖未知营业情况的前提下安排早餐",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A008",
+          "user_onset_after_text": "明显拥堵时，C受道路影响最小，现有记录也最容易核对，膝盖允许时可优先；D次之，但开车到东站和停车仍有波动。下雨时，C八点零二到楼的余量大于D的八点十九；A雨天风险最高，B缺少可比的雨天完整记录。",
+          "assistant_stop_after_text": "明显拥堵时，C受道路影响最小，现有记录也最容易核对，膝盖允许时可优先；D次之，但开车到东站和停车仍有波动。下雨时，C八点零二到楼的余量大于D的八点十九；A雨天风险最高，B缺少可比的雨天完整记录。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_utterance": "我还没核实当天的天气、道路施工或事故、医院停车排队、服务台是否仍是七点开放。另外，C的七百六十米没实测，B那次交文件时间也缺着。哪些会真正改变选择？",
+        "assistant_utterance": "最可能改变选择的是父亲当天膝盖状态、天气、道路异常和医院停车排队；它们会直接改变C的步行可接受性或A、B的准时风险。服务台开放时间是所有方案的前提，必须确认。C的实测距离影响安全边界，B缺项主要影响历史记录的可比性。",
+        "user_intent": "列出未核实事项并询问其决策重要性",
+        "assistant_intent": "按是否会改变方案选择对缺失信息分级",
+        "semantic_goal": "形成出发前优先核实的事项顺序",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A009",
+          "user_onset_after_text": "D在七点二十五至三十三分办理文件，较便于安排早餐；C七点十九已重新进站，七点半在乘地铁，只能在交件后、重新进站前预先停留，这会增加原记录外的时间。营业点和排队仍未核实，稳妥起见可自带少量早餐。",
+          "assistant_stop_after_text": "D在七点二十五至三十三分办理文件，较便于安排早餐；C七点十九已重新进站，七点半在乘地铁，只能在交件后、重新进站前预先停留，这会增加原记录外的时间。营业点和排队仍未核实，稳妥起见可自带少量早餐。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U11",
+        "assistant_id": "A011",
+        "user_utterance": "如果当天膝盖比平时疼一些，是不是就不该选C？",
+        "assistant_utterance": "是的，不宜为了省时间勉强走接近八百米且尚未实测的C。若膝盖加重，应在A、B、D之间按实际步行距离、下客与休息条件，以及当天路况和停车风险再选，不能把自驾直接当作少走路。",
+        "user_intent": "确认膝盖状态变差时是否应排除方案C",
+        "assistant_intent": "应用安全限制并说明改选自驾时仍需防范的风险",
+        "semantic_goal": "建立身体状况优先于时间优势的选择规则",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A010",
+          "user_onset_after_text": "最可能改变选择的是父亲当天膝盖状态、天气、道路异常和医院停车排队；它们会直接改变C的步行可接受性或A、B的准时风险。服务台开放时间是所有方案的前提，必须确认。C的实测距离影响安全边界，B缺项主要影响历史记录的可比性。",
+          "assistant_stop_after_text": "最可能改变选择的是父亲当天膝盖状态、天气、道路异常和医院停车排队；它们会直接改变C的步行可接受性或A、B的准时风险。服务台开放时间是所有方案的前提，必须确认。C的实测距离影响安全边界，B缺项主要影响历史记录的可比性。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U12",
+        "assistant_id": "A012",
+        "user_utterance": "这些记录以后还要用。怎样整理，才不会把平均时间和较慢的一次混在一起？",
+        "assistant_utterance": "复用时可把每次记录拆成出发、到服务台、办完文件、医院下客、进入门诊楼、停车完成六类节点，再标天气、拥堵和步行距离。正常情形参考同条件记录，不利情形用较慢记录并另留缓冲；缺失节点留空，不用平均数补齐。",
+        "user_intent": "请求可长期复用的记录整理与估时方法",
+        "assistant_intent": "提供统一节点、条件标签和保守估算规则",
+        "semantic_goal": "建立不会掩盖波动或混淆口径的记录模板",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A011",
+          "user_onset_after_text": "是的，不宜为了省时间勉强走接近八百米且尚未实测的C。若膝盖加重，应在A、B、D之间按实际步行距离、下客与休息条件，以及当天路况和停车风险再选，不能把自驾直接当作少走路。",
+          "assistant_stop_after_text": "是的，不宜为了省时间勉强走接近八百米且尚未实测的C。若膝盖加重，应在A、B、D之间按实际步行距离、下客与休息条件，以及当天路况和停车风险再选，不能把自驾直接当作少走路。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U13",
+        "assistant_id": "A013",
+        "user_utterance": "好。最后请把这次的暂定结论和出发前要确认的重点简要归拢一下。",
+        "assistant_utterance": "暂定结论：膝盖稳定时，正常、拥堵或下雨均优先考虑C；B在正常路况下可能较快，但需核实道路、停车、进楼时间及步行负担。D约六百二十米但未实测，环节多且返程麻烦；A雨天风险最高。出发前确认服务台开放、天气路况、医院停车、膝盖状态和C的实测距离。",
+        "user_intent": "请求汇总当前条件化结论和待核实事项",
+        "assistant_intent": "给出简明的方案定位及出发前核对清单",
+        "semantic_goal": "形成可用于本次决策的暂定结论",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A012",
+          "user_onset_after_text": "复用时可把每次记录拆成出发、到服务台、办完文件、医院下客、进入门诊楼、停车完成六类节点，再标天气、拥堵和步行距离。正常情形参考同条件记录，不利情形用较慢记录并另留缓冲；缺失节点留空，不用平均数补齐。",
+          "assistant_stop_after_text": "复用时可把每次记录拆成出发、到服务台、办完文件、医院下客、进入门诊楼、停车完成六类节点，再标天气、拥堵和步行距离。正常情形参考同条件记录，不利情形用较慢记录并另留缓冲；缺失节点留空，不用平均数补齐。"
+        },
+        "pause_cue": null
+      }
+    ],
+    "backchannels": [
+      {
+        "event_id": "BC01",
+        "target_assistant_id": "A003",
+        "after_text": "B的晴天记录略快于A，且两条路线都避开了指定路段；",
+        "text": "嗯，明白"
+      },
+      {
+        "event_id": "BC02",
+        "target_assistant_id": "A005",
+        "after_text": "D两次都在时限内，步行估计少于C，也避开了医院停车的不确定性；",
+        "text": "对"
+      },
+      {
+        "event_id": "BC03",
+        "target_assistant_id": "A008",
+        "after_text": "明显拥堵时，C受道路影响最小，现有记录也最容易核对，膝盖允许时可优先；",
+        "text": "嗯"
+      },
+      {
+        "event_id": "BC04",
+        "target_assistant_id": "A012",
+        "after_text": "复用时可把每次记录拆成出发、到服务台、办完文件、医院下客、进入门诊楼、停车完成六类节点，",
+        "text": "明白"
+      }
+    ],
+    "side_speech": [
+      {
+        "event_id": "S01",
+        "source_id": "SP01",
+        "target_assistant_id": "A006",
+        "after_text": "这会改变排序：步行接近八百米的方案只能在膝盖状态稳定时优先，",
+        "text": "早餐也别安排得太紧。",
+        "speaker": "third_party",
+        "voice_profile": "音量较低、吐字稍慢、自然清晰的普通话声音",
+        "gain": 0.46
+      }
+    ],
+    "environment_events": []
+  },
+  "findings": [
+    {
+      "severity": "must_fix",
+      "path": "/rounds/2/assistant_utterance",
+      "problem": "把方案B概括为晴天“略快于A”混淆了到达时刻与实际耗时，后续正常路况判断和最终汇总又沿用了这一结论。",
+      "evidence": "A晴天从6点50分至8点03分下客为73分钟、至8点17分停车为87分钟；B从6点45分至8点整下客为75分钟、至8点11分停车为86分钟。B只是因早出发5分钟而更早到达，下客耗时反而多2分钟，停车总耗时仅少1分钟，不能笼统称为“略快”。候选A007和A013还写有“B正常路况下可能较快”。",
+      "repair": "最小改为区分到达时刻和总耗时，说明A、B正常记录整体接近，B停车完成时刻较早但没有明确耗时优势；同步修正A007与A013中“B可能较快”的依赖性表述。"
+    }
+  ],
+  "anchor_dependencies": [
+    {
+      "target_id": "A002",
+      "path": "/rounds/2/timing/user_onset_after_text",
+      "value": "方案A晴天能在八点零三分到下客点，雨天要到八点二十六分。",
+      "owner": "model"
+    },
+    {
+      "target_id": "A002",
+      "path": "/rounds/2/timing/assistant_stop_after_text",
+      "value": "方案A晴天能在八点零三分到下客点，雨天要到八点二十六分。但目前",
+      "owner": "program"
+    },
+    {
+      "target_id": "A003",
+      "path": "/rounds/3/timing/user_onset_after_text",
+      "value": "B的晴天记录略快于A，且两条路线都避开了指定路段；但高架排队时，下客推迟到八点十八分，停车到八点三十二分。那次交文件用时缺失，所以无法把道路与办理波动分开。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A003",
+      "path": "/rounds/3/timing/assistant_stop_after_text",
+      "value": "B的晴天记录略快于A，且两条路线都避开了指定路段；但高架排队时，下客推迟到八点十八分，停车到八点三十二分。那次交文件用时缺失，所以无法把道路与办理波动分开。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A003",
+      "path": "/backchannels/0/after_text",
+      "value": "B的晴天记录略快于A，且两条路线都避开了指定路段；",
+      "owner": "model"
+    }
+  ],
+  "base_sha256": "8714fe45003bf310035408c67e56d3f56f7b5879eb7aff291566e9fd48850768"
+}

@@ -1,0 +1,77 @@
+{
+  "scene": {
+    "domain_id": "D02",
+    "domain": "社交、陪伴与情绪支持",
+    "scenario_id": "D02-S02",
+    "scenario": "故事讲述",
+    "example_tasks": [
+      "想听一个简短的寓言故事，并顺便聊聊它想说明的道理。",
+      "给我讲一个民间故事的梗概，我想追问其中最关键的转折是怎么发生的。",
+      "通过几个线索猜一个大家熟悉的童话故事，再解释这些线索分别对应什么情节。",
+      "讲讲神话和民间传说有什么不同，最好各举一个简短的故事例子。",
+      "听一个关于人物做选择的短故事，并分析如果换一种做法，故事结局可能会怎样。"
+    ]
+  },
+  "task_style": "常识问答",
+  "previous_task_goals": [],
+  "batch_size": 1,
+  "available_modalities": [
+    "audio"
+  ],
+  "capability_contract": {
+    "interaction_modalities": [
+      "audio"
+    ],
+    "available_tools": [],
+    "external_state_access": "none",
+    "external_side_effects": "forbidden"
+  },
+  "dialogue_length_plan": {
+    "schema": "duplex_v2.dialogue_length_plan.v1",
+    "tier": "medium",
+    "target_turns": 11,
+    "min_turns": 10,
+    "max_turns": 12
+  },
+  "dialogue_length_instruction": "本条完整对话目标为 11 个主轮，允许 10–12 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+  "sampled_interaction_axes": {
+    "formality": "casual",
+    "directness": "indirect",
+    "emotional_expressiveness": "balanced",
+    "verbosity": "brief",
+    "initiative": "high",
+    "caution": "high",
+    "patience": "low"
+  },
+  "interaction_profile_schema": "duplex_v2.interaction_profile.v1",
+  "text_policy": {
+    "schema": "duplex_v2.text_policy.v1",
+    "workflow_version": "v2.5",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "models": {
+      "sol": "openai/gpt-5.6-sol",
+      "luna": "openai/gpt-5.6-luna"
+    },
+    "roles": {
+      "stage0_generation": "luna",
+      "stage1_generation": "luna",
+      "stage2_generation": "sol",
+      "script_generation": "sol",
+      "script_patch": "sol",
+      "judge": "sol",
+      "compaction_first": "luna",
+      "compaction_later": "sol"
+    },
+    "reasoning_effort_policy": "default",
+    "stage0_max_judge_attempts": 5,
+    "content_max_repairs": 5,
+    "json_parse_max_retries": 3,
+    "length_compaction_max_attempts": 3,
+    "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+    "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+    "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+  }
+}

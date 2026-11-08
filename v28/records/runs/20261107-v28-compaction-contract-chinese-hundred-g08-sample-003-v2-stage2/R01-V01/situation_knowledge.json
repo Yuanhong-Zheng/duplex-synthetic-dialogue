@@ -1,0 +1,220 @@
+{
+  "episode_situation": "2026年11月7日星期六晚上，用户独自在家整理社区读书会下一场活动的报名信息，活动计划于11月15日举行，目前仍是未发布草稿。用户是读书会负责线上报名与通知维护的志愿者，每周都要在“邻里报名”手机应用里建立或复制活动。当前需要处理的是“允许报名者提交后修改信息”这一开关；常规读书会通常要关闭它，主题征集活动才会开启。眼前这份草稿是从上一次主题征集活动复制而来，因此该开关继承为蓝色开启状态。用户已经进入过“编辑活动—报名设置”，也试着关过一次，但因为不确定是否还要点右上角的“保存”，便在退出前把它恢复成原样，当前草稿没有发生变化。上个月他曾因复制旧活动而沿用不合适的开启状态，发布后才发现并重新关闭，所以这次希望在发布前弄清楚可靠做法。应用中还存在一个名为“周末读书会”的活动模板，但用户不清楚修改模板会不会同时改变现有草稿。除了逐个编辑活动和修改模板，他也知道可以复制一场设置正确的历史活动，只是这种方法可能连日期、地点和通知文字一起带过来。用户手边只有正在操作的这一部手机，无法同时对照另一块屏幕上的教程，但可以停留在页面上逐项朗读按钮和提示。用户更在意步骤稳定、容易复核和能够撤回，而不是单纯减少点击次数。现阶段需要先区分当前草稿设置与未来活动默认值，再比较逐项修改、调整模板和复制历史活动三条路径。仍待确认的问题包括蓝色开关的确切含义、保存动作的生效范围、模板是否影响既有草稿，以及哪种流程最适合他每周重复使用。",
+  "task_reference_data": [
+    "来自用户当前可现场读取的草稿页：活动标题为“十一月共读：《城南旧事》”，日期为2026年11月15日，状态显示“未发布草稿”。",
+    "来自用户当前可现场读取的“报名设置”页：“允许报名者提交后修改信息”开关呈蓝色；页面右上角有“保存”，左上角有返回箭头。",
+    "来自该设置旁的应用内说明，用户尚未完整读完但可现场展开：“开启后，报名者可在截止时间前修改自己提交的姓名、联系方式及备注；关闭后，已提交内容仅活动管理员可编辑。”",
+    "来自草稿编辑页底部的应用内提示，用户可现场读取：“编辑内容需点击右上角保存；直接返回时，未保存的更改不会应用。”",
+    "来自“周末读书会”模板页的应用内提示，用户此前看到过：“模板修改仅用于之后基于该模板新建的活动，不会更新已有草稿或已发布活动。”该模板中的“允许报名者提交后修改信息”目前为开启。",
+    "来自历史活动菜单，用户此前实际使用过：“复制活动”会生成新的未发布草稿，并保留原活动的报名设置、通知文字、地点和时间字段，之后可分别编辑。",
+    "来自用户自己的活动习惯记录：每月通常建立四场读书会，其中约三场常规活动需要关闭提交后修改，一场主题征集活动需要开启；用户现有的纸质检查顺序是“标题、日期、地点、通知文字”，尚未把报名设置列入其中。"
+  ],
+  "environment_audio": "室内整体安静，近处没有持续交谈或明显设备声。远处只有极轻且稳定的住宅环境底噪，音量基本不变。",
+  "estimated_snr_db": 34,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "当前活动必须保持未发布草稿状态，直至标题、日期、地点、通知文字和报名设置均完成复核。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "当前这场常规读书会的目标状态是关闭“允许报名者提交后修改信息”。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C03",
+      "text": "操作方案必须明确区分当前草稿的单次设置与未来新活动的默认设置。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C04",
+      "text": "在便利性相近时，优先选择容易复核、可以撤回且不易继承旧日期或旧通知文字的流程。",
+      "kind": "soft"
+    }
+  ],
+  "safety_limits": [],
+  "soundscape_plan": {
+    "mode": "quiet",
+    "ambient_layers": [],
+    "environment_events": [],
+    "schema": "duplex_v2.soundscape_plan.v3",
+    "side_speech_sources": [],
+    "side_speech_count": 0,
+    "sampling": {
+      "schema": "duplex_v2.ambient_draw.v2",
+      "policy": {
+        "schema": "duplex_v2.soundscape_policy.v2",
+        "quiet_probability": 0.5,
+        "discrete_targets_by_tier": {
+          "short": [
+            0,
+            1
+          ],
+          "medium": [
+            1,
+            2
+          ],
+          "long": [
+            2,
+            4
+          ]
+        },
+        "discrete_count_includes": [
+          "environment_events",
+          "side_speech"
+        ],
+        "max_ambient_layers": 2,
+        "gain_range": [
+          0.3,
+          0.7
+        ],
+        "speech_request_probability": 0.5,
+        "third_party_preference_probability": 0.8,
+        "speech_requires_existing_scene_source": true,
+        "environment_audio": "base_only",
+        "stage2_repair": "atomic_scoped_patch",
+        "stage2_max_judge_attempts": 3,
+        "json_parse_max_retries": 3
+      },
+      "preferences": {
+        "schema": "duplex_v2.ambient_preferences.v1",
+        "seed": 202611073008,
+        "slot": 2,
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "categories": {
+          "bed": [
+            "crowd",
+            "birds",
+            "traffic",
+            "fan",
+            "wind",
+            "rain"
+          ],
+          "event": [
+            "keyboard",
+            "water_tap",
+            "doorbell",
+            "door",
+            "footsteps",
+            "paper"
+          ]
+        },
+        "recordings": {
+          "bed:birds": [
+            "birds-fsd50k-eval-319512",
+            "birds-fsd50k-eval-86343",
+            "birds-fsd50k-eval-57907"
+          ],
+          "bed:crowd": [
+            "crowd-fsd50k-eval-121877",
+            "crowd-fsd50k-eval-340358",
+            "crowd-fsd50k-eval-185058"
+          ],
+          "bed:fan": [
+            "fan-fsd50k-eval-419427",
+            "fan-fsd50k-eval-415925",
+            "fan-fsd50k-eval-235362"
+          ],
+          "bed:rain": [
+            "rain-fsd50k-eval-382582",
+            "rain-fsd50k-eval-238016",
+            "rain-fsd50k-eval-21189"
+          ],
+          "bed:traffic": [
+            "traffic-fsd50k-eval-232686",
+            "traffic-fsd50k-eval-124020",
+            "traffic-fsd50k-eval-235541"
+          ],
+          "bed:wind": [
+            "wind-fsd50k-eval-113175",
+            "wind-fsd50k-eval-113173",
+            "wind-fsd50k-eval-113176"
+          ],
+          "event:door": [
+            "door-fsd50k-eval-71212",
+            "door-fsd50k-eval-119077",
+            "door-fsd50k-eval-209519"
+          ],
+          "event:doorbell": [
+            "doorbell-fsd50k-eval-426594",
+            "doorbell-fsd50k-eval-348322",
+            "doorbell-fsd50k-eval-332563"
+          ],
+          "event:footsteps": [
+            "footsteps-fsd50k-eval-153104",
+            "footsteps-fsd50k-eval-392303",
+            "footsteps-fsd50k-eval-272381"
+          ],
+          "event:keyboard": [
+            "keyboard-fsd50k-eval-399740",
+            "keyboard-fsd50k-eval-233057",
+            "keyboard-fsd50k-eval-411545"
+          ],
+          "event:paper": [
+            "paper-fsd50k-eval-121200",
+            "paper-fsd50k-eval-82562",
+            "paper-fsd50k-eval-343098"
+          ],
+          "event:water_tap": [
+            "water_tap-fsd50k-eval-232499",
+            "water_tap-fsd50k-eval-402128",
+            "water_tap-fsd50k-eval-402127"
+          ]
+        }
+      },
+      "control": {
+        "schema": "duplex_v2.soundscape_control.v2",
+        "seed": 2512018623,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "third_party",
+          "machine"
+        ]
+      },
+      "control_sha256": "953b4cf01fcae01b88855041973498916a269b1c092f7ea0c2cec8d6ef522d9a",
+      "candidate_plan": {
+        "schema": "duplex_v2.soundscape_plan.v3",
+        "mode": "quiet",
+        "ambient_layers": [],
+        "environment_events": [],
+        "side_speech_eligibility": {
+          "third_party": {
+            "compatible": false,
+            "reason": "用户独自在家，当前故事中没有在场的第三方。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "手机应用仅建立了可视界面，没有已建立的机器语音来源。",
+            "source": null
+          }
+        }
+      },
+      "base_environment_audio_sha256": "c756cf7cbd95421dbf3353eb7fffa82daa77ca8b12bc1dc12e343631cc6ae845",
+      "aggregate_environment_audio": "室内整体安静，近处没有持续交谈或明显设备声。远处只有极轻且稳定的住宅环境底噪，音量基本不变。",
+      "draws": [],
+      "speech_selection": {
+        "requested": false,
+        "compatible_kinds": [],
+        "selected_kind": null,
+        "outcome": "not_requested",
+        "assessments": {
+          "third_party": {
+            "compatible": false,
+            "reason": "用户独自在家，当前故事中没有在场的第三方。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "手机应用仅建立了可视界面，没有已建立的机器语音来源。",
+            "source": null
+          }
+        }
+      }
+    }
+  }
+}

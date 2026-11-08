@@ -1,0 +1,266 @@
+[
+  {
+    "event_id": "BC01",
+    "kind": "backchannel_onset",
+    "onset_frame": 808960,
+    "target_assistant_id": "A002",
+    "assistant_prefix_at_onset": "请求量近似对半，但gw-b的5xx是百分之二十九点八，对比gw-a的百分之一点四，已确认异常强烈偏向gw-b。",
+    "planned_assistant_prefix_at_onset": "请求量近似对半，但gw-b的5xx是百分之二十九点八，对比gw-a的百分之一点四，已确认异常强烈偏向gw-b。",
+    "history_at_onset": {
+      "observed_audio": [
+        {
+          "speaker": "user",
+          "audio_id": "U01",
+          "text": "OrderFlow从九点四十二分左右开始间歇报502或超时，已报告的十八人里苏州十四人、上海虚拟桌面四人，重试有时能成功。我需要尽快缩小故障域。",
+          "through_frame": 197120
+        },
+        {
+          "speaker": "assistant",
+          "audio_id": "A001",
+          "text": "先看请求经过哪些组件，以及错误是否集中在某条路径。请给我负载均衡到网关的流量和错误分布，健康检查覆盖范围也很关键。",
+          "through_frame": 381440
+        },
+        {
+          "speaker": "user",
+          "audio_id": "U02",
+          "text": "请求先到内部负载均衡，再近似均分给gw-a和gw-b。快照里两者流量占比是百分之四十九和百分之五十一，但5xx分别为百分之一点四和百分之二十九点八。两台本地健康检查都正常，不过只查自身的健康端点。",
+          "through_frame": 633600
+        },
+        {
+          "speaker": "assistant",
+          "audio_id": "A002",
+          "text": "请求量近似对半，但gw-b的5xx是百分之二十九点八，对比gw-a的百分之一点四，已确认异常强烈偏向gw-b。",
+          "through_frame": 808960
+        }
+      ],
+      "current_frame": 808960,
+      "clock": "synthetic_pcm_16000",
+      "assistant_speaking": true
+    },
+    "event_added_to_assistant_context": true
+  },
+  {
+    "event_id": "S01",
+    "kind": "side_speech_onset",
+    "onset_frame": 2476000,
+    "target_assistant_id": "A006",
+    "assistant_prefix_at_onset": "时间上更贴近的是九点三十六分的证书包重载，以及gw-b九点三十九分的服务发现断流。",
+    "planned_assistant_prefix_at_onset": "时间上更贴近的是九点三十六分的证书包重载，以及gw-b九点三十九分的服务发现断流。",
+    "history_at_onset": {
+      "observed_audio": [
+        {
+          "speaker": "user",
+          "audio_id": "U01",
+          "text": "OrderFlow从九点四十二分左右开始间歇报502或超时，已报告的十八人里苏州十四人、上海虚拟桌面四人，重试有时能成功。我需要尽快缩小故障域。",
+          "through_frame": 197120
+        },
+        {
+          "speaker": "assistant",
+          "audio_id": "A001",
+          "text": "先看请求经过哪些组件，以及错误是否集中在某条路径。请给我负载均衡到网关的流量和错误分布，健康检查覆盖范围也很关键。",
+          "through_frame": 381440
+        },
+        {
+          "speaker": "user",
+          "audio_id": "U02",
+          "text": "请求先到内部负载均衡，再近似均分给gw-a和gw-b。快照里两者流量占比是百分之四十九和百分之五十一，但5xx分别为百分之一点四和百分之二十九点八。两台本地健康检查都正常，不过只查自身的健康端点。",
+          "through_frame": 633600
+        },
+        {
+          "speaker": "assistant",
+          "audio_id": "A002",
+          "text": "请求量近似对半，但gw-b的5xx是百分之二十九点八，对比gw-a的百分之一点四，已确认异常强烈偏向gw-b。自身",
+          "through_frame": 826880
+        },
+        {
+          "speaker": "user",
+          "audio_id": "BC01",
+          "text": "嗯，明白",
+          "through_frame": 829440
+        },
+        {
+          "speaker": "assistant",
+          "audio_id": "A002",
+          "text": "健康检查不覆盖上游链路，下一步看两台网关的同类上游错误及目标节点分布。",
+          "through_frame": 928000
+        },
+        {
+          "speaker": "user",
+          "audio_id": "U03",
+          "text": "gw-b有四十七条上游连接在响应头前被重置，其中三十九条指向app-02，八条指向app-01；gw-a同期只有两条。日志没写重置由哪一端发起。",
+          "through_frame": 1140480
+        },
+        {
+          "speaker": "assistant",
+          "audio_id": "A003",
+          "text": "这进一步把故障域压向gw-b及其到上游的路径，并显示app-02方向更可疑。但重置方向未知，暂时不能区分网关本机、链路或应用端主动断开。",
+          "through_frame": 1363200
+        },
+        {
+          "speaker": "user",
+          "audio_id": "U04",
+          "text": "两台应用节点的CPU都低于百分之四十六，内存和工作线程没告警。数据库连接利用率稳定，慢查询没突增；身份服务成功率也在百分之九十九点九六以上，没有同步延迟尖峰。",
+          "through_frame": 1578240
+        },
+        {
+          "speaker": "assistant",
+          "audio_id": "A004",
+          "text": "已确认应用资源、数据库和身份服务没有同步恶化，只能",
+          "through_frame": 1667840
+        },
+        {
+          "speaker": "user",
+          "audio_id": "U05",
+          "text": "先停一下，应用侧还有个关键限制。抽出的十二个失败请求ID都没出现在应用访问日志里，但日志采集是否丢失或延迟还没核实。",
+          "through_frame": 1811680
+        },
+        {
+          "speaker": "assistant",
+          "audio_id": "A005",
+          "text": "十二个失败请求ID未进应用日志，使请求可能没到应用进程更可信，但这只是推测。先核对日志完整性；若采集可靠，再重点查gw-b本机及其到app-02的连接路径。",
+          "through_frame": 2072800
+        },
+        {
+          "speaker": "user",
+          "audio_id": "U06",
+          "text": "变更方面，九点三十一分给苏州网段新增了访问虚拟地址的放行规则；九点三十六分两台网关重载证书包，gw-b九点三十九分还发生过服务发现监听流断开并保留缓存。应用昨晚发布后一直稳定到九点四十一分。",
+          "through_frame": 2351840
+        },
+        {
+          "speaker": "assistant",
+          "audio_id": "A006",
+          "text": "时间上更贴近的是九点三十六分的证书包重载，以及gw-b九点三十九分的服务发现断流。",
+          "through_frame": 2476000
+        }
+      ],
+      "current_frame": 2476000,
+      "clock": "synthetic_pcm_16000",
+      "assistant_speaking": true
+    },
+    "event_added_to_assistant_context": false
+  },
+  {
+    "event_id": "BC03",
+    "kind": "backchannel_onset",
+    "onset_frame": 3328873,
+    "target_assistant_id": "A008",
+    "assistant_prefix_at_onset": "第一，核对日志采集完整性并按网关和应用节点整理成功、失败矩阵；第二，对比两台网关有效配置、服务发现缓存和证书状态；",
+    "planned_assistant_prefix_at_onset": "第一，核对日志采集完整性并按网关和应用节点整理成功、失败矩阵；第二，对比两台网关有效配置、服务发现缓存和证书状态；",
+    "history_at_onset": {
+      "observed_audio": [
+        {
+          "speaker": "user",
+          "audio_id": "U01",
+          "text": "OrderFlow从九点四十二分左右开始间歇报502或超时，已报告的十八人里苏州十四人、上海虚拟桌面四人，重试有时能成功。我需要尽快缩小故障域。",
+          "through_frame": 197120
+        },
+        {
+          "speaker": "assistant",
+          "audio_id": "A001",
+          "text": "先看请求经过哪些组件，以及错误是否集中在某条路径。请给我负载均衡到网关的流量和错误分布，健康检查覆盖范围也很关键。",
+          "through_frame": 381440
+        },
+        {
+          "speaker": "user",
+          "audio_id": "U02",
+          "text": "请求先到内部负载均衡，再近似均分给gw-a和gw-b。快照里两者流量占比是百分之四十九和百分之五十一，但5xx分别为百分之一点四和百分之二十九点八。两台本地健康检查都正常，不过只查自身的健康端点。",
+          "through_frame": 633600
+        },
+        {
+          "speaker": "assistant",
+          "audio_id": "A002",
+          "text": "请求量近似对半，但gw-b的5xx是百分之二十九点八，对比gw-a的百分之一点四，已确认异常强烈偏向gw-b。自身",
+          "through_frame": 826880
+        },
+        {
+          "speaker": "user",
+          "audio_id": "BC01",
+          "text": "嗯，明白",
+          "through_frame": 829440
+        },
+        {
+          "speaker": "assistant",
+          "audio_id": "A002",
+          "text": "健康检查不覆盖上游链路，下一步看两台网关的同类上游错误及目标节点分布。",
+          "through_frame": 928000
+        },
+        {
+          "speaker": "user",
+          "audio_id": "U03",
+          "text": "gw-b有四十七条上游连接在响应头前被重置，其中三十九条指向app-02，八条指向app-01；gw-a同期只有两条。日志没写重置由哪一端发起。",
+          "through_frame": 1140480
+        },
+        {
+          "speaker": "assistant",
+          "audio_id": "A003",
+          "text": "这进一步把故障域压向gw-b及其到上游的路径，并显示app-02方向更可疑。但重置方向未知，暂时不能区分网关本机、链路或应用端主动断开。",
+          "through_frame": 1363200
+        },
+        {
+          "speaker": "user",
+          "audio_id": "U04",
+          "text": "两台应用节点的CPU都低于百分之四十六，内存和工作线程没告警。数据库连接利用率稳定，慢查询没突增；身份服务成功率也在百分之九十九点九六以上，没有同步延迟尖峰。",
+          "through_frame": 1578240
+        },
+        {
+          "speaker": "assistant",
+          "audio_id": "A004",
+          "text": "已确认应用资源、数据库和身份服务没有同步恶化，只能",
+          "through_frame": 1667840
+        },
+        {
+          "speaker": "user",
+          "audio_id": "U05",
+          "text": "先停一下，应用侧还有个关键限制。抽出的十二个失败请求ID都没出现在应用访问日志里，但日志采集是否丢失或延迟还没核实。",
+          "through_frame": 1811680
+        },
+        {
+          "speaker": "assistant",
+          "audio_id": "A005",
+          "text": "十二个失败请求ID未进应用日志，使请求可能没到应用进程更可信，但这只是推测。先核对日志完整性；若采集可靠，再重点查gw-b本机及其到app-02的连接路径。",
+          "through_frame": 2072800
+        },
+        {
+          "speaker": "user",
+          "audio_id": "U06",
+          "text": "变更方面，九点三十一分给苏州网段新增了访问虚拟地址的放行规则；九点三十六分两台网关重载证书包，gw-b九点三十九分还发生过服务发现监听流断开并保留缓存。应用昨晚发布后一直稳定到九点四十一分。",
+          "through_frame": 2351840
+        },
+        {
+          "speaker": "assistant",
+          "audio_id": "A006",
+          "text": "时间上更贴近的是九点三十六分的证书包重载，以及gw-b九点三十九分的服务发现断流。防火墙变更仅针对苏州源，应用发布又早且有稳定窗口；当前先查网关状态或配置差异，再查网络路径，仍不能定因。",
+          "through_frame": 2634720
+        },
+        {
+          "speaker": "user",
+          "audio_id": "U07",
+          "text": "还有地域线索：苏州报告最集中，但上海虚拟桌面也有四个失败样本。监控网段的合成请求在九点四十七分和十点零三分失败，其他分钟成功。",
+          "through_frame": 2821600
+        },
+        {
+          "speaker": "assistant",
+          "audio_id": "A007",
+          "text": "上海和监控网段也出现失败，已足以反对故障只存在于苏州源网段的说法。地域集中仍可能反映使用量或路径差异，但目前不足以把苏州防火墙变更列为主因。",
+          "through_frame": 3028960
+        },
+        {
+          "speaker": "user",
+          "audio_id": "U08",
+          "text": "那就按判别力和风险排一下，先只用现有材料，别把未获批的操作列成执行项。",
+          "through_frame": 3129193
+        },
+        {
+          "speaker": "assistant",
+          "audio_id": "A008",
+          "text": "第一，核对日志采集完整性并按网关和应用节点整理成功、失败矩阵；第二，对比两台网关有效配置、服务发现缓存和证书状态；",
+          "through_frame": 3328873
+        }
+      ],
+      "current_frame": 3328873,
+      "clock": "synthetic_pcm_16000",
+      "assistant_speaking": true
+    },
+    "event_added_to_assistant_context": true
+  }
+]

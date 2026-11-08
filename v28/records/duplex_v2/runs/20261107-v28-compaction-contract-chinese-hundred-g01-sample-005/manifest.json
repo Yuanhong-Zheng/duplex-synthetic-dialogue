@@ -1,0 +1,436 @@
+{
+  "schema": "duplex-v2.run.v1",
+  "run_id": "20261107-v28-compaction-contract-chinese-hundred-g01-sample-005",
+  "seed": 3373471510,
+  "count": 1,
+  "model": "openai/gpt-5.6-sol",
+  "profile": "qiniu-chat",
+  "taxonomy": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/taxonomy/domain-scenario-with-task-examples-gpt56-sol-v5.json",
+  "taxonomy_sha256": "1bc5014e3da83a7c3a7c71d86565c26244d651ee0701204304490590596329fc",
+  "sampling": [
+    {
+      "case_id": null,
+      "rng_seed": 1280528675,
+      "domain_id": "D18",
+      "domain": "会议、访谈与团队协作",
+      "domain_definition": "EchoChain 的 coordination、Audio MultiChallenge 的计划/消息、Google brainstorm 与 ElevenLabs interview 提供主要证据。",
+      "scenario_id": "D18-S06",
+      "scenario": "口头记录与纪要",
+      "example_tasks": {
+        "开放式互动": [
+          "练习把一段口头讨论压缩成层次清楚、可供团队复述的会议纪要表达。",
+          "围绕一次容易跑题的团队讨论，共同设计一套口头记录重点和追问思路。",
+          "扮演项目会议记录员，进行一轮快速捕捉决策、分歧与待办事项的即兴演练。",
+          "讨论不同会议类型适合采用的纪要结构，以及怎样在发言密集时保留关键上下文。",
+          "从口头复盘的角度创作一段简短清晰的会议总结开场，方便参与者确认共同结论。"
+        ],
+        "结构化整理": [
+          "根据我随后口述的一段会议内容，整理出议题、主要结论、分歧点和后续待办。",
+          "把我提供的零散会议笔记按发言主题归类，并梳理成便于会后发送的纪要。",
+          "依据我描述的多轮讨论过程，排出关键决定形成的时间线并标明尚未定论的问题。",
+          "核对我口述的行动项、负责人线索和截止顺序，汇总成一份可跟进的任务清单。",
+          "将我提供的访谈录音摘记区分为事实陈述、观点、引用内容和需要进一步确认的信息。"
+        ],
+        "混合型": [
+          "结合有效会议纪要应保留的判断标准，帮我决定我随后口述的内容哪些该写入正式记录、哪些只保留为背景。",
+          "我会提供一段包含争论和多种方案的会议记录，依据决策记录原则判断应怎样呈现分歧与最终选择。",
+          "根据不同受众阅读纪要时关注的信息，调整我接下来口述的项目讨论摘要的详略和组织方式。",
+          "拿我提供的访谈摘记与可靠引述的通用原则对照，筛选适合进入总结的原话和观点。",
+          "围绕我描述的一次跨团队同步，结合行动项应具备的要素，修正其中模糊、重复或难以跟进的待办表述。"
+        ],
+        "常识问答": [
+          "想弄清楚口头记录和正式会议纪要有什么区别，以及什么内容更适合记进纪要",
+          "会议中大家同时提出多个意见时，怎样判断哪些信息值得优先记录",
+          "为什么会议纪要通常要单独写清决定事项、待办事项和负责人",
+          "举一个简短的会议内容，帮我判断哪些属于事实记录、哪些只是个人看法",
+          "想练习把一段口头讨论整理成简洁纪要，并追问常见的遗漏点"
+        ]
+      },
+      "example_task_seeds": [],
+      "sampling_mode": "uniform_distinct_domains_then_scenario",
+      "sampling_reason": "fixed_domain",
+      "taxonomy_version": "2026-08-02-task-examples-v5",
+      "taxonomy_sha256": "1bc5014e3da83a7c3a7c71d86565c26244d651ee0701204304490590596329fc"
+    }
+  ],
+  "cases": [],
+  "exclude_domain_ids": [
+    "D03",
+    "D10",
+    "D12",
+    "D16",
+    "D17",
+    "D19",
+    "D21",
+    "D22",
+    "D25",
+    "D28"
+  ],
+  "script_max_repairs": 5,
+  "text_output_token_policy": "omit",
+  "reasoning_effort": "default",
+  "status": "upstream_failed",
+  "created_at": "2026-11-07T06:32:33.459713+00:00",
+  "data_kind": "scripted_target_behavior",
+  "live_policy_evaluation": false,
+  "text_policy": {
+    "schema": "duplex_v2.text_policy.v1",
+    "workflow_version": "v2.5",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "models": {
+      "sol": "openai/gpt-5.6-sol",
+      "luna": "openai/gpt-5.6-luna"
+    },
+    "roles": {
+      "stage0_generation": "luna",
+      "stage1_generation": "luna",
+      "stage2_generation": "sol",
+      "script_generation": "sol",
+      "script_patch": "sol",
+      "judge": "sol",
+      "compaction_first": "luna",
+      "compaction_later": "sol"
+    },
+    "reasoning_effort_policy": "default",
+    "stage0_max_judge_attempts": 5,
+    "content_max_repairs": 5,
+    "json_parse_max_retries": 3,
+    "length_compaction_max_attempts": 3,
+    "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+    "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+    "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+  },
+  "text_policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g01-sample-005/text-policy.json",
+  "relay_configuration": {
+    "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g01/relay-policy.json",
+    "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g01/relay-state",
+    "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+    "policy": {
+      "schema": "duplex_v2.timeout_relay_policy.v3",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "backup": {
+        "profile": "lianyu",
+        "endpoint": "https://api.openbili.com/v1/chat/completions",
+        "model_map": {
+          "openai/gpt-5.6-sol": "gpt-5.6-sol",
+          "openai/gpt-5.6-luna": "gpt-5.6-luna"
+        },
+        "verification": {
+          "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+          "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+        }
+      },
+      "trigger": {
+        "max_retries": 5,
+        "http_statuses": [
+          502,
+          503,
+          504
+        ],
+        "error_types": [
+          "TimeoutError",
+          "HTTP2DeadlineExceeded",
+          "ConnectionResetError",
+          "ConnectionAbortedError",
+          "BrokenPipeError",
+          "RemoteDisconnected",
+          "IncompleteRead"
+        ],
+        "http2_transport_errors": "negotiated_h2_only",
+        "require_all_attempts": true
+      },
+      "max_relay_switches": 1
+    }
+  },
+  "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+  "http_policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g01-sample-005/http-policy.json",
+  "http_policy": {
+    "schema": "duplex_v2.http_policy.v1",
+    "endpoint": "https://api.modelink.ai/v1/chat/completions",
+    "http_transport": "http2_ping_v1",
+    "proxy": "http://oversea-squid1.jp.txyun:11080",
+    "ping_interval_seconds": 30.0,
+    "max_retries": 5,
+    "trace_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g01/network-traces"
+  },
+  "workflow_version": "v2.8",
+  "text_request_timeout_seconds": 1800.0,
+  "dialogue_length_policy": {
+    "schema": "duplex_v2.dialogue_length_policy.v1",
+    "version": 1,
+    "target_tolerance": 1,
+    "tiers": {
+      "short": {
+        "weight_percent": 30,
+        "min_turns": 5,
+        "max_turns": 8
+      },
+      "medium": {
+        "weight_percent": 40,
+        "min_turns": 9,
+        "max_turns": 15
+      },
+      "long": {
+        "weight_percent": 30,
+        "min_turns": 16,
+        "max_turns": 24
+      }
+    },
+    "allocation": "largest_remainder_then_seeded_shuffle; single_plan_weighted_draw",
+    "main_turn_definition": "one main user utterance and its assistant reply; backchannels and background excluded"
+  },
+  "dialogue_length_plans": [
+    {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "long",
+      "target_turns": 16,
+      "min_turns": 16,
+      "max_turns": 17
+    }
+  ],
+  "interaction_profile_policy": {
+    "schema": "duplex_v2.interaction_profile.v1",
+    "axes": {
+      "formality": [
+        "casual",
+        "neutral",
+        "formal"
+      ],
+      "directness": [
+        "indirect",
+        "balanced",
+        "direct"
+      ],
+      "emotional_expressiveness": [
+        "reserved",
+        "balanced",
+        "expressive"
+      ],
+      "verbosity": [
+        "brief",
+        "balanced",
+        "detailed"
+      ],
+      "initiative": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "caution": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "patience": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "behavioral_notes_min": 2,
+    "behavioral_notes_max": 3,
+    "sampling": "seeded_column_balance_without_demographic_coupling",
+    "all_middle_combination": "replace_formality_with_seeded_nonmiddle_value",
+    "sampled_axes_frozen": true,
+    "repairable_fields": [
+      "behavioral_notes"
+    ]
+  },
+  "sampled_interaction_axes": [
+    {
+      "formality": "formal",
+      "directness": "indirect",
+      "emotional_expressiveness": "reserved",
+      "verbosity": "balanced",
+      "initiative": "medium",
+      "caution": "high",
+      "patience": "low"
+    }
+  ],
+  "language": "zh",
+  "soundscape_policy": {
+    "schema": "duplex_v2.soundscape_policy.v2",
+    "quiet_probability": 0.5,
+    "discrete_targets_by_tier": {
+      "short": [
+        0,
+        1
+      ],
+      "medium": [
+        1,
+        2
+      ],
+      "long": [
+        2,
+        4
+      ]
+    },
+    "discrete_count_includes": [
+      "environment_events",
+      "side_speech"
+    ],
+    "max_ambient_layers": 2,
+    "gain_range": [
+      0.3,
+      0.7
+    ],
+    "speech_request_probability": 0.5,
+    "third_party_preference_probability": 0.8,
+    "speech_requires_existing_scene_source": true,
+    "environment_audio": "base_only",
+    "stage2_repair": "atomic_scoped_patch",
+    "stage2_max_judge_attempts": 3,
+    "json_parse_max_retries": 3
+  },
+  "ambient_controls": [
+    {
+      "schema": "duplex_v2.soundscape_control.v2",
+      "seed": 191105480,
+      "mode": "layered",
+      "discrete_event_target": 2,
+      "max_ambient_layers": 2,
+      "side_speech_requested": false,
+      "speech_kind_preferences": [
+        "machine",
+        "third_party"
+      ]
+    }
+  ],
+  "script_repair_policy": {
+    "schema": "duplex_v2.script_repair_policy.v1",
+    "mode": "json_patch",
+    "patch_schema": "duplex_v2.script_patch.v1",
+    "json_parse_max_retries": 3,
+    "content_max_repairs": 5,
+    "length_compaction_max_attempts": 3,
+    "overlength_after_compaction": "fail_case",
+    "judge_scope": "complete_script_and_heard_context"
+  },
+  "speech_onset_policy": "cpu_vad_t03_outer_silence_preroll30ms_same_prefix_speech_start_calibration_v1",
+  "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+  "script_execution_policy": {
+    "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+    "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+    "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+    "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+    "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+    "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+    "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+  },
+  "ambient_catalog_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261107-v28-compaction-contract-chinese-hundred-g01-sample-005/ambient-catalog.json",
+  "ambient_catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+  "ambient_sampling_policy": {
+    "schema": "duplex_v2.ambient_sampling_policy.v1",
+    "selection": "model_compatible_candidates_then_seeded_category_and_recording",
+    "batch_balance": "seeded_rotating_category_and_recording_preferences",
+    "frozen_after": "existing_stage2_judge",
+    "resample_on_resume": false
+  },
+  "ambient_sampling_plans": [
+    {
+      "schema": "duplex_v2.ambient_preferences.v1",
+      "seed": 202611073001,
+      "slot": 4,
+      "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+      "categories": {
+        "bed": [
+          "fan",
+          "birds",
+          "rain",
+          "crowd",
+          "traffic",
+          "wind"
+        ],
+        "event": [
+          "footsteps",
+          "water_tap",
+          "door",
+          "doorbell",
+          "paper",
+          "keyboard"
+        ]
+      },
+      "recordings": {
+        "bed:birds": [
+          "birds-fsd50k-eval-57907",
+          "birds-fsd50k-eval-86343",
+          "birds-fsd50k-eval-319512"
+        ],
+        "bed:crowd": [
+          "crowd-fsd50k-eval-121877",
+          "crowd-fsd50k-eval-185058",
+          "crowd-fsd50k-eval-340358"
+        ],
+        "bed:fan": [
+          "fan-fsd50k-eval-415925",
+          "fan-fsd50k-eval-235362",
+          "fan-fsd50k-eval-419427"
+        ],
+        "bed:rain": [
+          "rain-fsd50k-eval-238016",
+          "rain-fsd50k-eval-382582",
+          "rain-fsd50k-eval-21189"
+        ],
+        "bed:traffic": [
+          "traffic-fsd50k-eval-124020",
+          "traffic-fsd50k-eval-235541",
+          "traffic-fsd50k-eval-232686"
+        ],
+        "bed:wind": [
+          "wind-fsd50k-eval-113175",
+          "wind-fsd50k-eval-113173",
+          "wind-fsd50k-eval-113176"
+        ],
+        "event:door": [
+          "door-fsd50k-eval-71212",
+          "door-fsd50k-eval-209519",
+          "door-fsd50k-eval-119077"
+        ],
+        "event:doorbell": [
+          "doorbell-fsd50k-eval-332563",
+          "doorbell-fsd50k-eval-348322",
+          "doorbell-fsd50k-eval-426594"
+        ],
+        "event:footsteps": [
+          "footsteps-fsd50k-eval-392303",
+          "footsteps-fsd50k-eval-272381",
+          "footsteps-fsd50k-eval-153104"
+        ],
+        "event:keyboard": [
+          "keyboard-fsd50k-eval-399740",
+          "keyboard-fsd50k-eval-233057",
+          "keyboard-fsd50k-eval-411545"
+        ],
+        "event:paper": [
+          "paper-fsd50k-eval-82562",
+          "paper-fsd50k-eval-121200",
+          "paper-fsd50k-eval-343098"
+        ],
+        "event:water_tap": [
+          "water_tap-fsd50k-eval-402128",
+          "water_tap-fsd50k-eval-402127",
+          "water_tap-fsd50k-eval-232499"
+        ]
+      }
+    }
+  ],
+  "stages": {
+    "0": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g01-sample-005-v2-stage0",
+    "0qa": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g01-sample-005-v2-stage0qa",
+    "1": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g01-sample-005-v2-stage1",
+    "2": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261107-v28-compaction-contract-chinese-hundred-g01-sample-005-v2-stage2"
+  },
+  "timings": {
+    "stage0": 20.55529521033168,
+    "stage0qa": 15.79520102031529,
+    "stage1": 7.10713174380362,
+    "stage2": 70.11532966792583
+  },
+  "error_type": "RuntimeError"
+}

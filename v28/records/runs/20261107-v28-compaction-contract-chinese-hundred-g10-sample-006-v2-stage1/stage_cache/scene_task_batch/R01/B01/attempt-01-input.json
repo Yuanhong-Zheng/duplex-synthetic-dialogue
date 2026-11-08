@@ -1,0 +1,77 @@
+{
+  "scene": {
+    "domain_id": "D06",
+    "domain": "购物、零售与消费决策",
+    "scenario_id": "D06-S01",
+    "scenario": "商品发现",
+    "example_tasks": [
+      "结合商品评价中常见的可信度判断方法和随后提供的候选信息，挑出更值得进一步了解的商品",
+      "依据不同使用场景下的选购取舍，比较随后给出的商品候选并调整出最符合个人偏好的探索方向",
+      "先共同建立需求分析与质量判断框架，再将该框架应用于随后提供的商品候选，确定哪些差异真正影响选择",
+      "结合个人的生活习惯、审美偏好与商品发现的一般方法，从随后提供的候选中形成分层推荐",
+      "先从如何发现有潜力的新商品这一问题出发，再根据随后出现的具体候选和限制条件制定筛选与比较方案"
+    ]
+  },
+  "task_style": "混合型",
+  "previous_task_goals": [],
+  "batch_size": 1,
+  "available_modalities": [
+    "audio"
+  ],
+  "capability_contract": {
+    "interaction_modalities": [
+      "audio"
+    ],
+    "available_tools": [],
+    "external_state_access": "none",
+    "external_side_effects": "forbidden"
+  },
+  "dialogue_length_plan": {
+    "schema": "duplex_v2.dialogue_length_plan.v1",
+    "tier": "short",
+    "target_turns": 6,
+    "min_turns": 5,
+    "max_turns": 7
+  },
+  "dialogue_length_instruction": "本条完整对话目标为 6 个主轮，允许 5–7 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+  "sampled_interaction_axes": {
+    "formality": "formal",
+    "directness": "direct",
+    "emotional_expressiveness": "expressive",
+    "verbosity": "brief",
+    "initiative": "high",
+    "caution": "high",
+    "patience": "medium"
+  },
+  "interaction_profile_schema": "duplex_v2.interaction_profile.v1",
+  "text_policy": {
+    "schema": "duplex_v2.text_policy.v1",
+    "workflow_version": "v2.5",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "models": {
+      "sol": "openai/gpt-5.6-sol",
+      "luna": "openai/gpt-5.6-luna"
+    },
+    "roles": {
+      "stage0_generation": "luna",
+      "stage1_generation": "luna",
+      "stage2_generation": "sol",
+      "script_generation": "sol",
+      "script_patch": "sol",
+      "judge": "sol",
+      "compaction_first": "luna",
+      "compaction_later": "sol"
+    },
+    "reasoning_effort_policy": "default",
+    "stage0_max_judge_attempts": 5,
+    "content_max_repairs": 5,
+    "json_parse_max_retries": 3,
+    "length_compaction_max_attempts": 3,
+    "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+    "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+    "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+  }
+}
