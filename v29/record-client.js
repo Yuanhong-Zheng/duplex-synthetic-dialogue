@@ -18,7 +18,7 @@
       notice.replaceChildren(document.createTextNode(message + ' '));
       if (error) {
         const link = document.createElement('a');
-        link.href = new URL('workflow-records.zip', base).href;
+        link.href = 'https://raw.githubusercontent.com/Yuanhong-Zheng/duplex-synthetic-dialogue/8f8b1763e011c6b048935b8db8c38dfc6adfa230/v29/workflow-records.zip';
         link.textContent = '下载完整流程资料';
         notice.append(link);
       }

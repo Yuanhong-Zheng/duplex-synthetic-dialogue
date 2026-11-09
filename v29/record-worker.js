@@ -19,7 +19,7 @@ async function recordResponse(url) {
       byte => byte.toString(16).padStart(2, '0')).join('');
     let data = shardCache.get(shard);
     if (!data) {
-      data = fetch(new URL('shards/' + shard + '.json', self.registration.scope))
+      data = fetch('https://raw.githubusercontent.com/Yuanhong-Zheng/duplex-synthetic-dialogue/8f8b1763e011c6b048935b8db8c38dfc6adfa230/v29/shards/' + shard + '.json')
         .then(response => {
           if (!response.ok) throw new Error('Record shard unavailable: ' + response.status);
           return response.json();
