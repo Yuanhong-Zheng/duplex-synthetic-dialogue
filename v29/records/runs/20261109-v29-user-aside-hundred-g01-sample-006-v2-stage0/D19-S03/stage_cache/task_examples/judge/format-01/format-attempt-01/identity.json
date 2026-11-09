@@ -1,0 +1,128 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "[SYSTEM ROLE]\n你是 taxonomy Stage-00 任务方向的语义 Judge。只检查当前 Scenario 的任务方向是否可用；每组条数由输入 `requested_examples_per_style` 指定。不重写 Domain/Scenario，不评价用户画像或声音，也不做分布配额审查。\n\n[INPUT]\n输入包含 Domain、Scenario、已有示例任务、`requested_examples_per_style` 和待审查的 `example_tasks`。`example_tasks` 应有三组，每组条数必须与 `requested_examples_per_style` 一致。\n\n[CHECK]\n- 每条是否确实属于当前 Scenario，而不是另一个领域的任务。\n- 开放式互动是否主要依赖通用知识或讨论，而不是要求已有材料。\n- 结构化整理是否有明确的材料处理和结构化结果。\n- 混合型是否同时包含通用框架和后续材料判断，且两段关系清楚。\n- 是否出现具体事实、工具依赖、Assistant 行为、完整答案或安全/评分字段。\n- 同组是否有明显的语义重复；只换实体或句式不算新的方向。\n- 是否出现表达入口塌缩：若同组有三个或以上条目沿用相同的泛化句首、知识获取表达或叙述骨架，例如连续“我想”“了解”“先……再……”，且这种重复不是当前 Scenario 自然要求，应判为 must-fix。重点是同组条目是否呈现不同的用户需求、互动方式和问题入口，不要求每条句式都不同。\n\n不要因为任务风格、职业或主题偏好不同而提出审美性意见。只报告会影响任务方向库使用的 must-fix 问题。\n\n[OUTPUT]\n只输出合法 JSON：\n{\n  \"decision\": \"pass\",\n  \"findings\": []\n}\n\n发现问题时：\n{\n  \"decision\": \"repair\",\n  \"findings\": [\n    {\n      \"severity\": \"must_fix\",\n      \"path\": \"/example_tasks/开放式互动/2\",\n      \"problem\": \"一个可定位的问题\",\n      \"evidence\": \"相关任务文本\",\n      \"repair\": \"最小修复方向\"\n    }\n  ]\n}\n",
+  "context": {
+    "scenario": {
+      "domain_id": "D19",
+      "domain": "媒体、娱乐与角色扮演",
+      "domain_definition": "PersonaPlex 的开放角色、Audio MultiChallenge 的 roleplay 与 SPEARBench 的自然话题支持娱乐和内容交流。",
+      "scenario_id": "D19-S03",
+      "scenario": "剧情回顾",
+      "requested_examples_per_style": 5,
+      "existing_example_task_seeds": [],
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "short",
+        "target_turns": 8,
+        "min_turns": 7,
+        "max_turns": 8
+      },
+      "dialogue_length_instruction": "本条完整对话目标为 8 个主轮，允许 7–8 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      }
+    },
+    "example_tasks": {
+      "开放式互动": [
+        "通过角色视角重演剧情中的关键转折，并讨论不同动机如何改变对事件的理解。",
+        "把一部复杂作品的故事讲给没看过的人听，练习用清晰的因果链压缩主要情节。",
+        "围绕伏笔、误导与回收展开一场剧情推理挑战，判断哪些线索真正支撑了结局。",
+        "共同设想一个替代结局，再讨论它是否符合人物性格、主题表达和前面铺设的冲突。",
+        "从观众体验和叙事结构两个角度辩论一个开放式结局是否成立，以及它留下了哪些合理疑问。"
+      ],
+      "结构化整理": [
+        "将我随后提供的剧情笔记按时间线整理，并标出关键转折及其直接后果。",
+        "根据我列出的角色、关系和事件，整理出一份清晰的角色冲突图谱。",
+        "核对我提供的剧情回顾，区分已经明确发生的事实、角色的推测和仍未解释的悬念。",
+        "把我列出的多个剧情版本进行对照，整理它们在事件顺序、人物动机和结局解释上的差异。",
+        "从我提供的线索中筛选出与结局相关的伏笔，按铺设、误导和回收情况形成清单。"
+      ],
+      "混合型": [
+        "结合因果链和人物动机的分析框架，判断我提供的事件列表中哪些转折真正推动了剧情发展。",
+        "依据叙事公平性和线索充分性的判断标准，比较我列出的几种结局解释并选出最有说服力的一种。",
+        "参考不同观众对剧透程度和理解重点的需求，利用我提供的剧情材料调整一份合适的回顾结构。",
+        "用区分事实、推断与空白信息的方法，处理我提供的互相矛盾的剧情记忆，并形成一版较稳妥的解释。",
+        "结合人物弧光与主题一致性的原则，评估我列出的替代结局哪些改动最值得保留，并说明它们会怎样影响原有剧情。"
+      ]
+    }
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

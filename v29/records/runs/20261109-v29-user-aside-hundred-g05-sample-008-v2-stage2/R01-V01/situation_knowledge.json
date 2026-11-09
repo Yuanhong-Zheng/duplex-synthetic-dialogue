@@ -1,0 +1,298 @@
+{
+  "episode_situation": "社区文化交流活动前一晚，用户独自在社区中心的小会议室整理志愿讲解内容，希望先补足自己不熟悉的信仰与习俗背景。他看到清明祭扫、日本盂兰盆节和墨西哥亡灵节都涉及逝者，却不确定它们是否可以笼统归为“祖先崇拜”。活动听众来自不同文化背景，因此解释既要浅显，也要避免把宗教仪式、家族纪念和公共追思混为一谈。眼下尚需理清这些习俗常见的共同功能、表达差异受哪些因素影响，以及如何用一个容易混淆的例子说明“纪念逝者”不必然等于“崇拜逝者”。",
+  "task_reference_data": [],
+  "environment_audio": "右后方约两米的通风口持续发出低而平稳的机械风声。声音很轻，只有细小的强弱起伏，没有盖过近距离讲话。",
+  "estimated_snr_db": 29,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "解释应使用中性、尊重的措辞，不把不同文化中的宗教仪式、家族纪念和公共追思视为完全相同。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "内容应适合面向普通社区听众进行基础讲解，优先使用易懂的比较和例子。",
+      "kind": "soft"
+    }
+  ],
+  "safety_limits": [],
+  "soundscape_plan": {
+    "mode": "layered",
+    "ambient_layers": [
+      {
+        "source_id": "AMB01",
+        "asset_id": "fan-fsd50k-eval-419427",
+        "reason": "适合作为社区中心小会议室内持续而轻微的通风底噪。"
+      }
+    ],
+    "environment_events": [
+      {
+        "source_id": "ENV01",
+        "asset_id": "paper-fsd50k-eval-82562",
+        "reason": "用户正在整理讲解内容，短暂翻动手边纸页符合既有场景。"
+      }
+    ],
+    "schema": "duplex_v2.soundscape_plan.v4",
+    "side_speech_sources": [],
+    "side_speech_count": 0,
+    "sampling": {
+      "schema": "duplex_v2.ambient_draw.v3",
+      "policy": {
+        "schema": "duplex_v2.soundscape_policy.v3",
+        "quiet_probability": 0.5,
+        "discrete_targets_by_tier": {
+          "short": [
+            0,
+            1
+          ],
+          "medium": [
+            1,
+            2
+          ],
+          "long": [
+            2,
+            4
+          ]
+        },
+        "discrete_count_includes": [
+          "environment_events",
+          "side_speech"
+        ],
+        "max_ambient_layers": 2,
+        "gain_range": [
+          0.3,
+          0.7
+        ],
+        "speech_request_probability": 0.5,
+        "third_party_preference_probability": 0.8,
+        "speech_requires_existing_scene_source": true,
+        "environment_audio": "base_only",
+        "stage2_repair": "atomic_scoped_patch",
+        "stage2_max_judge_attempts": 3,
+        "json_parse_max_retries": 3,
+        "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+        "user_aside_preference_probability": 0.5,
+        "user_voice_source": "stage1_user",
+        "user_aside_requires_present_recipient": true
+      },
+      "preferences": {
+        "schema": "duplex_v2.ambient_preferences.v1",
+        "seed": 202611090005,
+        "slot": 7,
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "categories": {
+          "bed": [
+            "traffic",
+            "crowd",
+            "wind",
+            "rain",
+            "fan",
+            "birds"
+          ],
+          "event": [
+            "doorbell",
+            "keyboard",
+            "paper",
+            "footsteps",
+            "door",
+            "water_tap"
+          ]
+        },
+        "recordings": {
+          "bed:birds": [
+            "birds-fsd50k-eval-57907",
+            "birds-fsd50k-eval-319512",
+            "birds-fsd50k-eval-86343"
+          ],
+          "bed:crowd": [
+            "crowd-fsd50k-eval-340358",
+            "crowd-fsd50k-eval-185058",
+            "crowd-fsd50k-eval-121877"
+          ],
+          "bed:fan": [
+            "fan-fsd50k-eval-419427",
+            "fan-fsd50k-eval-235362",
+            "fan-fsd50k-eval-415925"
+          ],
+          "bed:rain": [
+            "rain-fsd50k-eval-382582",
+            "rain-fsd50k-eval-21189",
+            "rain-fsd50k-eval-238016"
+          ],
+          "bed:traffic": [
+            "traffic-fsd50k-eval-232686",
+            "traffic-fsd50k-eval-124020",
+            "traffic-fsd50k-eval-235541"
+          ],
+          "bed:wind": [
+            "wind-fsd50k-eval-113173",
+            "wind-fsd50k-eval-113175",
+            "wind-fsd50k-eval-113176"
+          ],
+          "event:door": [
+            "door-fsd50k-eval-71212",
+            "door-fsd50k-eval-119077",
+            "door-fsd50k-eval-209519"
+          ],
+          "event:doorbell": [
+            "doorbell-fsd50k-eval-332563",
+            "doorbell-fsd50k-eval-426594",
+            "doorbell-fsd50k-eval-348322"
+          ],
+          "event:footsteps": [
+            "footsteps-fsd50k-eval-392303",
+            "footsteps-fsd50k-eval-272381",
+            "footsteps-fsd50k-eval-153104"
+          ],
+          "event:keyboard": [
+            "keyboard-fsd50k-eval-233057",
+            "keyboard-fsd50k-eval-411545",
+            "keyboard-fsd50k-eval-399740"
+          ],
+          "event:paper": [
+            "paper-fsd50k-eval-82562",
+            "paper-fsd50k-eval-343098",
+            "paper-fsd50k-eval-121200"
+          ],
+          "event:water_tap": [
+            "water_tap-fsd50k-eval-232499",
+            "water_tap-fsd50k-eval-402127",
+            "water_tap-fsd50k-eval-402128"
+          ]
+        }
+      },
+      "control": {
+        "schema": "duplex_v2.soundscape_control.v3",
+        "seed": 2586111342,
+        "mode": "layered",
+        "discrete_event_target": 1,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "user_to_third_party",
+          "third_party",
+          "machine"
+        ]
+      },
+      "control_sha256": "b801b8f428b5858460927d71a70e3fdd860c1d1eb24bc23754b57f1ccaa35d7c",
+      "candidate_plan": {
+        "schema": "duplex_v2.soundscape_plan.v4",
+        "mode": "layered",
+        "ambient_layers": [
+          {
+            "source_id": "AMB01",
+            "candidates": [
+              {
+                "asset_id": "fan-fsd50k-eval-419427",
+                "reason": "适合作为社区中心小会议室内持续而轻微的通风底噪。",
+                "environment_audio": "右后方传来稳定的机械通风声，音量较低且持续均匀。"
+              },
+              {
+                "asset_id": "fan-fsd50k-eval-235362",
+                "reason": "真实室内风机声与安静会议室环境相符，可保持稳定背景。",
+                "environment_audio": "近旁通风设备持续低响，强弱变化很小。"
+              },
+              {
+                "asset_id": "fan-fsd50k-eval-415925",
+                "reason": "短而稳定的风扇录音适合铺设轻微室内机械底色。",
+                "environment_audio": "右后方有轻柔连续的风机转动声，不影响说话。"
+              }
+            ]
+          }
+        ],
+        "environment_events": [
+          {
+            "source_id": "ENV01",
+            "candidates": [
+              {
+                "asset_id": "paper-fsd50k-eval-82562",
+                "reason": "用户正在整理讲解内容，短暂翻动手边纸页符合既有场景。",
+                "environment_audio": "近处响起一次完整而短促的纸张翻动声。"
+              },
+              {
+                "asset_id": "paper-fsd50k-eval-343098",
+                "reason": "轻短的纸页声可表现整理资料时的一次自然动作。",
+                "environment_audio": "桌面方向传来一次轻微的纸页摩擦与翻动声。"
+              },
+              {
+                "asset_id": "paper-fsd50k-eval-121200",
+                "reason": "短促纸张声与会议室内准备讲解材料的情境一致。",
+                "environment_audio": "近处出现一次短暂清晰的纸张整理声。"
+              }
+            ]
+          }
+        ],
+        "side_speech_eligibility": {
+          "user_to_third_party": {
+            "compatible": false,
+            "reason": "用户独自在小会议室内，故事中没有明确同场且可接收话语的旁人。",
+            "source": null
+          },
+          "third_party": {
+            "compatible": false,
+            "reason": "当前场景未设置任何同场第三方人物。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "通风设备只产生机械底噪，不具备语音播报来源。",
+            "source": null
+          }
+        }
+      },
+      "base_environment_audio_sha256": "4fbc194f121d73de2f7398a475b117a66bcc76bc6478c4ec1e5ec4090e607fcc",
+      "aggregate_environment_audio": "右后方约两米的通风口持续发出低而平稳的机械风声。声音很轻，只有细小的强弱起伏，没有盖过近距离讲话。 右后方传来稳定的机械通风声，音量较低且持续均匀。 近处响起一次完整而短促的纸张翻动声。",
+      "draws": [
+        {
+          "source_id": "AMB01",
+          "category": "fan",
+          "asset_id": "fan-fsd50k-eval-419427",
+          "eligible_categories": [
+            "fan"
+          ],
+          "eligible_assets": [
+            "fan-fsd50k-eval-235362",
+            "fan-fsd50k-eval-415925",
+            "fan-fsd50k-eval-419427"
+          ]
+        },
+        {
+          "source_id": "ENV01",
+          "category": "paper",
+          "asset_id": "paper-fsd50k-eval-82562",
+          "eligible_categories": [
+            "paper"
+          ],
+          "eligible_assets": [
+            "paper-fsd50k-eval-121200",
+            "paper-fsd50k-eval-343098",
+            "paper-fsd50k-eval-82562"
+          ]
+        }
+      ],
+      "speech_selection": {
+        "requested": false,
+        "compatible_kinds": [],
+        "selected_kind": null,
+        "outcome": "not_requested",
+        "assessments": {
+          "user_to_third_party": {
+            "compatible": false,
+            "reason": "用户独自在小会议室内，故事中没有明确同场且可接收话语的旁人。",
+            "source": null
+          },
+          "third_party": {
+            "compatible": false,
+            "reason": "当前场景未设置任何同场第三方人物。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "通风设备只产生机械底噪，不具备语音播报来源。",
+            "source": null
+          }
+        }
+      }
+    }
+  }
+}

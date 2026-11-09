@@ -1,0 +1,514 @@
+{
+  "schema_version": "duplex_v2.fixed_script.v3",
+  "title": "队伍语音确认与澄清",
+  "rounds": [
+    {
+      "user_id": "U01",
+      "assistant_id": "A001",
+      "user_utterance": "我打游戏时总回“嗯”或者“好”，但队友可能不知道我是只听见了、听懂了，还是准备照做。这三种确认应该怎么区分？",
+      "assistant_utterance": "可以把确认分三层：只表示听见，用“收到”；表示理解，可说“明白，二楼窗口”；承诺行动，则说“我去补枪”或“十秒后跟进”。信息越关键，越要带上对象、地点或动作。",
+      "user_intent": "建立团队语音中三种确认程度的基本区分",
+      "assistant_intent": "区分已听见、已理解和将执行，并给出简短示例",
+      "semantic_goal": "获得一套可用于判断语音确认含义的基础框架",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": null,
+      "pause_cue": null
+    },
+    {
+      "user_id": "U02",
+      "assistant_id": "A002",
+      "user_utterance": "那“收到”到底只算听见，还是一般也会被当成已经理解？我想避免同一个词两种解释。",
+      "assistant_utterance": "“收到”通常表示已听见，也常被理解为已理解；若涉及行动，最好再加动作或关键对象，避免队友误判你会执行。",
+      "user_intent": "追问收到一词在听见与理解之间的实际含义",
+      "assistant_intent": "说明收到的常见语义及其在行动指令中的局限",
+      "semantic_goal": "明确收到是否足以表达理解或执行",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A001",
+        "user_onset_after_text": "可以把确认分三层：只表示听见，用“收到”；表示理解，可说“明白，二楼窗口”；承诺行动，则说“我去补枪”或“十秒后跟进”。信息越关键，越要带上对象、地点或动作。",
+        "assistant_stop_after_text": "可以把确认分三层：只表示听见，用“收到”；表示理解，可说“明白，二楼窗口”；承诺行动，则说“我去补枪”或“十秒后跟进”。信息越关键，越要带上对象、地点或动作。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U03",
+      "assistant_id": "A003",
+      "user_utterance": "先别讲“通常”，我想固定一套说法，让队友一听就知道我确认到了哪一层。",
+      "assistant_utterance": "那就固定成三档：“收到”仅代表听见；“明白，二楼窗口”代表理解；“我守楼梯，不前压”代表将执行。队内先约定这套含义，歧义会少很多。",
+      "user_intent": "打断宽泛说明并要求一套固定的队内表达规则",
+      "assistant_intent": "提供三档固定短语并强调需要队内约定",
+      "semantic_goal": "形成含义稳定且容易执行的确认用语",
+      "act_ref": "A02",
+      "timing_refs": [
+        "T03"
+      ],
+      "timing": {
+        "target_assistant_id": "A002",
+        "user_onset_after_text": "“收到”通常表示已听见，也常被理解为",
+        "assistant_stop_after_text": "“收到”通常表示已听见，也常被理解为已理"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U04",
+      "assistant_id": "A004",
+      "user_utterance": "先看第一个情况。队友报“二楼窗口一个，残血”，我当时在守楼梯，他也没叫我换位置。最合适的是不是只回“收到”？",
+      "assistant_utterance": "对。这是普通报点，没有明确交给你动作，回“收到”就能表示信息已进入你的注意范围。若你确实看懂位置，也可以说“明白，二楼窗口”。",
+      "user_intent": "用普通报点情境检验简短确认规则",
+      "assistant_intent": "判断该情境无需承诺行动，并区分收到与带地点的理解确认",
+      "semantic_goal": "确认普通报点时应使用哪一层回应",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A003",
+        "user_onset_after_text": "那就固定成三档：“收到”仅代表听见；“明白，二楼窗口”代表理解；“我守楼梯，不前压”代表将执行。队内先约定这套含义，歧义会少很多。",
+        "assistant_stop_after_text": "那就固定成三档：“收到”仅代表听见；“明白，二楼窗口”代表理解；“我守楼梯，不前压”代表将执行。队内先约定这套含义，歧义会少很多。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U05",
+      "assistant_id": "A005",
+      "user_utterance": "如果我回“收到，二楼窗口”，队友会不会以为我要去处理窗口？我其实还想继续守楼梯。",
+      "assistant_utterance": "一般不会，那更像在复述你理解的地点。但要彻底排除行动误解，可以说“二楼窗口收到，我继续守楼梯”，把理解和自己的动作分开。",
+      "user_intent": "确认带地点复述是否会被误解为行动承诺",
+      "assistant_intent": "解释地点复述的含义并提供明确保留原任务的说法",
+      "semantic_goal": "既确认报点又避免被认为会离开楼梯",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A004",
+        "user_onset_after_text": "对。这是普通报点，没有明确交给你动作，回“收到”就能表示信息已进入你的注意范围。若你确实看懂位置，也可以说“明白，二楼窗口”。",
+        "assistant_stop_after_text": "对。这是普通报点，没有明确交给你动作，回“收到”就能表示信息已进入你的注意范围。若你确实看懂位置，也可以说“明白，二楼窗口”。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U06",
+      "assistant_id": "A006",
+      "user_utterance": "那什么信息值得复述？总不能每个报点都把原话再念一遍。",
+      "assistant_utterance": "建议复述三类内容：容易混淆的地点或数字、与你直接相关的动作、出错代价高的限制。其余普通报点用“收到”即可，不必逐字回读。",
+      "user_intent": "追问关键复述的适用边界",
+      "assistant_intent": "概括值得复述的信息类型并排除逐字复述",
+      "semantic_goal": "掌握何时需要复述关键信息",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A005",
+        "user_onset_after_text": "一般不会，那更像在复述你理解的地点。但要彻底排除行动误解，可以说“二楼窗口收到，我继续守楼梯”，把理解和自己的动作分开。",
+        "assistant_stop_after_text": "一般不会，那更像在复述你理解的地点。但要彻底排除行动误解，可以说“二楼窗口收到，我继续守楼梯”，把理解和自己的动作分开。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U07",
+      "assistant_id": "A007",
+      "user_utterance": "如果地点很明确、局面也不急，但这个报点正好影响我接下来要不要转身呢？",
+      "assistant_utterance": "既然会改变你的动作，最好把决定说出来，例如“窗口收到，我继续架楼梯”或“窗口收到，我转身看”。重点不是复述敌情，而是让队友知道你的选择。",
+      "user_intent": "检验低紧迫但会影响自身动作的边界情况",
+      "assistant_intent": "说明应确认自己的行动选择而非机械复述报点",
+      "semantic_goal": "判断信息影响行动时应如何回应",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A006",
+        "user_onset_after_text": "建议复述三类内容：容易混淆的地点或数字、与你直接相关的动作、出错代价高的限制。其余普通报点用“收到”即可，不必逐字回读。",
+        "assistant_stop_after_text": "建议复述三类内容：容易混淆的地点或数字、与你直接相关的动作、出错代价高的限制。其余普通报点用“收到”即可，不必逐字回读。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U08",
+      "assistant_id": "A008",
+      "user_utterance": "第二个情况是队友说“十秒后一起进A，我先扔烟”，但当时有人同时讲话，我没听清到底是A点还是B点，其他部分都听清了。",
+      "assistant_utterance": "这时不要用“收到”，因为核心目标没听清。直接说“点位没听清，A还是B？”就够了；“十秒后一起进、你先扔烟”不用重述。",
+      "user_intent": "披露点位缺失但其余信息清楚的行动指令情境",
+      "assistant_intent": "识别核心歧义并建议只追问缺失点位",
+      "semantic_goal": "获得针对局部未听清信息的简短追问方式",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A007",
+        "user_onset_after_text": "既然会改变你的动作，最好把决定说出来，例如“窗口收到，我继续架楼梯”或“窗口收到，我转身看”。重点不是复述敌情，而是让队友知道你的选择。",
+        "assistant_stop_after_text": "既然会改变你的动作，最好把决定说出来，例如“窗口收到，我继续架楼梯”或“窗口收到，我转身看”。重点不是复述敌情，而是让队友知道你的选择。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U09",
+      "assistant_id": "A009",
+      "user_utterance": "不用解释原因，直接给我一句当时能立刻喊的。",
+      "assistant_utterance": "就喊：“点位没听清，A还是B？”",
+      "user_intent": "打断解释并要求可立即使用的最短话术",
+      "assistant_intent": "只提供针对点位歧义的即时追问句",
+      "semantic_goal": "得到实战中可直接喊出的澄清语句",
+      "act_ref": "A02",
+      "timing_refs": [
+        "T03"
+      ],
+      "timing": {
+        "target_assistant_id": "A008",
+        "user_onset_after_text": "这时不要用“收到”，因为核心目标没听清。",
+        "assistant_stop_after_text": "这时不要用“收到”，因为核心目标没听清。直"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U10",
+      "assistant_id": "A010",
+      "user_utterance": "如果我问完没人回，十秒倒计时又快到了，我是按自己猜的点位跟，还是继续等？",
+      "assistant_utterance": "先再问一次；仍无回应，就不要把猜测当成确认。可以说“点位未确认，我先不进”，让队友知道你没有承诺跟进。",
+      "user_intent": "追问关键歧义未获回答时的处理方式",
+      "assistant_intent": "建议再次追问并明确撤回未确认的行动承诺",
+      "semantic_goal": "避免在点位未知时把猜测当作已确认指令",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A009",
+        "user_onset_after_text": "就喊：“点位没听清，A还是B？”",
+        "assistant_stop_after_text": "就喊：“点位没听清，A还是B？”"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U11",
+      "assistant_id": "A011",
+      "user_utterance": "追问时要不要顺便说明“十秒后一起进”和“你先扔烟”我都听到了？",
+      "assistant_utterance": "频道空闲时可说“十秒听到了，点位是A还是B？”实战忙乱时只问“A还是B？”即可。已清楚的部分不必全报，除非队友需要确认执行链。",
+      "user_intent": "确认澄清时是否需要复述已经听清的部分",
+      "assistant_intent": "按频道压力区分完整确认与核心追问",
+      "semantic_goal": "在节省频道和展示理解之间取得平衡",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A010",
+        "user_onset_after_text": "先再问一次；仍无回应，就不要把猜测当成确认。可以说“点位未确认，我先不进”，让队友知道你没有承诺跟进。",
+        "assistant_stop_after_text": "先再问一次；仍无回应，就不要把猜测当成确认。可以说“点位未确认，我先不进”，让队友知道你没有承诺跟进。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U12",
+      "assistant_id": "A012",
+      "user_utterance": "如果没听清的不是点位，而是十秒还是十五秒，也只问缺的数字，对吧？具体怎么说最短？",
+      "assistant_utterance": "对，直接问“几秒后？十还是十五？”数字会影响同步时机，最好把两个候选都说出，队友只需回一个。",
+      "user_intent": "将局部澄清规则应用到时间数字",
+      "assistant_intent": "给出数字歧义的最短封闭式追问",
+      "semantic_goal": "掌握时间数字未听清时的高效问法",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A011",
+        "user_onset_after_text": "频道空闲时可说“十秒听到了，点位是A还是B？”实战忙乱时只问“A还是B？”即可。已清楚的部分不必全报，除非队友需要确认执行链。",
+        "assistant_stop_after_text": "频道空闲时可说“十秒听到了，点位是A还是B？”实战忙乱时只问“A还是B？”即可。已清楚的部分不必全报，除非队友需要确认执行链。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U13",
+      "assistant_id": "A013",
+      "user_utterance": "第三个情况，队友说“我去拉左边，你别跟”。我听见了不能跟，但不知道自己该原地架枪、看右侧，还是做别的。",
+      "assistant_utterance": "这里“别跟”是明确限制，但你的替代任务不明确。可以回“收到，不跟。我要架哪边？”先承诺遵守限制，再追问缺失动作。",
+      "user_intent": "披露限制清楚但替代任务缺失的情境",
+      "assistant_intent": "拆分已确认限制与待澄清任务，并给出组合回应",
+      "semantic_goal": "既确认不会跟进，又弄清下一步职责",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A012",
+        "user_onset_after_text": "对，直接问“几秒后？十还是十五？”数字会影响同步时机，最好把两个候选都说出，队友只需回一个。",
+        "assistant_stop_after_text": "对，直接问“几秒后？十还是十五？”数字会影响同步时机，最好把两个候选都说出，队友只需回一个。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U14",
+      "assistant_id": "A014",
+      "user_utterance": "我说“不跟”算不算已经承诺执行？虽然它只是一个不做某事的限制。",
+      "assistant_utterance": "算。“不跟”是对限制的执行承诺，表示你会避免那个动作；但它不代表你已理解该做什么，所以仍可接一句“我架哪边？”",
+      "user_intent": "追问消极限制是否也属于执行承诺",
+      "assistant_intent": "确认不执行某动作也属于承诺，并指出正向任务仍未确定",
+      "semantic_goal": "准确归类对限制条件的确认层级",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A013",
+        "user_onset_after_text": "这里“别跟”是明确限制，但你的替代任务不明确。可以回“收到，不跟。我要架哪边？”先承诺遵守限制，再追问缺失动作。",
+        "assistant_stop_after_text": "这里“别跟”是明确限制，但你的替代任务不明确。可以回“收到，不跟。我要架哪边？”先承诺遵守限制，再追问缺失动作。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U15",
+      "assistant_id": "A015",
+      "user_utterance": "“收到，不跟。我要架哪边？”在交火时还是有点长，能不能再压缩，但别丢掉关键意思？",
+      "assistant_utterance": "可以压成“不跟，架哪？”前半句确认限制，后半句只追问缺失任务。若连这都来不及，先说“不跟”，安全后再问。",
+      "user_intent": "要求压缩限制确认与任务追问的话术",
+      "assistant_intent": "提供更短表达并说明极端忙乱时的优先顺序",
+      "semantic_goal": "得到交火中仍保留关键信息的最短回应",
+      "act_ref": "A04",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A014",
+        "user_onset_after_text": "算。“不跟”是对限制的执行承诺，表示你会避免那个动作；但它不代表你已理解该做什么，所以仍可接一句“我架哪边？”",
+        "assistant_stop_after_text": "算。“不跟”是对限制的执行承诺，表示你会避免那个动作；但它不代表你已理解该做什么，所以仍可接一句“我架哪边？”"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U16",
+      "assistant_id": "A016",
+      "user_utterance": "多人同时说话时又该怎么排优先级？有时我连哪句话是对我说的都分不清。",
+      "assistant_utterance": "多人同时说话时，先处理点名给你的、会立刻影响生死或路线的信息。没听清来源就问“谁让我回防？”；不要同时复述所有人的内容。",
+      "user_intent": "追问多人语音重叠时的信息优先级",
+      "assistant_intent": "给出按点名和即时影响排序的处理原则及来源追问句",
+      "semantic_goal": "在多人同时说话时快速识别并确认相关指令",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A015",
+        "user_onset_after_text": "可以压成“不跟，架哪？”前半句确认限制，后半句只追问缺失任务。若连这都来不及，先说“不跟”，安全后再问。",
+        "assistant_stop_after_text": "可以压成“不跟，架哪？”前半句确认限制，后半句只追问缺失任务。若连这都来不及，先说“不跟”，安全后再问。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U17",
+      "assistant_id": "A017",
+      "user_utterance": "如果对方明确叫了我的游戏名，我是不是不能只回一个很轻的“嗯”？",
+      "assistant_utterance": "如果报点点了你的名字，最好明确回一句。例如“阿杰收到，我继续守楼梯”；这样发话人知道责任落到了谁身上。",
+      "user_intent": "确认被点名时是否需要更明确的回应",
+      "assistant_intent": "说明点名信息需要可辨认的责任确认并准备举例",
+      "semantic_goal": "掌握被直接指定时的确认方式",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A016",
+        "user_onset_after_text": "多人同时说话时，先处理点名给你的、会立刻影响生死或路线的信息。没听清来源就问“谁让我回防？”；不要同时复述所有人的内容。",
+        "assistant_stop_after_text": "多人同时说话时，先处理点名给你的、会立刻影响生死或路线的信息。没听清来源就问“谁让我回防？”；不要同时复述所有人的内容。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U18",
+      "assistant_id": "A018",
+      "user_utterance": "别再讲原则，直接模拟一下：他喊我名字，再让我继续守楼梯，我怎么回？",
+      "assistant_utterance": "直接回：“收到，我继续守楼梯。”如果队里有同名或语音很乱，再加自己的游戏名：“阿杰收到，继续守楼梯。”",
+      "user_intent": "打断举例铺垫并要求直接模拟点名指令的回应",
+      "assistant_intent": "提供普通频道与混乱频道下的直接回应示例",
+      "semantic_goal": "获得被点名要求守楼梯时可直接使用的话术",
+      "act_ref": "A02",
+      "timing_refs": [
+        "T03"
+      ],
+      "timing": {
+        "target_assistant_id": "A017",
+        "user_onset_after_text": "如果报点点了你的名字，最好明确回一句。",
+        "assistant_stop_after_text": "如果报点点了你的名字，最好明确回一句。例"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U19",
+      "assistant_id": "A019",
+      "user_utterance": "不过我觉得“嗯”也不是完全没用。固定队打久了，大家可能听语气就知道我只是表示在听。",
+      "assistant_utterance": "“嗯”不是完全没用：固定队熟悉你的习惯时，它可以充当“我在听”的附和。但它仍不适合承担关键理解或行动确认，尤其是点位、时间和限制条件。",
+      "user_intent": "对完全否定嗯的做法提出基于固定队习惯的异议",
+      "assistant_intent": "承认嗯作为附和的作用，同时限定其不能替代关键确认",
+      "semantic_goal": "厘清轻量附和在熟悉队伍中的合理用途",
+      "act_ref": "A05",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A018",
+        "user_onset_after_text": "直接回：“收到，我继续守楼梯。”如果队里有同名或语音很乱，再加自己的游戏名：“阿杰收到，继续守楼梯。”",
+        "assistant_stop_after_text": "直接回：“收到，我继续守楼梯。”如果队里有同名或语音很乱，再加自己的游戏名：“阿杰收到，继续守楼梯。”"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U20",
+      "assistant_id": "A020",
+      "user_utterance": "那靠语气能不能区分三层？比如短促的“嗯”是听见，重一点的“好”就是会执行。",
+      "assistant_utterance": "不够可靠。语气会受麦克风、延迟和个人习惯影响，不能稳定区分理解与执行。语气可辅助，关键层级仍应靠词义表达，例如“收到”和“我来守”。",
+      "user_intent": "探讨是否能仅靠语气编码不同确认层级",
+      "assistant_intent": "指出语气的不稳定性并坚持用明确词义区分",
+      "semantic_goal": "判断语气能否替代明确的确认话术",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A019",
+        "user_onset_after_text": "“嗯”不是完全没用：固定队熟悉你的习惯时，它可以充当“我在听”的附和。但它仍不适合承担关键理解或行动确认，尤其是点位、时间和限制条件。",
+        "assistant_stop_after_text": "“嗯”不是完全没用：固定队熟悉你的习惯时，它可以充当“我在听”的附和。但它仍不适合承担关键理解或行动确认，尤其是点位、时间和限制条件。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U21",
+      "assistant_id": "A021",
+      "user_utterance": "如果我们固定队只想约定三种短格式，不限定具体地图和角色，你建议怎么定？",
+      "assistant_utterance": "可以约定：“收到”表示听见；“明白，加关键项”表示理解；“我来，加动作”表示执行。没听清统一用“哪边？”“几秒？”这类只问缺口的短句。",
+      "user_intent": "要求整理可跨地图和角色使用的队内短格式",
+      "assistant_intent": "给出三层通用模板并补充统一澄清格式",
+      "semantic_goal": "形成固定队可共同采用的简明语音规范",
+      "act_ref": "A06",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A020",
+        "user_onset_after_text": "不够可靠。语气会受麦克风、延迟和个人习惯影响，不能稳定区分理解与执行。语气可辅助，关键层级仍应靠词义表达，例如“收到”和“我来守”。",
+        "assistant_stop_after_text": "不够可靠。语气会受麦克风、延迟和个人习惯影响，不能稳定区分理解与执行。语气可辅助，关键层级仍应靠词义表达，例如“收到”和“我来守”。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U22",
+      "assistant_id": "A022",
+      "user_utterance": "还有一种失误：我先顺口说了“收到”，随后才发现点位其实没听清。这时怎么改口最干净？",
+      "assistant_utterance": "立刻纠正，不要让旧确认继续生效。说“更正，点位没听清，A还是B？”即可；不用解释自己为什么刚才说了收到。",
+      "user_intent": "追问错误确认后的即时修正方式",
+      "assistant_intent": "提供撤销旧确认并聚焦缺失信息的更正话术",
+      "semantic_goal": "避免先前的收到被队友继续当作有效确认",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A021",
+        "user_onset_after_text": "可以约定：“收到”表示听见；“明白，加关键项”表示理解；“我来，加动作”表示执行。没听清统一用“哪边？”“几秒？”这类只问缺口的短句。",
+        "assistant_stop_after_text": "可以约定：“收到”表示听见；“明白，加关键项”表示理解；“我来，加动作”表示执行。没听清统一用“哪边？”“几秒？”这类只问缺口的短句。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U23",
+      "assistant_id": "A023",
+      "user_utterance": "我总结一下：普通报点没要求我行动，就回“收到”；如果会改变我的动作，就补上我准备做什么；点位或数字没听清，只追问那个缺口。第三种“你别跟”里，我先回“不跟”，再问“架哪”。这样有没有混淆？",
+      "assistant_utterance": "基本准确。只补一个细节：“收到”应按你们的约定表示已听见，不自动等于理解；当普通报点本身容易混淆时，仍要带上关键地点。",
+      "user_intent": "完整复述规则并请求检查是否存在概念混淆",
+      "assistant_intent": "确认总结并修正收到不自动代表理解这一细节",
+      "semantic_goal": "验证自己对三个情境和三层确认的整体理解",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01",
+        "T02"
+      ],
+      "timing": {
+        "target_assistant_id": "A022",
+        "user_onset_after_text": "立刻纠正，不要让旧确认继续生效。说“更正，点位没听清，A还是B？”即可；不用解释自己为什么刚才说了收到。",
+        "assistant_stop_after_text": "立刻纠正，不要让旧确认继续生效。说“更正，点位没听清，A还是B？”即可；不用解释自己为什么刚才说了收到。"
+      },
+      "pause_cue": {
+        "after_text": "我总结一下：普通报点没要求我行动，就回“收到”；如果会改变我的动作，就补上我准备做什么；",
+        "duration_ms": 650
+      }
+    },
+    {
+      "user_id": "U24",
+      "assistant_id": "A024",
+      "user_utterance": "最后帮我压成一段赛前能跟队友说清楚的约定，最好十几秒就能讲完。",
+      "assistant_utterance": "可以说：“咱们约定，‘收到’只算听见；带地点算理解；带动作才算会执行。点位、时间或任务没听清，就只问缺的那一项。”",
+      "user_intent": "要求将规则压缩成可在赛前快速说明的队内约定",
+      "assistant_intent": "输出覆盖三层确认与局部澄清的简短最终话术",
+      "semantic_goal": "获得可直接向固定队宣读的精简语音规范",
+      "act_ref": "A04",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A023",
+        "user_onset_after_text": "基本准确。只补一个细节：“收到”应按你们的约定表示已听见，不自动等于理解；当普通报点本身容易混淆时，仍要带上关键地点。",
+        "assistant_stop_after_text": "基本准确。只补一个细节：“收到”应按你们的约定表示已听见，不自动等于理解；当普通报点本身容易混淆时，仍要带上关键地点。"
+      },
+      "pause_cue": null
+    }
+  ],
+  "backchannels": [
+    {
+      "event_id": "BC01",
+      "target_assistant_id": "A001",
+      "after_text": "可以把确认分三层：只表示听见，用“收到”；",
+      "text": "嗯"
+    },
+    {
+      "event_id": "BC02",
+      "target_assistant_id": "A003",
+      "after_text": "那就固定成三档：“收到”仅代表听见；",
+      "text": "明白"
+    },
+    {
+      "event_id": "BC03",
+      "target_assistant_id": "A006",
+      "after_text": "建议复述三类内容：容易混淆的地点或数字、与你直接相关的动作、出错代价高的限制。",
+      "text": "对"
+    },
+    {
+      "event_id": "BC04",
+      "target_assistant_id": "A010",
+      "after_text": "先再问一次；仍无回应，就不要把猜测当成确认。",
+      "text": "嗯"
+    },
+    {
+      "event_id": "BC05",
+      "target_assistant_id": "A013",
+      "after_text": "这里“别跟”是明确限制，但你的替代任务不明确。",
+      "text": "明白"
+    },
+    {
+      "event_id": "BC06",
+      "target_assistant_id": "A016",
+      "after_text": "多人同时说话时，先处理点名给你的、会立刻影响生死或路线的信息。",
+      "text": "嗯"
+    },
+    {
+      "event_id": "BC07",
+      "target_assistant_id": "A019",
+      "after_text": "“嗯”不是完全没用：固定队熟悉你的习惯时，它可以充当“我在听”的附和。",
+      "text": "对"
+    },
+    {
+      "event_id": "BC08",
+      "target_assistant_id": "A022",
+      "after_text": "立刻纠正，不要让旧确认继续生效。",
+      "text": "好"
+    }
+  ],
+  "side_speech": [],
+  "environment_events": []
+}

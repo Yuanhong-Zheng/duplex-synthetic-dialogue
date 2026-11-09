@@ -1,0 +1,494 @@
+{
+  "status": "passed",
+  "content_repair_budget": 5,
+  "content_max_attempts": 6,
+  "content_repairs_used": 1,
+  "v2_controls": {
+    "model_token_budgets": {
+      "generation": null,
+      "judge": null,
+      "compact": null
+    },
+    "output_token_budget": null,
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    },
+    "reasoning_effort_policy": "default",
+    "script_execution_policy": {
+      "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+      "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+      "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+      "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+      "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+      "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+      "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+    },
+    "program_anchor_seed": 3766343343,
+    "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+    "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+    "text_output_token_policy": "omit",
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "medium",
+      "target_turns": 9,
+      "min_turns": 9,
+      "max_turns": 10
+    },
+    "interaction_profile": {
+      "schema": "duplex_v2.interaction_profile.v1",
+      "formality": "formal",
+      "directness": "indirect",
+      "emotional_expressiveness": "reserved",
+      "verbosity": "detailed",
+      "initiative": "high",
+      "caution": "medium",
+      "patience": "medium",
+      "behavioral_notes": [
+        "通常会先交代较完整的背景和记录，再礼貌地提出希望解决的重点。",
+        "表达判断时倾向使用较为审慎的措辞，会主动区分确定的信息与自己的推测。",
+        "愿意补充缺失的细节，也会在不确定时请求对方说明分类依据或比较标准。"
+      ]
+    },
+    "soundscape_plan": {
+      "mode": "layered",
+      "ambient_layers": [
+        {
+          "source_id": "AMB01",
+          "asset_id": "fan-fsd50k-eval-419427",
+          "reason": "适合作为住处餐桌旁落地风扇的稳定室内底声。"
+        },
+        {
+          "source_id": "AMB02",
+          "asset_id": "traffic-fsd50k-eval-232686",
+          "reason": "符合关闭窗户后仍可听见的较远道路车流。"
+        }
+      ],
+      "environment_events": [
+        {
+          "source_id": "ENV01",
+          "asset_id": "paper-fsd50k-eval-82562",
+          "reason": "用户正在餐桌旁核对纸质排班表和睡眠笔记，翻动纸张符合场景。"
+        },
+        {
+          "source_id": "ENV02",
+          "asset_id": "water_tap-fsd50k-eval-232499",
+          "reason": "餐桌靠近开放式厨房，短暂水龙头声符合住处环境。"
+        }
+      ],
+      "schema": "duplex_v2.soundscape_plan.v4",
+      "side_speech_sources": [],
+      "side_speech_count": 0,
+      "sampling": {
+        "schema": "duplex_v2.ambient_draw.v3",
+        "policy": {
+          "schema": "duplex_v2.soundscape_policy.v3",
+          "quiet_probability": 0.5,
+          "discrete_targets_by_tier": {
+            "short": [
+              0,
+              1
+            ],
+            "medium": [
+              1,
+              2
+            ],
+            "long": [
+              2,
+              4
+            ]
+          },
+          "discrete_count_includes": [
+            "environment_events",
+            "side_speech"
+          ],
+          "max_ambient_layers": 2,
+          "gain_range": [
+            0.3,
+            0.7
+          ],
+          "speech_request_probability": 0.5,
+          "third_party_preference_probability": 0.8,
+          "speech_requires_existing_scene_source": true,
+          "environment_audio": "base_only",
+          "stage2_repair": "atomic_scoped_patch",
+          "stage2_max_judge_attempts": 3,
+          "json_parse_max_retries": 3,
+          "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+          "user_aside_preference_probability": 0.5,
+          "user_voice_source": "stage1_user",
+          "user_aside_requires_present_recipient": true
+        },
+        "preferences": {
+          "schema": "duplex_v2.ambient_preferences.v1",
+          "seed": 202611090005,
+          "slot": 6,
+          "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+          "categories": {
+            "bed": [
+              "birds",
+              "traffic",
+              "crowd",
+              "wind",
+              "rain",
+              "fan"
+            ],
+            "event": [
+              "water_tap",
+              "doorbell",
+              "keyboard",
+              "paper",
+              "footsteps",
+              "door"
+            ]
+          },
+          "recordings": {
+            "bed:birds": [
+              "birds-fsd50k-eval-57907",
+              "birds-fsd50k-eval-319512",
+              "birds-fsd50k-eval-86343"
+            ],
+            "bed:crowd": [
+              "crowd-fsd50k-eval-340358",
+              "crowd-fsd50k-eval-185058",
+              "crowd-fsd50k-eval-121877"
+            ],
+            "bed:fan": [
+              "fan-fsd50k-eval-419427",
+              "fan-fsd50k-eval-235362",
+              "fan-fsd50k-eval-415925"
+            ],
+            "bed:rain": [
+              "rain-fsd50k-eval-382582",
+              "rain-fsd50k-eval-21189",
+              "rain-fsd50k-eval-238016"
+            ],
+            "bed:traffic": [
+              "traffic-fsd50k-eval-232686",
+              "traffic-fsd50k-eval-124020",
+              "traffic-fsd50k-eval-235541"
+            ],
+            "bed:wind": [
+              "wind-fsd50k-eval-113173",
+              "wind-fsd50k-eval-113175",
+              "wind-fsd50k-eval-113176"
+            ],
+            "event:door": [
+              "door-fsd50k-eval-71212",
+              "door-fsd50k-eval-119077",
+              "door-fsd50k-eval-209519"
+            ],
+            "event:doorbell": [
+              "doorbell-fsd50k-eval-332563",
+              "doorbell-fsd50k-eval-426594",
+              "doorbell-fsd50k-eval-348322"
+            ],
+            "event:footsteps": [
+              "footsteps-fsd50k-eval-392303",
+              "footsteps-fsd50k-eval-272381",
+              "footsteps-fsd50k-eval-153104"
+            ],
+            "event:keyboard": [
+              "keyboard-fsd50k-eval-233057",
+              "keyboard-fsd50k-eval-411545",
+              "keyboard-fsd50k-eval-399740"
+            ],
+            "event:paper": [
+              "paper-fsd50k-eval-82562",
+              "paper-fsd50k-eval-343098",
+              "paper-fsd50k-eval-121200"
+            ],
+            "event:water_tap": [
+              "water_tap-fsd50k-eval-232499",
+              "water_tap-fsd50k-eval-402127",
+              "water_tap-fsd50k-eval-402128"
+            ]
+          }
+        },
+        "control": {
+          "schema": "duplex_v2.soundscape_control.v3",
+          "seed": 165007501,
+          "mode": "layered",
+          "discrete_event_target": 2,
+          "max_ambient_layers": 2,
+          "side_speech_requested": false,
+          "speech_kind_preferences": [
+            "user_to_third_party",
+            "third_party",
+            "machine"
+          ]
+        },
+        "control_sha256": "5c7592e70b31d25d23efe8bfe47363c32569a6d1d733009e383bd20e3a6384f8",
+        "candidate_plan": {
+          "schema": "duplex_v2.soundscape_plan.v4",
+          "mode": "layered",
+          "ambient_layers": [
+            {
+              "source_id": "AMB01",
+              "candidates": [
+                {
+                  "asset_id": "fan-fsd50k-eval-419427",
+                  "reason": "适合作为住处餐桌旁落地风扇的稳定室内底声。",
+                  "environment_audio": "近处持续而均匀的机械风扇声。"
+                },
+                {
+                  "asset_id": "fan-fsd50k-eval-235362",
+                  "reason": "连续时长充足，符合低速风扇稳定运转的声景。",
+                  "environment_audio": "右侧近处传来平稳的风扇运转声。"
+                },
+                {
+                  "asset_id": "fan-fsd50k-eval-415925",
+                  "reason": "可呈现音量克制、不妨碍语音交流的室内通风底噪。",
+                  "environment_audio": "低音量机械通风声持续存在。"
+                }
+              ]
+            },
+            {
+              "source_id": "AMB02",
+              "candidates": [
+                {
+                  "asset_id": "traffic-fsd50k-eval-232686",
+                  "reason": "符合关闭窗户后仍可听见的较远道路车流。",
+                  "environment_audio": "窗外远处车流声轻微起伏。"
+                },
+                {
+                  "asset_id": "traffic-fsd50k-eval-124020",
+                  "reason": "较长的连续车流适合叠加为远距离城市住宅背景。",
+                  "environment_audio": "隔窗传来的道路车流声持续而遥远。"
+                },
+                {
+                  "asset_id": "traffic-fsd50k-eval-235541",
+                  "reason": "可表现偶尔增强但不盖住近距离说话的道路底声。",
+                  "environment_audio": "远处车辆经过时声量缓慢增减。"
+                }
+              ]
+            }
+          ],
+          "environment_events": [
+            {
+              "source_id": "ENV01",
+              "candidates": [
+                {
+                  "asset_id": "paper-fsd50k-eval-82562",
+                  "reason": "用户正在餐桌旁核对纸质排班表和睡眠笔记，翻动纸张符合场景。",
+                  "environment_audio": "近处响起一次完整的纸张翻动声。"
+                },
+                {
+                  "asset_id": "paper-fsd50k-eval-343098",
+                  "reason": "短促纸张声适合表现切换排班表与笔记页。",
+                  "environment_audio": "餐桌方向传来短暂的翻页声。"
+                },
+                {
+                  "asset_id": "paper-fsd50k-eval-121200",
+                  "reason": "轻微纸张揉动与用户手边纸质材料相符。",
+                  "environment_audio": "近距离出现一次轻微纸张整理声。"
+                }
+              ]
+            },
+            {
+              "source_id": "ENV02",
+              "candidates": [
+                {
+                  "asset_id": "water_tap-fsd50k-eval-232499",
+                  "reason": "餐桌靠近开放式厨房，短暂水龙头声符合住处环境。",
+                  "environment_audio": "邻近厨房传来一次很短的水龙头声。"
+                },
+                {
+                  "asset_id": "water_tap-fsd50k-eval-402127",
+                  "reason": "可作为开放式厨房内一次完整而短促的用水声。",
+                  "environment_audio": "侧后方厨房响起短暂流水声，随后停止。"
+                },
+                {
+                  "asset_id": "water_tap-fsd50k-eval-402128",
+                  "reason": "声源与餐桌相邻厨房的位置关系一致，持续时间不会长期干扰对话。",
+                  "environment_audio": "不远处的水龙头短暂开启后关闭。"
+                }
+              ]
+            }
+          ],
+          "side_speech_eligibility": {
+            "user_to_third_party": {
+              "compatible": false,
+              "reason": "用户当前独自在住处，没有故事中已明确同场的旁人可供转向交谈。",
+              "source": null
+            },
+            "third_party": {
+              "compatible": false,
+              "reason": "当前场景中没有同场第三方人物，也没有可合理产生清晰旁语的邻近说话者。",
+              "source": null
+            },
+            "machine": {
+              "compatible": false,
+              "reason": "场景中的风扇及厨房设施只产生非语言环境声，没有会播报语音的机器。",
+              "source": null
+            }
+          }
+        },
+        "base_environment_audio_sha256": "ecd0b3a7ec2e894a568de641f60a4583244437c31fa81fae013b7053188138a1",
+        "aggregate_environment_audio": "右侧约两米处的落地风扇持续发出低而均匀的机械声，档位稳定。关闭的窗外有较远的道路车流声，音量缓慢起伏，偶尔稍明显但不会盖住近距离说话。 近处持续而均匀的机械风扇声。 窗外远处车流声轻微起伏。 近处响起一次完整的纸张翻动声。 邻近厨房传来一次很短的水龙头声。",
+        "draws": [
+          {
+            "source_id": "AMB01",
+            "category": "fan",
+            "asset_id": "fan-fsd50k-eval-419427",
+            "eligible_categories": [
+              "fan"
+            ],
+            "eligible_assets": [
+              "fan-fsd50k-eval-235362",
+              "fan-fsd50k-eval-415925",
+              "fan-fsd50k-eval-419427"
+            ]
+          },
+          {
+            "source_id": "AMB02",
+            "category": "traffic",
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "eligible_categories": [
+              "traffic"
+            ],
+            "eligible_assets": [
+              "traffic-fsd50k-eval-124020",
+              "traffic-fsd50k-eval-232686",
+              "traffic-fsd50k-eval-235541"
+            ]
+          },
+          {
+            "source_id": "ENV01",
+            "category": "paper",
+            "asset_id": "paper-fsd50k-eval-82562",
+            "eligible_categories": [
+              "paper"
+            ],
+            "eligible_assets": [
+              "paper-fsd50k-eval-121200",
+              "paper-fsd50k-eval-343098",
+              "paper-fsd50k-eval-82562"
+            ]
+          },
+          {
+            "source_id": "ENV02",
+            "category": "water_tap",
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "eligible_categories": [
+              "water_tap"
+            ],
+            "eligible_assets": [
+              "water_tap-fsd50k-eval-232499",
+              "water_tap-fsd50k-eval-402127",
+              "water_tap-fsd50k-eval-402128"
+            ]
+          }
+        ],
+        "speech_selection": {
+          "requested": false,
+          "compatible_kinds": [],
+          "selected_kind": null,
+          "outcome": "not_requested",
+          "assessments": {
+            "user_to_third_party": {
+              "compatible": false,
+              "reason": "用户当前独自在住处，没有故事中已明确同场的旁人可供转向交谈。",
+              "source": null
+            },
+            "third_party": {
+              "compatible": false,
+              "reason": "当前场景中没有同场第三方人物，也没有可合理产生清晰旁语的邻近说话者。",
+              "source": null
+            },
+            "machine": {
+              "compatible": false,
+              "reason": "场景中的风扇及厨房设施只产生非语言环境声，没有会播报语音的机器。",
+              "source": null
+            }
+          }
+        }
+      }
+    },
+    "ambient_control": {
+      "schema": "duplex_v2.soundscape_control.v3",
+      "seed": 165007501,
+      "mode": "layered",
+      "discrete_event_target": 2,
+      "max_ambient_layers": 2,
+      "side_speech_requested": false,
+      "speech_kind_preferences": [
+        "user_to_third_party",
+        "third_party",
+        "machine"
+      ]
+    },
+    "ambient_catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f"
+  },
+  "script_repair_policy": {
+    "schema": "duplex_v2.script_repair_policy.v1",
+    "mode": "json_patch",
+    "patch_schema": "duplex_v2.script_patch.v1",
+    "json_parse_max_retries": 3,
+    "content_max_repairs": 5,
+    "length_compaction_max_attempts": 3,
+    "overlength_after_compaction": "fail_case",
+    "judge_scope": "complete_script_and_heard_context"
+  },
+  "json_parse_max_retries": 3,
+  "repair_output": "changed_fields_only",
+  "script_execution_policy": {
+    "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+    "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+    "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+    "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+    "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+    "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+    "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+  },
+  "program_anchor_seed": 3766343343,
+  "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+  "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+  "attempts": [
+    {
+      "attempt": 1,
+      "decision": "repair",
+      "directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g05-sample-007/R01-V01/script/attempts/attempt-01"
+    },
+    {
+      "attempt": 2,
+      "decision": "pass",
+      "directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g05-sample-007/R01-V01/script/attempts/attempt-02"
+    }
+  ],
+  "rounds": 9,
+  "backchannels": 3,
+  "side_speech": 0,
+  "environment_events": 2,
+  "interruptions": 2,
+  "length_warnings": [],
+  "script_path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g05-sample-007/R01-V01/script/script.json",
+  "semantic_waivers": [],
+  "semantic_review_status": "passed"
+}

@@ -1,0 +1,67 @@
+{
+  "episode_situation": "周日晚上，用户在家中客厅陪着年迈父亲，因空气净化器面板出现了他看不懂的指示状态，现在想先弄清各类灯通常代表什么。用户已经辨认出面板上的电源、滤网和故障图标，但还没有逐项确认灯的颜色、常亮或闪烁方式，也不确定机器当时是否正常送风。净化器就在身边，可以继续观察面板、听运行声并回忆近期是否清洁或更换过滤网，但产品型号和纸质说明书暂时找不到。用户希望把确定看到的现象与自己的猜测分开，依次补充灯光、风量、异响及滤网维护情况，再判断最应先检查的部位，同时避免无依据地拆机或让设备长时间停用。",
+  "task_reference_data": [],
+  "environment_audio": "客厅内整体安静，近处没有持续可辨的背景声。远处也没有明显的人声、车流或家电噪声起伏。",
+  "estimated_snr_db": 35,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "需要逐一核对电源、滤网和故障指示灯，并区分颜色、常亮、闪烁与熄灭状态。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "判断时须同时参考机器是否送风、是否有异响以及近期滤网维护情况，不能只凭单个图标下结论。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C03",
+      "text": "优先确定最先应检查的部位，尽量避免不必要的长时间停机。",
+      "kind": "soft"
+    }
+  ],
+  "safety_limits": [
+    {
+      "limit_id": "L01",
+      "text": "打开滤网舱、重新安装滤网或接触内部可拆部件前，应先关闭设备并断开电源，不得在通电状态下伸手进入机身。",
+      "severity": "hard"
+    },
+    {
+      "limit_id": "L02",
+      "text": "若出现焦糊味、冒烟、火花或机身异常烫手，应立即停止使用并断电，不继续尝试复位或运行测试。",
+      "severity": "critical"
+    }
+  ],
+  "soundscape_plan": {
+    "schema": "duplex_v2.soundscape_plan.v4",
+    "mode": "quiet",
+    "ambient_layers": [],
+    "environment_events": [],
+    "side_speech_eligibility": {
+      "user_to_third_party": {
+        "compatible": true,
+        "reason": "年迈父亲与用户同在客厅，用户在听取排查说明时可以自然转向父亲，简短说明设备检查需要片刻。",
+        "source": {
+          "speaker": "user",
+          "recipient": "同在客厅的年迈父亲",
+          "voice_source": "stage1_user",
+          "description": "用户负责照料父亲并处理家中电器小故障，检查父亲所在房间的空气净化器时有合理的当面沟通需要。"
+        }
+      },
+      "third_party": {
+        "compatible": true,
+        "reason": "父亲已明确与用户同处客厅，并与正在检查的家用空气净化器存在直接生活关系。",
+        "source": {
+          "speaker": "third_party",
+          "voice_profile": "年长男性声音，音量较轻，语气自然。",
+          "description": "用户正在家中陪伴的年迈父亲。"
+        }
+      },
+      "machine": {
+        "compatible": false,
+        "reason": "现场只明确存在带指示灯和运行声的空气净化器，没有表明它具备语音播报能力。",
+        "source": null
+      }
+    }
+  }
+}

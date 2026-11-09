@@ -1,0 +1,3879 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 14 轮，允许 13–15 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 按下方V2.9用户旁话规则审查；第三方与机器旁语仍遵守冻结声源与信息边界。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 必须逐字匹配对应源；用户声源的recipient须逐字匹配且不含voice_profile，其余声源的voice_profile逐字匹配，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。\n[V2.9 用户对同场旁人说话]\n定稿根schema_version为duplex_v2.fixed_script.v3；根字段和原主轮字段不变，quiet声景也保留空environment_events和side_speech。\nside_speech仍只用已冻结的side_speech_sources，数量严格等于side_speech_count。第三方/机器的原字段不变。若冻结源speaker=user，每项严格只有event_id、source_id、target_assistant_id、after_text、text、speaker、recipient、gain；speaker=\"user\"，recipient逐字复制冻结源的同场接收者，不填写voice_profile、voice_source或其他字段。用户音色、克隆参考和表达画像由程序复用主用户，不另造声音。\n用户旁话是用户在助手已开始且仍在实际播报时对旁人说的短句，例如对已在场的小林说“小林，把杯子递给我一下”。台词应自然且接收对象可辨，不能只有“等等”这类不明确话语；不能作为对助手的新请求、附和、打断或主对话轮，也不能泄漏关键任务材料。接收者必须来自冻结场景，不能为了配额新增人物。\ntarget_assistant_id仍指作为音频host的助手A，不是旁话接收对象；after_text是A从首字开始的完整非终止已播前缀。用户旁话起声必须早于下一次用户主表达，且完整音频须装入实际会播出的A范围，与同一用户的主句、附和或另一旁话都不重叠。不要在助手将被真正打断的尾端强塞旁话，不把事件安排在未播尾部；不恢复“用户主句暂停→转头旁话→再继续主句”的模式。\n旁话期间助手继续同一段原音频，不停顿、不让出话权、不增加新回答；后续助手不回应或复述旁话，不把它吸收为任务事实。旁话分类依赖接收对象和语义，不依赖其音量；gain仍在0.3–0.7。用户的旁话仍符合其冻结表达画像。\n上述方向、继续播报与stop_required=false是数据审查/监督标注，不是提前透露给在线模型的输入。仅使用原Judge和局部修复预算：审查台词是否确实面向旁人、主线与已听因果是否保持；只按findings最小修复，并在助手正文变更时同步相关精确锚点。\n\n",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g08-sample-008-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 1528253503,
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08/relay-state",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D02",
+          "domain": "社交、陪伴与情绪支持",
+          "scenario_id": "D02-S06",
+          "scenario": "压力与挫折支持"
+        },
+        "task_style": "开放式互动",
+        "task_instance": {
+          "goal": "围绕一次重要考试未达到预期结果的经历，梳理失望、羞愧或自我怀疑等感受，分辨考试结果与个人价值之间的关系，练习几种更可信的自我安慰表达，并确定一个压力较小、可在近期重新开始的行动方向。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "正在准备职业资格考试、计划转变职业方向的职场人士",
+          "task_familiarity": "medium"
+        },
+        "voice_profile": "女性，感知年龄三十多岁；音色偏清亮但略显紧绷，吐字清楚，语速较快，情绪起伏能够从克制的失落转为短暂的犹豫。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "formal",
+          "directness": "balanced",
+          "emotional_expressiveness": "balanced",
+          "verbosity": "brief",
+          "initiative": "medium",
+          "caution": "high",
+          "patience": "low",
+          "behavioral_notes": [
+            "表达简洁，通常先给出有限背景，再提出当前最困扰的核心问题。",
+            "会谨慎区分事实与感受，对过度肯定或缺少依据的安慰倾向于追问其依据。",
+            "等待过久或回应过于绕行时，会用简短追问推动对话回到重点。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "medium",
+        "target_turns": 14,
+        "min_turns": 13,
+        "max_turns": 15
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v3",
+        "seed": 3677412976,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "user_to_third_party",
+          "machine",
+          "third_party"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "成绩公布后的周日晚上九点左右，用户独自在杭州市的家中，坐在平时备考的书桌旁，希望趁第二天上班前处理一下这次失利带来的情绪。她目前从事采购工作，计划逐步转向企业合规岗位，因此把法律职业资格考试客观题视为转变职业方向的重要一步，但并非唯一途径。她为这次考试准备了约六个月，公布结果前一直认为自己有较大希望通过，最终看到174分时反复核对了成绩截图，因为普通合格线是180分。最初的失望很快夹杂了羞愧：她此前曾向同事林澄提过备考计划，现在既担心周一被问起，也觉得自己把职业转型说得太早。她还开始用“连这点分数都拿不到”质疑自己的学习能力，却也隐约知道，一次结果不足以证明自己不适合合规工作，只是暂时无法把这两件事真正分开。她试过对自己说“失败是成功之母”，但觉得这句话没有回应投入、差距和现实压力，因而不太相信。书桌上有成绩截图、备考时间记录和近期日历可供口头核对，但今晚没有老师或学习伙伴在场，也不打算临时联系同事或家人。她明白完整分析错题和制定下一轮计划都需要更多精力，目前更优先的是弄清最刺痛她的是分数本身、对他人眼光的担忧，还是对职业转型前景的怀疑。她希望安慰表达能够承认这次没有达到目标，而不是直接说结果不重要，也希望能找到可以由事实支撑、自己念出来不觉得虚假的措辞。她手边记着几个低门槛的重新开始方向，但还没有决定是先短暂接触错题、整理备考材料，还是只为下一次复盘预留时间。今晚尚待解决的是如何区分事实与自我评价、哪些表达足够可信，以及哪一个不超过二十分钟且能独立完成的近期动作最不容易引发逃避。",
+        "task_reference_data": [
+          "来源为用户已保存并反复核对的成绩截图：法律职业资格考试客观题成绩为174分，页面所示普通合格线为180分。",
+          "来源为用户书桌上的备考记录，当前可现场读取：连续准备约六个月，通常每周投入8至10小时，考前一个月约为每周14小时；记录中有三周因工作加班未完成原定进度。",
+          "来源为用户看到成绩后写下的私人便签，当前已读：“差六分也是没通过；我是不是高估了自己；周一如果林澄问起，我不知道怎么说。”这些是当时的想法，不是已核实的能力结论。",
+          "来源为用户已读的同事林澄先前发来的消息：“等成绩出来告诉我，过不过都请你喝咖啡。”消息没有批评或追问，但用户仍担心对方会失望。",
+          "来源为用户手边的近期日历，当前可现场读取：周一晚有工作安排，周二和周四晚各有约三十分钟空档，周六上午暂未安排事务。",
+          "来源为用户自己列出的未选择行动草稿，当前可现场读取：“只看一道做错的题并记下原因，十五分钟”；“把资料按科目归回文件夹，二十分钟”；“在日历上留出一次复盘时段，五分钟”。"
+        ],
+        "environment_audio": "房门关闭，室内底噪很低，近处没有持续运转的家电声。窗外与楼道都保持安静，没有清晰可辨的离散声响。",
+        "estimated_snr_db": 35,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "自我安慰表达需要承认本次未达到合格线，并以现有事实为依据，避免空泛保证或强行积极化。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "今晚不展开完整备考方案，只确定一个近期可重新开始的低压力方向。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C03",
+            "text": "拟定的第一步应能独立完成，单次用时不超过二十分钟。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C04",
+            "text": "用户倾向先区分事实、感受和自我评价，再讨论行动选择。",
+            "kind": "soft"
+          }
+        ],
+        "safety_limits": [],
+        "soundscape_plan": {
+          "mode": "quiet",
+          "ambient_layers": [],
+          "environment_events": [],
+          "schema": "duplex_v2.soundscape_plan.v4",
+          "side_speech_sources": [],
+          "side_speech_count": 0,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v3",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v3",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3,
+              "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+              "user_aside_preference_probability": 0.5,
+              "user_voice_source": "stage1_user",
+              "user_aside_requires_present_recipient": true
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611090008,
+              "slot": 7,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "rain",
+                  "wind",
+                  "fan",
+                  "crowd",
+                  "traffic",
+                  "birds"
+                ],
+                "event": [
+                  "doorbell",
+                  "paper",
+                  "door",
+                  "keyboard",
+                  "footsteps",
+                  "water_tap"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-57907",
+                  "birds-fsd50k-eval-319512",
+                  "birds-fsd50k-eval-86343"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-185058",
+                  "crowd-fsd50k-eval-121877",
+                  "crowd-fsd50k-eval-340358"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-419427",
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-235362"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-21189",
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-382582"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-232686",
+                  "traffic-fsd50k-eval-124020",
+                  "traffic-fsd50k-eval-235541"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113173",
+                  "wind-fsd50k-eval-113176",
+                  "wind-fsd50k-eval-113175"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-71212",
+                  "door-fsd50k-eval-119077",
+                  "door-fsd50k-eval-209519"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-348322",
+                  "doorbell-fsd50k-eval-332563",
+                  "doorbell-fsd50k-eval-426594"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-153104",
+                  "footsteps-fsd50k-eval-392303",
+                  "footsteps-fsd50k-eval-272381"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-399740",
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-411545"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-82562",
+                  "paper-fsd50k-eval-343098",
+                  "paper-fsd50k-eval-121200"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-402128",
+                  "water_tap-fsd50k-eval-232499",
+                  "water_tap-fsd50k-eval-402127"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v3",
+              "seed": 3677412976,
+              "mode": "quiet",
+              "discrete_event_target": 0,
+              "max_ambient_layers": 2,
+              "side_speech_requested": false,
+              "speech_kind_preferences": [
+                "user_to_third_party",
+                "machine",
+                "third_party"
+              ]
+            },
+            "control_sha256": "070ba32149f18205f2d6af9efe119d40840525d259cbd03f50567a4b433708a8",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v4",
+              "mode": "quiet",
+              "ambient_layers": [],
+              "environment_events": [],
+              "side_speech_eligibility": {
+                "user_to_third_party": {
+                  "compatible": false,
+                  "reason": "用户独自在家，故事中没有同场且可接收话语的旁人。",
+                  "source": null
+                },
+                "third_party": {
+                  "compatible": false,
+                  "reason": "当前房间内没有第三方人物，楼道和窗外也没有可辨识的人声来源。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "故事中没有正在播报或会发出语音提示的机器设备。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "d29fd43bce395a329c118bceb51ff0f07a7eedcbeb69a35bf0ee6bb340a03ee8",
+            "aggregate_environment_audio": "房门关闭，室内底噪很低，近处没有持续运转的家电声。窗外与楼道都保持安静，没有清晰可辨的离散声响。",
+            "draws": [],
+            "speech_selection": {
+              "requested": false,
+              "compatible_kinds": [],
+              "selected_kind": null,
+              "outcome": "not_requested",
+              "assessments": {
+                "user_to_third_party": {
+                  "compatible": false,
+                  "reason": "用户独自在家，故事中没有同场且可接收话语的旁人。",
+                  "source": null
+                },
+                "third_party": {
+                  "compatible": false,
+                  "reason": "当前房间内没有第三方人物，楼道和窗外也没有可辨识的人声来源。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "故事中没有正在播报或会发出语音提示的机器设备。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v3",
+      "title": "考试失利后的可信安慰与重新开始",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。",
+          "assistant_utterance": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？",
+          "user_intent": "说明考试失利及当前困扰，并限定今晚只处理情绪与认知。",
+          "assistant_intent": "接受范围限制，引导用户逐步提供结果差距和核心念头。",
+          "semantic_goal": "开始梳理失利感受，同时避免进入完整备考规划。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。",
+          "assistant_utterance": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。",
+          "user_intent": "提供成绩、投入时间和最强烈的自我怀疑。",
+          "assistant_intent": "把用户陈述区分为事实、感受和未经证实的自我评价。",
+          "semantic_goal": "初步解除考试结果与能力判断的混合。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？",
+            "assistant_stop_after_text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？",
+          "assistant_utterance": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”",
+          "user_intent": "要求确定情绪梳理的优先顺序。",
+          "assistant_intent": "用具体句式帮助用户识别最核心的威胁感。",
+          "semantic_goal": "从混合情绪中找出优先处理的核心担忧。",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。",
+            "assistant_stop_after_text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。",
+          "assistant_utterance": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依据还要看你的学习过程和实际工作表现。",
+          "user_intent": "识别职业转型疑虑为主要刺痛，并补充对同事眼光的担忧。",
+          "assistant_intent": "区分职业能力怀疑与社交羞愧，并限定考试结果可支持的结论范围。",
+          "semantic_goal": "明确核心压力来源及次要的他人评价压力。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”",
+            "assistant_stop_after_text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          "pause_cue": {
+            "after_text": "最刺痛的可能还是职业转型，",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "先别下结论。你说不能判定，依据具体是什么？",
+          "assistant_utterance": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。",
+          "user_intent": "打断过快的安慰，要求说明结论依据。",
+          "assistant_intent": "解释单次考试证据的边界，并指出可用于核对的事实类型。",
+          "semantic_goal": "获得不靠空泛安慰的理性依据。",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规",
+            "assistant_stop_after_text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U06",
+          "assistant_id": "A006",
+          "user_utterance": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。",
+          "assistant_utterance": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。",
+          "user_intent": "提供备考投入和进度受阻的可核对记录。",
+          "assistant_intent": "根据记录提炼有限但可信的结论，避免保证未来结果。",
+          "semantic_goal": "用实际记录检验对学习能力的全盘否定。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A005",
+            "user_onset_after_text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。",
+            "assistant_stop_after_text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U07",
+          "assistant_id": "A007",
+          "user_utterance": "那更准确的结论应该怎么说？不要替我保证下次会通过。",
+          "assistant_utterance": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。",
+          "user_intent": "要求形成严格、不过度乐观的事实结论。",
+          "assistant_intent": "给出同时承认失败、投入和不确定性的准确表述。",
+          "semantic_goal": "建立不夸大也不自我贬低的中间结论。",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A006",
+            "user_onset_after_text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。",
+            "assistant_stop_after_text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U08",
+          "assistant_id": "A008",
+          "user_utterance": "请把它改成一句我能对自己念的话。要承认差六分没通过，也别用“失败是成功之母”这种空话。",
+          "assistant_utterance": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。若还是觉得太满，我们就把结论再收窄。",
+          "user_intent": "要求生成有事实依据且承认失利的自我安慰表达。",
+          "assistant_intent": "提供第一版可信自我安慰句，并保留继续收窄的空间。",
+          "semantic_goal": "得到自己念出来不觉得虚假的安慰措辞。",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A007",
+            "user_onset_after_text": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。",
+            "assistant_stop_after_text": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U09",
+          "assistant_id": "A009",
+          "user_utterance": "前半句可信，但“不等于我没有学习能力”还是有点像辩护。能不能再收一点？",
+          "assistant_utterance": "可以收成：这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。",
+          "user_intent": "打断并指出第一版安慰仍显得过度辩护，要求收窄。",
+          "assistant_intent": "把安慰调整为更审慎的证据边界表述。",
+          "semantic_goal": "获得更符合用户谨慎标准的自我安慰句。",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A008",
+            "user_onset_after_text": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。",
+            "assistant_stop_after_text": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。若还"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U10",
+          "assistant_id": "A010",
+          "user_utterance": "这句我能接受。还有周一如果林澄问起，我不知道怎么说。她之前只说过，过不过都请我喝咖啡，并没有批评我。",
+          "assistant_utterance": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”这样如实交代，也不用当场解释职业转型，更不必替林澄预设失望。",
+          "user_intent": "转入同事询问的支线，并补充同事并未批评的事实。",
+          "assistant_intent": "提供简短如实的回应模板，避免用户替同事预设负面评价。",
+          "semantic_goal": "降低周一面对同事询问时的羞愧和解释压力。",
+          "act_ref": "A06",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A009",
+            "user_onset_after_text": "可以收成：这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。",
+            "assistant_stop_after_text": "可以收成：这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U11",
+          "assistant_id": "A011",
+          "user_utterance": "这句也可以。先回到今晚的行动。我列了三个：看一道错题十五分钟，整理资料二十分钟，或者只在日历上留一次复盘时间，五分钟。",
+          "assistant_utterance": "今晚的目标是降低重启门槛，不是追求最大收益。可以比较一下：哪一个最不容易让你逃避，又不会悄悄变成完整复盘？",
+          "user_intent": "结束同事支线，提出三个不超过二十分钟的候选行动。",
+          "assistant_intent": "依据低压力和避免任务膨胀的标准，引导用户筛选行动。",
+          "semantic_goal": "从三个独立可做的选项中确定最低压力方向。",
+          "act_ref": "A06",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A010",
+            "user_onset_after_text": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”这样如实交代，也不用当场解释职业转型，更不必替林澄预设失望。",
+            "assistant_stop_after_text": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”这样如实交代，也不用当场解释职业转型，更不必替林澄预设失望。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U12",
+          "assistant_id": "A012",
+          "user_utterance": "看错题最容易让我紧张，整理资料又可能只是回避。只留复盘时间压力最小，也不容易拖长。",
+          "assistant_utterance": "那就选五分钟的日历动作。它不是假装已经复盘，而是给重新开始留一个明确入口。现在只需要确定放在哪个空档。",
+          "user_intent": "比较三个选项的心理压力，并选出日历预留方案。",
+          "assistant_intent": "确认最低压力选项，界定其作用并推进到具体时间。",
+          "semantic_goal": "确定一个不会引发明显逃避的近期行动方向。",
+          "act_ref": "A05",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A011",
+            "user_onset_after_text": "今晚的目标是降低重启门槛，不是追求最大收益。可以比较一下：哪一个最不容易让你逃避，又不会悄悄变成完整复盘？",
+            "assistant_stop_after_text": "今晚的目标是降低重启门槛，不是追求最大收益。可以比较一下：哪一个最不容易让你逃避，又不会悄悄变成完整复盘？"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U13",
+          "assistant_id": "A013",
+          "user_utterance": "周二和周四晚上各有半小时。周二离现在太近，我想放在周四晚，今晚只花五分钟记进日历。",
+          "assistant_utterance": "那就定为：周四晚，花五分钟在日历上留出一次复盘时段。只做时间预留，不看错题、不整理全套材料；完成后今晚就停。",
+          "user_intent": "提供可用时间并选定周四晚，限定今晚只记录日程。",
+          "assistant_intent": "把选择转化为边界清楚、五分钟内可完成的具体行动。",
+          "semantic_goal": "形成近期可独立完成且不会扩张的行动承诺。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A012",
+            "user_onset_after_text": "那就选五分钟的日历动作。它不是假装已经复盘，而是给重新开始留一个明确入口。现在只需要确定放在哪个空档。",
+            "assistant_stop_after_text": "那就选五分钟的日历动作。它不是假装已经复盘，而是给重新开始留一个明确入口。现在只需要确定放在哪个空档。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U14",
+          "assistant_id": "A014",
+          "user_utterance": "最后请把自我安慰和今晚的动作一起简短回读一遍，我照着说。",
+          "assistant_utterance": "这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。今晚我只花五分钟，把周四晚的复盘时段记进日历，然后停下。",
+          "user_intent": "要求完整回读已确认的安慰表达和具体行动。",
+          "assistant_intent": "整合可信自我安慰与五分钟行动，供用户直接复述。",
+          "semantic_goal": "以可直接念出的表述结束梳理并启动低压力行动。",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A013",
+            "user_onset_after_text": "那就定为：周四晚，花五分钟在日历上留出一次复盘时段。只做时间预留，不看错题、不整理全套材料；完成后今晚就停。",
+            "assistant_stop_after_text": "那就定为：周四晚，花五分钟在日历上留出一次复盘时段。只做时间预留，不看错题、不整理全套材料；完成后今晚就停。"
+          },
+          "pause_cue": null
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "先分开看：174分、合格线180分、准备约六个月，是事实；",
+          "text": "嗯"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A006",
+          "after_text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。",
+          "text": "明白"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A010",
+          "after_text": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”",
+          "text": "嗯"
+        },
+        {
+          "event_id": "BC04",
+          "target_assistant_id": "A013",
+          "after_text": "那就定为：周四晚，花五分钟在日历上留出一次复盘时段。",
+          "text": "好"
+        }
+      ],
+      "side_speech": [],
+      "environment_events": []
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？",
+          "final_shared_played_prefix": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。",
+          "final_shared_played_prefix": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先分开看：174分、合格线180分、准备约六个月，是事实；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”",
+          "final_shared_played_prefix": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先分开看：174分、合格线180分、准备约六个月，是事实；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依据还要看你的学习过程和实际工作表现。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规",
+          "final_shared_played_prefix": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依",
+          "discarded_unheard_tail": "据还要看你的学习过程和实际工作表现。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先分开看：174分、合格线180分、准备约六个月，是事实；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A005",
+          "at_user_onset_heard_prefix": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。",
+          "final_shared_played_prefix": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先分开看：174分、合格线180分、准备约六个月，是事实；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那更准确的结论应该怎么说？不要替我保证下次会通过。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A006",
+          "at_user_onset_heard_prefix": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。",
+          "final_shared_played_prefix": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先分开看：174分、合格线180分、准备约六个月，是事实；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那更准确的结论应该怎么说？不要替我保证下次会通过。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那更准确的结论应该怎么说？不要替我保证下次会通过。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "请把它改成一句我能对自己念的话。要承认差六分没通过，也别用“失败是成功之母”这种空话。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A007",
+          "at_user_onset_heard_prefix": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。",
+          "final_shared_played_prefix": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先分开看：174分、合格线180分、准备约六个月，是事实；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。若还是觉得太满，我们就把结论再收窄。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那更准确的结论应该怎么说？不要替我保证下次会通过。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "请把它改成一句我能对自己念的话。要承认差六分没通过，也别用“失败是成功之母”这种空话。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那更准确的结论应该怎么说？不要替我保证下次会通过。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "请把它改成一句我能对自己念的话。要承认差六分没通过，也别用“失败是成功之母”这种空话。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。若还"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "前半句可信，但“不等于我没有学习能力”还是有点像辩护。能不能再收一点？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A008",
+          "at_user_onset_heard_prefix": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。",
+          "final_shared_played_prefix": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。若还",
+          "discarded_unheard_tail": "是觉得太满，我们就把结论再收窄。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先分开看：174分、合格线180分、准备约六个月，是事实；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可以收成：这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那更准确的结论应该怎么说？不要替我保证下次会通过。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "请把它改成一句我能对自己念的话。要承认差六分没通过，也别用“失败是成功之母”这种空话。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。若还"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "前半句可信，但“不等于我没有学习能力”还是有点像辩护。能不能再收一点？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "可以收成：这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那更准确的结论应该怎么说？不要替我保证下次会通过。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "请把它改成一句我能对自己念的话。要承认差六分没通过，也别用“失败是成功之母”这种空话。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。若还"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "前半句可信，但“不等于我没有学习能力”还是有点像辩护。能不能再收一点？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "可以收成：这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "这句我能接受。还有周一如果林澄问起，我不知道怎么说。她之前只说过，过不过都请我喝咖啡，并没有批评我。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A009",
+          "at_user_onset_heard_prefix": "可以收成：这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。",
+          "final_shared_played_prefix": "可以收成：这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先分开看：174分、合格线180分、准备约六个月，是事实；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”这样如实交代，也不用当场解释职业转型，更不必替林澄预设失望。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U11",
+        "assistant_id": "A011",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那更准确的结论应该怎么说？不要替我保证下次会通过。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "请把它改成一句我能对自己念的话。要承认差六分没通过，也别用“失败是成功之母”这种空话。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。若还"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "前半句可信，但“不等于我没有学习能力”还是有点像辩护。能不能再收一点？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "可以收成：这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "这句我能接受。还有周一如果林澄问起，我不知道怎么说。她之前只说过，过不过都请我喝咖啡，并没有批评我。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”这样如实交代，也不用当场解释职业转型，更不必替林澄预设失望。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那更准确的结论应该怎么说？不要替我保证下次会通过。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "请把它改成一句我能对自己念的话。要承认差六分没通过，也别用“失败是成功之母”这种空话。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。若还"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "前半句可信，但“不等于我没有学习能力”还是有点像辩护。能不能再收一点？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "可以收成：这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "这句我能接受。还有周一如果林澄问起，我不知道怎么说。她之前只说过，过不过都请我喝咖啡，并没有批评我。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”这样如实交代，也不用当场解释职业转型，更不必替林澄预设失望。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "这句也可以。先回到今晚的行动。我列了三个：看一道错题十五分钟，整理资料二十分钟，或者只在日历上留一次复盘时间，五分钟。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A010",
+          "at_user_onset_heard_prefix": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”这样如实交代，也不用当场解释职业转型，更不必替林澄预设失望。",
+          "final_shared_played_prefix": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”这样如实交代，也不用当场解释职业转型，更不必替林澄预设失望。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先分开看：174分、合格线180分、准备约六个月，是事实；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A010",
+            "after_text": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "今晚的目标是降低重启门槛，不是追求最大收益。可以比较一下：哪一个最不容易让你逃避，又不会悄悄变成完整复盘？",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U12",
+        "assistant_id": "A012",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那更准确的结论应该怎么说？不要替我保证下次会通过。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "请把它改成一句我能对自己念的话。要承认差六分没通过，也别用“失败是成功之母”这种空话。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。若还"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "前半句可信，但“不等于我没有学习能力”还是有点像辩护。能不能再收一点？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "可以收成：这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "这句我能接受。还有周一如果林澄问起，我不知道怎么说。她之前只说过，过不过都请我喝咖啡，并没有批评我。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”这样如实交代，也不用当场解释职业转型，更不必替林澄预设失望。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "这句也可以。先回到今晚的行动。我列了三个：看一道错题十五分钟，整理资料二十分钟，或者只在日历上留一次复盘时间，五分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "今晚的目标是降低重启门槛，不是追求最大收益。可以比较一下：哪一个最不容易让你逃避，又不会悄悄变成完整复盘？"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那更准确的结论应该怎么说？不要替我保证下次会通过。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "请把它改成一句我能对自己念的话。要承认差六分没通过，也别用“失败是成功之母”这种空话。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。若还"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "前半句可信，但“不等于我没有学习能力”还是有点像辩护。能不能再收一点？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "可以收成：这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "这句我能接受。还有周一如果林澄问起，我不知道怎么说。她之前只说过，过不过都请我喝咖啡，并没有批评我。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”这样如实交代，也不用当场解释职业转型，更不必替林澄预设失望。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "这句也可以。先回到今晚的行动。我列了三个：看一道错题十五分钟，整理资料二十分钟，或者只在日历上留一次复盘时间，五分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "今晚的目标是降低重启门槛，不是追求最大收益。可以比较一下：哪一个最不容易让你逃避，又不会悄悄变成完整复盘？"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "看错题最容易让我紧张，整理资料又可能只是回避。只留复盘时间压力最小，也不容易拖长。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A011",
+          "at_user_onset_heard_prefix": "今晚的目标是降低重启门槛，不是追求最大收益。可以比较一下：哪一个最不容易让你逃避，又不会悄悄变成完整复盘？",
+          "final_shared_played_prefix": "今晚的目标是降低重启门槛，不是追求最大收益。可以比较一下：哪一个最不容易让你逃避，又不会悄悄变成完整复盘？",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先分开看：174分、合格线180分、准备约六个月，是事实；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A010",
+            "after_text": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "那就选五分钟的日历动作。它不是假装已经复盘，而是给重新开始留一个明确入口。现在只需要确定放在哪个空档。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U13",
+        "assistant_id": "A013",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那更准确的结论应该怎么说？不要替我保证下次会通过。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "请把它改成一句我能对自己念的话。要承认差六分没通过，也别用“失败是成功之母”这种空话。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。若还"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "前半句可信，但“不等于我没有学习能力”还是有点像辩护。能不能再收一点？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "可以收成：这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "这句我能接受。还有周一如果林澄问起，我不知道怎么说。她之前只说过，过不过都请我喝咖啡，并没有批评我。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”这样如实交代，也不用当场解释职业转型，更不必替林澄预设失望。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "这句也可以。先回到今晚的行动。我列了三个：看一道错题十五分钟，整理资料二十分钟，或者只在日历上留一次复盘时间，五分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "今晚的目标是降低重启门槛，不是追求最大收益。可以比较一下：哪一个最不容易让你逃避，又不会悄悄变成完整复盘？"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "看错题最容易让我紧张，整理资料又可能只是回避。只留复盘时间压力最小，也不容易拖长。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "那就选五分钟的日历动作。它不是假装已经复盘，而是给重新开始留一个明确入口。现在只需要确定放在哪个空档。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那更准确的结论应该怎么说？不要替我保证下次会通过。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "请把它改成一句我能对自己念的话。要承认差六分没通过，也别用“失败是成功之母”这种空话。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。若还"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "前半句可信，但“不等于我没有学习能力”还是有点像辩护。能不能再收一点？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "可以收成：这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "这句我能接受。还有周一如果林澄问起，我不知道怎么说。她之前只说过，过不过都请我喝咖啡，并没有批评我。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”这样如实交代，也不用当场解释职业转型，更不必替林澄预设失望。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "这句也可以。先回到今晚的行动。我列了三个：看一道错题十五分钟，整理资料二十分钟，或者只在日历上留一次复盘时间，五分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "今晚的目标是降低重启门槛，不是追求最大收益。可以比较一下：哪一个最不容易让你逃避，又不会悄悄变成完整复盘？"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "看错题最容易让我紧张，整理资料又可能只是回避。只留复盘时间压力最小，也不容易拖长。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "那就选五分钟的日历动作。它不是假装已经复盘，而是给重新开始留一个明确入口。现在只需要确定放在哪个空档。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "周二和周四晚上各有半小时。周二离现在太近，我想放在周四晚，今晚只花五分钟记进日历。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A012",
+          "at_user_onset_heard_prefix": "那就选五分钟的日历动作。它不是假装已经复盘，而是给重新开始留一个明确入口。现在只需要确定放在哪个空档。",
+          "final_shared_played_prefix": "那就选五分钟的日历动作。它不是假装已经复盘，而是给重新开始留一个明确入口。现在只需要确定放在哪个空档。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先分开看：174分、合格线180分、准备约六个月，是事实；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A010",
+            "after_text": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "那就定为：周四晚，花五分钟在日历上留出一次复盘时段。只做时间预留，不看错题、不整理全套材料；完成后今晚就停。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U14",
+        "assistant_id": "A014",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那更准确的结论应该怎么说？不要替我保证下次会通过。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "请把它改成一句我能对自己念的话。要承认差六分没通过，也别用“失败是成功之母”这种空话。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。若还"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "前半句可信，但“不等于我没有学习能力”还是有点像辩护。能不能再收一点？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "可以收成：这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "这句我能接受。还有周一如果林澄问起，我不知道怎么说。她之前只说过，过不过都请我喝咖啡，并没有批评我。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”这样如实交代，也不用当场解释职业转型，更不必替林澄预设失望。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "这句也可以。先回到今晚的行动。我列了三个：看一道错题十五分钟，整理资料二十分钟，或者只在日历上留一次复盘时间，五分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "今晚的目标是降低重启门槛，不是追求最大收益。可以比较一下：哪一个最不容易让你逃避，又不会悄悄变成完整复盘？"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "看错题最容易让我紧张，整理资料又可能只是回避。只留复盘时间压力最小，也不容易拖长。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "那就选五分钟的日历动作。它不是假装已经复盘，而是给重新开始留一个明确入口。现在只需要确定放在哪个空档。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "周二和周四晚上各有半小时。周二离现在太近，我想放在周四晚，今晚只花五分钟记进日历。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "那就定为：周四晚，花五分钟在日历上留出一次复盘时段。只做时间预留，不看错题、不整理全套材料；完成后今晚就停。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那更准确的结论应该怎么说？不要替我保证下次会通过。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "请把它改成一句我能对自己念的话。要承认差六分没通过，也别用“失败是成功之母”这种空话。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。若还"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "前半句可信，但“不等于我没有学习能力”还是有点像辩护。能不能再收一点？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "可以收成：这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "这句我能接受。还有周一如果林澄问起，我不知道怎么说。她之前只说过，过不过都请我喝咖啡，并没有批评我。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”这样如实交代，也不用当场解释职业转型，更不必替林澄预设失望。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "这句也可以。先回到今晚的行动。我列了三个：看一道错题十五分钟，整理资料二十分钟，或者只在日历上留一次复盘时间，五分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "今晚的目标是降低重启门槛，不是追求最大收益。可以比较一下：哪一个最不容易让你逃避，又不会悄悄变成完整复盘？"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "看错题最容易让我紧张，整理资料又可能只是回避。只留复盘时间压力最小，也不容易拖长。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "那就选五分钟的日历动作。它不是假装已经复盘，而是给重新开始留一个明确入口。现在只需要确定放在哪个空档。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "周二和周四晚上各有半小时。周二离现在太近，我想放在周四晚，今晚只花五分钟记进日历。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "那就定为：周四晚，花五分钟在日历上留出一次复盘时段。只做时间预留，不看错题、不整理全套材料；完成后今晚就停。"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "最后请把自我安慰和今晚的动作一起简短回读一遍，我照着说。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A013",
+          "at_user_onset_heard_prefix": "那就定为：周四晚，花五分钟在日历上留出一次复盘时段。只做时间预留，不看错题、不整理全套材料；完成后今晚就停。",
+          "final_shared_played_prefix": "那就定为：周四晚，花五分钟在日历上留出一次复盘时段。只做时间预留，不看错题、不整理全套材料；完成后今晚就停。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先分开看：174分、合格线180分、准备约六个月，是事实；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A010",
+            "after_text": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A013",
+            "after_text": "那就定为：周四晚，花五分钟在日历上留出一次复盘时段。",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。今晚我只花五分钟，把周四晚的复盘时段记进日历，然后停下。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A002",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；"
+          }
+        ],
+        "at_event_onset_heard_prefix": "先分开看：174分、合格线180分、准备约六个月，是事实；",
+        "event_text": "嗯",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC02",
+        "kind": "backchannels",
+        "target_assistant_id": "A006",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。",
+        "event_text": "明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC03",
+        "kind": "backchannels",
+        "target_assistant_id": "A010",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那更准确的结论应该怎么说？不要替我保证下次会通过。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "请把它改成一句我能对自己念的话。要承认差六分没通过，也别用“失败是成功之母”这种空话。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。若还"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "前半句可信，但“不等于我没有学习能力”还是有点像辩护。能不能再收一点？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "可以收成：这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "这句我能接受。还有周一如果林澄问起，我不知道怎么说。她之前只说过，过不过都请我喝咖啡，并没有批评我。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”"
+          }
+        ],
+        "at_event_onset_heard_prefix": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”",
+        "event_text": "嗯",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC04",
+        "kind": "backchannels",
+        "target_assistant_id": "A013",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "一个重要考试没达到预期，我现在既失望，又开始怀疑自己。想请你帮我理清楚，但今晚不想做完整复习计划。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。先只做区分，不急着制定复习计划。你愿意先说成绩与目标差多少，以及此刻最刺痛你的念头吗？"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "客观题是174分，合格线180分。我准备了大约六个月。最难受的是，我竟然会想，连这点分数都拿不到，是不是学习能力不行。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开看：174分、合格线180分、准备约六个月，是事实；失望和羞愧是感受；“我学习能力不行”是评价，不是成绩截图能直接证明的结论。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "这个分类我认可。但失望、羞愧和怀疑混在一起，我应该先处理哪一个？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "先处理最刺痛、最容易带出全盘否定的那一层。你可以补完这句话：“这次没通过，最让我害怕的是……”"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "最刺痛的可能还是职业转型，我怕这说明自己不适合做合规。还有一点是，我跟同事提过备考，现在觉得说得太早，有些羞愧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "这更像两层刺痛：成绩让你怀疑转型能力，同事的目光又放大了羞愧。但一次考试只能说明这次分数未达线，不能直接判定你不适合合规；依"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先别下结论。你说不能判定，依据具体是什么？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "依据首先是证据边界：一次分数能证明这次未过线，却测不全学习能力，更没有直接测合规工作的实际表现。若要更可信，还需要看你真实的投入、受阻情况和既往表现。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我的记录里，通常每周学8到10小时，考前一个月大约14小时。不过有三周因为加班，没完成原定进度。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "这些记录至少说明你持续投入过，也显示加班曾挤压三周进度。它们不能保证你一定通过，却能反驳“我根本学不会”这种全盘判断。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "那更准确的结论应该怎么说？不要替我保证下次会通过。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "更准确的是：你这次未过线；记录显示你有持续投入，也有受加班影响的进度缺口。这些事实不足以推出“我不适合合规”，同样不足以保证下次通过。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "请把它改成一句我能对自己念的话。要承认差六分没通过，也别用“失败是成功之母”这种空话。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "可以先念这一句：这次我差六分，没有通过，我确实失望；但这说明这次准备和发挥还没达到线，不等于我没有学习能力。若还"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "前半句可信，但“不等于我没有学习能力”还是有点像辩护。能不能再收一点？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "可以收成：这次差六分没通过，我很失望；目前能确定的是结果没达标，不能仅凭这次成绩给我的学习能力和职业方向定论。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "这句我能接受。还有周一如果林澄问起，我不知道怎么说。她之前只说过，过不过都请我喝咖啡，并没有批评我。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "可以只说：“我这次174分，没过线，确实有点失落，准备缓一缓再复盘。”这样如实交代，也不用当场解释职业转型，更不必替林澄预设失望。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "这句也可以。先回到今晚的行动。我列了三个：看一道错题十五分钟，整理资料二十分钟，或者只在日历上留一次复盘时间，五分钟。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "今晚的目标是降低重启门槛，不是追求最大收益。可以比较一下：哪一个最不容易让你逃避，又不会悄悄变成完整复盘？"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "看错题最容易让我紧张，整理资料又可能只是回避。只留复盘时间压力最小，也不容易拖长。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "那就选五分钟的日历动作。它不是假装已经复盘，而是给重新开始留一个明确入口。现在只需要确定放在哪个空档。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "周二和周四晚上各有半小时。周二离现在太近，我想放在周四晚，今晚只花五分钟记进日历。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "那就定为：周四晚，花五分钟在日历上留出一次复盘时段。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "那就定为：周四晚，花五分钟在日历上留出一次复盘时段。",
+        "event_text": "好",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

@@ -1,0 +1,4938 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 16 轮，允许 16–17 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 按下方V2.9用户旁话规则审查；第三方与机器旁语仍遵守冻结声源与信息边界。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 必须逐字匹配对应源；用户声源的recipient须逐字匹配且不含voice_profile，其余声源的voice_profile逐字匹配，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。\n[V2.9 用户对同场旁人说话]\n定稿根schema_version为duplex_v2.fixed_script.v3；根字段和原主轮字段不变，quiet声景也保留空environment_events和side_speech。\nside_speech仍只用已冻结的side_speech_sources，数量严格等于side_speech_count。第三方/机器的原字段不变。若冻结源speaker=user，每项严格只有event_id、source_id、target_assistant_id、after_text、text、speaker、recipient、gain；speaker=\"user\"，recipient逐字复制冻结源的同场接收者，不填写voice_profile、voice_source或其他字段。用户音色、克隆参考和表达画像由程序复用主用户，不另造声音。\n用户旁话是用户在助手已开始且仍在实际播报时对旁人说的短句，例如对已在场的小林说“小林，把杯子递给我一下”。台词应自然且接收对象可辨，不能只有“等等”这类不明确话语；不能作为对助手的新请求、附和、打断或主对话轮，也不能泄漏关键任务材料。接收者必须来自冻结场景，不能为了配额新增人物。\ntarget_assistant_id仍指作为音频host的助手A，不是旁话接收对象；after_text是A从首字开始的完整非终止已播前缀。用户旁话起声必须早于下一次用户主表达，且完整音频须装入实际会播出的A范围，与同一用户的主句、附和或另一旁话都不重叠。不要在助手将被真正打断的尾端强塞旁话，不把事件安排在未播尾部；不恢复“用户主句暂停→转头旁话→再继续主句”的模式。\n旁话期间助手继续同一段原音频，不停顿、不让出话权、不增加新回答；后续助手不回应或复述旁话，不把它吸收为任务事实。旁话分类依赖接收对象和语义，不依赖其音量；gain仍在0.3–0.7。用户的旁话仍符合其冻结表达画像。\n上述方向、继续播报与stop_required=false是数据审查/监督标注，不是提前透露给在线模型的输入。仅使用原Judge和局部修复预算：审查台词是否确实面向旁人、主线与已听因果是否保持；只按findings最小修复，并在助手正文变更时同步相关精确锚点。\n\n",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-008-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 497160264,
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g02/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g02/relay-state",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D05",
+          "domain": "个人组织、计划与决策",
+          "scenario_id": "D05-S03",
+          "scenario": "活动安排"
+        },
+        "task_style": "开放式互动",
+        "task_instance": {
+          "goal": "为一次亲友共同参与的半日聚会形成一套灵活、可临场调整的活动思路：先厘清不同参与者的兴趣、体力和社交舒适度，再讨论开场、主体活动、休息与收尾之间如何自然衔接，同时准备遇到天气变化、有人提前离开或现场气氛变淡时的替代方案，并通过情境演练确认怎样表达安排、处理分歧，让聚会既有参与感又不过度消耗任何人。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "负责召集并协调亲友聚会的家庭活动组织者",
+          "task_familiarity": "medium"
+        },
+        "voice_profile": "男性，听感三十多岁，音色明亮而有弹性，吐字清楚，语速偏快但层次分明，情绪起伏较容易从语气中听出来。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "formal",
+          "directness": "direct",
+          "emotional_expressiveness": "expressive",
+          "verbosity": "detailed",
+          "initiative": "high",
+          "caution": "low",
+          "patience": "medium",
+          "behavioral_notes": [
+            "通常会主动补充背景、条件和自己的初步判断，希望把讨论推进到可选择的方案。",
+            "表达观点时语气有感染力，会明确说出赞成、犹豫或不满意之处，而不是只给出模糊反应。",
+            "倾向于提出连续的问题和具体追问，遇到分歧时愿意听取解释，但不喜欢长时间停留在泛泛讨论。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "long",
+        "target_turns": 16,
+        "min_turns": 16,
+        "max_turns": 17
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v3",
+        "seed": 800735772,
+        "mode": "layered",
+        "discrete_event_target": 2,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "machine",
+          "third_party",
+          "user_to_third_party"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "2026年11月9日周一晚上，用户独自在杭州市拱墅区的家中，开始筹划11月14日周六下午由八位亲友参加的半日聚会，因为亲友群里对散步、聊天和桌游各有偏好，却一直没有形成兼顾所有人的安排。聚会预计从13:30持续到18:00，主要场地是姑妈林月琴家所在小区的一层公共活动室，步行约五分钟可到运河边步道，因此室内外活动都可考虑。参加者包括用户与伴侣周雯、父母陈丽华和赵明诚、姑妈林月琴、表弟林骁及其伴侣许宁，以及家庭好友唐岚，彼此熟悉程度不同，不能默认所有人都愿意持续集体互动。用户已经翻看了亲友群里的回复，并在纸上记下各人的兴趣、体力情况和离场时间，但还没有决定是以轻松聊天、合作游戏还是短距离散步作为主体。陈丽华的膝盖在连续步行或久站后容易不舒服，林月琴更喜欢安静交谈，唐岚在人多时通常需要偶尔独处，而林骁偏爱节奏明确、带一点竞争性的游戏。唐岚已说明自己最迟16:30离开，用户因此希望把最需要全员参与的环节放在此前，同时又不让她的离开显得像活动突然中断。活动室内有足够座椅、一张大桌、热水壶、普通扑克牌和一套图像联想卡，用户也能携带便携音箱与少量纸笔，但没有额外工作人员协助布置或主持。用户担心流程过密会让长辈疲惫，安排过松又可能在不同熟悉程度的人之间出现冷场，尤其是户外派和桌游派可能对主体活动意见不一。聚会当天的天气目前不能确定，因此需要让室外步道方案和纯室内方案能够自然互换，而不是临时彻底推翻原有节奏。用户倾向于用一个门槛较低的开场让大家逐渐进入状态，中间保留坐下休息和自由交谈的空间，并让收尾能够适应有人提前离开或整体兴致下降。尚未解决的问题包括怎样确认每个人可接受的参与强度、是否要设置可自由退出的小组活动、发生分歧时如何给出选择，以及主持安排时怎样表达才不会让亲友感到被强迫。",
+        "task_reference_data": [
+          "来自亲友群、用户已读：赵明诚回复“天气合适的话想沿运河走一小段，也可以顺手拍几张合照，但不想走太远”。",
+          "来自亲友群、用户已读：陈丽华回复“聊天和看大家玩都行，走路最好控制在二十分钟左右，中间要能坐下休息”。",
+          "来自亲友群、用户已读：林月琴回复“活动室可以用，桌椅和热水壶都在；我更喜欢轻松聊天，不太想玩需要抢答的游戏”。",
+          "来自亲友群、用户已读：林骁回复“如果大家愿意，我想玩有明确目标的桌游或分队小游戏，纯聊天太久可能会没精神”。",
+          "来自亲友群、用户已读：许宁回复“图像联想、简单手作或合作类活动都可以，但希望规则能在几分钟内讲清楚”。",
+          "来自唐岚单独发给用户的消息、用户已读：她会按时到场，但16:30前必须离开；人多时她可能暂时坐到一旁，并不代表不高兴。",
+          "来自用户手写准备记录、当前可现场读取：可用物品包括普通扑克牌一副、图像联想卡一套、便携音箱一台、空白纸二十张和彩笔八支；活动室有大桌、座椅和热水壶。",
+          "来自用户手写准备记录、当前仍是初步设想：聚会可分为到场缓冲、共同活动、休息或自由选择、轻量收尾四段，但各段时长和替代活动尚未确定。"
+        ],
+        "environment_audio": "室内右后方约两米处的落地扇保持低速运转，机械声稳定而轻。关闭的窗外偶尔透入较远的道路车流声，音量缓慢起伏，不影响近距离说话。",
+        "estimated_snr_db": 28,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "聚会时间范围为2026年11月14日13:30至18:00，活动思路需适合半日内完成。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "唐岚最迟16:30离开，需要避免把唯一的全员核心环节放在此后。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C03",
+            "text": "整体安排必须保留无需参加、可以旁观或短暂独处的选择，不把持续集体互动设为默认要求。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C04",
+            "text": "户外环节应有可直接切换的室内替代方案，且不能依赖临时添购设备或额外工作人员。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C05",
+            "text": "优先采用规则简短、布置负担低且能随现场精力缩短或延长的活动。",
+            "kind": "soft"
+          }
+        ],
+        "safety_limits": [
+          {
+            "limit_id": "L01",
+            "text": "考虑陈丽华的膝盖情况，户外活动不应包含长距离步行、快速行进或连续久站，并应随时允许返回有座位的室内场地。",
+            "severity": "advisory"
+          }
+        ],
+        "soundscape_plan": {
+          "mode": "layered",
+          "ambient_layers": [
+            {
+              "source_id": "AMB01",
+              "asset_id": "fan-fsd50k-eval-235362",
+              "reason": "适合作为安静住宅内持续存在的低声机械底噪，与故事中的落地扇一致。"
+            },
+            {
+              "source_id": "AMB02",
+              "asset_id": "traffic-fsd50k-eval-232686",
+              "reason": "适合模拟关闭窗户后仍可听见的远距离城市道路声。"
+            }
+          ],
+          "environment_events": [
+            {
+              "source_id": "ENV01",
+              "asset_id": "paper-fsd50k-eval-121200",
+              "reason": "用户手边有用于规划聚会的纸质记录，短促翻动声符合当前动作环境。"
+            },
+            {
+              "source_id": "ENV02",
+              "asset_id": "paper-fsd50k-eval-343098",
+              "reason": "可表现用户在已有手写记录旁整理用于规划的空白纸，与当前场景中的明确物品相符。"
+            }
+          ],
+          "schema": "duplex_v2.soundscape_plan.v4",
+          "side_speech_sources": [],
+          "side_speech_count": 0,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v3",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v3",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3,
+              "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+              "user_aside_preference_probability": 0.5,
+              "user_voice_source": "stage1_user",
+              "user_aside_requires_present_recipient": true
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611090002,
+              "slot": 7,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "birds",
+                  "rain",
+                  "wind",
+                  "fan",
+                  "crowd",
+                  "traffic"
+                ],
+                "event": [
+                  "door",
+                  "paper",
+                  "footsteps",
+                  "water_tap",
+                  "doorbell",
+                  "keyboard"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-319512",
+                  "birds-fsd50k-eval-86343",
+                  "birds-fsd50k-eval-57907"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-340358",
+                  "crowd-fsd50k-eval-185058",
+                  "crowd-fsd50k-eval-121877"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-419427"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-382582",
+                  "rain-fsd50k-eval-21189"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-232686",
+                  "traffic-fsd50k-eval-235541",
+                  "traffic-fsd50k-eval-124020"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113175",
+                  "wind-fsd50k-eval-113173",
+                  "wind-fsd50k-eval-113176"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-209519",
+                  "door-fsd50k-eval-119077",
+                  "door-fsd50k-eval-71212"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-332563",
+                  "doorbell-fsd50k-eval-348322",
+                  "doorbell-fsd50k-eval-426594"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-272381",
+                  "footsteps-fsd50k-eval-392303",
+                  "footsteps-fsd50k-eval-153104"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-399740",
+                  "keyboard-fsd50k-eval-411545"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-343098",
+                  "paper-fsd50k-eval-82562"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-232499",
+                  "water_tap-fsd50k-eval-402127",
+                  "water_tap-fsd50k-eval-402128"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v3",
+              "seed": 800735772,
+              "mode": "layered",
+              "discrete_event_target": 2,
+              "max_ambient_layers": 2,
+              "side_speech_requested": false,
+              "speech_kind_preferences": [
+                "machine",
+                "third_party",
+                "user_to_third_party"
+              ]
+            },
+            "control_sha256": "919f7aa9491bd34894f84f77c1a669cba718d33957e27db4faecd6b7388d18ab",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v4",
+              "mode": "layered",
+              "ambient_layers": [
+                {
+                  "source_id": "AMB01",
+                  "candidates": [
+                    {
+                      "asset_id": "fan-fsd50k-eval-235362",
+                      "reason": "适合作为安静住宅内持续存在的低声机械底噪，与故事中的落地扇一致。",
+                      "environment_audio": "右后方约两米处传来稳定、低沉的风扇运转声。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-415925",
+                      "reason": "可表现室内低速风扇的连续声响，不会明显遮盖近距离语音。",
+                      "environment_audio": "房间右后方持续响着轻微的机械送风声。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-419427",
+                      "reason": "符合居家规划场景中的稳定通风底色，节奏均匀。",
+                      "environment_audio": "近处的落地扇平稳转动，发出均匀而轻的嗡声。"
+                    }
+                  ]
+                },
+                {
+                  "source_id": "AMB02",
+                  "candidates": [
+                    {
+                      "asset_id": "traffic-fsd50k-eval-232686",
+                      "reason": "适合模拟关闭窗户后仍可听见的远距离城市道路声。",
+                      "environment_audio": "窗外远处的车流声隔着玻璃轻微起伏。"
+                    },
+                    {
+                      "asset_id": "traffic-fsd50k-eval-235541",
+                      "reason": "可形成低音量、间歇变化的住宅窗外交通底色。",
+                      "environment_audio": "较远处车辆经过的声音偶尔从窗外透入，随后渐弱。"
+                    },
+                    {
+                      "asset_id": "traffic-fsd50k-eval-124020",
+                      "reason": "符合杭州市区住宅夜间仍有远处车流的声学环境。",
+                      "environment_audio": "窗外道路传来遥远而连续的车流声，音量缓慢变化。"
+                    }
+                  ]
+                }
+              ],
+              "environment_events": [
+                {
+                  "source_id": "ENV01",
+                  "candidates": [
+                    {
+                      "asset_id": "paper-fsd50k-eval-121200",
+                      "reason": "用户手边有用于规划聚会的纸质记录，短促翻动声符合当前动作环境。",
+                      "environment_audio": "近处响起一次短促的纸张翻动声。"
+                    },
+                    {
+                      "asset_id": "paper-fsd50k-eval-343098",
+                      "reason": "可表现用户查看手写准备记录时轻轻整理纸页。",
+                      "environment_audio": "桌面方向传来一阵轻微的纸页整理声。"
+                    },
+                    {
+                      "asset_id": "paper-fsd50k-eval-82562",
+                      "reason": "与桌面规划场景相容，可作为一次完整而独立的纸张声事件。",
+                      "environment_audio": "手边的纸张被翻动了一次，声音很快停下。"
+                    }
+                  ]
+                },
+                {
+                  "source_id": "ENV02",
+                  "candidates": [
+                    {
+                      "asset_id": "paper-fsd50k-eval-121200",
+                      "reason": "用户现有手写准备记录和多张空白纸，可在继续梳理活动方案时再次翻看或调整纸页，形成另一项独立事件。",
+                      "environment_audio": "稍后，桌边又响起一次短促的纸页翻动声。"
+                    },
+                    {
+                      "asset_id": "paper-fsd50k-eval-343098",
+                      "reason": "可表现用户在已有手写记录旁整理用于规划的空白纸，与当前场景中的明确物品相符。",
+                      "environment_audio": "近处传来一阵轻微的纸张整理声，随即安静下来。"
+                    },
+                    {
+                      "asset_id": "paper-fsd50k-eval-82562",
+                      "reason": "用户正在依据纸质记录筹划聚会，再次拿起并放下一页记录可构成边界完整的独立声响。",
+                      "environment_audio": "手边的一页记录被拿起翻看后放回桌面，纸声很快停止。"
+                    }
+                  ]
+                }
+              ],
+              "side_speech_eligibility": {
+                "user_to_third_party": {
+                  "compatible": false,
+                  "reason": "用户当前独自在家，故事中没有明确同场且可接收旁话的第三方。",
+                  "source": null
+                },
+                "third_party": {
+                  "compatible": false,
+                  "reason": "当前环境没有同场第三方人物，亲友仅通过既有消息提供信息。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "场景中实际存在的落地扇和便携音箱均未被设定为会发出语音的机器来源。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "5049c6baf72a45f4bdf8501b8088faaebc99d5574ef13a0e190a0eacb93d01ed",
+            "aggregate_environment_audio": "室内右后方约两米处的落地扇保持低速运转，机械声稳定而轻。关闭的窗外偶尔透入较远的道路车流声，音量缓慢起伏，不影响近距离说话。 右后方约两米处传来稳定、低沉的风扇运转声。 窗外远处的车流声隔着玻璃轻微起伏。 近处响起一次短促的纸张翻动声。 近处传来一阵轻微的纸张整理声，随即安静下来。",
+            "draws": [
+              {
+                "source_id": "AMB01",
+                "category": "fan",
+                "asset_id": "fan-fsd50k-eval-235362",
+                "eligible_categories": [
+                  "fan"
+                ],
+                "eligible_assets": [
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-419427"
+                ]
+              },
+              {
+                "source_id": "AMB02",
+                "category": "traffic",
+                "asset_id": "traffic-fsd50k-eval-232686",
+                "eligible_categories": [
+                  "traffic"
+                ],
+                "eligible_assets": [
+                  "traffic-fsd50k-eval-124020",
+                  "traffic-fsd50k-eval-232686",
+                  "traffic-fsd50k-eval-235541"
+                ]
+              },
+              {
+                "source_id": "ENV01",
+                "category": "paper",
+                "asset_id": "paper-fsd50k-eval-121200",
+                "eligible_categories": [
+                  "paper"
+                ],
+                "eligible_assets": [
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-343098",
+                  "paper-fsd50k-eval-82562"
+                ]
+              },
+              {
+                "source_id": "ENV02",
+                "category": "paper",
+                "asset_id": "paper-fsd50k-eval-343098",
+                "eligible_categories": [
+                  "paper"
+                ],
+                "eligible_assets": [
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-343098",
+                  "paper-fsd50k-eval-82562"
+                ]
+              }
+            ],
+            "speech_selection": {
+              "requested": false,
+              "compatible_kinds": [],
+              "selected_kind": null,
+              "outcome": "not_requested",
+              "assessments": {
+                "user_to_third_party": {
+                  "compatible": false,
+                  "reason": "用户当前独自在家，故事中没有明确同场且可接收旁话的第三方。",
+                  "source": null
+                },
+                "third_party": {
+                  "compatible": false,
+                  "reason": "当前环境没有同场第三方人物，亲友仅通过既有消息提供信息。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "场景中实际存在的落地扇和便携音箱均未被设定为会发出语音的机器来源。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v3",
+      "title": "八人亲友半日聚会弹性安排",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。",
+          "assistant_utterance": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。",
+          "user_intent": "介绍聚会规模、时段、场地和总体规划目标",
+          "assistant_intent": "确定需要逐步收集的参与者约束，并引导用户优先披露关键差异",
+          "semantic_goal": "开始形成兼顾不同偏好和体力的弹性聚会方案",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。",
+          "assistant_utterance": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？",
+          "user_intent": "补充四位参与者的体力、社交舒适度、兴趣和离场限制",
+          "assistant_intent": "提炼不可违背的安排底线，并继续询问其余偏好与可用资源",
+          "semantic_goal": "把关键人员限制转化为流程设计原则",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。",
+            "assistant_stop_after_text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。",
+          "assistant_utterance": "建议先发一条三选一确认：愿意走二十分钟、只参加室内，或两种都可；再按结果排四段流程，避免凭偏好替大家决定。",
+          "user_intent": "补充其他参与者偏好和现有物品，并索要初步组织框架",
+          "assistant_intent": "提出确认参与强度的方法，并准备据此划分四段流程",
+          "semantic_goal": "从人员画像和资源信息过渡到可执行的流程结构",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？",
+            "assistant_stop_after_text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。",
+          "assistant_utterance": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。",
+          "user_intent": "打断确认建议，要求直接生成首版时间表",
+          "assistant_intent": "停止原确认思路，依据已经听到的条件给出分段时间安排",
+          "semantic_goal": "尽快获得一版可继续修改的具体流程",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "建议先发一条三选一确认：",
+            "assistant_stop_after_text": "建议先发一条三选一确认：愿"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。",
+          "assistant_utterance": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。",
+          "user_intent": "指出首版流程在提前离场衔接上的问题并要求调整",
+          "assistant_intent": "前移共享内容，并将唐岚离场设计成普通过渡而非终点",
+          "semantic_goal": "保证唐岚参与核心环节且离场不打断聚会节奏",
+          "act_ref": "A04",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。",
+            "assistant_stop_after_text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U06",
+          "assistant_id": "A006",
+          "user_utterance": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？",
+          "assistant_utterance": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。",
+          "user_intent": "追问天气变化时如何平滑切换室内外方案",
+          "assistant_intent": "设计时间与主题一致的双版本活动，避免改天气时重排全程",
+          "semantic_goal": "获得可直接互换且衔接自然的天气备选方案",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A005",
+            "user_onset_after_text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。",
+            "assistant_stop_after_text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U07",
+          "assistant_id": "A007",
+          "user_utterance": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。",
+          "assistant_utterance": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像卡拼一条“运河路线”并讲故事，15:50都回到喝水聊天。",
+          "user_intent": "要求细化双版本活动，并明确膝盖保护与坐姿要求",
+          "assistant_intent": "给出可操作的晴雨版本，控制步行强度并确保室内无需走动",
+          "semantic_goal": "让天气替代环节同时满足安全、低负担和统一节奏",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A006",
+            "user_onset_after_text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。",
+            "assistant_stop_after_text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U08",
+          "assistant_id": "A008",
+          "user_utterance": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？",
+          "assistant_utterance": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”",
+          "user_intent": "打断细节播报，转而询问低压力开场表达",
+          "assistant_intent": "提供面向所有人的中性说明，正常化旁观、休息和暂离选择",
+          "semantic_goal": "在不点名任何人的前提下建立自由退出规则",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A007",
+            "user_onset_after_text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，",
+            "assistant_stop_after_text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          "pause_cue": {
+            "after_text": "对，室内就保持坐着，",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U09",
+          "assistant_id": "A009",
+          "user_utterance": "这句话比较自然。唐岚如果中途自己坐到一边，我需要当场向其他人解释吗？我担心完全不说会有人误以为她不高兴，但公开解释又像是在替她披露个人情况。",
+          "assistant_utterance": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。",
+          "user_intent": "询问如何处理唐岚独处时可能产生的误解",
+          "assistant_intent": "给出保护隐私且能降低现场猜测的公开与私下回应方式",
+          "semantic_goal": "让独处行为被自然接纳，同时避免过度披露",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A008",
+            "user_onset_after_text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”",
+            "assistant_stop_after_text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U10",
+          "assistant_id": "A010",
+          "user_utterance": "明白。那十四点的图像热身具体怎么玩？八个人彼此熟悉程度不同，我不希望按座位逐个发言，那样容易像开会，也会让不想说的人被架住。",
+          "assistant_utterance": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。先两三人随意聊，再邀请愿意的人分享；可以只举卡、不解释，也可以完全旁观。二十五分钟到点就收。",
+          "user_intent": "追问图像卡热身的具体规则并排除强制轮流发言",
+          "assistant_intent": "设计低门槛、可选择分享程度且能准时结束的开场活动",
+          "semantic_goal": "让不同熟悉程度和表达意愿的人都能舒适进入状态",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A009",
+            "user_onset_after_text": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。",
+            "assistant_stop_after_text": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U11",
+          "assistant_id": "A011",
+          "user_utterance": "接下来最可能有分歧的是林骁。他可能觉得这种热身太松，希望马上来一个有输赢的游戏；姑妈又明确不喜欢抢答。我当场怎样给选择，既不拖成讨论会，也不偏向某一边？",
+          "assistant_utterance": "可以回应：“想加点节奏没问题。我们先做十分钟合作热身，再由大家选二十分钟分队挑战或继续轻松版；不参赛的人可当观察员、计分或聊天。”这样既承认林骁，也不把竞争强加给所有人。",
+          "user_intent": "提出桌游派与安静聊天派发生分歧的情境",
+          "assistant_intent": "示范承认竞争需求但保留非参赛角色的现场协调方式",
+          "semantic_goal": "快速处理活动偏好冲突而不迫使所有人参赛",
+          "act_ref": "A06",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A010",
+            "user_onset_after_text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。先两三人随意聊，再邀请愿意的人分享；可以只举卡、不解释，也可以完全旁观。二十五分钟到点就收。",
+            "assistant_stop_after_text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。先两三人随意聊，再邀请愿意的人分享；可以只举卡、不解释，也可以完全旁观。二十五分钟到点就收。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U12",
+          "assistant_id": "A012",
+          "user_utterance": "如果他接着说这样不够痛快，希望我直接定一个明确的主体活动呢？我可以做决定，但不能让竞争性游戏变成所有人都必须参加。",
+          "assistant_utterance": "那就明确分层：共享主体定为规则短的合作卡牌任务，限三十分钟；竞争版只作为随后十五分钟的支线。你负责宣布边界，不再现场辩论，但同时保留旁观、计分和退出选择。",
+          "user_intent": "打断方案细节，升级分歧情境并要求主持人作出明确决定",
+          "assistant_intent": "将合作活动设为共同主体，把竞争内容限定为短支线并保留退出权",
+          "semantic_goal": "给出坚定但不强迫所有人参与竞争的主持决策",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A011",
+            "user_onset_after_text": "可以回应：“想加点节奏没问题。",
+            "assistant_stop_after_text": "可以回应：“想加点节奏没问题。我们"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U13",
+          "assistant_id": "A013",
+          "user_utterance": "这个边界我赞成。请给我一句当场能直接说的话，语气要明确，但别像在否定林骁的提议，也别让姑妈觉得竞争环节马上要压过聊天。",
+          "assistant_utterance": "你可以说：“有目标的游戏我们会保留，但先做三十分钟合作版，让每个人都能按舒服的方式加入。之后想比一轮的继续，不想参赛的就聊天或帮忙计分。”",
+          "user_intent": "要求把分层决策转化为可直接使用的主持话术",
+          "assistant_intent": "提供同时认可竞争提议、限定时长并保障非参赛选择的表达",
+          "semantic_goal": "用清晰中性的语言宣布主体活动与支线边界",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A012",
+            "user_onset_after_text": "那就明确分层：共享主体定为规则短的合作卡牌任务，限三十分钟；竞争版只作为随后十五分钟的支线。你负责宣布边界，不再现场辩论，但同时保留旁观、计分和退出选择。",
+            "assistant_stop_after_text": "那就明确分层：共享主体定为规则短的合作卡牌任务，限三十分钟；竞争版只作为随后十五分钟的支线。你负责宣布边界，不再现场辩论，但同时保留旁观、计分和退出选择。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U14",
+          "assistant_id": "A014",
+          "user_utterance": "还有个临场问题，如果有人提前走，或者大家明显累了，我该怎样缩短后半段？反过来，如果四点半以后气氛还很好，也要能自然延长到六点，不能只剩漫无目的地坐着。",
+          "assistant_utterance": "把16:30后设成三级弹性：先进行二十分钟自由聊天或短牌局；16:50看精力，疲惫就转入合照和轻量收尾，兴致好则再开一轮图像故事；17:40统一进入告别，最晚18:00结束。",
+          "user_intent": "询问人员提前离开、精力下降或兴致较高时的后半段伸缩方式",
+          "assistant_intent": "建立可缩短、可延长且有明确检查点与最晚结束时间的弹性收尾",
+          "semantic_goal": "让后半程能依据现场状态调整而不失去结构",
+          "act_ref": "A06",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A013",
+            "user_onset_after_text": "你可以说：“有目标的游戏我们会保留，但先做三十分钟合作版，让每个人都能按舒服的方式加入。之后想比一轮的继续，不想参赛的就聊天或帮忙计分。”",
+            "assistant_stop_after_text": "你可以说：“有目标的游戏我们会保留，但先做三十分钟合作版，让每个人都能按舒服的方式加入。之后想比一轮的继续，不想参赛的就聊天或帮忙计分。”"
+          },
+          "pause_cue": {
+            "after_text": "还有个临场问题，如果有人提前走，或者大家明显累了，",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U15",
+          "assistant_id": "A015",
+          "user_utterance": "唐岚四点半离开时，我具体怎么说比较好？我既想自然送她，又要让留下的人知道后面还有内容，不要全体都起身进入告别状态。",
+          "assistant_utterance": "可以说：“唐岚今天先到这里，谢谢你一起参加前面的活动，路上慢点。我们其他人先坐着喝水，十分钟后看大家想开短牌局，还是继续聊刚才的故事。”",
+          "user_intent": "索要唐岚离场时兼顾送别与继续活动的现场话术",
+          "assistant_intent": "提供简短送别，并立即向其余人给出下一步选择以维持节奏",
+          "semantic_goal": "让提前离场自然发生且不触发整场聚会提前结束",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A014",
+            "user_onset_after_text": "把16:30后设成三级弹性：先进行二十分钟自由聊天或短牌局；16:50看精力，疲惫就转入合照和轻量收尾，兴致好则再开一轮图像故事；17:40统一进入告别，最晚18:00结束。",
+            "assistant_stop_after_text": "把16:30后设成三级弹性：先进行二十分钟自由聊天或短牌局；16:50看精力，疲惫就转入合照和轻量收尾，兴致好则再开一轮图像故事；17:40统一进入告别，最晚18:00结束。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U16",
+          "assistant_id": "A016",
+          "user_utterance": "好，最后请把定稿流程完整回读一遍，按时间顺序写清晴雨替换、唐岚离场和后半段伸缩。我现场只看这一版，所以尽量紧凑，但关键选择和主持原则不要漏。",
+          "assistant_utterance": "13:30到场缓冲；14:00自选图像卡热身；14:30三十分钟合作卡牌任务，竞争版仅作短支线；15:05坐下休息；15:25晴天短走、随时折返，雨天坐着拼“运河路线”；15:50合流聊天。16:20喝水过渡，16:30自然送唐岚；之后短牌局或自由聊天，16:50按精力收尾或加一轮图像故事，17:40告别，18:00前结束。全程可旁观、休息或暂离。",
+          "user_intent": "要求完整回读最终流程及关键替代和主持原则",
+          "assistant_intent": "按时间顺序汇总定稿，覆盖晴雨切换、提前离场、弹性收尾与自由退出",
+          "semantic_goal": "获得一版可在聚会现场直接参照的紧凑最终方案",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A015",
+            "user_onset_after_text": "可以说：“唐岚今天先到这里，谢谢你一起参加前面的活动，路上慢点。我们其他人先坐着喝水，十分钟后看大家想开短牌局，还是继续聊刚才的故事。”",
+            "assistant_stop_after_text": "可以说：“唐岚今天先到这里，谢谢你一起参加前面的活动，路上慢点。我们其他人先坐着喝水，十分钟后看大家想开短牌局，还是继续聊刚才的故事。”"
+          },
+          "pause_cue": null
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。",
+          "text": "嗯，清楚"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A005",
+          "after_text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。",
+          "text": "对"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A008",
+          "after_text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。",
+          "text": "嗯"
+        },
+        {
+          "event_id": "BC04",
+          "target_assistant_id": "A010",
+          "after_text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。",
+          "text": "可以"
+        },
+        {
+          "event_id": "BC05",
+          "target_assistant_id": "A014",
+          "after_text": "把16:30后设成三级弹性：先进行二十分钟自由聊天或短牌局；",
+          "text": "明白"
+        }
+      ],
+      "side_speech": [],
+      "environment_events": [
+        {
+          "event_id": "ENV01",
+          "source_id": "ENV01",
+          "target_audio_id": "U03",
+          "placement_fraction": 0.32
+        },
+        {
+          "event_id": "ENV02",
+          "source_id": "ENV02",
+          "target_audio_id": "U14",
+          "placement_fraction": 0.41
+        }
+      ]
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。",
+          "final_shared_played_prefix": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？",
+          "final_shared_played_prefix": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "建议先发一条三选一确认：愿意走二十分钟、只参加室内，或两种都可；再按结果排四段流程，避免凭偏好替大家决定。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认："
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "建议先发一条三选一确认：",
+          "final_shared_played_prefix": "建议先发一条三选一确认：愿",
+          "discarded_unheard_tail": "意走二十分钟、只参加室内，或两种都可；再按结果排四段流程，避免凭偏好替大家决定。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。",
+          "final_shared_played_prefix": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A005",
+          "at_user_onset_heard_prefix": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。",
+          "final_shared_played_prefix": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A006",
+          "at_user_onset_heard_prefix": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。",
+          "final_shared_played_prefix": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像卡拼一条“运河路线”并讲故事，15:50都回到喝水聊天。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A007",
+          "at_user_onset_heard_prefix": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，",
+          "final_shared_played_prefix": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像",
+          "discarded_unheard_tail": "卡拼一条“运河路线”并讲故事，15:50都回到喝水聊天。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "这句话比较自然。唐岚如果中途自己坐到一边，我需要当场向其他人解释吗？我担心完全不说会有人误以为她不高兴，但公开解释又像是在替她披露个人情况。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A008",
+          "at_user_onset_heard_prefix": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”",
+          "final_shared_played_prefix": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "这句话比较自然。唐岚如果中途自己坐到一边，我需要当场向其他人解释吗？我担心完全不说会有人误以为她不高兴，但公开解释又像是在替她披露个人情况。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "这句话比较自然。唐岚如果中途自己坐到一边，我需要当场向其他人解释吗？我担心完全不说会有人误以为她不高兴，但公开解释又像是在替她披露个人情况。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "明白。那十四点的图像热身具体怎么玩？八个人彼此熟悉程度不同，我不希望按座位逐个发言，那样容易像开会，也会让不想说的人被架住。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A009",
+          "at_user_onset_heard_prefix": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。",
+          "final_shared_played_prefix": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。先两三人随意聊，再邀请愿意的人分享；可以只举卡、不解释，也可以完全旁观。二十五分钟到点就收。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U11",
+        "assistant_id": "A011",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "这句话比较自然。唐岚如果中途自己坐到一边，我需要当场向其他人解释吗？我担心完全不说会有人误以为她不高兴，但公开解释又像是在替她披露个人情况。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "明白。那十四点的图像热身具体怎么玩？八个人彼此熟悉程度不同，我不希望按座位逐个发言，那样容易像开会，也会让不想说的人被架住。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。先两三人随意聊，再邀请愿意的人分享；可以只举卡、不解释，也可以完全旁观。二十五分钟到点就收。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "这句话比较自然。唐岚如果中途自己坐到一边，我需要当场向其他人解释吗？我担心完全不说会有人误以为她不高兴，但公开解释又像是在替她披露个人情况。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "明白。那十四点的图像热身具体怎么玩？八个人彼此熟悉程度不同，我不希望按座位逐个发言，那样容易像开会，也会让不想说的人被架住。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。先两三人随意聊，再邀请愿意的人分享；可以只举卡、不解释，也可以完全旁观。二十五分钟到点就收。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "接下来最可能有分歧的是林骁。他可能觉得这种热身太松，希望马上来一个有输赢的游戏；姑妈又明确不喜欢抢答。我当场怎样给选择，既不拖成讨论会，也不偏向某一边？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A010",
+          "at_user_onset_heard_prefix": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。先两三人随意聊，再邀请愿意的人分享；可以只举卡、不解释，也可以完全旁观。二十五分钟到点就收。",
+          "final_shared_played_prefix": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。先两三人随意聊，再邀请愿意的人分享；可以只举卡、不解释，也可以完全旁观。二十五分钟到点就收。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A010",
+            "after_text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。",
+            "text": "可以",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可以回应：“想加点节奏没问题。我们先做十分钟合作热身，再由大家选二十分钟分队挑战或继续轻松版；不参赛的人可当观察员、计分或聊天。”这样既承认林骁，也不把竞争强加给所有人。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U12",
+        "assistant_id": "A012",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "这句话比较自然。唐岚如果中途自己坐到一边，我需要当场向其他人解释吗？我担心完全不说会有人误以为她不高兴，但公开解释又像是在替她披露个人情况。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "明白。那十四点的图像热身具体怎么玩？八个人彼此熟悉程度不同，我不希望按座位逐个发言，那样容易像开会，也会让不想说的人被架住。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。先两三人随意聊，再邀请愿意的人分享；可以只举卡、不解释，也可以完全旁观。二十五分钟到点就收。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "接下来最可能有分歧的是林骁。他可能觉得这种热身太松，希望马上来一个有输赢的游戏；姑妈又明确不喜欢抢答。我当场怎样给选择，既不拖成讨论会，也不偏向某一边？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "可以回应：“想加点节奏没问题。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "这句话比较自然。唐岚如果中途自己坐到一边，我需要当场向其他人解释吗？我担心完全不说会有人误以为她不高兴，但公开解释又像是在替她披露个人情况。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "明白。那十四点的图像热身具体怎么玩？八个人彼此熟悉程度不同，我不希望按座位逐个发言，那样容易像开会，也会让不想说的人被架住。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。先两三人随意聊，再邀请愿意的人分享；可以只举卡、不解释，也可以完全旁观。二十五分钟到点就收。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "接下来最可能有分歧的是林骁。他可能觉得这种热身太松，希望马上来一个有输赢的游戏；姑妈又明确不喜欢抢答。我当场怎样给选择，既不拖成讨论会，也不偏向某一边？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "可以回应：“想加点节奏没问题。我们"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果他接着说这样不够痛快，希望我直接定一个明确的主体活动呢？我可以做决定，但不能让竞争性游戏变成所有人都必须参加。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A011",
+          "at_user_onset_heard_prefix": "可以回应：“想加点节奏没问题。",
+          "final_shared_played_prefix": "可以回应：“想加点节奏没问题。我们",
+          "discarded_unheard_tail": "先做十分钟合作热身，再由大家选二十分钟分队挑战或继续轻松版；不参赛的人可当观察员、计分或聊天。”这样既承认林骁，也不把竞争强加给所有人。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A010",
+            "after_text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。",
+            "text": "可以",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "那就明确分层：共享主体定为规则短的合作卡牌任务，限三十分钟；竞争版只作为随后十五分钟的支线。你负责宣布边界，不再现场辩论，但同时保留旁观、计分和退出选择。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U13",
+        "assistant_id": "A013",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "这句话比较自然。唐岚如果中途自己坐到一边，我需要当场向其他人解释吗？我担心完全不说会有人误以为她不高兴，但公开解释又像是在替她披露个人情况。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "明白。那十四点的图像热身具体怎么玩？八个人彼此熟悉程度不同，我不希望按座位逐个发言，那样容易像开会，也会让不想说的人被架住。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。先两三人随意聊，再邀请愿意的人分享；可以只举卡、不解释，也可以完全旁观。二十五分钟到点就收。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "接下来最可能有分歧的是林骁。他可能觉得这种热身太松，希望马上来一个有输赢的游戏；姑妈又明确不喜欢抢答。我当场怎样给选择，既不拖成讨论会，也不偏向某一边？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "可以回应：“想加点节奏没问题。我们"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果他接着说这样不够痛快，希望我直接定一个明确的主体活动呢？我可以做决定，但不能让竞争性游戏变成所有人都必须参加。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "那就明确分层：共享主体定为规则短的合作卡牌任务，限三十分钟；竞争版只作为随后十五分钟的支线。你负责宣布边界，不再现场辩论，但同时保留旁观、计分和退出选择。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "这句话比较自然。唐岚如果中途自己坐到一边，我需要当场向其他人解释吗？我担心完全不说会有人误以为她不高兴，但公开解释又像是在替她披露个人情况。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "明白。那十四点的图像热身具体怎么玩？八个人彼此熟悉程度不同，我不希望按座位逐个发言，那样容易像开会，也会让不想说的人被架住。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。先两三人随意聊，再邀请愿意的人分享；可以只举卡、不解释，也可以完全旁观。二十五分钟到点就收。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "接下来最可能有分歧的是林骁。他可能觉得这种热身太松，希望马上来一个有输赢的游戏；姑妈又明确不喜欢抢答。我当场怎样给选择，既不拖成讨论会，也不偏向某一边？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "可以回应：“想加点节奏没问题。我们"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果他接着说这样不够痛快，希望我直接定一个明确的主体活动呢？我可以做决定，但不能让竞争性游戏变成所有人都必须参加。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "那就明确分层：共享主体定为规则短的合作卡牌任务，限三十分钟；竞争版只作为随后十五分钟的支线。你负责宣布边界，不再现场辩论，但同时保留旁观、计分和退出选择。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "这个边界我赞成。请给我一句当场能直接说的话，语气要明确，但别像在否定林骁的提议，也别让姑妈觉得竞争环节马上要压过聊天。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A012",
+          "at_user_onset_heard_prefix": "那就明确分层：共享主体定为规则短的合作卡牌任务，限三十分钟；竞争版只作为随后十五分钟的支线。你负责宣布边界，不再现场辩论，但同时保留旁观、计分和退出选择。",
+          "final_shared_played_prefix": "那就明确分层：共享主体定为规则短的合作卡牌任务，限三十分钟；竞争版只作为随后十五分钟的支线。你负责宣布边界，不再现场辩论，但同时保留旁观、计分和退出选择。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A010",
+            "after_text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。",
+            "text": "可以",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "你可以说：“有目标的游戏我们会保留，但先做三十分钟合作版，让每个人都能按舒服的方式加入。之后想比一轮的继续，不想参赛的就聊天或帮忙计分。”",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U14",
+        "assistant_id": "A014",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "这句话比较自然。唐岚如果中途自己坐到一边，我需要当场向其他人解释吗？我担心完全不说会有人误以为她不高兴，但公开解释又像是在替她披露个人情况。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "明白。那十四点的图像热身具体怎么玩？八个人彼此熟悉程度不同，我不希望按座位逐个发言，那样容易像开会，也会让不想说的人被架住。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。先两三人随意聊，再邀请愿意的人分享；可以只举卡、不解释，也可以完全旁观。二十五分钟到点就收。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "接下来最可能有分歧的是林骁。他可能觉得这种热身太松，希望马上来一个有输赢的游戏；姑妈又明确不喜欢抢答。我当场怎样给选择，既不拖成讨论会，也不偏向某一边？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "可以回应：“想加点节奏没问题。我们"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果他接着说这样不够痛快，希望我直接定一个明确的主体活动呢？我可以做决定，但不能让竞争性游戏变成所有人都必须参加。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "那就明确分层：共享主体定为规则短的合作卡牌任务，限三十分钟；竞争版只作为随后十五分钟的支线。你负责宣布边界，不再现场辩论，但同时保留旁观、计分和退出选择。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "这个边界我赞成。请给我一句当场能直接说的话，语气要明确，但别像在否定林骁的提议，也别让姑妈觉得竞争环节马上要压过聊天。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "你可以说：“有目标的游戏我们会保留，但先做三十分钟合作版，让每个人都能按舒服的方式加入。之后想比一轮的继续，不想参赛的就聊天或帮忙计分。”"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "这句话比较自然。唐岚如果中途自己坐到一边，我需要当场向其他人解释吗？我担心完全不说会有人误以为她不高兴，但公开解释又像是在替她披露个人情况。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "明白。那十四点的图像热身具体怎么玩？八个人彼此熟悉程度不同，我不希望按座位逐个发言，那样容易像开会，也会让不想说的人被架住。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。先两三人随意聊，再邀请愿意的人分享；可以只举卡、不解释，也可以完全旁观。二十五分钟到点就收。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "接下来最可能有分歧的是林骁。他可能觉得这种热身太松，希望马上来一个有输赢的游戏；姑妈又明确不喜欢抢答。我当场怎样给选择，既不拖成讨论会，也不偏向某一边？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "可以回应：“想加点节奏没问题。我们"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果他接着说这样不够痛快，希望我直接定一个明确的主体活动呢？我可以做决定，但不能让竞争性游戏变成所有人都必须参加。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "那就明确分层：共享主体定为规则短的合作卡牌任务，限三十分钟；竞争版只作为随后十五分钟的支线。你负责宣布边界，不再现场辩论，但同时保留旁观、计分和退出选择。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "这个边界我赞成。请给我一句当场能直接说的话，语气要明确，但别像在否定林骁的提议，也别让姑妈觉得竞争环节马上要压过聊天。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "你可以说：“有目标的游戏我们会保留，但先做三十分钟合作版，让每个人都能按舒服的方式加入。之后想比一轮的继续，不想参赛的就聊天或帮忙计分。”"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "还有个临场问题，如果有人提前走，或者大家明显累了，我该怎样缩短后半段？反过来，如果四点半以后气氛还很好，也要能自然延长到六点，不能只剩漫无目的地坐着。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A013",
+          "at_user_onset_heard_prefix": "你可以说：“有目标的游戏我们会保留，但先做三十分钟合作版，让每个人都能按舒服的方式加入。之后想比一轮的继续，不想参赛的就聊天或帮忙计分。”",
+          "final_shared_played_prefix": "你可以说：“有目标的游戏我们会保留，但先做三十分钟合作版，让每个人都能按舒服的方式加入。之后想比一轮的继续，不想参赛的就聊天或帮忙计分。”",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A010",
+            "after_text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。",
+            "text": "可以",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "把16:30后设成三级弹性：先进行二十分钟自由聊天或短牌局；16:50看精力，疲惫就转入合照和轻量收尾，兴致好则再开一轮图像故事；17:40统一进入告别，最晚18:00结束。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U15",
+        "assistant_id": "A015",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "这句话比较自然。唐岚如果中途自己坐到一边，我需要当场向其他人解释吗？我担心完全不说会有人误以为她不高兴，但公开解释又像是在替她披露个人情况。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "明白。那十四点的图像热身具体怎么玩？八个人彼此熟悉程度不同，我不希望按座位逐个发言，那样容易像开会，也会让不想说的人被架住。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。先两三人随意聊，再邀请愿意的人分享；可以只举卡、不解释，也可以完全旁观。二十五分钟到点就收。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "接下来最可能有分歧的是林骁。他可能觉得这种热身太松，希望马上来一个有输赢的游戏；姑妈又明确不喜欢抢答。我当场怎样给选择，既不拖成讨论会，也不偏向某一边？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "可以回应：“想加点节奏没问题。我们"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果他接着说这样不够痛快，希望我直接定一个明确的主体活动呢？我可以做决定，但不能让竞争性游戏变成所有人都必须参加。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "那就明确分层：共享主体定为规则短的合作卡牌任务，限三十分钟；竞争版只作为随后十五分钟的支线。你负责宣布边界，不再现场辩论，但同时保留旁观、计分和退出选择。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "这个边界我赞成。请给我一句当场能直接说的话，语气要明确，但别像在否定林骁的提议，也别让姑妈觉得竞争环节马上要压过聊天。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "你可以说：“有目标的游戏我们会保留，但先做三十分钟合作版，让每个人都能按舒服的方式加入。之后想比一轮的继续，不想参赛的就聊天或帮忙计分。”"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "还有个临场问题，如果有人提前走，或者大家明显累了，我该怎样缩短后半段？反过来，如果四点半以后气氛还很好，也要能自然延长到六点，不能只剩漫无目的地坐着。"
+          },
+          {
+            "role": "assistant",
+            "id": "A014",
+            "text": "把16:30后设成三级弹性：先进行二十分钟自由聊天或短牌局；16:50看精力，疲惫就转入合照和轻量收尾，兴致好则再开一轮图像故事；17:40统一进入告别，最晚18:00结束。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "这句话比较自然。唐岚如果中途自己坐到一边，我需要当场向其他人解释吗？我担心完全不说会有人误以为她不高兴，但公开解释又像是在替她披露个人情况。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "明白。那十四点的图像热身具体怎么玩？八个人彼此熟悉程度不同，我不希望按座位逐个发言，那样容易像开会，也会让不想说的人被架住。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。先两三人随意聊，再邀请愿意的人分享；可以只举卡、不解释，也可以完全旁观。二十五分钟到点就收。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "接下来最可能有分歧的是林骁。他可能觉得这种热身太松，希望马上来一个有输赢的游戏；姑妈又明确不喜欢抢答。我当场怎样给选择，既不拖成讨论会，也不偏向某一边？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "可以回应：“想加点节奏没问题。我们"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果他接着说这样不够痛快，希望我直接定一个明确的主体活动呢？我可以做决定，但不能让竞争性游戏变成所有人都必须参加。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "那就明确分层：共享主体定为规则短的合作卡牌任务，限三十分钟；竞争版只作为随后十五分钟的支线。你负责宣布边界，不再现场辩论，但同时保留旁观、计分和退出选择。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "这个边界我赞成。请给我一句当场能直接说的话，语气要明确，但别像在否定林骁的提议，也别让姑妈觉得竞争环节马上要压过聊天。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "你可以说：“有目标的游戏我们会保留，但先做三十分钟合作版，让每个人都能按舒服的方式加入。之后想比一轮的继续，不想参赛的就聊天或帮忙计分。”"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "还有个临场问题，如果有人提前走，或者大家明显累了，我该怎样缩短后半段？反过来，如果四点半以后气氛还很好，也要能自然延长到六点，不能只剩漫无目的地坐着。"
+          },
+          {
+            "role": "assistant",
+            "id": "A014",
+            "text": "把16:30后设成三级弹性：先进行二十分钟自由聊天或短牌局；16:50看精力，疲惫就转入合照和轻量收尾，兴致好则再开一轮图像故事；17:40统一进入告别，最晚18:00结束。"
+          },
+          {
+            "role": "user",
+            "id": "U15",
+            "text": "唐岚四点半离开时，我具体怎么说比较好？我既想自然送她，又要让留下的人知道后面还有内容，不要全体都起身进入告别状态。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A014",
+          "at_user_onset_heard_prefix": "把16:30后设成三级弹性：先进行二十分钟自由聊天或短牌局；16:50看精力，疲惫就转入合照和轻量收尾，兴致好则再开一轮图像故事；17:40统一进入告别，最晚18:00结束。",
+          "final_shared_played_prefix": "把16:30后设成三级弹性：先进行二十分钟自由聊天或短牌局；16:50看精力，疲惫就转入合照和轻量收尾，兴致好则再开一轮图像故事；17:40统一进入告别，最晚18:00结束。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A010",
+            "after_text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。",
+            "text": "可以",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC05",
+            "target_assistant_id": "A014",
+            "after_text": "把16:30后设成三级弹性：先进行二十分钟自由聊天或短牌局；",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可以说：“唐岚今天先到这里，谢谢你一起参加前面的活动，路上慢点。我们其他人先坐着喝水，十分钟后看大家想开短牌局，还是继续聊刚才的故事。”",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U16",
+        "assistant_id": "A016",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "这句话比较自然。唐岚如果中途自己坐到一边，我需要当场向其他人解释吗？我担心完全不说会有人误以为她不高兴，但公开解释又像是在替她披露个人情况。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "明白。那十四点的图像热身具体怎么玩？八个人彼此熟悉程度不同，我不希望按座位逐个发言，那样容易像开会，也会让不想说的人被架住。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。先两三人随意聊，再邀请愿意的人分享；可以只举卡、不解释，也可以完全旁观。二十五分钟到点就收。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "接下来最可能有分歧的是林骁。他可能觉得这种热身太松，希望马上来一个有输赢的游戏；姑妈又明确不喜欢抢答。我当场怎样给选择，既不拖成讨论会，也不偏向某一边？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "可以回应：“想加点节奏没问题。我们"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果他接着说这样不够痛快，希望我直接定一个明确的主体活动呢？我可以做决定，但不能让竞争性游戏变成所有人都必须参加。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "那就明确分层：共享主体定为规则短的合作卡牌任务，限三十分钟；竞争版只作为随后十五分钟的支线。你负责宣布边界，不再现场辩论，但同时保留旁观、计分和退出选择。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "这个边界我赞成。请给我一句当场能直接说的话，语气要明确，但别像在否定林骁的提议，也别让姑妈觉得竞争环节马上要压过聊天。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "你可以说：“有目标的游戏我们会保留，但先做三十分钟合作版，让每个人都能按舒服的方式加入。之后想比一轮的继续，不想参赛的就聊天或帮忙计分。”"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "还有个临场问题，如果有人提前走，或者大家明显累了，我该怎样缩短后半段？反过来，如果四点半以后气氛还很好，也要能自然延长到六点，不能只剩漫无目的地坐着。"
+          },
+          {
+            "role": "assistant",
+            "id": "A014",
+            "text": "把16:30后设成三级弹性：先进行二十分钟自由聊天或短牌局；16:50看精力，疲惫就转入合照和轻量收尾，兴致好则再开一轮图像故事；17:40统一进入告别，最晚18:00结束。"
+          },
+          {
+            "role": "user",
+            "id": "U15",
+            "text": "唐岚四点半离开时，我具体怎么说比较好？我既想自然送她，又要让留下的人知道后面还有内容，不要全体都起身进入告别状态。"
+          },
+          {
+            "role": "assistant",
+            "id": "A015",
+            "text": "可以说：“唐岚今天先到这里，谢谢你一起参加前面的活动，路上慢点。我们其他人先坐着喝水，十分钟后看大家想开短牌局，还是继续聊刚才的故事。”"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "这句话比较自然。唐岚如果中途自己坐到一边，我需要当场向其他人解释吗？我担心完全不说会有人误以为她不高兴，但公开解释又像是在替她披露个人情况。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "明白。那十四点的图像热身具体怎么玩？八个人彼此熟悉程度不同，我不希望按座位逐个发言，那样容易像开会，也会让不想说的人被架住。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。先两三人随意聊，再邀请愿意的人分享；可以只举卡、不解释，也可以完全旁观。二十五分钟到点就收。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "接下来最可能有分歧的是林骁。他可能觉得这种热身太松，希望马上来一个有输赢的游戏；姑妈又明确不喜欢抢答。我当场怎样给选择，既不拖成讨论会，也不偏向某一边？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "可以回应：“想加点节奏没问题。我们"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果他接着说这样不够痛快，希望我直接定一个明确的主体活动呢？我可以做决定，但不能让竞争性游戏变成所有人都必须参加。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "那就明确分层：共享主体定为规则短的合作卡牌任务，限三十分钟；竞争版只作为随后十五分钟的支线。你负责宣布边界，不再现场辩论，但同时保留旁观、计分和退出选择。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "这个边界我赞成。请给我一句当场能直接说的话，语气要明确，但别像在否定林骁的提议，也别让姑妈觉得竞争环节马上要压过聊天。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "你可以说：“有目标的游戏我们会保留，但先做三十分钟合作版，让每个人都能按舒服的方式加入。之后想比一轮的继续，不想参赛的就聊天或帮忙计分。”"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "还有个临场问题，如果有人提前走，或者大家明显累了，我该怎样缩短后半段？反过来，如果四点半以后气氛还很好，也要能自然延长到六点，不能只剩漫无目的地坐着。"
+          },
+          {
+            "role": "assistant",
+            "id": "A014",
+            "text": "把16:30后设成三级弹性：先进行二十分钟自由聊天或短牌局；16:50看精力，疲惫就转入合照和轻量收尾，兴致好则再开一轮图像故事；17:40统一进入告别，最晚18:00结束。"
+          },
+          {
+            "role": "user",
+            "id": "U15",
+            "text": "唐岚四点半离开时，我具体怎么说比较好？我既想自然送她，又要让留下的人知道后面还有内容，不要全体都起身进入告别状态。"
+          },
+          {
+            "role": "assistant",
+            "id": "A015",
+            "text": "可以说：“唐岚今天先到这里，谢谢你一起参加前面的活动，路上慢点。我们其他人先坐着喝水，十分钟后看大家想开短牌局，还是继续聊刚才的故事。”"
+          },
+          {
+            "role": "user",
+            "id": "U16",
+            "text": "好，最后请把定稿流程完整回读一遍，按时间顺序写清晴雨替换、唐岚离场和后半段伸缩。我现场只看这一版，所以尽量紧凑，但关键选择和主持原则不要漏。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A015",
+          "at_user_onset_heard_prefix": "可以说：“唐岚今天先到这里，谢谢你一起参加前面的活动，路上慢点。我们其他人先坐着喝水，十分钟后看大家想开短牌局，还是继续聊刚才的故事。”",
+          "final_shared_played_prefix": "可以说：“唐岚今天先到这里，谢谢你一起参加前面的活动，路上慢点。我们其他人先坐着喝水，十分钟后看大家想开短牌局，还是继续聊刚才的故事。”",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A010",
+            "after_text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。",
+            "text": "可以",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC05",
+            "target_assistant_id": "A014",
+            "after_text": "把16:30后设成三级弹性：先进行二十分钟自由聊天或短牌局；",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "13:30到场缓冲；14:00自选图像卡热身；14:30三十分钟合作卡牌任务，竞争版仅作短支线；15:05坐下休息；15:25晴天短走、随时折返，雨天坐着拼“运河路线”；15:50合流聊天。16:20喝水过渡，16:30自然送唐岚；之后短牌局或自由聊天，16:50按精力收尾或加一轮图像故事，17:40告别，18:00前结束。全程可旁观、休息或暂离。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A002",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。",
+        "event_text": "嗯，清楚",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC02",
+        "kind": "backchannels",
+        "target_assistant_id": "A005",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。",
+        "event_text": "对",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC03",
+        "kind": "backchannels",
+        "target_assistant_id": "A008",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。",
+        "event_text": "嗯",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC04",
+        "kind": "backchannels",
+        "target_assistant_id": "A010",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "这句话比较自然。唐岚如果中途自己坐到一边，我需要当场向其他人解释吗？我担心完全不说会有人误以为她不高兴，但公开解释又像是在替她披露个人情况。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "明白。那十四点的图像热身具体怎么玩？八个人彼此熟悉程度不同，我不希望按座位逐个发言，那样容易像开会，也会让不想说的人被架住。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。",
+        "event_text": "可以",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC05",
+        "kind": "backchannels",
+        "target_assistant_id": "A014",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排本周六下午的亲友聚会，一共八个人，从一点半到六点。场地是小区活动室，走五分钟能到运河步道。大家对聊天、散步和桌游各有偏好，我想做一套能临场调整、又不把人弄得太累的流程。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先确认四类信息：每个人的体力限制、偏好的互动方式、能否全程参加，以及是否需要独处或旁观。你可以先说最影响安排的几位，我再帮你搭主流程。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "最关键的是我母亲陈丽华，走路最好不超过二十分钟，而且要随时能坐。姑妈林月琴喜欢安静聊天，不愿意抢答。唐岚在人多时会独自坐一会儿，并且最迟四点半离开。表弟林骁正相反，喜欢目标明确、稍微有竞争性的游戏。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先锁定三条底线：全员核心放在16:30前，任何环节都可旁观或暂离，散步不超过二十分钟且能随时回座。其他人更偏户外还是游戏？现场有哪些现成物品？"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我父亲赵明诚想沿运河走一小段、拍几张合照，但不想走远。许宁接受图像联想或合作活动，只要规则几分钟能讲清。现场有扑克牌、图像联想卡、大桌和座椅，我还能带二十张纸、八支彩笔和便携音箱。你先给我一个组织框架。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "建议先发一条三选一确认：愿"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "不用再发确认了，现有回复已经够判断，而且时间不多。你直接按这些条件给我一版带时间点的安排，后面我们再调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "可以：13:30到场缓冲；14:00图像卡合作交流四十分钟；14:40休息；15:00散步与室内聊天并行二十分钟；15:30轻量分队游戏；16:20合照，随后转入自由活动。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "方向可以，但我希望唐岚离开前参与到主要内容，同时不能把四点半做成全场高潮，否则她一走，剩下的人会觉得活动结束了。请把这个衔接重新处理。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "把共享核心前移，但不以送别收束：14:00图像热身，14:30合作卡牌挑战，15:05休息，15:25室内外任选，16:00重新合流。16:20喝水聊天，唐岚离开后自然进入可选活动。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "这个顺序顺多了。天气现在还不确定，我不想当天一下雨就推翻整套安排。室外和室内版本怎样做成同一个节奏，切换时大家不会觉得是临时凑的？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "保留相同时间点和主题，只替换活动载体。15:25统一叫“运河印象”：晴天短走并拍照，雨天坐着用图像卡拼路线、讲沿途故事；两版都在15:50结束并回到合流。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主题统一很好。不过晴天版还要明确照顾我母亲的膝盖，雨天版也别变成需要站着贴纸、来回走动的手作。你把这一段说得更具体些。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "把15:25设成同一主题的双版本：晴天走十五到二十分钟，陈丽华随时折返；雨天全员坐桌边，用图像"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "对，室内就保持坐着，不过开场也很关键。我怎样说明可以旁观、休息或暂时离开，又不会让大家觉得我是在提前暗示谁体力差、谁不合群？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "开场可以说：“今天没有必须全程参加的项目，想旁观、休息或出去透气都可以。每段结束我会报下一个选项，大家按当时的精力选，不用解释原因。”"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "这句话比较自然。唐岚如果中途自己坐到一边，我需要当场向其他人解释吗？我担心完全不说会有人误以为她不高兴，但公开解释又像是在替她披露个人情况。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "不用点名解释。你可以对全体轻描淡写地说：“这段大家自由切换，想安静坐会儿也完全正常。”若有人私下询问，只说她在按自己的节奏休息，不代她说明更多。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "明白。那十四点的图像热身具体怎么玩？八个人彼此熟悉程度不同，我不希望按座位逐个发言，那样容易像开会，也会让不想说的人被架住。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "把卡片摊开，每人自愿选一张代表“今天想要的聚会感觉”。先两三人随意聊，再邀请愿意的人分享；可以只举卡、不解释，也可以完全旁观。二十五分钟到点就收。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "接下来最可能有分歧的是林骁。他可能觉得这种热身太松，希望马上来一个有输赢的游戏；姑妈又明确不喜欢抢答。我当场怎样给选择，既不拖成讨论会，也不偏向某一边？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "可以回应：“想加点节奏没问题。我们"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果他接着说这样不够痛快，希望我直接定一个明确的主体活动呢？我可以做决定，但不能让竞争性游戏变成所有人都必须参加。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "那就明确分层：共享主体定为规则短的合作卡牌任务，限三十分钟；竞争版只作为随后十五分钟的支线。你负责宣布边界，不再现场辩论，但同时保留旁观、计分和退出选择。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "这个边界我赞成。请给我一句当场能直接说的话，语气要明确，但别像在否定林骁的提议，也别让姑妈觉得竞争环节马上要压过聊天。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "你可以说：“有目标的游戏我们会保留，但先做三十分钟合作版，让每个人都能按舒服的方式加入。之后想比一轮的继续，不想参赛的就聊天或帮忙计分。”"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "还有个临场问题，如果有人提前走，或者大家明显累了，我该怎样缩短后半段？反过来，如果四点半以后气氛还很好，也要能自然延长到六点，不能只剩漫无目的地坐着。"
+          },
+          {
+            "role": "assistant",
+            "id": "A014",
+            "text": "把16:30后设成三级弹性：先进行二十分钟自由聊天或短牌局；"
+          }
+        ],
+        "at_event_onset_heard_prefix": "把16:30后设成三级弹性：先进行二十分钟自由聊天或短牌局；",
+        "event_text": "明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

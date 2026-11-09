@@ -1,0 +1,714 @@
+{
+  "case_id": "R01-V01",
+  "scene": {
+    "domain_id": "D23",
+    "domain": "居住、房产与公用事业",
+    "scenario_id": "D23-S07",
+    "scenario": "社区生活信息"
+  },
+  "task_style": "常识问答",
+  "task_instance": {
+    "goal": "弄清物业、业主委员会和居委会在社区事务中的基本分工，并通过几个常见的小区问题判断通常应先向哪一方咨询或反映。"
+  },
+  "user_seed": {
+    "role_relation": "刚搬入新小区、正在熟悉社区办事方式的年轻住户",
+    "task_familiarity": "low"
+  },
+  "voice_profile": "男性，感知二十多岁，音色偏清亮，吐字清楚，语气克制平稳，整体听起来比较年轻而谨慎。",
+  "available_modalities": [
+    "audio"
+  ],
+  "capability_contract": {
+    "interaction_modalities": [
+      "audio"
+    ],
+    "available_tools": [],
+    "external_state_access": "none",
+    "external_side_effects": "forbidden"
+  },
+  "dialogue_length_plan": {
+    "schema": "duplex_v2.dialogue_length_plan.v1",
+    "tier": "long",
+    "target_turns": 21,
+    "min_turns": 20,
+    "max_turns": 22
+  },
+  "dialogue_length_instruction": "本条完整对话目标为 21 个主轮，允许 20–22 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+  "interaction_profile": {
+    "schema": "duplex_v2.interaction_profile.v1",
+    "formality": "neutral",
+    "directness": "balanced",
+    "emotional_expressiveness": "reserved",
+    "verbosity": "detailed",
+    "initiative": "medium",
+    "caution": "high",
+    "patience": "medium",
+    "behavioral_notes": [
+      "通常会先交代自己理解到的情况，再逐步补充疑问和边界条件。",
+      "对职责划分和例外情形较为谨慎，常要求把相近概念区分清楚。",
+      "愿意听较完整的说明，遇到不确定处会用温和的追问确认。"
+    ]
+  },
+  "ambient_catalog": {
+    "schema": "duplex_v2.ambient_catalog.v1",
+    "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+    "assets": [
+      {
+        "asset_id": "fan-fsd50k-eval-419427",
+        "category": "fan",
+        "mode": "bed",
+        "tags": [
+          "indoor",
+          "home",
+          "office"
+        ],
+        "description": "稳定的真实机械风扇或通风声",
+        "duration_seconds": 10.3909375
+      },
+      {
+        "asset_id": "fan-fsd50k-eval-235362",
+        "category": "fan",
+        "mode": "bed",
+        "tags": [
+          "indoor",
+          "home",
+          "office"
+        ],
+        "description": "稳定的真实机械风扇或通风声",
+        "duration_seconds": 11.0
+      },
+      {
+        "asset_id": "fan-fsd50k-eval-415925",
+        "category": "fan",
+        "mode": "bed",
+        "tags": [
+          "indoor",
+          "home",
+          "office"
+        ],
+        "description": "稳定的真实机械风扇或通风声",
+        "duration_seconds": 7.178
+      },
+      {
+        "asset_id": "traffic-fsd50k-eval-235541",
+        "category": "traffic",
+        "mode": "bed",
+        "tags": [
+          "outdoor",
+          "road",
+          "street",
+          "travel"
+        ],
+        "description": "真实道路车流环境声",
+        "duration_seconds": 29.045875
+      },
+      {
+        "asset_id": "traffic-fsd50k-eval-232686",
+        "category": "traffic",
+        "mode": "bed",
+        "tags": [
+          "outdoor",
+          "road",
+          "street",
+          "travel"
+        ],
+        "description": "真实道路车流环境声",
+        "duration_seconds": 10.3445
+      },
+      {
+        "asset_id": "traffic-fsd50k-eval-124020",
+        "category": "traffic",
+        "mode": "bed",
+        "tags": [
+          "outdoor",
+          "road",
+          "street",
+          "travel"
+        ],
+        "description": "真实道路车流环境声",
+        "duration_seconds": 24.78875
+      },
+      {
+        "asset_id": "rain-fsd50k-eval-382582",
+        "category": "rain",
+        "mode": "bed",
+        "tags": [
+          "outdoor",
+          "window",
+          "rain",
+          "home"
+        ],
+        "description": "真实连续雨声",
+        "duration_seconds": 9.9788125
+      },
+      {
+        "asset_id": "rain-fsd50k-eval-21189",
+        "category": "rain",
+        "mode": "bed",
+        "tags": [
+          "outdoor",
+          "window",
+          "rain",
+          "home"
+        ],
+        "description": "真实连续雨声",
+        "duration_seconds": 9.962
+      },
+      {
+        "asset_id": "rain-fsd50k-eval-238016",
+        "category": "rain",
+        "mode": "bed",
+        "tags": [
+          "outdoor",
+          "window",
+          "rain",
+          "home"
+        ],
+        "description": "真实连续雨声",
+        "duration_seconds": 11.32
+      },
+      {
+        "asset_id": "crowd-fsd50k-eval-185058",
+        "category": "crowd",
+        "mode": "bed",
+        "tags": [
+          "public",
+          "crowd",
+          "cafe",
+          "station"
+        ],
+        "description": "远处人群嘈杂环境声，无指定第三方台词",
+        "duration_seconds": 5.2114375
+      },
+      {
+        "asset_id": "crowd-fsd50k-eval-121877",
+        "category": "crowd",
+        "mode": "bed",
+        "tags": [
+          "public",
+          "crowd",
+          "cafe",
+          "station"
+        ],
+        "description": "远处人群嘈杂环境声，无指定第三方台词",
+        "duration_seconds": 11.696
+      },
+      {
+        "asset_id": "crowd-fsd50k-eval-340358",
+        "category": "crowd",
+        "mode": "bed",
+        "tags": [
+          "public",
+          "crowd",
+          "cafe",
+          "station"
+        ],
+        "description": "远处人群嘈杂环境声，无指定第三方台词",
+        "duration_seconds": 4.2745
+      },
+      {
+        "asset_id": "paper-fsd50k-eval-82562",
+        "category": "paper",
+        "mode": "event",
+        "tags": [
+          "indoor",
+          "paper",
+          "office",
+          "home"
+        ],
+        "description": "完整的纸张翻动、揉动或撕纸声效",
+        "duration_seconds": 1.0094375
+      },
+      {
+        "asset_id": "paper-fsd50k-eval-121200",
+        "category": "paper",
+        "mode": "event",
+        "tags": [
+          "indoor",
+          "paper",
+          "office",
+          "home"
+        ],
+        "description": "完整的纸张翻动、揉动或撕纸声效",
+        "duration_seconds": 0.83525
+      },
+      {
+        "asset_id": "paper-fsd50k-eval-343098",
+        "category": "paper",
+        "mode": "event",
+        "tags": [
+          "indoor",
+          "paper",
+          "office",
+          "home"
+        ],
+        "description": "完整的纸张翻动、揉动或撕纸声效",
+        "duration_seconds": 0.796
+      },
+      {
+        "asset_id": "footsteps-fsd50k-eval-153104",
+        "category": "footsteps",
+        "mode": "event",
+        "tags": [
+          "footsteps",
+          "indoor",
+          "outdoor"
+        ],
+        "description": "完整的短段真实脚步声",
+        "duration_seconds": 3.4691875
+      },
+      {
+        "asset_id": "footsteps-fsd50k-eval-392303",
+        "category": "footsteps",
+        "mode": "event",
+        "tags": [
+          "footsteps",
+          "indoor",
+          "outdoor"
+        ],
+        "description": "完整的短段真实脚步声",
+        "duration_seconds": 3.6849375
+      },
+      {
+        "asset_id": "footsteps-fsd50k-eval-272381",
+        "category": "footsteps",
+        "mode": "event",
+        "tags": [
+          "footsteps",
+          "indoor",
+          "outdoor"
+        ],
+        "description": "完整的短段真实脚步声",
+        "duration_seconds": 3.933375
+      },
+      {
+        "asset_id": "door-fsd50k-eval-71212",
+        "category": "door",
+        "mode": "event",
+        "tags": [
+          "door",
+          "indoor",
+          "home",
+          "office"
+        ],
+        "description": "完整的短段真实开关门声",
+        "duration_seconds": 2.3638125
+      },
+      {
+        "asset_id": "door-fsd50k-eval-119077",
+        "category": "door",
+        "mode": "event",
+        "tags": [
+          "door",
+          "indoor",
+          "home",
+          "office"
+        ],
+        "description": "完整的短段真实开关门声",
+        "duration_seconds": 2.7944375
+      },
+      {
+        "asset_id": "door-fsd50k-eval-209519",
+        "category": "door",
+        "mode": "event",
+        "tags": [
+          "door",
+          "indoor",
+          "home",
+          "office"
+        ],
+        "description": "完整的短段真实开关门声",
+        "duration_seconds": 1.0398125
+      },
+      {
+        "asset_id": "keyboard-fsd50k-eval-399740",
+        "category": "keyboard",
+        "mode": "event",
+        "tags": [
+          "keyboard",
+          "office",
+          "computer",
+          "indoor"
+        ],
+        "description": "完整的短段真实电脑键盘输入声",
+        "duration_seconds": 2.322
+      },
+      {
+        "asset_id": "keyboard-fsd50k-eval-233057",
+        "category": "keyboard",
+        "mode": "event",
+        "tags": [
+          "keyboard",
+          "office",
+          "computer",
+          "indoor"
+        ],
+        "description": "完整的短段真实电脑键盘输入声",
+        "duration_seconds": 2.4700625
+      },
+      {
+        "asset_id": "keyboard-fsd50k-eval-411545",
+        "category": "keyboard",
+        "mode": "event",
+        "tags": [
+          "keyboard",
+          "office",
+          "computer",
+          "indoor"
+        ],
+        "description": "完整的短段真实电脑键盘输入声",
+        "duration_seconds": 2.5686875
+      },
+      {
+        "asset_id": "water_tap-fsd50k-eval-232499",
+        "category": "water_tap",
+        "mode": "event",
+        "tags": [
+          "water",
+          "kitchen",
+          "home",
+          "indoor"
+        ],
+        "description": "完整的短段真实水龙头声",
+        "duration_seconds": 0.842
+      },
+      {
+        "asset_id": "water_tap-fsd50k-eval-402127",
+        "category": "water_tap",
+        "mode": "event",
+        "tags": [
+          "water",
+          "kitchen",
+          "home",
+          "indoor"
+        ],
+        "description": "完整的短段真实水龙头声",
+        "duration_seconds": 2.0915
+      },
+      {
+        "asset_id": "water_tap-fsd50k-eval-402128",
+        "category": "water_tap",
+        "mode": "event",
+        "tags": [
+          "water",
+          "kitchen",
+          "home",
+          "indoor"
+        ],
+        "description": "完整的短段真实水龙头声",
+        "duration_seconds": 2.0915
+      },
+      {
+        "asset_id": "birds-fsd50k-eval-86343",
+        "category": "birds",
+        "mode": "bed",
+        "tags": [
+          "birds",
+          "park",
+          "outdoor",
+          "nature"
+        ],
+        "description": "真实鸟鸣环境声",
+        "duration_seconds": 7.5366875
+      },
+      {
+        "asset_id": "birds-fsd50k-eval-57907",
+        "category": "birds",
+        "mode": "bed",
+        "tags": [
+          "birds",
+          "park",
+          "outdoor",
+          "nature"
+        ],
+        "description": "真实鸟鸣环境声",
+        "duration_seconds": 12.5773125
+      },
+      {
+        "asset_id": "birds-fsd50k-eval-319512",
+        "category": "birds",
+        "mode": "bed",
+        "tags": [
+          "birds",
+          "park",
+          "outdoor",
+          "nature"
+        ],
+        "description": "真实鸟鸣环境声",
+        "duration_seconds": 12.755625
+      },
+      {
+        "asset_id": "wind-fsd50k-eval-113173",
+        "category": "wind",
+        "mode": "bed",
+        "tags": [
+          "wind",
+          "outdoor",
+          "nature"
+        ],
+        "description": "真实风声环境声",
+        "duration_seconds": 11.2184375
+      },
+      {
+        "asset_id": "wind-fsd50k-eval-113175",
+        "category": "wind",
+        "mode": "bed",
+        "tags": [
+          "wind",
+          "outdoor",
+          "nature"
+        ],
+        "description": "真实风声环境声",
+        "duration_seconds": 7.8773125
+      },
+      {
+        "asset_id": "wind-fsd50k-eval-113176",
+        "category": "wind",
+        "mode": "bed",
+        "tags": [
+          "wind",
+          "outdoor",
+          "nature"
+        ],
+        "description": "真实风声环境声",
+        "duration_seconds": 7.6341875
+      },
+      {
+        "asset_id": "doorbell-fsd50k-eval-348322",
+        "category": "doorbell",
+        "mode": "event",
+        "tags": [
+          "doorbell",
+          "home",
+          "door",
+          "indoor"
+        ],
+        "description": "完整的真实门铃声效",
+        "duration_seconds": 1.625
+      },
+      {
+        "asset_id": "doorbell-fsd50k-eval-426594",
+        "category": "doorbell",
+        "mode": "event",
+        "tags": [
+          "doorbell",
+          "home",
+          "door",
+          "indoor"
+        ],
+        "description": "完整的真实门铃声效",
+        "duration_seconds": 0.3666875
+      },
+      {
+        "asset_id": "doorbell-fsd50k-eval-332563",
+        "category": "doorbell",
+        "mode": "event",
+        "tags": [
+          "doorbell",
+          "home",
+          "door",
+          "indoor"
+        ],
+        "description": "完整的真实门铃声效",
+        "duration_seconds": 4.0
+      }
+    ]
+  },
+  "ambient_control": {
+    "schema": "duplex_v2.soundscape_control.v3",
+    "seed": 3069337548,
+    "mode": "quiet",
+    "discrete_event_target": 0,
+    "max_ambient_layers": 2,
+    "side_speech_requested": false,
+    "speech_kind_preferences": [
+      "third_party",
+      "machine",
+      "user_to_third_party"
+    ]
+  },
+  "ambient_sampling": {
+    "schema": "duplex_v2.ambient_preferences.v1",
+    "seed": 202611090001,
+    "slot": 7,
+    "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+    "categories": {
+      "bed": [
+        "crowd",
+        "birds",
+        "wind",
+        "rain",
+        "traffic",
+        "fan"
+      ],
+      "event": [
+        "keyboard",
+        "door",
+        "footsteps",
+        "doorbell",
+        "paper",
+        "water_tap"
+      ]
+    },
+    "recordings": {
+      "bed:birds": [
+        "birds-fsd50k-eval-86343",
+        "birds-fsd50k-eval-57907",
+        "birds-fsd50k-eval-319512"
+      ],
+      "bed:crowd": [
+        "crowd-fsd50k-eval-340358",
+        "crowd-fsd50k-eval-121877",
+        "crowd-fsd50k-eval-185058"
+      ],
+      "bed:fan": [
+        "fan-fsd50k-eval-235362",
+        "fan-fsd50k-eval-419427",
+        "fan-fsd50k-eval-415925"
+      ],
+      "bed:rain": [
+        "rain-fsd50k-eval-21189",
+        "rain-fsd50k-eval-238016",
+        "rain-fsd50k-eval-382582"
+      ],
+      "bed:traffic": [
+        "traffic-fsd50k-eval-124020",
+        "traffic-fsd50k-eval-235541",
+        "traffic-fsd50k-eval-232686"
+      ],
+      "bed:wind": [
+        "wind-fsd50k-eval-113173",
+        "wind-fsd50k-eval-113176",
+        "wind-fsd50k-eval-113175"
+      ],
+      "event:door": [
+        "door-fsd50k-eval-71212",
+        "door-fsd50k-eval-119077",
+        "door-fsd50k-eval-209519"
+      ],
+      "event:doorbell": [
+        "doorbell-fsd50k-eval-348322",
+        "doorbell-fsd50k-eval-332563",
+        "doorbell-fsd50k-eval-426594"
+      ],
+      "event:footsteps": [
+        "footsteps-fsd50k-eval-153104",
+        "footsteps-fsd50k-eval-272381",
+        "footsteps-fsd50k-eval-392303"
+      ],
+      "event:keyboard": [
+        "keyboard-fsd50k-eval-233057",
+        "keyboard-fsd50k-eval-411545",
+        "keyboard-fsd50k-eval-399740"
+      ],
+      "event:paper": [
+        "paper-fsd50k-eval-343098",
+        "paper-fsd50k-eval-82562",
+        "paper-fsd50k-eval-121200"
+      ],
+      "event:water_tap": [
+        "water_tap-fsd50k-eval-402128",
+        "water_tap-fsd50k-eval-232499",
+        "water_tap-fsd50k-eval-402127"
+      ]
+    }
+  },
+  "stage2_soundscape_policy": {
+    "schema": "duplex_v2.soundscape_policy.v3",
+    "quiet_probability": 0.5,
+    "discrete_targets_by_tier": {
+      "short": [
+        0,
+        1
+      ],
+      "medium": [
+        1,
+        2
+      ],
+      "long": [
+        2,
+        4
+      ]
+    },
+    "discrete_count_includes": [
+      "environment_events",
+      "side_speech"
+    ],
+    "max_ambient_layers": 2,
+    "gain_range": [
+      0.3,
+      0.7
+    ],
+    "speech_request_probability": 0.5,
+    "third_party_preference_probability": 0.8,
+    "speech_requires_existing_scene_source": true,
+    "environment_audio": "base_only",
+    "stage2_repair": "atomic_scoped_patch",
+    "stage2_max_judge_attempts": 3,
+    "json_parse_max_retries": 3,
+    "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+    "user_aside_preference_probability": 0.5,
+    "user_voice_source": "stage1_user",
+    "user_aside_requires_present_recipient": true
+  },
+  "stage2_owner_attempt": 2,
+  "current_model_candidate": {
+    "episode_situation": "周日晚上，用户独自在刚租住两周的新家客厅，想趁安静时弄清小区的办事路径；他是租户，与房东联系正常，但对物业、业委会和居委会都不熟。入住后，他遇到过电梯临时停运、楼道堆物和夜间装修声，也在公告栏看到了停车位调整、公共收益及业委会换届等内容，一时分不清谁负责服务执行、谁代表业主议事、谁承担社区协调。他已把三个办事窗口公开张贴的职责短句抄在纸上，但不确定这些说明是否完整，也不知道租户能直接反映哪些问题、哪些事项需要房东以业主身份参与。他希望先厘清基本分工，再用报修、环境秩序、邻里纠纷、费用争议、公共空间改造和居民事务等常见情形判断通常的第一咨询方，并理解职责交叉时如何转交或联动。",
+    "task_reference_data": [
+      "用户从小区物业服务中心门口告示抄下、目前可现场读取的文字是：“公共区域保洁、秩序维护、共用设施日常运行与报修受理。”该告示是否列全职责尚未核实。",
+      "用户从业委会公告栏抄下、目前可现场读取的文字是：“业主大会筹备、公共收益使用意见征集、共有部分改造方案沟通。”用户没有记下公告发布日期，内容可能并非完整职责说明。",
+      "用户从居委会便民服务卡抄下、目前可现场读取的文字是：“居民事务咨询、困难帮扶、矛盾调解、社区政策宣传。”该卡片只列出了部分常用服务。"
+    ],
+    "environment_audio": "客厅内整体安静，近处只有极轻且稳定的室内底噪。门窗方向没有清晰可辨的人声或离散响动，音量始终很低。",
+    "estimated_snr_db": 36,
+    "constraints": [
+      {
+        "constraint_id": "C01",
+        "text": "各类情形以判断通常应先咨询或反映的第一方为主，不把第一咨询方等同于最终决策方或最终处理方。",
+        "kind": "hard"
+      },
+      {
+        "constraint_id": "C02",
+        "text": "需要区分租户可直接反映的日常居住问题与通常需要业主参与表决、授权或行使成员权利的事项。",
+        "kind": "soft"
+      }
+    ],
+    "safety_limits": [],
+    "soundscape_candidate_plan": {
+      "schema": "duplex_v2.soundscape_plan.v4",
+      "mode": "quiet",
+      "ambient_layers": [],
+      "environment_events": [],
+      "side_speech_eligibility": {
+        "user_to_third_party": {
+          "compatible": false,
+          "reason": "用户当前独自在客厅，故事中没有明确同场且可接收旁话的人。",
+          "source": null
+        },
+        "third_party": {
+          "compatible": false,
+          "reason": "当前场景中没有同场第三方，物业、业委会、居委会人员也未出现在室内。",
+          "source": null
+        },
+        "machine": {
+          "compatible": false,
+          "reason": "故事中没有正在播报或适合发出语音提示的机器。",
+          "source": null
+        }
+      }
+    }
+  },
+  "base_sha256": "8d7659436e57bc8017d54881db2e7705e729d1470189bb6ce97bf4e67912c1e6",
+  "judge_findings": [
+    {
+      "severity": "must_fix",
+      "path": "episode_situation",
+      "problem": "常识问答的情境背景明显过长，并扩展成包含多类公告、多个既往事件及大量待辨析事项的复杂剧情，不符合该任务类型所需的最小背景范围。",
+      "evidence": "情境用4个很长的句子同时铺陈“电梯临时停运、楼道堆物和夜间装修声”“停车位调整、公共收益及业委会换届”，又列出报修、环境秩序、邻里纠纷、费用争议、公共空间改造和居民事务等六类情形，整体明显超过常识问答通常约220字的范围。",
+      "repair": "压缩为2至4个短句、约220字以内，仅保留用户是新搬入的租户、对三方分工不熟、手边有三段职责摘录，以及希望用少量典型问题判断第一咨询方和了解租户与业主权限差异；具体摘录继续留在task_reference_data中。"
+    }
+  ],
+  "allowed_repair_paths": [
+    "/episode_situation"
+  ]
+}

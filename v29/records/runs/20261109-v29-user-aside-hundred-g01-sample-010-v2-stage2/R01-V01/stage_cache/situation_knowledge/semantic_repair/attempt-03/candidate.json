@@ -1,0 +1,217 @@
+{
+  "episode_situation": "分手九天后的工作日晚间，用户独自在家。两人因未来生活安排长期谈不拢而分手，前任先提出结束关系，用户虽不舍但当时接受；最后一次见面没有争吵，双方约定一个月内除紧急共同事务外先不联系，此后也没有新的互动或必须处理的事情。用户常在下班通勤后和临睡前想发消息，并反复翻看旧聊天记录，偶尔因此晚睡、工作走神，但仍能正常上班和照顾日常生活。他既想确认前任是否也在想念自己，又隐约期待复合，却还没想清楚双方原有分歧是否可能改变，也担心联系只是为了暂时缓解难受。用户想弄明白这些表现是否属于常见的分手适应反应，怎样从冲动持续时间、联系动机、双方边界和现实问题是否可解决来判断是短暂想念还是值得在冷静后重新联系，并希望先学会一个独自在家、不依赖前任回应或外部工具的延缓冲动小方法。",
+  "task_reference_data": [],
+  "environment_audio": "室内整体很安静，只有极轻微而稳定的房间底噪。近处没有明显动作声，远处也没有可辨认的人声或设备提示音。",
+  "estimated_snr_db": 34,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "用户希望先判断冲动和联系动机，不把立即给前任发消息作为默认做法。",
+      "kind": "soft"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "建议中的即时小方法应能由用户独自在家完成，不依赖前任回应或外部工具。",
+      "kind": "soft"
+    }
+  ],
+  "safety_limits": [],
+  "soundscape_plan": {
+    "mode": "quiet",
+    "ambient_layers": [],
+    "environment_events": [],
+    "schema": "duplex_v2.soundscape_plan.v4",
+    "side_speech_sources": [],
+    "side_speech_count": 0,
+    "sampling": {
+      "schema": "duplex_v2.ambient_draw.v3",
+      "policy": {
+        "schema": "duplex_v2.soundscape_policy.v3",
+        "quiet_probability": 0.5,
+        "discrete_targets_by_tier": {
+          "short": [
+            0,
+            1
+          ],
+          "medium": [
+            1,
+            2
+          ],
+          "long": [
+            2,
+            4
+          ]
+        },
+        "discrete_count_includes": [
+          "environment_events",
+          "side_speech"
+        ],
+        "max_ambient_layers": 2,
+        "gain_range": [
+          0.3,
+          0.7
+        ],
+        "speech_request_probability": 0.5,
+        "third_party_preference_probability": 0.8,
+        "speech_requires_existing_scene_source": true,
+        "environment_audio": "base_only",
+        "stage2_repair": "atomic_scoped_patch",
+        "stage2_max_judge_attempts": 3,
+        "json_parse_max_retries": 3,
+        "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+        "user_aside_preference_probability": 0.5,
+        "user_voice_source": "stage1_user",
+        "user_aside_requires_present_recipient": true
+      },
+      "preferences": {
+        "schema": "duplex_v2.ambient_preferences.v1",
+        "seed": 202611090001,
+        "slot": 9,
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "categories": {
+          "bed": [
+            "wind",
+            "rain",
+            "traffic",
+            "fan",
+            "crowd",
+            "birds"
+          ],
+          "event": [
+            "footsteps",
+            "doorbell",
+            "paper",
+            "water_tap",
+            "keyboard",
+            "door"
+          ]
+        },
+        "recordings": {
+          "bed:birds": [
+            "birds-fsd50k-eval-86343",
+            "birds-fsd50k-eval-57907",
+            "birds-fsd50k-eval-319512"
+          ],
+          "bed:crowd": [
+            "crowd-fsd50k-eval-340358",
+            "crowd-fsd50k-eval-121877",
+            "crowd-fsd50k-eval-185058"
+          ],
+          "bed:fan": [
+            "fan-fsd50k-eval-235362",
+            "fan-fsd50k-eval-419427",
+            "fan-fsd50k-eval-415925"
+          ],
+          "bed:rain": [
+            "rain-fsd50k-eval-21189",
+            "rain-fsd50k-eval-238016",
+            "rain-fsd50k-eval-382582"
+          ],
+          "bed:traffic": [
+            "traffic-fsd50k-eval-124020",
+            "traffic-fsd50k-eval-235541",
+            "traffic-fsd50k-eval-232686"
+          ],
+          "bed:wind": [
+            "wind-fsd50k-eval-113173",
+            "wind-fsd50k-eval-113176",
+            "wind-fsd50k-eval-113175"
+          ],
+          "event:door": [
+            "door-fsd50k-eval-71212",
+            "door-fsd50k-eval-119077",
+            "door-fsd50k-eval-209519"
+          ],
+          "event:doorbell": [
+            "doorbell-fsd50k-eval-348322",
+            "doorbell-fsd50k-eval-332563",
+            "doorbell-fsd50k-eval-426594"
+          ],
+          "event:footsteps": [
+            "footsteps-fsd50k-eval-153104",
+            "footsteps-fsd50k-eval-272381",
+            "footsteps-fsd50k-eval-392303"
+          ],
+          "event:keyboard": [
+            "keyboard-fsd50k-eval-233057",
+            "keyboard-fsd50k-eval-411545",
+            "keyboard-fsd50k-eval-399740"
+          ],
+          "event:paper": [
+            "paper-fsd50k-eval-343098",
+            "paper-fsd50k-eval-82562",
+            "paper-fsd50k-eval-121200"
+          ],
+          "event:water_tap": [
+            "water_tap-fsd50k-eval-402128",
+            "water_tap-fsd50k-eval-232499",
+            "water_tap-fsd50k-eval-402127"
+          ]
+        }
+      },
+      "control": {
+        "schema": "duplex_v2.soundscape_control.v3",
+        "seed": 3957868292,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "third_party",
+          "machine",
+          "user_to_third_party"
+        ]
+      },
+      "control_sha256": "64d775cfde705ff4740bb8562cbfbc1916cb311ba6afc290bd3fd27b8e4fd67f",
+      "candidate_plan": {
+        "schema": "duplex_v2.soundscape_plan.v4",
+        "mode": "quiet",
+        "ambient_layers": [],
+        "environment_events": [],
+        "side_speech_eligibility": {
+          "user_to_third_party": {
+            "compatible": false,
+            "reason": "用户当前独自在家，故事中没有同场且可被转向交谈的旁人。",
+            "source": null
+          },
+          "third_party": {
+            "compatible": false,
+            "reason": "当前安静独处场景中没有已存在的第三方人物或可辨认旁人声源。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "故事未设定会发出语音的设备或机器，当前也没有设备提示音。",
+            "source": null
+          }
+        }
+      },
+      "base_environment_audio_sha256": "af88a527e0c3b260b5aecf60b7dbbda973078221095874de9baae472995557ef",
+      "aggregate_environment_audio": "室内整体很安静，只有极轻微而稳定的房间底噪。近处没有明显动作声，远处也没有可辨认的人声或设备提示音。",
+      "draws": [],
+      "speech_selection": {
+        "requested": false,
+        "compatible_kinds": [],
+        "selected_kind": null,
+        "outcome": "not_requested",
+        "assessments": {
+          "user_to_third_party": {
+            "compatible": false,
+            "reason": "用户当前独自在家，故事中没有同场且可被转向交谈的旁人。",
+            "source": null
+          },
+          "third_party": {
+            "compatible": false,
+            "reason": "当前安静独处场景中没有已存在的第三方人物或可辨认旁人声源。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "故事未设定会发出语音的设备或机器，当前也没有设备提示音。",
+            "source": null
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "scene": {
+    "domain_id": "D23",
+    "domain": "居住、房产与公用事业",
+    "scenario_id": "D23-S02",
+    "scenario": "租约和居住政策说明",
+    "example_tasks": [
+      "结合通用的租约解释原则和我随后提供的具体条款，判断其中哪些内容已经明确、哪些内容可能存在歧义或需要协商。",
+      "根据常见租客权益与居住政策的判断框架，比较我提供的几个住房选项在规则限制、责任分配和居住便利性上的取舍。",
+      "结合关于维修责任和正常损耗的通用标准，分析我随后提供的房屋状况记录，判断哪些问题值得提出以及应如何组织依据。",
+      "运用续租、提前解约和费用调整的一般判断思路，评估我提供的租约条件与个人搬家计划之间是否匹配。",
+      "以公平居住和社区管理的基本原则为参照，审视我随后提供的房东通知、房屋规则和具体经历，整理出可接受的解释、可能的冲突及下一步可讨论的方案。"
+    ]
+  },
+  "task_style": "混合型",
+  "previous_task_goals": [],
+  "batch_size": 1,
+  "available_modalities": [
+    "audio"
+  ],
+  "capability_contract": {
+    "interaction_modalities": [
+      "audio"
+    ],
+    "available_tools": [],
+    "external_state_access": "none",
+    "external_side_effects": "forbidden"
+  },
+  "dialogue_length_plan": {
+    "schema": "duplex_v2.dialogue_length_plan.v1",
+    "tier": "long",
+    "target_turns": 17,
+    "min_turns": 16,
+    "max_turns": 18
+  },
+  "dialogue_length_instruction": "本条完整对话目标为 17 个主轮，允许 16–18 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+  "sampled_interaction_axes": {
+    "formality": "formal",
+    "directness": "balanced",
+    "emotional_expressiveness": "reserved",
+    "verbosity": "brief",
+    "initiative": "medium",
+    "caution": "medium",
+    "patience": "low"
+  },
+  "interaction_profile_schema": "duplex_v2.interaction_profile.v1",
+  "text_policy": {
+    "schema": "duplex_v2.text_policy.v1",
+    "workflow_version": "v2.5",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "models": {
+      "sol": "openai/gpt-5.6-sol",
+      "luna": "openai/gpt-5.6-luna"
+    },
+    "roles": {
+      "stage0_generation": "luna",
+      "stage1_generation": "luna",
+      "stage2_generation": "sol",
+      "script_generation": "sol",
+      "script_patch": "sol",
+      "judge": "sol",
+      "compaction_first": "luna",
+      "compaction_later": "sol"
+    },
+    "reasoning_effort_policy": "default",
+    "stage0_max_judge_attempts": 5,
+    "content_max_repairs": 5,
+    "json_parse_max_retries": 3,
+    "length_compaction_max_attempts": 3,
+    "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+    "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+    "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+  }
+}

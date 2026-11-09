@@ -1,0 +1,984 @@
+{
+  "case_id": "R01-V01",
+  "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g09-sample-004-v2-stage2",
+  "language": "zh",
+  "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+  "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+  "script_execution_policy": {
+    "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+    "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+    "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+    "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+    "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+    "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+    "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+  },
+  "program_anchor_seed": 2466068088,
+  "text_policy": {
+    "schema": "duplex_v2.text_policy.v1",
+    "workflow_version": "v2.5",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "models": {
+      "sol": "openai/gpt-5.6-sol",
+      "luna": "openai/gpt-5.6-luna"
+    },
+    "roles": {
+      "stage0_generation": "luna",
+      "stage1_generation": "luna",
+      "stage2_generation": "sol",
+      "script_generation": "sol",
+      "script_patch": "sol",
+      "judge": "sol",
+      "compaction_first": "luna",
+      "compaction_later": "sol"
+    },
+    "reasoning_effort_policy": "default",
+    "stage0_max_judge_attempts": 5,
+    "content_max_repairs": 5,
+    "json_parse_max_retries": 3,
+    "length_compaction_max_attempts": 3,
+    "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+    "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+    "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+  },
+  "relay_configuration": {
+    "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g09/relay-policy.json",
+    "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g09/relay-state",
+    "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+    "policy": {
+      "schema": "duplex_v2.timeout_relay_policy.v3",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "backup": {
+        "profile": "lianyu",
+        "endpoint": "https://api.openbili.com/v1/chat/completions",
+        "model_map": {
+          "openai/gpt-5.6-sol": "gpt-5.6-sol",
+          "openai/gpt-5.6-luna": "gpt-5.6-luna"
+        },
+        "verification": {
+          "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+          "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+        }
+      },
+      "trigger": {
+        "max_retries": 5,
+        "http_statuses": [
+          502,
+          503,
+          504
+        ],
+        "error_types": [
+          "TimeoutError",
+          "HTTP2DeadlineExceeded",
+          "ConnectionResetError",
+          "ConnectionAbortedError",
+          "BrokenPipeError",
+          "RemoteDisconnected",
+          "IncompleteRead"
+        ],
+        "http2_transport_errors": "negotiated_h2_only",
+        "require_all_attempts": true
+      },
+      "max_relay_switches": 1
+    }
+  },
+  "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+  "script_repair_policy": {
+    "schema": "duplex_v2.script_repair_policy.v1",
+    "mode": "json_patch",
+    "patch_schema": "duplex_v2.script_patch.v1",
+    "json_parse_max_retries": 3,
+    "content_max_repairs": 5,
+    "length_compaction_max_attempts": 3,
+    "overlength_after_compaction": "fail_case",
+    "judge_scope": "complete_script_and_heard_context"
+  },
+  "text_output_token_policy": "omit",
+  "scene_task": {
+    "scene": {
+      "domain_id": "D07",
+      "domain": "餐饮、烹饪与饮食",
+      "scenario_id": "D07-S02",
+      "scenario": "菜单说明"
+    },
+    "task_style": "结构化整理",
+    "task_instance": {
+      "goal": "根据我随后提供的菜单资料，整理一份便于向不同顾客说明的菜品对照表：逐项归纳主要食材、烹饪方式、口味特点、可能含有的过敏原或饮食限制信息，并标出需要向餐厅进一步确认的模糊或缺失内容。"
+    }
+  },
+  "user_voice": {
+    "user_seed": {
+      "role_relation": "负责为精品餐厅制作顾客咨询手册的菜单编辑",
+      "task_familiarity": "high"
+    },
+    "voice_profile": "男性，三十多岁，音色沉稳偏低，吐字清楚，语速平稳，带有较克制的正式感。",
+    "interaction_profile": {
+      "schema": "duplex_v2.interaction_profile.v1",
+      "formality": "formal",
+      "directness": "indirect",
+      "emotional_expressiveness": "reserved",
+      "verbosity": "detailed",
+      "initiative": "medium",
+      "caution": "high",
+      "patience": "high",
+      "behavioral_notes": [
+        "通常会先较完整地交代背景和材料，再委婉提出希望如何处理，避免用命令式表达。",
+        "对信息边界和表述准确性较为在意，发现不确定处时会主动补充上下文并请求区分已知内容与待核实内容。",
+        "愿意耐心听取分层说明，必要时会通过复述分类标准来确认双方理解是否一致。"
+      ]
+    }
+  },
+  "dialogue_length_plan": {
+    "schema": "duplex_v2.dialogue_length_plan.v1",
+    "tier": "medium",
+    "target_turns": 15,
+    "min_turns": 14,
+    "max_turns": 15
+  },
+  "ambient_catalog": {
+    "schema": "duplex_v2.ambient_catalog.v1",
+    "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+    "assets": [
+      {
+        "asset_id": "fan-fsd50k-eval-419427",
+        "category": "fan",
+        "mode": "bed",
+        "tags": [
+          "indoor",
+          "home",
+          "office"
+        ],
+        "description": "稳定的真实机械风扇或通风声",
+        "duration_seconds": 10.3909375
+      },
+      {
+        "asset_id": "fan-fsd50k-eval-235362",
+        "category": "fan",
+        "mode": "bed",
+        "tags": [
+          "indoor",
+          "home",
+          "office"
+        ],
+        "description": "稳定的真实机械风扇或通风声",
+        "duration_seconds": 11.0
+      },
+      {
+        "asset_id": "fan-fsd50k-eval-415925",
+        "category": "fan",
+        "mode": "bed",
+        "tags": [
+          "indoor",
+          "home",
+          "office"
+        ],
+        "description": "稳定的真实机械风扇或通风声",
+        "duration_seconds": 7.178
+      },
+      {
+        "asset_id": "traffic-fsd50k-eval-235541",
+        "category": "traffic",
+        "mode": "bed",
+        "tags": [
+          "outdoor",
+          "road",
+          "street",
+          "travel"
+        ],
+        "description": "真实道路车流环境声",
+        "duration_seconds": 29.045875
+      },
+      {
+        "asset_id": "traffic-fsd50k-eval-232686",
+        "category": "traffic",
+        "mode": "bed",
+        "tags": [
+          "outdoor",
+          "road",
+          "street",
+          "travel"
+        ],
+        "description": "真实道路车流环境声",
+        "duration_seconds": 10.3445
+      },
+      {
+        "asset_id": "traffic-fsd50k-eval-124020",
+        "category": "traffic",
+        "mode": "bed",
+        "tags": [
+          "outdoor",
+          "road",
+          "street",
+          "travel"
+        ],
+        "description": "真实道路车流环境声",
+        "duration_seconds": 24.78875
+      },
+      {
+        "asset_id": "rain-fsd50k-eval-382582",
+        "category": "rain",
+        "mode": "bed",
+        "tags": [
+          "outdoor",
+          "window",
+          "rain",
+          "home"
+        ],
+        "description": "真实连续雨声",
+        "duration_seconds": 9.9788125
+      },
+      {
+        "asset_id": "rain-fsd50k-eval-21189",
+        "category": "rain",
+        "mode": "bed",
+        "tags": [
+          "outdoor",
+          "window",
+          "rain",
+          "home"
+        ],
+        "description": "真实连续雨声",
+        "duration_seconds": 9.962
+      },
+      {
+        "asset_id": "rain-fsd50k-eval-238016",
+        "category": "rain",
+        "mode": "bed",
+        "tags": [
+          "outdoor",
+          "window",
+          "rain",
+          "home"
+        ],
+        "description": "真实连续雨声",
+        "duration_seconds": 11.32
+      },
+      {
+        "asset_id": "crowd-fsd50k-eval-185058",
+        "category": "crowd",
+        "mode": "bed",
+        "tags": [
+          "public",
+          "crowd",
+          "cafe",
+          "station"
+        ],
+        "description": "远处人群嘈杂环境声，无指定第三方台词",
+        "duration_seconds": 5.2114375
+      },
+      {
+        "asset_id": "crowd-fsd50k-eval-121877",
+        "category": "crowd",
+        "mode": "bed",
+        "tags": [
+          "public",
+          "crowd",
+          "cafe",
+          "station"
+        ],
+        "description": "远处人群嘈杂环境声，无指定第三方台词",
+        "duration_seconds": 11.696
+      },
+      {
+        "asset_id": "crowd-fsd50k-eval-340358",
+        "category": "crowd",
+        "mode": "bed",
+        "tags": [
+          "public",
+          "crowd",
+          "cafe",
+          "station"
+        ],
+        "description": "远处人群嘈杂环境声，无指定第三方台词",
+        "duration_seconds": 4.2745
+      },
+      {
+        "asset_id": "paper-fsd50k-eval-82562",
+        "category": "paper",
+        "mode": "event",
+        "tags": [
+          "indoor",
+          "paper",
+          "office",
+          "home"
+        ],
+        "description": "完整的纸张翻动、揉动或撕纸声效",
+        "duration_seconds": 1.0094375
+      },
+      {
+        "asset_id": "paper-fsd50k-eval-121200",
+        "category": "paper",
+        "mode": "event",
+        "tags": [
+          "indoor",
+          "paper",
+          "office",
+          "home"
+        ],
+        "description": "完整的纸张翻动、揉动或撕纸声效",
+        "duration_seconds": 0.83525
+      },
+      {
+        "asset_id": "paper-fsd50k-eval-343098",
+        "category": "paper",
+        "mode": "event",
+        "tags": [
+          "indoor",
+          "paper",
+          "office",
+          "home"
+        ],
+        "description": "完整的纸张翻动、揉动或撕纸声效",
+        "duration_seconds": 0.796
+      },
+      {
+        "asset_id": "footsteps-fsd50k-eval-153104",
+        "category": "footsteps",
+        "mode": "event",
+        "tags": [
+          "footsteps",
+          "indoor",
+          "outdoor"
+        ],
+        "description": "完整的短段真实脚步声",
+        "duration_seconds": 3.4691875
+      },
+      {
+        "asset_id": "footsteps-fsd50k-eval-392303",
+        "category": "footsteps",
+        "mode": "event",
+        "tags": [
+          "footsteps",
+          "indoor",
+          "outdoor"
+        ],
+        "description": "完整的短段真实脚步声",
+        "duration_seconds": 3.6849375
+      },
+      {
+        "asset_id": "footsteps-fsd50k-eval-272381",
+        "category": "footsteps",
+        "mode": "event",
+        "tags": [
+          "footsteps",
+          "indoor",
+          "outdoor"
+        ],
+        "description": "完整的短段真实脚步声",
+        "duration_seconds": 3.933375
+      },
+      {
+        "asset_id": "door-fsd50k-eval-71212",
+        "category": "door",
+        "mode": "event",
+        "tags": [
+          "door",
+          "indoor",
+          "home",
+          "office"
+        ],
+        "description": "完整的短段真实开关门声",
+        "duration_seconds": 2.3638125
+      },
+      {
+        "asset_id": "door-fsd50k-eval-119077",
+        "category": "door",
+        "mode": "event",
+        "tags": [
+          "door",
+          "indoor",
+          "home",
+          "office"
+        ],
+        "description": "完整的短段真实开关门声",
+        "duration_seconds": 2.7944375
+      },
+      {
+        "asset_id": "door-fsd50k-eval-209519",
+        "category": "door",
+        "mode": "event",
+        "tags": [
+          "door",
+          "indoor",
+          "home",
+          "office"
+        ],
+        "description": "完整的短段真实开关门声",
+        "duration_seconds": 1.0398125
+      },
+      {
+        "asset_id": "keyboard-fsd50k-eval-399740",
+        "category": "keyboard",
+        "mode": "event",
+        "tags": [
+          "keyboard",
+          "office",
+          "computer",
+          "indoor"
+        ],
+        "description": "完整的短段真实电脑键盘输入声",
+        "duration_seconds": 2.322
+      },
+      {
+        "asset_id": "keyboard-fsd50k-eval-233057",
+        "category": "keyboard",
+        "mode": "event",
+        "tags": [
+          "keyboard",
+          "office",
+          "computer",
+          "indoor"
+        ],
+        "description": "完整的短段真实电脑键盘输入声",
+        "duration_seconds": 2.4700625
+      },
+      {
+        "asset_id": "keyboard-fsd50k-eval-411545",
+        "category": "keyboard",
+        "mode": "event",
+        "tags": [
+          "keyboard",
+          "office",
+          "computer",
+          "indoor"
+        ],
+        "description": "完整的短段真实电脑键盘输入声",
+        "duration_seconds": 2.5686875
+      },
+      {
+        "asset_id": "water_tap-fsd50k-eval-232499",
+        "category": "water_tap",
+        "mode": "event",
+        "tags": [
+          "water",
+          "kitchen",
+          "home",
+          "indoor"
+        ],
+        "description": "完整的短段真实水龙头声",
+        "duration_seconds": 0.842
+      },
+      {
+        "asset_id": "water_tap-fsd50k-eval-402127",
+        "category": "water_tap",
+        "mode": "event",
+        "tags": [
+          "water",
+          "kitchen",
+          "home",
+          "indoor"
+        ],
+        "description": "完整的短段真实水龙头声",
+        "duration_seconds": 2.0915
+      },
+      {
+        "asset_id": "water_tap-fsd50k-eval-402128",
+        "category": "water_tap",
+        "mode": "event",
+        "tags": [
+          "water",
+          "kitchen",
+          "home",
+          "indoor"
+        ],
+        "description": "完整的短段真实水龙头声",
+        "duration_seconds": 2.0915
+      },
+      {
+        "asset_id": "birds-fsd50k-eval-86343",
+        "category": "birds",
+        "mode": "bed",
+        "tags": [
+          "birds",
+          "park",
+          "outdoor",
+          "nature"
+        ],
+        "description": "真实鸟鸣环境声",
+        "duration_seconds": 7.5366875
+      },
+      {
+        "asset_id": "birds-fsd50k-eval-57907",
+        "category": "birds",
+        "mode": "bed",
+        "tags": [
+          "birds",
+          "park",
+          "outdoor",
+          "nature"
+        ],
+        "description": "真实鸟鸣环境声",
+        "duration_seconds": 12.5773125
+      },
+      {
+        "asset_id": "birds-fsd50k-eval-319512",
+        "category": "birds",
+        "mode": "bed",
+        "tags": [
+          "birds",
+          "park",
+          "outdoor",
+          "nature"
+        ],
+        "description": "真实鸟鸣环境声",
+        "duration_seconds": 12.755625
+      },
+      {
+        "asset_id": "wind-fsd50k-eval-113173",
+        "category": "wind",
+        "mode": "bed",
+        "tags": [
+          "wind",
+          "outdoor",
+          "nature"
+        ],
+        "description": "真实风声环境声",
+        "duration_seconds": 11.2184375
+      },
+      {
+        "asset_id": "wind-fsd50k-eval-113175",
+        "category": "wind",
+        "mode": "bed",
+        "tags": [
+          "wind",
+          "outdoor",
+          "nature"
+        ],
+        "description": "真实风声环境声",
+        "duration_seconds": 7.8773125
+      },
+      {
+        "asset_id": "wind-fsd50k-eval-113176",
+        "category": "wind",
+        "mode": "bed",
+        "tags": [
+          "wind",
+          "outdoor",
+          "nature"
+        ],
+        "description": "真实风声环境声",
+        "duration_seconds": 7.6341875
+      },
+      {
+        "asset_id": "doorbell-fsd50k-eval-348322",
+        "category": "doorbell",
+        "mode": "event",
+        "tags": [
+          "doorbell",
+          "home",
+          "door",
+          "indoor"
+        ],
+        "description": "完整的真实门铃声效",
+        "duration_seconds": 1.625
+      },
+      {
+        "asset_id": "doorbell-fsd50k-eval-426594",
+        "category": "doorbell",
+        "mode": "event",
+        "tags": [
+          "doorbell",
+          "home",
+          "door",
+          "indoor"
+        ],
+        "description": "完整的真实门铃声效",
+        "duration_seconds": 0.3666875
+      },
+      {
+        "asset_id": "doorbell-fsd50k-eval-332563",
+        "category": "doorbell",
+        "mode": "event",
+        "tags": [
+          "doorbell",
+          "home",
+          "door",
+          "indoor"
+        ],
+        "description": "完整的真实门铃声效",
+        "duration_seconds": 4.0
+      }
+    ]
+  },
+  "ambient_control": {
+    "schema": "duplex_v2.soundscape_control.v3",
+    "seed": 674254829,
+    "mode": "layered",
+    "discrete_event_target": 2,
+    "max_ambient_layers": 2,
+    "side_speech_requested": false,
+    "speech_kind_preferences": [
+      "machine",
+      "third_party",
+      "user_to_third_party"
+    ]
+  },
+  "situation_knowledge": {
+    "episode_situation": "周二下午三点，用户独自在一家精品餐厅二楼的行政办公室，准备整理新版晚餐菜单的顾客咨询手册。餐厅近期收到的咨询既有普通口味询问，也涉及坚果、乳制品、麸质、蛋、大豆和甲壳类过敏，以及素食、纯素等饮食限制，因此原先只写菜名和宣传语的手册已经不够使用。用户负责菜单文字编辑，熟悉菜品描述与信息分层，但不能替厨房确认配方、供应商品牌或交叉接触情况。手边有一份七道菜的菜单校样、主厨留下的简要配方批注和用户自己的待核实标记，材料中的信息详略并不一致。用户已经快速通读过一遍，并圈出了“时令蔬菜”“香料”“可调整”等容易引起误解的表述，但还没有把资料逐项归入统一栏目。部分菜品能直接看出主要食材和烹饪方式，另一些只给出了宣传性口味描述，酱汁、汤底、装饰物或替换方案的成分仍不明确。菜单还没有说明厨房是否使用共用炸锅、烤架、刀具或操作台，这些信息不能从菜名自行推断。用户希望最终内容既方便前厅人员快速说明，也能明确区分已确认事实、合理但不能当作餐厅承诺的判断，以及必须向厨房进一步核实的问题。由于咨询对象可能只关心风味，也可能有严格的过敏或饮食限制，整理时需要保留足够细节，同时避免把“未列出”误写成“不含”。主厨当天不在办公室，用户目前只能依据纸面材料整理，不能即时取得补充答复。用户可以在笔记本电脑上记录结构，但当前对话无法读取或修改电脑文件，因此所有材料会由用户按需要口头提供和核对。明天内部培训前需要形成可审阅的草稿，不过尚未决定对照表中应把烹饪方式和口味合并展示，还是分别设栏。当前最重要的未决事项是统一七道菜的归纳尺度、识别资料中的模糊成分，并形成一组足够具体、便于餐厅逐项答复的确认问题。",
+    "task_reference_data": [
+      "来自用户手边已读的新版菜单校样：“烟熏甜菜沙拉——烟熏红甜菜、芝麻菜、山羊奶酪、核桃与柑橘油醋汁；风味清甜、微酸并带烟熏气息。”校样没有列出油醋汁是否含蜂蜜或芥末，也没有说明核桃能否去除。",
+      "来自用户手边可现场读取的主厨批注：“蟹肉浓汤以蟹壳高汤、蟹肉、淡奶油、白兰地和香料慢煮，最后打匀；口感浓郁顺滑。”批注只写了“少量增稠”，没有写明增稠剂种类，香料组成和是否另加黄油也未注明。",
+      "来自用户手边已读的新版菜单校样与主厨批注：“味噌银鳕鱼——银鳕鱼用白味噌、味醂、清酒和糖腌制后烤制，配腌姜及时令绿色蔬菜；味道咸甜、鲜味突出。”现有材料没有注明味噌和其他调味料的具体品牌或配料，也没有解释“时令绿色蔬菜”及其调味方式。",
+      "来自用户手边可现场读取的主厨批注：“油封鸭腿低温油封后烤脆，配土豆焗烤和樱桃红酒汁；土豆焗烤使用淡奶油、黄油与奶酪。”红酒汁只列出樱桃和红酒，未写明所用高汤、增稠方式或是否含其他动物来源成分。",
+      "来自用户手边已读的菜单校样：“野菌烩饭——意大利米、混合野菌、蔬菜高汤、帕玛森奶酪和黄油；口感绵密，菌香明显。”主厨另注“奶酪可不放”，但没有说明黄油能否替换、蔬菜高汤的完整配方或去掉奶酪后是否仍按原流程制作。",
+      "来自用户手边可现场读取的主厨批注：“羊肉宽面使用含蛋的新鲜宽面，羊肉酱含番茄、红酒、洋葱、胡萝卜和西芹，出餐时撒佩科里诺奶酪；整体醇厚微酸。”批注没有记录面团是否只使用小麦粉，也没有说明酱汁所用高汤和厨房交叉接触情况。",
+      "来自用户手边已读的菜单校样与主厨批注：“椰香奶冻——椰浆、淡奶油、糖和明胶制成，配芒果及杏仁酥粒；风味清甜、带热带果香。”杏仁酥粒的完整配方未提供，现有材料也没有说明是否能去掉酥粒或改用不含明胶的做法。",
+      "来自用户自己的待核实标记，当前已写在纸质校样边缘：“共用炸锅、烤架、刀具、砧板和操作台情况均未提供；供应商品牌与包装配料表未附；临时替换食材是否会变化未说明。”这些内容尚未由厨房核实。",
+      "来自用户手边菜单首页的现有提示语：“如有过敏或特殊饮食需求，请提前告知服务人员。”这句话没有列出具体过敏原，也没有承诺任何菜品完全不含某种成分或不存在交叉接触。"
+    ],
+    "environment_audio": "房间右后方的通风口持续发出低而稳定的机械送风声，音量基本不变。办公室整体安静，声音带有轻微的室内近距离反射。",
+    "estimated_snr_db": 30,
+    "constraints": [
+      {
+        "constraint_id": "C01",
+        "text": "对照表需逐道覆盖主要食材、烹饪方式、口味特点、可能相关的过敏原或饮食限制，以及待餐厅确认的缺失或模糊信息。",
+        "kind": "hard"
+      },
+      {
+        "constraint_id": "C02",
+        "text": "必须明确区分纸面材料已经写明的内容与尚待核实的内容，不得把常见做法或名称暗示当作本餐厅已确认配方。",
+        "kind": "hard"
+      },
+      {
+        "constraint_id": "C03",
+        "text": "表述应便于前厅人员分别回应普通口味咨询、过敏咨询和素食或纯素等饮食限制咨询。",
+        "kind": "soft"
+      },
+      {
+        "constraint_id": "C04",
+        "text": "对于“可不放”“时令”“香料”“增稠”等表述，要保留其条件性并标出具体确认点，不能直接改写成确定的替代方案。",
+        "kind": "hard"
+      }
+    ],
+    "safety_limits": [
+      {
+        "limit_id": "L01",
+        "text": "涉及食物过敏时，不能依据配方未列出某成分就宣称菜品安全或完全不含该过敏原；配料品牌、替换食材及交叉接触情况必须由餐厅最终确认。",
+        "severity": "hard"
+      }
+    ],
+    "soundscape_plan": {
+      "mode": "layered",
+      "ambient_layers": [
+        {
+          "source_id": "AMB01",
+          "asset_id": "fan-fsd50k-eval-415925",
+          "reason": "稳定机械通风声符合安静行政办公室内持续运行的送风设备。"
+        }
+      ],
+      "environment_events": [
+        {
+          "source_id": "ENV01",
+          "asset_id": "paper-fsd50k-eval-82562",
+          "reason": "用户正在核对纸质菜单校样和主厨批注，短暂翻页声与现有材料相符。"
+        },
+        {
+          "source_id": "ENV02",
+          "asset_id": "keyboard-fsd50k-eval-233057",
+          "reason": "用户面前已有用于记录结构的笔记本电脑，短段键盘输入声符合办公场景。"
+        }
+      ],
+      "schema": "duplex_v2.soundscape_plan.v4",
+      "side_speech_sources": [],
+      "side_speech_count": 0,
+      "sampling": {
+        "schema": "duplex_v2.ambient_draw.v3",
+        "policy": {
+          "schema": "duplex_v2.soundscape_policy.v3",
+          "quiet_probability": 0.5,
+          "discrete_targets_by_tier": {
+            "short": [
+              0,
+              1
+            ],
+            "medium": [
+              1,
+              2
+            ],
+            "long": [
+              2,
+              4
+            ]
+          },
+          "discrete_count_includes": [
+            "environment_events",
+            "side_speech"
+          ],
+          "max_ambient_layers": 2,
+          "gain_range": [
+            0.3,
+            0.7
+          ],
+          "speech_request_probability": 0.5,
+          "third_party_preference_probability": 0.8,
+          "speech_requires_existing_scene_source": true,
+          "environment_audio": "base_only",
+          "stage2_repair": "atomic_scoped_patch",
+          "stage2_max_judge_attempts": 3,
+          "json_parse_max_retries": 3,
+          "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+          "user_aside_preference_probability": 0.5,
+          "user_voice_source": "stage1_user",
+          "user_aside_requires_present_recipient": true
+        },
+        "preferences": {
+          "schema": "duplex_v2.ambient_preferences.v1",
+          "seed": 202611090009,
+          "slot": 3,
+          "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+          "categories": {
+            "bed": [
+              "fan",
+              "traffic",
+              "birds",
+              "crowd",
+              "rain",
+              "wind"
+            ],
+            "event": [
+              "water_tap",
+              "paper",
+              "keyboard",
+              "doorbell",
+              "door",
+              "footsteps"
+            ]
+          },
+          "recordings": {
+            "bed:birds": [
+              "birds-fsd50k-eval-57907",
+              "birds-fsd50k-eval-86343",
+              "birds-fsd50k-eval-319512"
+            ],
+            "bed:crowd": [
+              "crowd-fsd50k-eval-185058",
+              "crowd-fsd50k-eval-121877",
+              "crowd-fsd50k-eval-340358"
+            ],
+            "bed:fan": [
+              "fan-fsd50k-eval-415925",
+              "fan-fsd50k-eval-419427",
+              "fan-fsd50k-eval-235362"
+            ],
+            "bed:rain": [
+              "rain-fsd50k-eval-382582",
+              "rain-fsd50k-eval-238016",
+              "rain-fsd50k-eval-21189"
+            ],
+            "bed:traffic": [
+              "traffic-fsd50k-eval-124020",
+              "traffic-fsd50k-eval-232686",
+              "traffic-fsd50k-eval-235541"
+            ],
+            "bed:wind": [
+              "wind-fsd50k-eval-113173",
+              "wind-fsd50k-eval-113176",
+              "wind-fsd50k-eval-113175"
+            ],
+            "event:door": [
+              "door-fsd50k-eval-119077",
+              "door-fsd50k-eval-209519",
+              "door-fsd50k-eval-71212"
+            ],
+            "event:doorbell": [
+              "doorbell-fsd50k-eval-348322",
+              "doorbell-fsd50k-eval-426594",
+              "doorbell-fsd50k-eval-332563"
+            ],
+            "event:footsteps": [
+              "footsteps-fsd50k-eval-153104",
+              "footsteps-fsd50k-eval-272381",
+              "footsteps-fsd50k-eval-392303"
+            ],
+            "event:keyboard": [
+              "keyboard-fsd50k-eval-233057",
+              "keyboard-fsd50k-eval-399740",
+              "keyboard-fsd50k-eval-411545"
+            ],
+            "event:paper": [
+              "paper-fsd50k-eval-82562",
+              "paper-fsd50k-eval-121200",
+              "paper-fsd50k-eval-343098"
+            ],
+            "event:water_tap": [
+              "water_tap-fsd50k-eval-402127",
+              "water_tap-fsd50k-eval-402128",
+              "water_tap-fsd50k-eval-232499"
+            ]
+          }
+        },
+        "control": {
+          "schema": "duplex_v2.soundscape_control.v3",
+          "seed": 674254829,
+          "mode": "layered",
+          "discrete_event_target": 2,
+          "max_ambient_layers": 2,
+          "side_speech_requested": false,
+          "speech_kind_preferences": [
+            "machine",
+            "third_party",
+            "user_to_third_party"
+          ]
+        },
+        "control_sha256": "f994244c5197931060f97647830dbae3f4987b6548dda5899a46b1483fe59f00",
+        "candidate_plan": {
+          "schema": "duplex_v2.soundscape_plan.v4",
+          "mode": "layered",
+          "ambient_layers": [
+            {
+              "source_id": "AMB01",
+              "candidates": [
+                {
+                  "asset_id": "fan-fsd50k-eval-415925",
+                  "reason": "稳定机械通风声符合安静行政办公室内持续运行的送风设备。",
+                  "environment_audio": "右后方持续传来低沉均匀的机械通风声。"
+                },
+                {
+                  "asset_id": "fan-fsd50k-eval-419427",
+                  "reason": "可作为室内通风底噪的备选，声源连续且不会掩盖近距离语音。",
+                  "environment_audio": "办公室后方有稳定、轻微的通风设备嗡鸣。"
+                },
+                {
+                  "asset_id": "fan-fsd50k-eval-235362",
+                  "reason": "连续风扇类录音与故事中的室内送风环境相容。",
+                  "environment_audio": "低音量的机械送风声在房间内持续不变。"
+                }
+              ]
+            }
+          ],
+          "environment_events": [
+            {
+              "source_id": "ENV01",
+              "candidates": [
+                {
+                  "asset_id": "paper-fsd50k-eval-82562",
+                  "reason": "用户正在核对纸质菜单校样和主厨批注，短暂翻页声与现有材料相符。",
+                  "environment_audio": "近处响起一次完整而短促的纸张翻动声。"
+                },
+                {
+                  "asset_id": "paper-fsd50k-eval-121200",
+                  "reason": "轻短的纸张动作适合表现用户在菜单校样之间切换。",
+                  "environment_audio": "桌面近处传来一阵轻微的纸页翻动声。"
+                },
+                {
+                  "asset_id": "paper-fsd50k-eval-343098",
+                  "reason": "纸张声来源于故事中已经存在的菜单校样，不需新增场景对象。",
+                  "environment_audio": "一张纸在近处被翻过，随后迅速安静。"
+                }
+              ]
+            },
+            {
+              "source_id": "ENV02",
+              "candidates": [
+                {
+                  "asset_id": "keyboard-fsd50k-eval-233057",
+                  "reason": "用户面前已有用于记录结构的笔记本电脑，短段键盘输入声符合办公场景。",
+                  "environment_audio": "正前方近处出现一小段清晰的键盘敲击声。"
+                },
+                {
+                  "asset_id": "keyboard-fsd50k-eval-399740",
+                  "reason": "短暂电脑输入声可自然来自用户整理笔记时使用的笔记本电脑。",
+                  "environment_audio": "桌面方向传来数秒轻快的键盘输入声。"
+                },
+                {
+                  "asset_id": "keyboard-fsd50k-eval-411545",
+                  "reason": "办公环境及现有电脑为该键盘事件提供了明确来源。",
+                  "environment_audio": "近处响起一阵短促而连续的电脑键盘声。"
+                }
+              ]
+            }
+          ],
+          "side_speech_eligibility": {
+            "user_to_third_party": {
+              "compatible": false,
+              "reason": "用户当前独自在行政办公室，故事中没有明确同场且可接收用户旁话的人。",
+              "source": null
+            },
+            "third_party": {
+              "compatible": false,
+              "reason": "当前办公室内没有已建立的第三方人物，主厨也不在现场。",
+              "source": null
+            },
+            "machine": {
+              "compatible": false,
+              "reason": "场景中的通风设备和笔记本电脑均未被设定为会播报语音的机器。",
+              "source": null
+            }
+          }
+        },
+        "base_environment_audio_sha256": "21ac6a3edcba8cd1628bb32d4a0be6c1a960a12614a35245696d66172720adda",
+        "aggregate_environment_audio": "房间右后方的通风口持续发出低而稳定的机械送风声，音量基本不变。办公室整体安静，声音带有轻微的室内近距离反射。 右后方持续传来低沉均匀的机械通风声。 近处响起一次完整而短促的纸张翻动声。 正前方近处出现一小段清晰的键盘敲击声。",
+        "draws": [
+          {
+            "source_id": "AMB01",
+            "category": "fan",
+            "asset_id": "fan-fsd50k-eval-415925",
+            "eligible_categories": [
+              "fan"
+            ],
+            "eligible_assets": [
+              "fan-fsd50k-eval-235362",
+              "fan-fsd50k-eval-415925",
+              "fan-fsd50k-eval-419427"
+            ]
+          },
+          {
+            "source_id": "ENV01",
+            "category": "paper",
+            "asset_id": "paper-fsd50k-eval-82562",
+            "eligible_categories": [
+              "paper"
+            ],
+            "eligible_assets": [
+              "paper-fsd50k-eval-121200",
+              "paper-fsd50k-eval-343098",
+              "paper-fsd50k-eval-82562"
+            ]
+          },
+          {
+            "source_id": "ENV02",
+            "category": "keyboard",
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "eligible_categories": [
+              "keyboard"
+            ],
+            "eligible_assets": [
+              "keyboard-fsd50k-eval-233057",
+              "keyboard-fsd50k-eval-399740",
+              "keyboard-fsd50k-eval-411545"
+            ]
+          }
+        ],
+        "speech_selection": {
+          "requested": false,
+          "compatible_kinds": [],
+          "selected_kind": null,
+          "outcome": "not_requested",
+          "assessments": {
+            "user_to_third_party": {
+              "compatible": false,
+              "reason": "用户当前独自在行政办公室，故事中没有明确同场且可接收用户旁话的人。",
+              "source": null
+            },
+            "third_party": {
+              "compatible": false,
+              "reason": "当前办公室内没有已建立的第三方人物，主厨也不在现场。",
+              "source": null
+            },
+            "machine": {
+              "compatible": false,
+              "reason": "场景中的通风设备和笔记本电脑均未被设定为会播报语音的机器。",
+              "source": null
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,233 @@
+{
+  "episode_situation": "傍晚，用户独自在家中厨房准备加热一份冷藏饭菜，微波炉接通电源后显示屏仍然亮着，但按下平时使用的启动键后没有开始加热，也没有听见转盘或风扇运转。用户已经取出饭菜并停下操作，现场没有烟、火花、焦煳味或插头破损等明显危险迹象。由于难以看清面板上的小图标，用户只能确认屏幕有显示，尚不能确定炉门是否完全扣紧、是否亮着锁定或暂停提示、计时是否设为零，以及启动键按下时显示有没有变化。手边没有说明书，也没有其他人在场协助查看，因此现在需要按优先顺序口头确认这些外部现象，先判断更像安全联锁、操作遗漏，还是应停止使用并进一步检查的异常。",
+  "task_reference_data": [],
+  "environment_audio": "厨房里整体安静，近处只有极轻的室内底噪。没有持续的家电运转声或突发声响。",
+  "estimated_snr_db": 34,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "判断应以炉门、面板提示、启动键反馈和计时显示等外部可观察现象为依据，不把尚未看清的图标当作已确认状态。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "口头引导优先给出最关键的一项观察，并使用便于定位和想象的简短描述。",
+      "kind": "soft"
+    }
+  ],
+  "safety_limits": [
+    {
+      "limit_id": "L01",
+      "text": "不得拆开微波炉外壳、触碰内部线路或尝试自行维修高压部件；微波炉断电后内部仍可能存在危险高压。",
+      "severity": "critical"
+    },
+    {
+      "limit_id": "L02",
+      "text": "如果出现烟、火花、焦煳味、异常巨响、漏电迹象或电源线损坏，应立即停止使用并在安全情况下断开电源。",
+      "severity": "critical"
+    },
+    {
+      "limit_id": "L03",
+      "text": "不得让微波炉空载运行；如后续需要进行短暂加热测试，只能使用明确适用于微波炉的容器和适量内容物。",
+      "severity": "hard"
+    }
+  ],
+  "soundscape_plan": {
+    "mode": "quiet",
+    "ambient_layers": [],
+    "environment_events": [],
+    "schema": "duplex_v2.soundscape_plan.v4",
+    "side_speech_sources": [],
+    "side_speech_count": 0,
+    "sampling": {
+      "schema": "duplex_v2.ambient_draw.v3",
+      "policy": {
+        "schema": "duplex_v2.soundscape_policy.v3",
+        "quiet_probability": 0.5,
+        "discrete_targets_by_tier": {
+          "short": [
+            0,
+            1
+          ],
+          "medium": [
+            1,
+            2
+          ],
+          "long": [
+            2,
+            4
+          ]
+        },
+        "discrete_count_includes": [
+          "environment_events",
+          "side_speech"
+        ],
+        "max_ambient_layers": 2,
+        "gain_range": [
+          0.3,
+          0.7
+        ],
+        "speech_request_probability": 0.5,
+        "third_party_preference_probability": 0.8,
+        "speech_requires_existing_scene_source": true,
+        "environment_audio": "base_only",
+        "stage2_repair": "atomic_scoped_patch",
+        "stage2_max_judge_attempts": 3,
+        "json_parse_max_retries": 3,
+        "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+        "user_aside_preference_probability": 0.5,
+        "user_voice_source": "stage1_user",
+        "user_aside_requires_present_recipient": true
+      },
+      "preferences": {
+        "schema": "duplex_v2.ambient_preferences.v1",
+        "seed": 202611090009,
+        "slot": 6,
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "categories": {
+          "bed": [
+            "crowd",
+            "rain",
+            "wind",
+            "fan",
+            "traffic",
+            "birds"
+          ],
+          "event": [
+            "doorbell",
+            "door",
+            "footsteps",
+            "water_tap",
+            "paper",
+            "keyboard"
+          ]
+        },
+        "recordings": {
+          "bed:birds": [
+            "birds-fsd50k-eval-86343",
+            "birds-fsd50k-eval-319512",
+            "birds-fsd50k-eval-57907"
+          ],
+          "bed:crowd": [
+            "crowd-fsd50k-eval-121877",
+            "crowd-fsd50k-eval-340358",
+            "crowd-fsd50k-eval-185058"
+          ],
+          "bed:fan": [
+            "fan-fsd50k-eval-419427",
+            "fan-fsd50k-eval-235362",
+            "fan-fsd50k-eval-415925"
+          ],
+          "bed:rain": [
+            "rain-fsd50k-eval-238016",
+            "rain-fsd50k-eval-21189",
+            "rain-fsd50k-eval-382582"
+          ],
+          "bed:traffic": [
+            "traffic-fsd50k-eval-232686",
+            "traffic-fsd50k-eval-235541",
+            "traffic-fsd50k-eval-124020"
+          ],
+          "bed:wind": [
+            "wind-fsd50k-eval-113176",
+            "wind-fsd50k-eval-113175",
+            "wind-fsd50k-eval-113173"
+          ],
+          "event:door": [
+            "door-fsd50k-eval-209519",
+            "door-fsd50k-eval-71212",
+            "door-fsd50k-eval-119077"
+          ],
+          "event:doorbell": [
+            "doorbell-fsd50k-eval-426594",
+            "doorbell-fsd50k-eval-332563",
+            "doorbell-fsd50k-eval-348322"
+          ],
+          "event:footsteps": [
+            "footsteps-fsd50k-eval-272381",
+            "footsteps-fsd50k-eval-392303",
+            "footsteps-fsd50k-eval-153104"
+          ],
+          "event:keyboard": [
+            "keyboard-fsd50k-eval-399740",
+            "keyboard-fsd50k-eval-411545",
+            "keyboard-fsd50k-eval-233057"
+          ],
+          "event:paper": [
+            "paper-fsd50k-eval-121200",
+            "paper-fsd50k-eval-343098",
+            "paper-fsd50k-eval-82562"
+          ],
+          "event:water_tap": [
+            "water_tap-fsd50k-eval-402128",
+            "water_tap-fsd50k-eval-232499",
+            "water_tap-fsd50k-eval-402127"
+          ]
+        }
+      },
+      "control": {
+        "schema": "duplex_v2.soundscape_control.v3",
+        "seed": 2792988816,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "third_party",
+          "machine",
+          "user_to_third_party"
+        ]
+      },
+      "control_sha256": "67a44cc3bb3a80c4630e22d5a50003fdc798f0cb45f6a043c7bded0efdad083d",
+      "candidate_plan": {
+        "schema": "duplex_v2.soundscape_plan.v4",
+        "mode": "quiet",
+        "ambient_layers": [],
+        "environment_events": [],
+        "side_speech_eligibility": {
+          "user_to_third_party": {
+            "compatible": false,
+            "reason": "用户独自在厨房，故事中没有明确同场且可接收话语的旁人。",
+            "source": null
+          },
+          "third_party": {
+            "compatible": false,
+            "reason": "当前场景中没有同场第三方人物。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "微波炉仅被描述为显示屏亮起且未运转，没有机器语音来源；普通提示音不属于机器旁语。",
+            "source": null
+          }
+        }
+      },
+      "base_environment_audio_sha256": "975324b1c6924b49acef17c13ff757e7384fb588db1ff84ec942953bd4d607cd",
+      "aggregate_environment_audio": "厨房里整体安静，近处只有极轻的室内底噪。没有持续的家电运转声或突发声响。",
+      "draws": [],
+      "speech_selection": {
+        "requested": false,
+        "compatible_kinds": [],
+        "selected_kind": null,
+        "outcome": "not_requested",
+        "assessments": {
+          "user_to_third_party": {
+            "compatible": false,
+            "reason": "用户独自在厨房，故事中没有明确同场且可接收话语的旁人。",
+            "source": null
+          },
+          "third_party": {
+            "compatible": false,
+            "reason": "当前场景中没有同场第三方人物。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "微波炉仅被描述为显示屏亮起且未运转，没有机器语音来源；普通提示音不属于机器旁语。",
+            "source": null
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,2475 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 9 轮，允许 9–10 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 按下方V2.9用户旁话规则审查；第三方与机器旁语仍遵守冻结声源与信息边界。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 必须逐字匹配对应源；用户声源的recipient须逐字匹配且不含voice_profile，其余声源的voice_profile逐字匹配，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。\n[V2.9 用户对同场旁人说话]\n定稿根schema_version为duplex_v2.fixed_script.v3；根字段和原主轮字段不变，quiet声景也保留空environment_events和side_speech。\nside_speech仍只用已冻结的side_speech_sources，数量严格等于side_speech_count。第三方/机器的原字段不变。若冻结源speaker=user，每项严格只有event_id、source_id、target_assistant_id、after_text、text、speaker、recipient、gain；speaker=\"user\"，recipient逐字复制冻结源的同场接收者，不填写voice_profile、voice_source或其他字段。用户音色、克隆参考和表达画像由程序复用主用户，不另造声音。\n用户旁话是用户在助手已开始且仍在实际播报时对旁人说的短句，例如对已在场的小林说“小林，把杯子递给我一下”。台词应自然且接收对象可辨，不能只有“等等”这类不明确话语；不能作为对助手的新请求、附和、打断或主对话轮，也不能泄漏关键任务材料。接收者必须来自冻结场景，不能为了配额新增人物。\ntarget_assistant_id仍指作为音频host的助手A，不是旁话接收对象；after_text是A从首字开始的完整非终止已播前缀。用户旁话起声必须早于下一次用户主表达，且完整音频须装入实际会播出的A范围，与同一用户的主句、附和或另一旁话都不重叠。不要在助手将被真正打断的尾端强塞旁话，不把事件安排在未播尾部；不恢复“用户主句暂停→转头旁话→再继续主句”的模式。\n旁话期间助手继续同一段原音频，不停顿、不让出话权、不增加新回答；后续助手不回应或复述旁话，不把它吸收为任务事实。旁话分类依赖接收对象和语义，不依赖其音量；gain仍在0.3–0.7。用户的旁话仍符合其冻结表达画像。\n上述方向、继续播报与stop_required=false是数据审查/监督标注，不是提前透露给在线模型的输入。仅使用原Judge和局部修复预算：审查台词是否确实面向旁人、主线与已听因果是否保持；只按findings最小修复，并在助手正文变更时同步相关精确锚点。\n\n",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g05-sample-009-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 4202547170,
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g05/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g05/relay-state",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D08",
+          "domain": "旅行、住宿与本地探索",
+          "scenario_id": "D08-S03",
+          "scenario": "酒店住宿咨询"
+        },
+        "task_style": "结构化整理",
+        "task_instance": {
+          "goal": "将随后提供的多家酒店候选、房型价格和预订限制，结合同行家人的入住偏好，整理成分项对照表；标出价格与条件的差异、仍缺失的关键信息，以及最终选择前需要确认的事项。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "负责为一家三口安排周末短途住宿的家庭出行协调人",
+          "task_familiarity": "medium"
+        },
+        "voice_profile": "女性，感知年龄三十多岁，音色清晰偏柔和，语速平稳，吐字谨慎而连贯，整体听感安静克制。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "formal",
+          "directness": "direct",
+          "emotional_expressiveness": "reserved",
+          "verbosity": "detailed",
+          "initiative": "low",
+          "caution": "low",
+          "patience": "high",
+          "behavioral_notes": [
+            "表达较完整，倾向一次提供较充分的背景和条件，再等待对方处理。",
+            "请求目标说得直接，但通常不主动抢话，会耐心听完并在需要时补充细节。",
+            "对信息缺口的关注较少，更重视把已提供的内容按清晰层次展开。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "medium",
+        "target_turns": 9,
+        "min_turns": 9,
+        "max_turns": 10
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v3",
+        "seed": 72640717,
+        "mode": "layered",
+        "discrete_event_target": 2,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "third_party",
+          "machine",
+          "user_to_third_party"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "2026年11月9日晚上，用户在杭州家中的书房里为12月5日至6日的一晚家庭短途住宿做最后一轮筛选，同行者是配偶和八岁的女儿。三人计划周六下午抵达酒店，周日退房，因此只需要一间能够同时入住两名成人和一名儿童的客房。用户已经在笔记本电脑上打开四家酒店的预订页面，并把家人的主要偏好写在纸上，但不同页面对含税总价、儿童早餐和取消规则的写法并不统一。配偶睡眠较浅，希望房间安静且明确禁烟；女儿身高约1.28米，需要独立于父母床位的睡眠位置。用户希望把住宿总支出控制在1200元以内，并优先保留临近出发时仍可免费取消的方案，以免孩子临时身体不适。四个候选分别提供家庭房、双床房、亲子套房和三人房，床型、早餐数量、附加费用及取消期限各不相同。部分价格已经显示含税总额，另一些页面把清洁费或税费分开列出，不能只比较醒目的房价数字。用户还注意到，有的酒店把安静房写成可申请但不保证，有的房型虽然便宜，却没有明确说明儿童早餐的实际收费。四个页面均是用户当天自行查看并保留的页面内容，但房量与价格是否会变化尚未核实，用户也没有进行预订或付款。由于页面无法直接共享，用户准备在对话中按候选逐项读出内容，并希望先建立一致的比较维度，再补齐容易遗漏的条件。当前最需要区分的是实际应付总价、三人的床位是否合适、早餐是否覆盖女儿、禁烟与安静条件是否有保证，以及各方案最晚何时可以无损取消。最终选择尚未确定，仍需识别页面中没有说明、必须在预订前向酒店确认的事项。",
+        "task_reference_data": [
+          "来自用户当天打开的“湖畔杉居酒店”预订页面，当前可现场读取：家庭房一晚988元，页面标注税费及服务费已包含；房内有一张1.8米大床和一张沙发床，最多入住2名成人和1名儿童，房型标注为禁烟房。",
+          "来自“湖畔杉居酒店”同一页面，当前可现场读取：房价包含2份成人早餐，儿童早餐另付68元；2026年12月3日18:00前可免费取消，此后取消收取首晚房费；15:00后入住，12:00前退房。页面没有说明沙发床是否需要另付铺床费。",
+          "来自用户当天打开的“运河月庭酒店”预订页面，当前可现场读取：豪华双床房一晚828元，税费已包含；配置两张1.35米床，允许2名成人和1名儿童入住，页面标注禁烟，但儿童需要与成人共用现有床位。",
+          "来自“运河月庭酒店”同一页面，当前可现场读取：包含2份早餐；身高1.2米以下儿童早餐免费，1.2米至1.4米按成人价五折收费，但页面未列成人早餐单价；2026年12月1日23:59前可免费取消，此后取消收取全部房费。内庭朝向房仅可提交偏好申请，不保证安排。",
+          "来自用户当天打开的“青岚亲子公寓酒店”预订页面，当前可现场读取：亲子套房页面房价1099元，税费已包含，另有到店支付的120元清洁费；房内有一张1.8米大床和一组儿童上下铺，最多入住2名成人和2名儿童，房型标注禁烟。",
+          "来自“青岚亲子公寓酒店”同一页面，当前可现场读取：房价不含早餐，房内有简易厨房；订单确认后不可退款或改期；16:00后入住，11:00前退房。页面未说明儿童上下铺的年龄或体重限制，也未说明夜间前台是否有人值守。",
+          "来自用户当天打开的“钱塘泊悦酒店”预订页面，当前可现场读取：标准三人房房价758元，另列税费及服务费114元，页面显示合计872元；房内有三张1.1米单人床，最多入住3人，房型标注禁烟。",
+          "来自“钱塘泊悦酒店”同一页面，当前可现场读取：房价不含早餐，早餐每人45元且儿童无单列优惠；2026年12月4日12:00前可免费取消，此后取消收取首晚房费；14:00后入住，12:00前退房。页面写有隔音窗，但没有说明房间朝向或能否保证远离电梯。",
+          "来自用户手写的家庭偏好记录，用户已经掌握：同行人为2名成人和1名八岁儿童，儿童身高约1.28米；住宿总支出希望不超过1200元；需要禁烟环境和适合三人使用的床位；配偶睡眠较浅，安静程度与取消灵活性比厨房设施更重要。"
+        ],
+        "environment_audio": "书房右侧约两米处有持续而低沉的风扇声，转速稳定，不遮盖近距离说话。关着的窗外隐约传来远处道路车流，音量较低，偶尔随车辆经过略有起伏。",
+        "estimated_snr_db": 27,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "住宿日期为2026年12月5日至6日，共一晚，需由同一间客房接待2名成人和1名八岁儿童。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "比较总价时必须计入页面已列出的税费、服务费、清洁费以及三人所需早餐费用，住宿相关总支出上限为1200元。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C03",
+            "text": "候选房型必须为禁烟环境，并需提供适合三人使用的床位；仅允许儿童与成人共用现有床位的方案不符合当前床位偏好。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C04",
+            "text": "在满足预算和床位条件后，优先考虑安静条件较明确且免费取消期限更接近入住日的方案。",
+            "kind": "soft"
+          }
+        ],
+        "safety_limits": [],
+        "soundscape_plan": {
+          "mode": "layered",
+          "ambient_layers": [
+            {
+              "source_id": "AMB01",
+              "asset_id": "fan-fsd50k-eval-419427",
+              "reason": "稳定机械风扇声符合家庭书房内持续低声运转的设备背景。"
+            },
+            {
+              "source_id": "AMB02",
+              "asset_id": "traffic-fsd50k-eval-232686",
+              "reason": "低强度道路车流可表现关闭窗户后仍能听见的远处城市背景。"
+            }
+          ],
+          "environment_events": [
+            {
+              "source_id": "ENV01",
+              "asset_id": "keyboard-fsd50k-eval-233057",
+              "reason": "用户面前有打开酒店页面的笔记本电脑，短暂键盘输入符合当前整理场景。"
+            },
+            {
+              "source_id": "ENV02",
+              "asset_id": "paper-fsd50k-eval-82562",
+              "reason": "用户已把家庭偏好写在纸上，翻动纸张符合现场核对笔记的动作。"
+            }
+          ],
+          "schema": "duplex_v2.soundscape_plan.v4",
+          "side_speech_sources": [],
+          "side_speech_count": 0,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v3",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v3",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3,
+              "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+              "user_aside_preference_probability": 0.5,
+              "user_voice_source": "stage1_user",
+              "user_aside_requires_present_recipient": true
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611090005,
+              "slot": 8,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "crowd",
+                  "wind",
+                  "rain",
+                  "fan",
+                  "birds",
+                  "traffic"
+                ],
+                "event": [
+                  "keyboard",
+                  "paper",
+                  "footsteps",
+                  "door",
+                  "water_tap",
+                  "doorbell"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-57907",
+                  "birds-fsd50k-eval-319512",
+                  "birds-fsd50k-eval-86343"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-340358",
+                  "crowd-fsd50k-eval-185058",
+                  "crowd-fsd50k-eval-121877"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-419427",
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-415925"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-382582",
+                  "rain-fsd50k-eval-21189",
+                  "rain-fsd50k-eval-238016"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-232686",
+                  "traffic-fsd50k-eval-124020",
+                  "traffic-fsd50k-eval-235541"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113173",
+                  "wind-fsd50k-eval-113175",
+                  "wind-fsd50k-eval-113176"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-71212",
+                  "door-fsd50k-eval-119077",
+                  "door-fsd50k-eval-209519"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-332563",
+                  "doorbell-fsd50k-eval-426594",
+                  "doorbell-fsd50k-eval-348322"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-392303",
+                  "footsteps-fsd50k-eval-272381",
+                  "footsteps-fsd50k-eval-153104"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-411545",
+                  "keyboard-fsd50k-eval-399740"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-82562",
+                  "paper-fsd50k-eval-343098",
+                  "paper-fsd50k-eval-121200"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-232499",
+                  "water_tap-fsd50k-eval-402127",
+                  "water_tap-fsd50k-eval-402128"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v3",
+              "seed": 72640717,
+              "mode": "layered",
+              "discrete_event_target": 2,
+              "max_ambient_layers": 2,
+              "side_speech_requested": false,
+              "speech_kind_preferences": [
+                "third_party",
+                "machine",
+                "user_to_third_party"
+              ]
+            },
+            "control_sha256": "d9aa824ea4c339acf490220b18c5a50d1706b9ef68f89a6f0aa5ab3477a426f7",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v4",
+              "mode": "layered",
+              "ambient_layers": [
+                {
+                  "source_id": "AMB01",
+                  "candidates": [
+                    {
+                      "asset_id": "fan-fsd50k-eval-419427",
+                      "reason": "稳定机械风扇声符合家庭书房内持续低声运转的设备背景。",
+                      "environment_audio": "右侧近处持续传来低沉而稳定的风扇运转声。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-235362",
+                      "reason": "连续通风声适合作为安静室内、不打断语音的基础底噪。",
+                      "environment_audio": "近处有均匀的机械通风声，音量保持平稳。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-415925",
+                      "reason": "短而稳定的风扇录音与书房内低强度设备声相容。",
+                      "environment_audio": "书房一侧保持轻微而连续的风扇声。"
+                    }
+                  ]
+                },
+                {
+                  "source_id": "AMB02",
+                  "candidates": [
+                    {
+                      "asset_id": "traffic-fsd50k-eval-232686",
+                      "reason": "低强度道路车流可表现关闭窗户后仍能听见的远处城市背景。",
+                      "environment_audio": "窗外远处有轻微车流声，经过时音量短暂起伏。"
+                    },
+                    {
+                      "asset_id": "traffic-fsd50k-eval-124020",
+                      "reason": "持续车流录音适合模拟住宅窗外较远的道路环境。",
+                      "environment_audio": "较远处的道路车流形成模糊而连续的背景声。"
+                    },
+                    {
+                      "asset_id": "traffic-fsd50k-eval-235541",
+                      "reason": "较长的道路环境声可自然铺设为室内可闻但不突出的窗外底色。",
+                      "environment_audio": "关窗后仍隐约可闻远处车辆连续驶过。"
+                    }
+                  ]
+                }
+              ],
+              "environment_events": [
+                {
+                  "source_id": "ENV01",
+                  "candidates": [
+                    {
+                      "asset_id": "keyboard-fsd50k-eval-233057",
+                      "reason": "用户面前有打开酒店页面的笔记本电脑，短暂键盘输入符合当前整理场景。",
+                      "environment_audio": "桌前响起一小段清晰的键盘敲击声，随后停止。"
+                    },
+                    {
+                      "asset_id": "keyboard-fsd50k-eval-411545",
+                      "reason": "短段电脑键盘声可对应用户在候选页面间记录或切换信息。",
+                      "environment_audio": "近处传来连续数下键盘按键声。"
+                    },
+                    {
+                      "asset_id": "keyboard-fsd50k-eval-399740",
+                      "reason": "室内近距离键盘录音与用户使用笔记本电脑核对预订页面一致。",
+                      "environment_audio": "桌面方向出现短促而均匀的键盘输入声。"
+                    }
+                  ]
+                },
+                {
+                  "source_id": "ENV02",
+                  "candidates": [
+                    {
+                      "asset_id": "paper-fsd50k-eval-82562",
+                      "reason": "用户已把家庭偏好写在纸上，翻动纸张符合现场核对笔记的动作。",
+                      "environment_audio": "近处传来一次完整的纸张翻动声。"
+                    },
+                    {
+                      "asset_id": "paper-fsd50k-eval-343098",
+                      "reason": "短暂纸张声可表现用户拿起或调整手写偏好记录。",
+                      "environment_audio": "桌面附近响起轻短的纸页挪动声。"
+                    },
+                    {
+                      "asset_id": "paper-fsd50k-eval-121200",
+                      "reason": "纸页录音与书房内查看手写住宿条件的情境一致。",
+                      "environment_audio": "一张纸被快速翻过，发出轻微摩擦声。"
+                    }
+                  ]
+                }
+              ],
+              "side_speech_eligibility": {
+                "user_to_third_party": {
+                  "compatible": false,
+                  "reason": "故事中用户独自在书房整理资料，没有明确同场且可接收旁话的家人或其他人物。",
+                  "source": null
+                },
+                "third_party": {
+                  "compatible": false,
+                  "reason": "当前书房场景未建立任何同场第三方人物，窗外车流也不构成可说话来源。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "笔记本电脑仅用于显示用户已有的预订页面，故事中没有建立语音播报或其他机器发声来源。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "5046fbf3721ee160eb24382fb4a9a9fd6da17d472770aa2b58752fba16cd003e",
+            "aggregate_environment_audio": "书房右侧约两米处有持续而低沉的风扇声，转速稳定，不遮盖近距离说话。关着的窗外隐约传来远处道路车流，音量较低，偶尔随车辆经过略有起伏。 右侧近处持续传来低沉而稳定的风扇运转声。 窗外远处有轻微车流声，经过时音量短暂起伏。 桌前响起一小段清晰的键盘敲击声，随后停止。 近处传来一次完整的纸张翻动声。",
+            "draws": [
+              {
+                "source_id": "AMB01",
+                "category": "fan",
+                "asset_id": "fan-fsd50k-eval-419427",
+                "eligible_categories": [
+                  "fan"
+                ],
+                "eligible_assets": [
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-419427"
+                ]
+              },
+              {
+                "source_id": "AMB02",
+                "category": "traffic",
+                "asset_id": "traffic-fsd50k-eval-232686",
+                "eligible_categories": [
+                  "traffic"
+                ],
+                "eligible_assets": [
+                  "traffic-fsd50k-eval-124020",
+                  "traffic-fsd50k-eval-232686",
+                  "traffic-fsd50k-eval-235541"
+                ]
+              },
+              {
+                "source_id": "ENV01",
+                "category": "keyboard",
+                "asset_id": "keyboard-fsd50k-eval-233057",
+                "eligible_categories": [
+                  "keyboard"
+                ],
+                "eligible_assets": [
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-399740",
+                  "keyboard-fsd50k-eval-411545"
+                ]
+              },
+              {
+                "source_id": "ENV02",
+                "category": "paper",
+                "asset_id": "paper-fsd50k-eval-82562",
+                "eligible_categories": [
+                  "paper"
+                ],
+                "eligible_assets": [
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-343098",
+                  "paper-fsd50k-eval-82562"
+                ]
+              }
+            ],
+            "speech_selection": {
+              "requested": false,
+              "compatible_kinds": [],
+              "selected_kind": null,
+              "outcome": "not_requested",
+              "assessments": {
+                "user_to_third_party": {
+                  "compatible": false,
+                  "reason": "故事中用户独自在书房整理资料，没有明确同场且可接收旁话的家人或其他人物。",
+                  "source": null
+                },
+                "third_party": {
+                  "compatible": false,
+                  "reason": "当前书房场景未建立任何同场第三方人物，窗外车流也不构成可说话来源。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "笔记本电脑仅用于显示用户已有的预订页面，故事中没有建立语音播报或其他机器发声来源。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v3",
+      "title": "四家酒店住宿条件对照",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。",
+          "assistant_utterance": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。",
+          "user_intent": "说明住宿任务并要求先建立统一比较框架",
+          "assistant_intent": "建立覆盖价格、床位、早餐、环境和取消条件的整理维度",
+          "semantic_goal": "获得可用于逐家录入酒店信息的一致对照结构",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "第一家是湖畔杉居酒店，家庭房九百八十八元，税费和服务费已包含。一张一米八大床加一张沙发床，可住两名成人和一名儿童，标注禁烟。含两份成人早餐，儿童早餐六十八元。十二月三日十八点前可免费取消，之后收首晚房费。十五点后入住，十二点前退房，没写沙发床铺床费。",
+          "assistant_utterance": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。",
+          "user_intent": "提供第一家酒店的价格、床位、早餐和取消条件",
+          "assistant_intent": "计算已知总价并判断床位、禁烟和取消条件，标出信息缺口",
+          "semantic_goal": "形成湖畔杉居酒店的完整对照条目",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。",
+            "assistant_stop_after_text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "第二家是运河月庭酒店，豪华双床房八百二十八元，税费已含，两张一米三五的床，允许两名成人和一名儿童入住，也标注禁烟，但孩子必须与成人共用现有床位。含两份早餐，孩子身高一米二到一米四按成人价五折，成人早餐单价没写。十二月一日二十三点五十九分前免费取消，内庭朝向只能申请，不能保证。",
+          "assistant_utterance": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。早餐费因成人单价缺失无法算全；内庭房只可申请，安静不保证，免费取消也早到十二月一日。",
+          "user_intent": "提供第二家酒店信息并说明儿童必须共床",
+          "assistant_intent": "识别床位硬性不符，并准备说明早餐、安静和取消方面的不足",
+          "semantic_goal": "判断运河月庭是否符合家庭床位与其他住宿偏好",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。",
+            "assistant_stop_after_text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "好，这家先标为床位不合适。第三家青岚亲子公寓酒店，亲子套房一千零九十九元，税费已含，到店还付一百二十元清洁费。一张大床和一组儿童上下铺，禁烟，不含早餐，有简易厨房。订单确认后不可退款或改期，十六点后入住，十一点前退房。页面没写上下铺的年龄、体重限制，也没写夜间前台是否有人。",
+          "assistant_utterance": "青岚亲子公寓：房费加清洁费已达一千二百一十九元，尚未含早餐，超过预算；床位和禁烟符合，但确认后不可退改。还需确认上下铺的年龄、体重限制及夜间前台值守。",
+          "user_intent": "打断第二家分析并将其标为床位不合适，继续提供第三家信息",
+          "assistant_intent": "停止上一项展开，转而核算第三家总价并判断预算、床位和退改条件",
+          "semantic_goal": "排除床位不符方案并完成青岚亲子公寓的条件判断",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。",
+            "assistant_stop_after_text": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。早"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "第四家是钱塘泊悦酒店，标准三人房七百五十八元，另有税费和服务费一百一十四元，合计八百七十二元。三张一米一单人床，最多住三人，标注禁烟。早餐每人四十五元，儿童没有优惠。十二月四日十二点前免费取消，之后收首晚房费；十四点后入住，十二点前退房。有隔音窗，但没写朝向，也没说能否远离电梯。",
+          "assistant_utterance": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；三张单人床、禁烟，均符合。十二月四日十二点前可免费取消，最灵活；隔音窗是优点，但朝向和远离电梯未保证。",
+          "user_intent": "提供第四家酒店的完整价格、床位、早餐和取消信息",
+          "assistant_intent": "计算含三人早餐的总支出并判断床位、禁烟、取消和安静条件",
+          "semantic_goal": "形成钱塘泊悦酒店的完整对照条目",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "青岚亲子公寓：房费加清洁费已达一千二百一十九元，尚未含早餐，超过预算；床位和禁烟符合，但确认后不可退改。还需确认上下铺的年龄、体重限制及夜间前台值守。",
+            "assistant_stop_after_text": "青岚亲子公寓：房费加清洁费已达一千二百一十九元，尚未含早餐，超过预算；床位和禁烟符合，但确认后不可退改。还需确认上下铺的年龄、体重限制及夜间前台值守。"
+          },
+          "pause_cue": {
+            "after_text": "第四家是钱塘泊悦酒店，",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U06",
+          "assistant_id": "A006",
+          "user_utterance": "现在请按预算、三人床位、安静条件和取消灵活性，先给这四家排个顺序，并把明显不合适的原因说清楚。",
+          "assistant_utterance": "暂排第一钱塘泊悦：总价一千零七元、三张床，取消最晚，但安静位置待确认。第二湖畔杉居：已知一千零五十六元，取消较晚，但铺床费和安静保证不明。运河因儿童须共床排除；青岚因超预算且不可退排除。",
+          "user_intent": "要求依据核心条件给四家酒店排序并说明淘汰原因",
+          "assistant_intent": "综合预算、床位、安静和取消期限形成初步排序",
+          "semantic_goal": "缩小候选范围并明确各方案的相对优先级",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A005",
+            "user_onset_after_text": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；三张单人床、禁烟，均符合。十二月四日十二点前可免费取消，最灵活；隔音窗是优点，但朝向和远离电梯未保证。",
+            "assistant_stop_after_text": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；三张单人床、禁烟，均符合。十二月四日十二点前可免费取消，最灵活；隔音窗是优点，但朝向和远离电梯未保证。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U07",
+          "assistant_id": "A007",
+          "user_utterance": "再按酒店分别列一下预订前还要确认什么。已经可以排除的也保留缺失项，方便我把记录补完整。",
+          "assistant_utterance": "预订前重点确认：钱塘能否安排安静朝向并远离电梯；湖畔沙发床是否免费铺设、尺寸是否适合八岁儿童及能否保证安静；运河的成人早餐单价和内庭安排概率；青岚上下铺限制、夜间前台及早餐方案。另需复核实时价格和房量。",
+          "user_intent": "要求按酒店整理所有尚未明确的信息",
+          "assistant_intent": "逐家列出需向酒店确认的缺失项并提醒复核实时状态",
+          "semantic_goal": "得到可直接用于预订前核实的信息清单",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A006",
+            "user_onset_after_text": "暂排第一钱塘泊悦：总价一千零七元、三张床，取消最晚，但安静位置待确认。第二湖畔杉居：已知一千零五十六元，取消较晚，但铺床费和安静保证不明。运河因儿童须共床排除；青岚因超预算且不可退排除。",
+            "assistant_stop_after_text": "暂排第一钱塘泊悦：总价一千零七元、三张床，取消最晚，但安静位置待确认。第二湖畔杉居：已知一千零五十六元，取消较晚，但铺床费和安静保证不明。运河因儿童须共床排除；青岚因超预算且不可退排除。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U08",
+          "assistant_id": "A008",
+          "user_utterance": "请把四家压缩成一份完整对照，每家都保留总价、床位结论、取消期限和关键缺口，我想最后通读一遍。",
+          "assistant_utterance": "汇总如下：湖畔，已知合计一千零五十六元，床位合适、禁烟，十二月三日十八点前免费取消，待确认铺床费和安静保证。运河，至少八百二十八元，儿童须共床，床位不合适；早餐价缺失，十二月一日二十三点五十九分前免费取消。青岚，至少一千二百一十九元，床位形式符合、禁烟，但上下铺适用限制待确认；超预算且不可退。钱塘，含三份早餐一千零七元，三床禁烟，十二月四日十二点前免费取消，待确认朝向和电梯距离。",
+          "user_intent": "要求完整而紧凑地回读四家酒店的核心对照结果",
+          "assistant_intent": "按统一维度压缩汇总价格、床位、取消和缺失信息",
+          "semantic_goal": "获得一份可整体核对的四家酒店对照摘要",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A007",
+            "user_onset_after_text": "预订前重点确认：钱塘能否安排安静朝向并远离电梯；湖畔沙发床是否免费铺设、尺寸是否适合八岁儿童及能否保证安静；运河的成人早餐单价和内庭安排概率；青岚上下铺限制、夜间前台及早餐方案。另需复核实时价格和房量。",
+            "assistant_stop_after_text": "预订前重点确认：钱塘能否安排安静朝向并远离电梯；湖畔沙发床是否免费铺设、尺寸是否适合八岁儿童及能否保证安静；运河的成人早餐单价和内庭安排概率；青岚上下铺限制、夜间前台及早餐方案。另需复核实时价格和房量。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U09",
+          "assistant_id": "A009",
+          "user_utterance": "最后给我一个当前推荐，并说明我应该按什么顺序确认，确认到哪一步就可以决定。",
+          "assistant_utterance": "当前首选钱塘泊悦。先确认十二月五日的实时总价和房量，再确认禁烟房可安排安静朝向并远离电梯；两项都落实即可选择。若安静位置无法确认，再问湖畔的沙发床费用、尺寸和安静保证，合计仍不超一千二百元时作为备选。",
+          "user_intent": "索取最终推荐和可执行的确认顺序",
+          "assistant_intent": "给出首选、备选及决定前的分步核实条件",
+          "semantic_goal": "明确优先联系对象以及何时可以作出最终选择",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A008",
+            "user_onset_after_text": "汇总如下：湖畔，已知合计一千零五十六元，床位合适、禁烟，十二月三日十八点前免费取消，待确认铺床费和安静保证。运河，至少八百二十八元，儿童须共床，床位不合适；早餐价缺失，十二月一日二十三点五十九分前免费取消。青岚，至少一千二百一十九元，床位形式符合、禁烟，但上下铺适用限制待确认；超预算且不可退。钱塘，含三份早餐一千零七元，三床禁烟，十二月四日十二点前免费取消，待确认朝向和电梯距离。",
+            "assistant_stop_after_text": "汇总如下：湖畔，已知合计一千零五十六元，床位合适、禁烟，十二月三日十八点前免费取消，待确认铺床费和安静保证。运河，至少八百二十八元，儿童须共床，床位不合适；早餐价缺失，十二月一日二十三点五十九分前免费取消。青岚，至少一千二百一十九元，床位形式符合、禁烟，但上下铺适用限制待确认；超预算且不可退。钱塘，含三份早餐一千零七元，三床禁烟，十二月四日十二点前免费取消，待确认朝向和电梯距离。"
+          },
+          "pause_cue": null
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；",
+          "text": "嗯，明白"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A005",
+          "after_text": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；",
+          "text": "好"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A008",
+          "after_text": "汇总如下：湖畔，已知合计一千零五十六元，床位合适、禁烟，十二月三日十八点前免费取消，待确认铺床费和安静保证。运河，至少八百二十八元，儿童须共床，床位不合适；早餐价缺失，十二月一日二十三点五十九分前免费取消。",
+          "text": "嗯"
+        }
+      ],
+      "side_speech": [],
+      "environment_events": [
+        {
+          "event_id": "ENV01",
+          "source_id": "ENV01",
+          "target_audio_id": "U02",
+          "placement_fraction": 0.34
+        },
+        {
+          "event_id": "ENV02",
+          "source_id": "ENV02",
+          "target_audio_id": "A008",
+          "placement_fraction": 0.62
+        }
+      ]
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "第一家是湖畔杉居酒店，家庭房九百八十八元，税费和服务费已包含。一张一米八大床加一张沙发床，可住两名成人和一名儿童，标注禁烟。含两份成人早餐，儿童早餐六十八元。十二月三日十八点前可免费取消，之后收首晚房费。十五点后入住，十二点前退房，没写沙发床铺床费。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。",
+          "final_shared_played_prefix": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "第一家是湖畔杉居酒店，家庭房九百八十八元，税费和服务费已包含。一张一米八大床加一张沙发床，可住两名成人和一名儿童，标注禁烟。含两份成人早餐，儿童早餐六十八元。十二月三日十八点前可免费取消，之后收首晚房费。十五点后入住，十二点前退房，没写沙发床铺床费。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "第一家是湖畔杉居酒店，家庭房九百八十八元，税费和服务费已包含。一张一米八大床加一张沙发床，可住两名成人和一名儿童，标注禁烟。含两份成人早餐，儿童早餐六十八元。十二月三日十八点前可免费取消，之后收首晚房费。十五点后入住，十二点前退房，没写沙发床铺床费。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "第二家是运河月庭酒店，豪华双床房八百二十八元，税费已含，两张一米三五的床，允许两名成人和一名儿童入住，也标注禁烟，但孩子必须与成人共用现有床位。含两份早餐，孩子身高一米二到一米四按成人价五折，成人早餐单价没写。十二月一日二十三点五十九分前免费取消，内庭朝向只能申请，不能保证。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。",
+          "final_shared_played_prefix": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。早餐费因成人单价缺失无法算全；内庭房只可申请，安静不保证，免费取消也早到十二月一日。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "第一家是湖畔杉居酒店，家庭房九百八十八元，税费和服务费已包含。一张一米八大床加一张沙发床，可住两名成人和一名儿童，标注禁烟。含两份成人早餐，儿童早餐六十八元。十二月三日十八点前可免费取消，之后收首晚房费。十五点后入住，十二点前退房，没写沙发床铺床费。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "第二家是运河月庭酒店，豪华双床房八百二十八元，税费已含，两张一米三五的床，允许两名成人和一名儿童入住，也标注禁烟，但孩子必须与成人共用现有床位。含两份早餐，孩子身高一米二到一米四按成人价五折，成人早餐单价没写。十二月一日二十三点五十九分前免费取消，内庭朝向只能申请，不能保证。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "第一家是湖畔杉居酒店，家庭房九百八十八元，税费和服务费已包含。一张一米八大床加一张沙发床，可住两名成人和一名儿童，标注禁烟。含两份成人早餐，儿童早餐六十八元。十二月三日十八点前可免费取消，之后收首晚房费。十五点后入住，十二点前退房，没写沙发床铺床费。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "第二家是运河月庭酒店，豪华双床房八百二十八元，税费已含，两张一米三五的床，允许两名成人和一名儿童入住，也标注禁烟，但孩子必须与成人共用现有床位。含两份早餐，孩子身高一米二到一米四按成人价五折，成人早餐单价没写。十二月一日二十三点五十九分前免费取消，内庭朝向只能申请，不能保证。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。早"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "好，这家先标为床位不合适。第三家青岚亲子公寓酒店，亲子套房一千零九十九元，税费已含，到店还付一百二十元清洁费。一张大床和一组儿童上下铺，禁烟，不含早餐，有简易厨房。订单确认后不可退款或改期，十六点后入住，十一点前退房。页面没写上下铺的年龄、体重限制，也没写夜间前台是否有人。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。",
+          "final_shared_played_prefix": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。早",
+          "discarded_unheard_tail": "餐费因成人单价缺失无法算全；内庭房只可申请，安静不保证，免费取消也早到十二月一日。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "青岚亲子公寓：房费加清洁费已达一千二百一十九元，尚未含早餐，超过预算；床位和禁烟符合，但确认后不可退改。还需确认上下铺的年龄、体重限制及夜间前台值守。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "第一家是湖畔杉居酒店，家庭房九百八十八元，税费和服务费已包含。一张一米八大床加一张沙发床，可住两名成人和一名儿童，标注禁烟。含两份成人早餐，儿童早餐六十八元。十二月三日十八点前可免费取消，之后收首晚房费。十五点后入住，十二点前退房，没写沙发床铺床费。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "第二家是运河月庭酒店，豪华双床房八百二十八元，税费已含，两张一米三五的床，允许两名成人和一名儿童入住，也标注禁烟，但孩子必须与成人共用现有床位。含两份早餐，孩子身高一米二到一米四按成人价五折，成人早餐单价没写。十二月一日二十三点五十九分前免费取消，内庭朝向只能申请，不能保证。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。早"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "好，这家先标为床位不合适。第三家青岚亲子公寓酒店，亲子套房一千零九十九元，税费已含，到店还付一百二十元清洁费。一张大床和一组儿童上下铺，禁烟，不含早餐，有简易厨房。订单确认后不可退款或改期，十六点后入住，十一点前退房。页面没写上下铺的年龄、体重限制，也没写夜间前台是否有人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "青岚亲子公寓：房费加清洁费已达一千二百一十九元，尚未含早餐，超过预算；床位和禁烟符合，但确认后不可退改。还需确认上下铺的年龄、体重限制及夜间前台值守。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "第一家是湖畔杉居酒店，家庭房九百八十八元，税费和服务费已包含。一张一米八大床加一张沙发床，可住两名成人和一名儿童，标注禁烟。含两份成人早餐，儿童早餐六十八元。十二月三日十八点前可免费取消，之后收首晚房费。十五点后入住，十二点前退房，没写沙发床铺床费。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "第二家是运河月庭酒店，豪华双床房八百二十八元，税费已含，两张一米三五的床，允许两名成人和一名儿童入住，也标注禁烟，但孩子必须与成人共用现有床位。含两份早餐，孩子身高一米二到一米四按成人价五折，成人早餐单价没写。十二月一日二十三点五十九分前免费取消，内庭朝向只能申请，不能保证。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。早"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "好，这家先标为床位不合适。第三家青岚亲子公寓酒店，亲子套房一千零九十九元，税费已含，到店还付一百二十元清洁费。一张大床和一组儿童上下铺，禁烟，不含早餐，有简易厨房。订单确认后不可退款或改期，十六点后入住，十一点前退房。页面没写上下铺的年龄、体重限制，也没写夜间前台是否有人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "青岚亲子公寓：房费加清洁费已达一千二百一十九元，尚未含早餐，超过预算；床位和禁烟符合，但确认后不可退改。还需确认上下铺的年龄、体重限制及夜间前台值守。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "第四家是钱塘泊悦酒店，标准三人房七百五十八元，另有税费和服务费一百一十四元，合计八百七十二元。三张一米一单人床，最多住三人，标注禁烟。早餐每人四十五元，儿童没有优惠。十二月四日十二点前免费取消，之后收首晚房费；十四点后入住，十二点前退房。有隔音窗，但没写朝向，也没说能否远离电梯。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "青岚亲子公寓：房费加清洁费已达一千二百一十九元，尚未含早餐，超过预算；床位和禁烟符合，但确认后不可退改。还需确认上下铺的年龄、体重限制及夜间前台值守。",
+          "final_shared_played_prefix": "青岚亲子公寓：房费加清洁费已达一千二百一十九元，尚未含早餐，超过预算；床位和禁烟符合，但确认后不可退改。还需确认上下铺的年龄、体重限制及夜间前台值守。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；三张单人床、禁烟，均符合。十二月四日十二点前可免费取消，最灵活；隔音窗是优点，但朝向和远离电梯未保证。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "第一家是湖畔杉居酒店，家庭房九百八十八元，税费和服务费已包含。一张一米八大床加一张沙发床，可住两名成人和一名儿童，标注禁烟。含两份成人早餐，儿童早餐六十八元。十二月三日十八点前可免费取消，之后收首晚房费。十五点后入住，十二点前退房，没写沙发床铺床费。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "第二家是运河月庭酒店，豪华双床房八百二十八元，税费已含，两张一米三五的床，允许两名成人和一名儿童入住，也标注禁烟，但孩子必须与成人共用现有床位。含两份早餐，孩子身高一米二到一米四按成人价五折，成人早餐单价没写。十二月一日二十三点五十九分前免费取消，内庭朝向只能申请，不能保证。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。早"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "好，这家先标为床位不合适。第三家青岚亲子公寓酒店，亲子套房一千零九十九元，税费已含，到店还付一百二十元清洁费。一张大床和一组儿童上下铺，禁烟，不含早餐，有简易厨房。订单确认后不可退款或改期，十六点后入住，十一点前退房。页面没写上下铺的年龄、体重限制，也没写夜间前台是否有人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "青岚亲子公寓：房费加清洁费已达一千二百一十九元，尚未含早餐，超过预算；床位和禁烟符合，但确认后不可退改。还需确认上下铺的年龄、体重限制及夜间前台值守。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "第四家是钱塘泊悦酒店，标准三人房七百五十八元，另有税费和服务费一百一十四元，合计八百七十二元。三张一米一单人床，最多住三人，标注禁烟。早餐每人四十五元，儿童没有优惠。十二月四日十二点前免费取消，之后收首晚房费；十四点后入住，十二点前退房。有隔音窗，但没写朝向，也没说能否远离电梯。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；三张单人床、禁烟，均符合。十二月四日十二点前可免费取消，最灵活；隔音窗是优点，但朝向和远离电梯未保证。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "第一家是湖畔杉居酒店，家庭房九百八十八元，税费和服务费已包含。一张一米八大床加一张沙发床，可住两名成人和一名儿童，标注禁烟。含两份成人早餐，儿童早餐六十八元。十二月三日十八点前可免费取消，之后收首晚房费。十五点后入住，十二点前退房，没写沙发床铺床费。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "第二家是运河月庭酒店，豪华双床房八百二十八元，税费已含，两张一米三五的床，允许两名成人和一名儿童入住，也标注禁烟，但孩子必须与成人共用现有床位。含两份早餐，孩子身高一米二到一米四按成人价五折，成人早餐单价没写。十二月一日二十三点五十九分前免费取消，内庭朝向只能申请，不能保证。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。早"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "好，这家先标为床位不合适。第三家青岚亲子公寓酒店，亲子套房一千零九十九元，税费已含，到店还付一百二十元清洁费。一张大床和一组儿童上下铺，禁烟，不含早餐，有简易厨房。订单确认后不可退款或改期，十六点后入住，十一点前退房。页面没写上下铺的年龄、体重限制，也没写夜间前台是否有人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "青岚亲子公寓：房费加清洁费已达一千二百一十九元，尚未含早餐，超过预算；床位和禁烟符合，但确认后不可退改。还需确认上下铺的年龄、体重限制及夜间前台值守。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "第四家是钱塘泊悦酒店，标准三人房七百五十八元，另有税费和服务费一百一十四元，合计八百七十二元。三张一米一单人床，最多住三人，标注禁烟。早餐每人四十五元，儿童没有优惠。十二月四日十二点前免费取消，之后收首晚房费；十四点后入住，十二点前退房。有隔音窗，但没写朝向，也没说能否远离电梯。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；三张单人床、禁烟，均符合。十二月四日十二点前可免费取消，最灵活；隔音窗是优点，但朝向和远离电梯未保证。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "现在请按预算、三人床位、安静条件和取消灵活性，先给这四家排个顺序，并把明显不合适的原因说清楚。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A005",
+          "at_user_onset_heard_prefix": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；三张单人床、禁烟，均符合。十二月四日十二点前可免费取消，最灵活；隔音窗是优点，但朝向和远离电梯未保证。",
+          "final_shared_played_prefix": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；三张单人床、禁烟，均符合。十二月四日十二点前可免费取消，最灵活；隔音窗是优点，但朝向和远离电梯未保证。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "暂排第一钱塘泊悦：总价一千零七元、三张床，取消最晚，但安静位置待确认。第二湖畔杉居：已知一千零五十六元，取消较晚，但铺床费和安静保证不明。运河因儿童须共床排除；青岚因超预算且不可退排除。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "第一家是湖畔杉居酒店，家庭房九百八十八元，税费和服务费已包含。一张一米八大床加一张沙发床，可住两名成人和一名儿童，标注禁烟。含两份成人早餐，儿童早餐六十八元。十二月三日十八点前可免费取消，之后收首晚房费。十五点后入住，十二点前退房，没写沙发床铺床费。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "第二家是运河月庭酒店，豪华双床房八百二十八元，税费已含，两张一米三五的床，允许两名成人和一名儿童入住，也标注禁烟，但孩子必须与成人共用现有床位。含两份早餐，孩子身高一米二到一米四按成人价五折，成人早餐单价没写。十二月一日二十三点五十九分前免费取消，内庭朝向只能申请，不能保证。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。早"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "好，这家先标为床位不合适。第三家青岚亲子公寓酒店，亲子套房一千零九十九元，税费已含，到店还付一百二十元清洁费。一张大床和一组儿童上下铺，禁烟，不含早餐，有简易厨房。订单确认后不可退款或改期，十六点后入住，十一点前退房。页面没写上下铺的年龄、体重限制，也没写夜间前台是否有人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "青岚亲子公寓：房费加清洁费已达一千二百一十九元，尚未含早餐，超过预算；床位和禁烟符合，但确认后不可退改。还需确认上下铺的年龄、体重限制及夜间前台值守。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "第四家是钱塘泊悦酒店，标准三人房七百五十八元，另有税费和服务费一百一十四元，合计八百七十二元。三张一米一单人床，最多住三人，标注禁烟。早餐每人四十五元，儿童没有优惠。十二月四日十二点前免费取消，之后收首晚房费；十四点后入住，十二点前退房。有隔音窗，但没写朝向，也没说能否远离电梯。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；三张单人床、禁烟，均符合。十二月四日十二点前可免费取消，最灵活；隔音窗是优点，但朝向和远离电梯未保证。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "现在请按预算、三人床位、安静条件和取消灵活性，先给这四家排个顺序，并把明显不合适的原因说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "暂排第一钱塘泊悦：总价一千零七元、三张床，取消最晚，但安静位置待确认。第二湖畔杉居：已知一千零五十六元，取消较晚，但铺床费和安静保证不明。运河因儿童须共床排除；青岚因超预算且不可退排除。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "第一家是湖畔杉居酒店，家庭房九百八十八元，税费和服务费已包含。一张一米八大床加一张沙发床，可住两名成人和一名儿童，标注禁烟。含两份成人早餐，儿童早餐六十八元。十二月三日十八点前可免费取消，之后收首晚房费。十五点后入住，十二点前退房，没写沙发床铺床费。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "第二家是运河月庭酒店，豪华双床房八百二十八元，税费已含，两张一米三五的床，允许两名成人和一名儿童入住，也标注禁烟，但孩子必须与成人共用现有床位。含两份早餐，孩子身高一米二到一米四按成人价五折，成人早餐单价没写。十二月一日二十三点五十九分前免费取消，内庭朝向只能申请，不能保证。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。早"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "好，这家先标为床位不合适。第三家青岚亲子公寓酒店，亲子套房一千零九十九元，税费已含，到店还付一百二十元清洁费。一张大床和一组儿童上下铺，禁烟，不含早餐，有简易厨房。订单确认后不可退款或改期，十六点后入住，十一点前退房。页面没写上下铺的年龄、体重限制，也没写夜间前台是否有人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "青岚亲子公寓：房费加清洁费已达一千二百一十九元，尚未含早餐，超过预算；床位和禁烟符合，但确认后不可退改。还需确认上下铺的年龄、体重限制及夜间前台值守。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "第四家是钱塘泊悦酒店，标准三人房七百五十八元，另有税费和服务费一百一十四元，合计八百七十二元。三张一米一单人床，最多住三人，标注禁烟。早餐每人四十五元，儿童没有优惠。十二月四日十二点前免费取消，之后收首晚房费；十四点后入住，十二点前退房。有隔音窗，但没写朝向，也没说能否远离电梯。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；三张单人床、禁烟，均符合。十二月四日十二点前可免费取消，最灵活；隔音窗是优点，但朝向和远离电梯未保证。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "现在请按预算、三人床位、安静条件和取消灵活性，先给这四家排个顺序，并把明显不合适的原因说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "暂排第一钱塘泊悦：总价一千零七元、三张床，取消最晚，但安静位置待确认。第二湖畔杉居：已知一千零五十六元，取消较晚，但铺床费和安静保证不明。运河因儿童须共床排除；青岚因超预算且不可退排除。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "再按酒店分别列一下预订前还要确认什么。已经可以排除的也保留缺失项，方便我把记录补完整。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A006",
+          "at_user_onset_heard_prefix": "暂排第一钱塘泊悦：总价一千零七元、三张床，取消最晚，但安静位置待确认。第二湖畔杉居：已知一千零五十六元，取消较晚，但铺床费和安静保证不明。运河因儿童须共床排除；青岚因超预算且不可退排除。",
+          "final_shared_played_prefix": "暂排第一钱塘泊悦：总价一千零七元、三张床，取消最晚，但安静位置待确认。第二湖畔杉居：已知一千零五十六元，取消较晚，但铺床费和安静保证不明。运河因儿童须共床排除；青岚因超预算且不可退排除。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "预订前重点确认：钱塘能否安排安静朝向并远离电梯；湖畔沙发床是否免费铺设、尺寸是否适合八岁儿童及能否保证安静；运河的成人早餐单价和内庭安排概率；青岚上下铺限制、夜间前台及早餐方案。另需复核实时价格和房量。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "第一家是湖畔杉居酒店，家庭房九百八十八元，税费和服务费已包含。一张一米八大床加一张沙发床，可住两名成人和一名儿童，标注禁烟。含两份成人早餐，儿童早餐六十八元。十二月三日十八点前可免费取消，之后收首晚房费。十五点后入住，十二点前退房，没写沙发床铺床费。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "第二家是运河月庭酒店，豪华双床房八百二十八元，税费已含，两张一米三五的床，允许两名成人和一名儿童入住，也标注禁烟，但孩子必须与成人共用现有床位。含两份早餐，孩子身高一米二到一米四按成人价五折，成人早餐单价没写。十二月一日二十三点五十九分前免费取消，内庭朝向只能申请，不能保证。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。早"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "好，这家先标为床位不合适。第三家青岚亲子公寓酒店，亲子套房一千零九十九元，税费已含，到店还付一百二十元清洁费。一张大床和一组儿童上下铺，禁烟，不含早餐，有简易厨房。订单确认后不可退款或改期，十六点后入住，十一点前退房。页面没写上下铺的年龄、体重限制，也没写夜间前台是否有人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "青岚亲子公寓：房费加清洁费已达一千二百一十九元，尚未含早餐，超过预算；床位和禁烟符合，但确认后不可退改。还需确认上下铺的年龄、体重限制及夜间前台值守。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "第四家是钱塘泊悦酒店，标准三人房七百五十八元，另有税费和服务费一百一十四元，合计八百七十二元。三张一米一单人床，最多住三人，标注禁烟。早餐每人四十五元，儿童没有优惠。十二月四日十二点前免费取消，之后收首晚房费；十四点后入住，十二点前退房。有隔音窗，但没写朝向，也没说能否远离电梯。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；三张单人床、禁烟，均符合。十二月四日十二点前可免费取消，最灵活；隔音窗是优点，但朝向和远离电梯未保证。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "现在请按预算、三人床位、安静条件和取消灵活性，先给这四家排个顺序，并把明显不合适的原因说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "暂排第一钱塘泊悦：总价一千零七元、三张床，取消最晚，但安静位置待确认。第二湖畔杉居：已知一千零五十六元，取消较晚，但铺床费和安静保证不明。运河因儿童须共床排除；青岚因超预算且不可退排除。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "再按酒店分别列一下预订前还要确认什么。已经可以排除的也保留缺失项，方便我把记录补完整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "预订前重点确认：钱塘能否安排安静朝向并远离电梯；湖畔沙发床是否免费铺设、尺寸是否适合八岁儿童及能否保证安静；运河的成人早餐单价和内庭安排概率；青岚上下铺限制、夜间前台及早餐方案。另需复核实时价格和房量。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "第一家是湖畔杉居酒店，家庭房九百八十八元，税费和服务费已包含。一张一米八大床加一张沙发床，可住两名成人和一名儿童，标注禁烟。含两份成人早餐，儿童早餐六十八元。十二月三日十八点前可免费取消，之后收首晚房费。十五点后入住，十二点前退房，没写沙发床铺床费。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "第二家是运河月庭酒店，豪华双床房八百二十八元，税费已含，两张一米三五的床，允许两名成人和一名儿童入住，也标注禁烟，但孩子必须与成人共用现有床位。含两份早餐，孩子身高一米二到一米四按成人价五折，成人早餐单价没写。十二月一日二十三点五十九分前免费取消，内庭朝向只能申请，不能保证。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。早"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "好，这家先标为床位不合适。第三家青岚亲子公寓酒店，亲子套房一千零九十九元，税费已含，到店还付一百二十元清洁费。一张大床和一组儿童上下铺，禁烟，不含早餐，有简易厨房。订单确认后不可退款或改期，十六点后入住，十一点前退房。页面没写上下铺的年龄、体重限制，也没写夜间前台是否有人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "青岚亲子公寓：房费加清洁费已达一千二百一十九元，尚未含早餐，超过预算；床位和禁烟符合，但确认后不可退改。还需确认上下铺的年龄、体重限制及夜间前台值守。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "第四家是钱塘泊悦酒店，标准三人房七百五十八元，另有税费和服务费一百一十四元，合计八百七十二元。三张一米一单人床，最多住三人，标注禁烟。早餐每人四十五元，儿童没有优惠。十二月四日十二点前免费取消，之后收首晚房费；十四点后入住，十二点前退房。有隔音窗，但没写朝向，也没说能否远离电梯。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；三张单人床、禁烟，均符合。十二月四日十二点前可免费取消，最灵活；隔音窗是优点，但朝向和远离电梯未保证。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "现在请按预算、三人床位、安静条件和取消灵活性，先给这四家排个顺序，并把明显不合适的原因说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "暂排第一钱塘泊悦：总价一千零七元、三张床，取消最晚，但安静位置待确认。第二湖畔杉居：已知一千零五十六元，取消较晚，但铺床费和安静保证不明。运河因儿童须共床排除；青岚因超预算且不可退排除。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "再按酒店分别列一下预订前还要确认什么。已经可以排除的也保留缺失项，方便我把记录补完整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "预订前重点确认：钱塘能否安排安静朝向并远离电梯；湖畔沙发床是否免费铺设、尺寸是否适合八岁儿童及能否保证安静；运河的成人早餐单价和内庭安排概率；青岚上下铺限制、夜间前台及早餐方案。另需复核实时价格和房量。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "请把四家压缩成一份完整对照，每家都保留总价、床位结论、取消期限和关键缺口，我想最后通读一遍。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A007",
+          "at_user_onset_heard_prefix": "预订前重点确认：钱塘能否安排安静朝向并远离电梯；湖畔沙发床是否免费铺设、尺寸是否适合八岁儿童及能否保证安静；运河的成人早餐单价和内庭安排概率；青岚上下铺限制、夜间前台及早餐方案。另需复核实时价格和房量。",
+          "final_shared_played_prefix": "预订前重点确认：钱塘能否安排安静朝向并远离电梯；湖畔沙发床是否免费铺设、尺寸是否适合八岁儿童及能否保证安静；运河的成人早餐单价和内庭安排概率；青岚上下铺限制、夜间前台及早餐方案。另需复核实时价格和房量。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "汇总如下：湖畔，已知合计一千零五十六元，床位合适、禁烟，十二月三日十八点前免费取消，待确认铺床费和安静保证。运河，至少八百二十八元，儿童须共床，床位不合适；早餐价缺失，十二月一日二十三点五十九分前免费取消。青岚，至少一千二百一十九元，床位形式符合、禁烟，但上下铺适用限制待确认；超预算且不可退。钱塘，含三份早餐一千零七元，三床禁烟，十二月四日十二点前免费取消，待确认朝向和电梯距离。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "第一家是湖畔杉居酒店，家庭房九百八十八元，税费和服务费已包含。一张一米八大床加一张沙发床，可住两名成人和一名儿童，标注禁烟。含两份成人早餐，儿童早餐六十八元。十二月三日十八点前可免费取消，之后收首晚房费。十五点后入住，十二点前退房，没写沙发床铺床费。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "第二家是运河月庭酒店，豪华双床房八百二十八元，税费已含，两张一米三五的床，允许两名成人和一名儿童入住，也标注禁烟，但孩子必须与成人共用现有床位。含两份早餐，孩子身高一米二到一米四按成人价五折，成人早餐单价没写。十二月一日二十三点五十九分前免费取消，内庭朝向只能申请，不能保证。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。早"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "好，这家先标为床位不合适。第三家青岚亲子公寓酒店，亲子套房一千零九十九元，税费已含，到店还付一百二十元清洁费。一张大床和一组儿童上下铺，禁烟，不含早餐，有简易厨房。订单确认后不可退款或改期，十六点后入住，十一点前退房。页面没写上下铺的年龄、体重限制，也没写夜间前台是否有人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "青岚亲子公寓：房费加清洁费已达一千二百一十九元，尚未含早餐，超过预算；床位和禁烟符合，但确认后不可退改。还需确认上下铺的年龄、体重限制及夜间前台值守。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "第四家是钱塘泊悦酒店，标准三人房七百五十八元，另有税费和服务费一百一十四元，合计八百七十二元。三张一米一单人床，最多住三人，标注禁烟。早餐每人四十五元，儿童没有优惠。十二月四日十二点前免费取消，之后收首晚房费；十四点后入住，十二点前退房。有隔音窗，但没写朝向，也没说能否远离电梯。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；三张单人床、禁烟，均符合。十二月四日十二点前可免费取消，最灵活；隔音窗是优点，但朝向和远离电梯未保证。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "现在请按预算、三人床位、安静条件和取消灵活性，先给这四家排个顺序，并把明显不合适的原因说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "暂排第一钱塘泊悦：总价一千零七元、三张床，取消最晚，但安静位置待确认。第二湖畔杉居：已知一千零五十六元，取消较晚，但铺床费和安静保证不明。运河因儿童须共床排除；青岚因超预算且不可退排除。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "再按酒店分别列一下预订前还要确认什么。已经可以排除的也保留缺失项，方便我把记录补完整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "预订前重点确认：钱塘能否安排安静朝向并远离电梯；湖畔沙发床是否免费铺设、尺寸是否适合八岁儿童及能否保证安静；运河的成人早餐单价和内庭安排概率；青岚上下铺限制、夜间前台及早餐方案。另需复核实时价格和房量。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "请把四家压缩成一份完整对照，每家都保留总价、床位结论、取消期限和关键缺口，我想最后通读一遍。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "汇总如下：湖畔，已知合计一千零五十六元，床位合适、禁烟，十二月三日十八点前免费取消，待确认铺床费和安静保证。运河，至少八百二十八元，儿童须共床，床位不合适；早餐价缺失，十二月一日二十三点五十九分前免费取消。青岚，至少一千二百一十九元，床位形式符合、禁烟，但上下铺适用限制待确认；超预算且不可退。钱塘，含三份早餐一千零七元，三床禁烟，十二月四日十二点前免费取消，待确认朝向和电梯距离。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "第一家是湖畔杉居酒店，家庭房九百八十八元，税费和服务费已包含。一张一米八大床加一张沙发床，可住两名成人和一名儿童，标注禁烟。含两份成人早餐，儿童早餐六十八元。十二月三日十八点前可免费取消，之后收首晚房费。十五点后入住，十二点前退房，没写沙发床铺床费。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "第二家是运河月庭酒店，豪华双床房八百二十八元，税费已含，两张一米三五的床，允许两名成人和一名儿童入住，也标注禁烟，但孩子必须与成人共用现有床位。含两份早餐，孩子身高一米二到一米四按成人价五折，成人早餐单价没写。十二月一日二十三点五十九分前免费取消，内庭朝向只能申请，不能保证。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。早"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "好，这家先标为床位不合适。第三家青岚亲子公寓酒店，亲子套房一千零九十九元，税费已含，到店还付一百二十元清洁费。一张大床和一组儿童上下铺，禁烟，不含早餐，有简易厨房。订单确认后不可退款或改期，十六点后入住，十一点前退房。页面没写上下铺的年龄、体重限制，也没写夜间前台是否有人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "青岚亲子公寓：房费加清洁费已达一千二百一十九元，尚未含早餐，超过预算；床位和禁烟符合，但确认后不可退改。还需确认上下铺的年龄、体重限制及夜间前台值守。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "第四家是钱塘泊悦酒店，标准三人房七百五十八元，另有税费和服务费一百一十四元，合计八百七十二元。三张一米一单人床，最多住三人，标注禁烟。早餐每人四十五元，儿童没有优惠。十二月四日十二点前免费取消，之后收首晚房费；十四点后入住，十二点前退房。有隔音窗，但没写朝向，也没说能否远离电梯。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；三张单人床、禁烟，均符合。十二月四日十二点前可免费取消，最灵活；隔音窗是优点，但朝向和远离电梯未保证。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "现在请按预算、三人床位、安静条件和取消灵活性，先给这四家排个顺序，并把明显不合适的原因说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "暂排第一钱塘泊悦：总价一千零七元、三张床，取消最晚，但安静位置待确认。第二湖畔杉居：已知一千零五十六元，取消较晚，但铺床费和安静保证不明。运河因儿童须共床排除；青岚因超预算且不可退排除。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "再按酒店分别列一下预订前还要确认什么。已经可以排除的也保留缺失项，方便我把记录补完整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "预订前重点确认：钱塘能否安排安静朝向并远离电梯；湖畔沙发床是否免费铺设、尺寸是否适合八岁儿童及能否保证安静；运河的成人早餐单价和内庭安排概率；青岚上下铺限制、夜间前台及早餐方案。另需复核实时价格和房量。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "请把四家压缩成一份完整对照，每家都保留总价、床位结论、取消期限和关键缺口，我想最后通读一遍。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "汇总如下：湖畔，已知合计一千零五十六元，床位合适、禁烟，十二月三日十八点前免费取消，待确认铺床费和安静保证。运河，至少八百二十八元，儿童须共床，床位不合适；早餐价缺失，十二月一日二十三点五十九分前免费取消。青岚，至少一千二百一十九元，床位形式符合、禁烟，但上下铺适用限制待确认；超预算且不可退。钱塘，含三份早餐一千零七元，三床禁烟，十二月四日十二点前免费取消，待确认朝向和电梯距离。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "最后给我一个当前推荐，并说明我应该按什么顺序确认，确认到哪一步就可以决定。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A008",
+          "at_user_onset_heard_prefix": "汇总如下：湖畔，已知合计一千零五十六元，床位合适、禁烟，十二月三日十八点前免费取消，待确认铺床费和安静保证。运河，至少八百二十八元，儿童须共床，床位不合适；早餐价缺失，十二月一日二十三点五十九分前免费取消。青岚，至少一千二百一十九元，床位形式符合、禁烟，但上下铺适用限制待确认；超预算且不可退。钱塘，含三份早餐一千零七元，三床禁烟，十二月四日十二点前免费取消，待确认朝向和电梯距离。",
+          "final_shared_played_prefix": "汇总如下：湖畔，已知合计一千零五十六元，床位合适、禁烟，十二月三日十八点前免费取消，待确认铺床费和安静保证。运河，至少八百二十八元，儿童须共床，床位不合适；早餐价缺失，十二月一日二十三点五十九分前免费取消。青岚，至少一千二百一十九元，床位形式符合、禁烟，但上下铺适用限制待确认；超预算且不可退。钱塘，含三份早餐一千零七元，三床禁烟，十二月四日十二点前免费取消，待确认朝向和电梯距离。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "汇总如下：湖畔，已知合计一千零五十六元，床位合适、禁烟，十二月三日十八点前免费取消，待确认铺床费和安静保证。运河，至少八百二十八元，儿童须共床，床位不合适；早餐价缺失，十二月一日二十三点五十九分前免费取消。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "当前首选钱塘泊悦。先确认十二月五日的实时总价和房量，再确认禁烟房可安排安静朝向并远离电梯；两项都落实即可选择。若安静位置无法确认，再问湖畔的沙发床费用、尺寸和安静保证，合计仍不超一千二百元时作为备选。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A002",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "第一家是湖畔杉居酒店，家庭房九百八十八元，税费和服务费已包含。一张一米八大床加一张沙发床，可住两名成人和一名儿童，标注禁烟。含两份成人早餐，儿童早餐六十八元。十二月三日十八点前可免费取消，之后收首晚房费。十五点后入住，十二点前退房，没写沙发床铺床费。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；"
+          }
+        ],
+        "at_event_onset_heard_prefix": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；",
+        "event_text": "嗯，明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC02",
+        "kind": "backchannels",
+        "target_assistant_id": "A005",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "第一家是湖畔杉居酒店，家庭房九百八十八元，税费和服务费已包含。一张一米八大床加一张沙发床，可住两名成人和一名儿童，标注禁烟。含两份成人早餐，儿童早餐六十八元。十二月三日十八点前可免费取消，之后收首晚房费。十五点后入住，十二点前退房，没写沙发床铺床费。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "第二家是运河月庭酒店，豪华双床房八百二十八元，税费已含，两张一米三五的床，允许两名成人和一名儿童入住，也标注禁烟，但孩子必须与成人共用现有床位。含两份早餐，孩子身高一米二到一米四按成人价五折，成人早餐单价没写。十二月一日二十三点五十九分前免费取消，内庭朝向只能申请，不能保证。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。早"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "好，这家先标为床位不合适。第三家青岚亲子公寓酒店，亲子套房一千零九十九元，税费已含，到店还付一百二十元清洁费。一张大床和一组儿童上下铺，禁烟，不含早餐，有简易厨房。订单确认后不可退款或改期，十六点后入住，十一点前退房。页面没写上下铺的年龄、体重限制，也没写夜间前台是否有人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "青岚亲子公寓：房费加清洁费已达一千二百一十九元，尚未含早餐，超过预算；床位和禁烟符合，但确认后不可退改。还需确认上下铺的年龄、体重限制及夜间前台值守。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "第四家是钱塘泊悦酒店，标准三人房七百五十八元，另有税费和服务费一百一十四元，合计八百七十二元。三张一米一单人床，最多住三人，标注禁烟。早餐每人四十五元，儿童没有优惠。十二月四日十二点前免费取消，之后收首晚房费；十四点后入住，十二点前退房。有隔音窗，但没写朝向，也没说能否远离电梯。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；"
+          }
+        ],
+        "at_event_onset_heard_prefix": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；",
+        "event_text": "好",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC03",
+        "kind": "backchannels",
+        "target_assistant_id": "A008",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在比较四家酒店，十二月五日住一晚，两名成人带一个八岁女儿。总支出不超过一千二百元，女儿需要独立于父母床位的睡眠位置；配偶睡眠较浅，比较重视安静。请先帮我建立统一的对照维度，我再逐家读页面信息。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。统一按六栏整理：实际总价、三人床位、早餐、禁烟与安静、取消期限、入住退房；另列页面缺失项和预订前确认项。你按酒店逐家读，我会同步比较预算与硬性条件。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "第一家是湖畔杉居酒店，家庭房九百八十八元，税费和服务费已包含。一张一米八大床加一张沙发床，可住两名成人和一名儿童，标注禁烟。含两份成人早餐，儿童早餐六十八元。十二月三日十八点前可免费取消，之后收首晚房费。十五点后入住，十二点前退房，没写沙发床铺床费。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "湖畔杉居：已知总支出为一千零五十六元，含房费及女儿早餐，低于上限；大床加沙发床、禁烟，床位形式合适。十二月三日十八点前免费取消。缺口是沙发床是否另收铺床费，以及安静房能否保证。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "第二家是运河月庭酒店，豪华双床房八百二十八元，税费已含，两张一米三五的床，允许两名成人和一名儿童入住，也标注禁烟，但孩子必须与成人共用现有床位。含两份早餐，孩子身高一米二到一米四按成人价五折，成人早餐单价没写。十二月一日二十三点五十九分前免费取消，内庭朝向只能申请，不能保证。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这家含税八百二十八元，但女儿只能与成人共用现有床位，不符合独立睡眠位置的偏好。早"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "好，这家先标为床位不合适。第三家青岚亲子公寓酒店，亲子套房一千零九十九元，税费已含，到店还付一百二十元清洁费。一张大床和一组儿童上下铺，禁烟，不含早餐，有简易厨房。订单确认后不可退款或改期，十六点后入住，十一点前退房。页面没写上下铺的年龄、体重限制，也没写夜间前台是否有人。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "青岚亲子公寓：房费加清洁费已达一千二百一十九元，尚未含早餐，超过预算；床位和禁烟符合，但确认后不可退改。还需确认上下铺的年龄、体重限制及夜间前台值守。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "第四家是钱塘泊悦酒店，标准三人房七百五十八元，另有税费和服务费一百一十四元，合计八百七十二元。三张一米一单人床，最多住三人，标注禁烟。早餐每人四十五元，儿童没有优惠。十二月四日十二点前免费取消，之后收首晚房费；十四点后入住，十二点前退房。有隔音窗，但没写朝向，也没说能否远离电梯。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "钱塘泊悦：房费含税八百七十二元，三人早餐一百三十五元，总计一千零七元；三张单人床、禁烟，均符合。十二月四日十二点前可免费取消，最灵活；隔音窗是优点，但朝向和远离电梯未保证。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "现在请按预算、三人床位、安静条件和取消灵活性，先给这四家排个顺序，并把明显不合适的原因说清楚。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "暂排第一钱塘泊悦：总价一千零七元、三张床，取消最晚，但安静位置待确认。第二湖畔杉居：已知一千零五十六元，取消较晚，但铺床费和安静保证不明。运河因儿童须共床排除；青岚因超预算且不可退排除。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "再按酒店分别列一下预订前还要确认什么。已经可以排除的也保留缺失项，方便我把记录补完整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "预订前重点确认：钱塘能否安排安静朝向并远离电梯；湖畔沙发床是否免费铺设、尺寸是否适合八岁儿童及能否保证安静；运河的成人早餐单价和内庭安排概率；青岚上下铺限制、夜间前台及早餐方案。另需复核实时价格和房量。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "请把四家压缩成一份完整对照，每家都保留总价、床位结论、取消期限和关键缺口，我想最后通读一遍。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "汇总如下：湖畔，已知合计一千零五十六元，床位合适、禁烟，十二月三日十八点前免费取消，待确认铺床费和安静保证。运河，至少八百二十八元，儿童须共床，床位不合适；早餐价缺失，十二月一日二十三点五十九分前免费取消。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "汇总如下：湖畔，已知合计一千零五十六元，床位合适、禁烟，十二月三日十八点前免费取消，待确认铺床费和安静保证。运河，至少八百二十八元，儿童须共床，床位不合适；早餐价缺失，十二月一日二十三点五十九分前免费取消。",
+        "event_text": "嗯",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

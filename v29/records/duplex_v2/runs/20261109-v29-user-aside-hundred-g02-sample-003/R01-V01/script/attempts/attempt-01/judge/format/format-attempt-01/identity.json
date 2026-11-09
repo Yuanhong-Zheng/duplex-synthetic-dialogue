@@ -1,0 +1,3748 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 13 轮，允许 12–14 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 按下方V2.9用户旁话规则审查；第三方与机器旁语仍遵守冻结声源与信息边界。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 必须逐字匹配对应源；用户声源的recipient须逐字匹配且不含voice_profile，其余声源的voice_profile逐字匹配，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。\n[V2.9 用户对同场旁人说话]\n定稿根schema_version为duplex_v2.fixed_script.v3；根字段和原主轮字段不变，quiet声景也保留空environment_events和side_speech。\nside_speech仍只用已冻结的side_speech_sources，数量严格等于side_speech_count。第三方/机器的原字段不变。若冻结源speaker=user，每项严格只有event_id、source_id、target_assistant_id、after_text、text、speaker、recipient、gain；speaker=\"user\"，recipient逐字复制冻结源的同场接收者，不填写voice_profile、voice_source或其他字段。用户音色、克隆参考和表达画像由程序复用主用户，不另造声音。\n用户旁话是用户在助手已开始且仍在实际播报时对旁人说的短句，例如对已在场的小林说“小林，把杯子递给我一下”。台词应自然且接收对象可辨，不能只有“等等”这类不明确话语；不能作为对助手的新请求、附和、打断或主对话轮，也不能泄漏关键任务材料。接收者必须来自冻结场景，不能为了配额新增人物。\ntarget_assistant_id仍指作为音频host的助手A，不是旁话接收对象；after_text是A从首字开始的完整非终止已播前缀。用户旁话起声必须早于下一次用户主表达，且完整音频须装入实际会播出的A范围，与同一用户的主句、附和或另一旁话都不重叠。不要在助手将被真正打断的尾端强塞旁话，不把事件安排在未播尾部；不恢复“用户主句暂停→转头旁话→再继续主句”的模式。\n旁话期间助手继续同一段原音频，不停顿、不让出话权、不增加新回答；后续助手不回应或复述旁话，不把它吸收为任务事实。旁话分类依赖接收对象和语义，不依赖其音量；gain仍在0.3–0.7。用户的旁话仍符合其冻结表达画像。\n上述方向、继续播报与stop_required=false是数据审查/监督标注，不是提前透露给在线模型的输入。仅使用原Judge和局部修复预算：审查台词是否确实面向旁人、主线与已听因果是否保持；只按findings最小修复，并在助手正文变更时同步相关精确锚点。\n\n",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-003-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 4064604178,
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g02/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g02/relay-state",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D07",
+          "domain": "餐饮、烹饪与饮食",
+          "scenario_id": "D07-S06",
+          "scenario": "过敏与饮食限制"
+        },
+        "task_style": "混合型",
+        "task_instance": {
+          "goal": "为家人准备一顿包含现有菜谱候选的周末早午餐，先厘清严重食物过敏、食物不耐受与一般饮食偏好的判断边界，再结合交叉污染和隐性配料风险逐项筛选菜品，调整出一套相对稳妥的菜单，并整理出仍需向餐厅或食品生产者确认的问题。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "负责为家人安排周末聚餐菜单的家庭成员",
+          "task_familiarity": "low"
+        },
+        "voice_profile": "男性，四十多岁，声音温和偏低，吐字清楚但带着些谨慎和担心，语速中等，讨论风险时会稍微放慢。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "casual",
+          "directness": "direct",
+          "emotional_expressiveness": "expressive",
+          "verbosity": "balanced",
+          "initiative": "medium",
+          "caution": "medium",
+          "patience": "medium",
+          "behavioral_notes": [
+            "通常会先直接说出当前最想解决的问题，再补充相关背景和自己的顾虑。",
+            "对不确定之处会主动追问依据，也会用较明显的语气变化表达担心或释然。",
+            "愿意边听边补充信息，遇到需要区分概念的地方会请求用更容易理解的方式说明。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "medium",
+        "target_turns": 13,
+        "min_turns": 12,
+        "max_turns": 14
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v3",
+        "seed": 1012961131,
+        "mode": "layered",
+        "discrete_event_target": 1,
+        "max_ambient_layers": 2,
+        "side_speech_requested": true,
+        "speech_kind_preferences": [
+          "user_to_third_party",
+          "third_party",
+          "machine"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "周五晚上七点半，用户正在自家厨房规划周日上午十一点的六人家庭早午餐，因为最迟第二天就得确定哪些食材自己准备、哪些可以从附近店里购买。来客包括用户的妹妹陈瑶、父亲、外甥女以及另外两位家人，其中陈瑶有严重花生过敏，父亲自述乳糖不耐受，外甥女则坚持蛋奶素饮食。用户的配偶林岚正坐在餐桌对面帮忙摊开菜谱和食品包装，偶尔可以一起核对纸面信息。用户已经收集了五个菜品候选、几张现有包装标签和枫桥咖啡馆的外带菜单，但还没有向面包店、咖啡馆或调味料生产者确认配料与共用设备情况。由于用户对食物过敏、食物不耐受和一般饮食偏好的区别并不熟悉，他担心自己会把父亲的不适与陈瑶可能危及生命的反应混为一谈，也不确定“未标花生”是否足以排除风险。家里平时有人吃花生酱，旧烤面包机和一把木柄抹刀都曾直接接触过花生制品，因此即使菜谱本身没有花生，厨房操作仍存在交叉接触疑问。当前可用的厨具有一台烤箱、两个炉头、一只新拆封的烤盘、金属锅具以及可彻底清洗的刀具和塑料砧板，但用户不打算使用旧烤面包机或木柄抹刀。用户周六最多能拿出两小时提前准备，周日上午还有九十分钟完成加热和装盘，所以不能把所有候选都改成复杂的全手工版本。购买现成面包或外带菜可以节省时间，却会增加隐性配料、散装陈列、共用夹具和操作台交叉接触方面的不确定性。陈瑶已经明确表示，对“可能含有花生”或无法说清共用设备情况的食品，她不会凭外观或口头猜测尝试。父亲希望乳制品能够省略、替换或单独放置，但没有要求整桌完全无乳制品；外甥女可以吃鸡蛋和奶制品，却不吃鱼、肉或含肉汤的食物。用户当前最优先考虑陈瑶的安全，其次是让父亲和外甥女各自有足够的主食与配菜，而不是只能避开大部分菜品。尚未解决的问题包括哪些候选可以直接排除、哪些能通过替换或分开制作保留、家庭厨房应怎样安排清洁和制作顺序，以及向店家或生产者询问时必须得到哪些具体信息才足以做决定。窗外持续下着雨，厨房通风扇开在低档，但纸面材料仍能正常阅读和口头核对。",
+        "task_reference_data": [
+          "来自陈瑶发给用户的家庭群消息，用户已经读过：她经医生诊断为花生过敏，过去误食后出现过全身风团、喉咙发紧和喘鸣；她随身携带医生开具的两支肾上腺素自动注射器，但明确表示这不能替代避开花生及交叉接触。她没有被诊断为牛奶、鸡蛋或小麦过敏。",
+          "来自父亲发给用户的消息，用户已经读过：普通牛奶或较多奶油会使他在数小时内腹胀、腹痛并腹泻；少量硬质奶酪通常可以接受，乳糖酶片有时有帮助，但他希望这顿饭尽量提供无乳糖或不加乳制品的选择。",
+          "来自外甥女的消息，用户已经读过：她采用蛋奶素饮食，可以吃鸡蛋、牛奶和奶酪，不吃鱼、肉、明胶或肉汤；这属于她坚持的饮食选择，并非已知食物过敏。",
+          "用户手边的法式吐司烤盘菜谱写明可供六人食用，原料为布里欧修面包500克、鸡蛋6个、全脂牛奶400毫升、黄油30克、肉桂和糖。现有布里欧修包装标注含小麦、鸡蛋和牛奶，并写有“可能含花生及其他坚果”，用户已现场读到该警示。",
+          "用户手边的北非蛋菜谱写明使用鸡蛋8个、罐装番茄800克、甜椒2个、洋葱1个、橄榄油、混合香料和可选菲达奶酪。现有混合香料标签列出孜然、甜椒粉和芫荽籽，并写有“本品在同时处理花生和坚果的设施中包装”，但未说明是否使用共线设备。",
+          "枫桥咖啡馆外带菜单上的烟熏三文鱼贝果包含贝果、烟熏三文鱼、奶油奶酪、腌洋葱和香草；菜单没有列出过敏原，也没有说明贝果、抹酱刀、操作台或夹具是否与含花生食品共用。用户目前只看过菜单，尚未向店员核实。",
+          "用户手边的酸奶水果杯方案使用原味酸奶、莓果、香蕉和袋装格兰诺拉麦片。格兰诺拉包装配料含杏仁，并明确标注“可能含花生”；酸奶包装标注含牛奶，水果仍可与麦片分开使用。",
+          "用户手边的土豆蔬菜杂烩菜谱可供六人食用，原料为整颗土豆1.2千克、甜椒2个、洋葱1个、橄榄油、盐和黑胡椒，不含肉类或乳制品。整颗蔬菜和新购未开封的盐、黑胡椒没有花生警示，但制作时仍需决定清洁方式、厨具选择和与其他菜品的先后顺序。",
+          "用户对家中厨房的既有观察：花生酱罐一直密封存放在高层橱柜内；旧烤面包机和木柄抹刀曾接触花生酱，无法确认缝隙是否能彻底清洁；新拆封烤盘、金属锅具、塑料砧板和洗净后的金属餐具没有已知花生接触史。"
+        ],
+        "environment_audio": "右侧窗外传来连续而柔和的雨声，雨势基本稳定，偶尔有稍密的雨点敲在窗面。厨房上方的通风扇保持低沉均匀的运转声，音量不高。近处偶有纸张被轻轻挪动的自然摩擦声，但不会盖住说话。",
+        "estimated_snr_db": 25,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "菜单需供周日上午十一点的六人早午餐使用。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "外甥女必须有不含鱼、肉、明胶或肉汤的蛋奶素主食和配菜，不能只靠水果充数。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C03",
+            "text": "乳制品应尽量可省略、替换或单独放置，以便父亲选择低乳糖或无乳糖组合。",
+            "kind": "soft"
+          },
+          {
+            "constraint_id": "C04",
+            "text": "周六提前准备时间最多两小时，周日上午完成加热和装盘的时间最多九十分钟。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C05",
+            "text": "烹饪资源限于一台烤箱、两个炉头及故事中已有的家庭厨具，不使用曾接触花生的旧烤面包机和木柄抹刀。",
+            "kind": "hard"
+          }
+        ],
+        "safety_limits": [
+          {
+            "limit_id": "L01",
+            "text": "陈瑶的花生过敏可能危及生命；带有花生警示、无法核实隐性配料，或无法说明共用设备与交叉接触控制的食品，不得仅凭外观、菜名或“通常不含花生”判断为适合她。",
+            "severity": "critical"
+          },
+          {
+            "limit_id": "L02",
+            "text": "不得以少量试吃、逐步增加摄入或随身携带急救药物来验证食品是否安全；处方急救措施不能替代预防花生暴露。",
+            "severity": "hard"
+          },
+          {
+            "limit_id": "L03",
+            "text": "若聚餐时出现喉咙发紧、喘鸣、呼吸困难或多系统严重反应，应优先遵循陈瑶既有的医生急救计划并联系紧急医疗服务，而不是继续通过对话判断是否等待。",
+            "severity": "critical"
+          }
+        ],
+        "soundscape_plan": {
+          "mode": "layered",
+          "ambient_layers": [
+            {
+              "source_id": "AMB01",
+              "asset_id": "rain-fsd50k-eval-21189",
+              "reason": "适合表现住宅厨房窗外稳定的夜间降雨底色，与故事中的当前天气一致。"
+            },
+            {
+              "source_id": "AMB02",
+              "asset_id": "fan-fsd50k-eval-419427",
+              "reason": "稳定机械风声可以对应厨房低档运转的通风扇。"
+            }
+          ],
+          "environment_events": [],
+          "schema": "duplex_v2.soundscape_plan.v4",
+          "side_speech_sources": [
+            {
+              "source_id": "SP01",
+              "speaker": "user",
+              "recipient": "配偶林岚",
+              "voice_source": "stage1_user",
+              "description": "用户可短暂转向正在对面协助核对材料的配偶林岚。"
+            }
+          ],
+          "side_speech_count": 1,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v3",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v3",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3,
+              "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+              "user_aside_preference_probability": 0.5,
+              "user_voice_source": "stage1_user",
+              "user_aside_requires_present_recipient": true
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611090002,
+              "slot": 2,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "rain",
+                  "wind",
+                  "fan",
+                  "crowd",
+                  "traffic",
+                  "birds"
+                ],
+                "event": [
+                  "paper",
+                  "footsteps",
+                  "water_tap",
+                  "doorbell",
+                  "keyboard",
+                  "door"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-57907",
+                  "birds-fsd50k-eval-319512",
+                  "birds-fsd50k-eval-86343"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-121877",
+                  "crowd-fsd50k-eval-340358",
+                  "crowd-fsd50k-eval-185058"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-419427",
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-415925"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-21189",
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-382582"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-124020",
+                  "traffic-fsd50k-eval-232686",
+                  "traffic-fsd50k-eval-235541"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113176",
+                  "wind-fsd50k-eval-113175",
+                  "wind-fsd50k-eval-113173"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-71212",
+                  "door-fsd50k-eval-209519",
+                  "door-fsd50k-eval-119077"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-426594",
+                  "doorbell-fsd50k-eval-332563",
+                  "doorbell-fsd50k-eval-348322"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-153104",
+                  "footsteps-fsd50k-eval-272381",
+                  "footsteps-fsd50k-eval-392303"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-411545",
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-399740"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-82562",
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-343098"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-402128",
+                  "water_tap-fsd50k-eval-232499",
+                  "water_tap-fsd50k-eval-402127"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v3",
+              "seed": 1012961131,
+              "mode": "layered",
+              "discrete_event_target": 1,
+              "max_ambient_layers": 2,
+              "side_speech_requested": true,
+              "speech_kind_preferences": [
+                "user_to_third_party",
+                "third_party",
+                "machine"
+              ]
+            },
+            "control_sha256": "05f8f57bd9a794107b2f338666f1a38aca3c8a17b6632e84da2c02ca4da36277",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v4",
+              "mode": "layered",
+              "ambient_layers": [
+                {
+                  "source_id": "AMB01",
+                  "candidates": [
+                    {
+                      "asset_id": "rain-fsd50k-eval-21189",
+                      "reason": "适合表现住宅厨房窗外稳定的夜间降雨底色，与故事中的当前天气一致。",
+                      "environment_audio": "窗外传来连续均匀的雨声，音量柔和，偶尔有较密的雨点落在窗面。"
+                    },
+                    {
+                      "asset_id": "rain-fsd50k-eval-238016",
+                      "reason": "连续雨声可作为不打断口头核对的室内背景，符合窗外降雨的空间关系。",
+                      "environment_audio": "右侧窗外保持连绵雨声，强弱变化很小，不掩盖近距离说话。"
+                    },
+                    {
+                      "asset_id": "rain-fsd50k-eval-382582",
+                      "reason": "真实连续雨声与周五晚上的居家菜单整理场景相容。",
+                      "environment_audio": "窗外雨声持续铺在背景中，间或能听见雨点轻敲玻璃。"
+                    }
+                  ]
+                },
+                {
+                  "source_id": "AMB02",
+                  "candidates": [
+                    {
+                      "asset_id": "fan-fsd50k-eval-419427",
+                      "reason": "稳定机械风声可以对应厨房低档运转的通风扇。",
+                      "environment_audio": "厨房上方传来低沉稳定的通风扇运转声，音量始终较低。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-235362",
+                      "reason": "均匀的室内机械风扇声符合已存在的厨房通风背景。",
+                      "environment_audio": "头顶的通风扇持续低速运转，形成轻微而均匀的嗡声。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-415925",
+                      "reason": "短段稳定风扇录音可自然循环为厨房通风设备的基础底噪。",
+                      "environment_audio": "上方保持轻柔的机械通风声，没有明显启停或音量突变。"
+                    }
+                  ]
+                }
+              ],
+              "environment_events": [],
+              "side_speech_eligibility": {
+                "user_to_third_party": {
+                  "compatible": true,
+                  "reason": "配偶林岚与用户同坐在餐桌旁整理菜谱和包装，用户在助手播报期间转向林岚确认纸面信息具有明确的同场依据。",
+                  "source": {
+                    "speaker": "user",
+                    "recipient": "配偶林岚",
+                    "voice_source": "stage1_user",
+                    "description": "用户可短暂转向正在对面协助核对材料的配偶林岚。"
+                  }
+                },
+                "third_party": {
+                  "compatible": true,
+                  "reason": "林岚是故事中已经明确在场并参与整理材料的家庭成员，可自然发出简短的现场提醒或核对话语。",
+                  "source": {
+                    "speaker": "third_party",
+                    "voice_profile": "近距离、自然、音量适中的成年嗓音，吐字清楚。",
+                    "description": "坐在餐桌对面协助整理菜谱和食品包装的配偶林岚。"
+                  }
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "现场只有持续运转的通风扇，没有能够发出语音提示或播报内容的机器。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "3127491231c52a8ce286acaa62326d371c745408c922fc5b3c3c46f8a0a76241",
+            "aggregate_environment_audio": "右侧窗外传来连续而柔和的雨声，雨势基本稳定，偶尔有稍密的雨点敲在窗面。厨房上方的通风扇保持低沉均匀的运转声，音量不高。近处偶有纸张被轻轻挪动的自然摩擦声，但不会盖住说话。 窗外传来连续均匀的雨声，音量柔和，偶尔有较密的雨点落在窗面。 厨房上方传来低沉稳定的通风扇运转声，音量始终较低。",
+            "draws": [
+              {
+                "source_id": "AMB01",
+                "category": "rain",
+                "asset_id": "rain-fsd50k-eval-21189",
+                "eligible_categories": [
+                  "rain"
+                ],
+                "eligible_assets": [
+                  "rain-fsd50k-eval-21189",
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-382582"
+                ]
+              },
+              {
+                "source_id": "AMB02",
+                "category": "fan",
+                "asset_id": "fan-fsd50k-eval-419427",
+                "eligible_categories": [
+                  "fan"
+                ],
+                "eligible_assets": [
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-419427"
+                ]
+              }
+            ],
+            "speech_selection": {
+              "requested": true,
+              "compatible_kinds": [
+                "user_to_third_party",
+                "third_party"
+              ],
+              "selected_kind": "user_to_third_party",
+              "outcome": "selected",
+              "assessments": {
+                "user_to_third_party": {
+                  "compatible": true,
+                  "reason": "配偶林岚与用户同坐在餐桌旁整理菜谱和包装，用户在助手播报期间转向林岚确认纸面信息具有明确的同场依据。",
+                  "source": {
+                    "speaker": "user",
+                    "recipient": "配偶林岚",
+                    "voice_source": "stage1_user",
+                    "description": "用户可短暂转向正在对面协助核对材料的配偶林岚。"
+                  }
+                },
+                "third_party": {
+                  "compatible": true,
+                  "reason": "林岚是故事中已经明确在场并参与整理材料的家庭成员，可自然发出简短的现场提醒或核对话语。",
+                  "source": {
+                    "speaker": "third_party",
+                    "voice_profile": "近距离、自然、音量适中的成年嗓音，吐字清楚。",
+                    "description": "坐在餐桌对面协助整理菜谱和食品包装的配偶林岚。"
+                  }
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "现场只有持续运转的通风扇，没有能够发出语音提示或播报内容的机器。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v3",
+      "title": "六人早午餐过敏风险筛选",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？",
+          "assistant_utterance": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。",
+          "user_intent": "询问过敏、不耐受和饮食偏好的判断边界",
+          "assistant_intent": "用易懂方式区分三类限制及其风险层级",
+          "semantic_goal": "建立后续筛选菜品所需的基本判断框架",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？",
+          "assistant_utterance": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。",
+          "user_intent": "补充妹妹的既往严重反应并确认风险等级",
+          "assistant_intent": "明确其高风险性质并纠正对急救药物的错误依赖",
+          "semantic_goal": "确定花生过敏必须优先采取严格预防措施",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。",
+            "assistant_stop_after_text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？",
+          "assistant_utterance": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三者里，陈瑶的花生过敏优先级最高，不能用试吃验证。",
+          "user_intent": "补充父亲和外甥女的限制并询问安排原则",
+          "assistant_intent": "分别给出乳糖不耐受和蛋奶素的菜单保障标准",
+          "semantic_goal": "明确三位家人的不同需求及安排重点",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。",
+            "assistant_stop_after_text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？",
+          "assistant_utterance": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。",
+          "user_intent": "打断概念说明并开始逐项筛选现有候选",
+          "assistant_intent": "先排除有明确花生警示的食品并指出其余核查方向",
+          "semantic_goal": "完成候选菜单的第一轮高风险排除",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。",
+            "assistant_stop_after_text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？",
+          "assistant_utterance": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。",
+          "user_intent": "提供北非蛋配料和香料警示并询问能否保留",
+          "assistant_intent": "区分菜品基础配料与未核实香料的风险",
+          "semantic_goal": "判断北非蛋需要满足什么条件才能进入菜单",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。",
+            "assistant_stop_after_text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          "pause_cue": {
+            "after_text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U06",
+          "assistant_id": "A006",
+          "user_utterance": "那我不用这包混合香料，改买单独包装的孜然、甜椒粉和芫荽籽。菜谱里的菲达奶酪本来就是可选的，能不能另放？",
+          "assistant_utterance": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。",
+          "user_intent": "提出替换香料和分开放置奶酪的修改方案",
+          "assistant_intent": "评估替换方案并使菜品兼顾三类需求",
+          "semantic_goal": "把北非蛋调整为相对稳妥的核心主菜",
+          "act_ref": "A04",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A005",
+            "user_onset_after_text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。",
+            "assistant_stop_after_text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U07",
+          "assistant_id": "A007",
+          "user_utterance": "咖啡馆的贝果夹烟熏三文鱼、奶油奶酪和腌洋葱，菜单没列过敏原，贝果、抹酱刀、夹具和操作台是不是共用也不知道。这个候选怎么看？",
+          "assistant_utterance": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。对陈瑶，菜单没列过敏原，而且贝果、抹酱刀、夹具和操作台都未核实，所以现在不能算安全。",
+          "user_intent": "补充咖啡馆餐点信息并请求判断适用人群",
+          "assistant_intent": "按蛋奶素、乳糖和花生交叉接触分别筛选",
+          "semantic_goal": "确定咖啡馆贝果当前不能作为通用菜品",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A006",
+            "user_onset_after_text": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。",
+            "assistant_stop_after_text": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U08",
+          "assistant_id": "A008",
+          "user_utterance": "那咖啡馆先不考虑了，省得给每个人拆成不同版本。就用北非蛋、土豆杂烩和水果做核心，方向稳不稳？",
+          "assistant_utterance": "这个方向更稳，也省时间。北非蛋用已核实或省略的香料，奶酪另放；土豆杂烩只用整颗蔬菜、油和已核实调料；水果单独清洗切配，不让格兰诺拉进入操作区。",
+          "user_intent": "打断细分评估并主动简化候选菜单",
+          "assistant_intent": "确认简化方向并列出三道菜的保留条件",
+          "semantic_goal": "形成风险较低且可执行的菜单框架",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A007",
+            "user_onset_after_text": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。",
+            "assistant_stop_after_text": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。对陈"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U09",
+          "assistant_id": "A009",
+          "user_utterance": "法式吐司还要用牛奶和黄油，酸奶杯也有乳制品，而且那两包花生警示我看着就不踏实。是不是这次干脆都不做，只留下净水果？",
+          "assistant_utterance": "这样更省心。为减少同一厨房里的误用和交叉接触，本次不做法式吐司，也不打开格兰诺拉。酸奶若要给能吃的人，可用独立容器另放；最稳妥的公共配菜仍是净水果。",
+          "user_intent": "提出取消高疑虑菜品并保留净水果",
+          "assistant_intent": "评估简化方案并说明酸奶若保留时的隔离方式",
+          "semantic_goal": "进一步减少菜单中的花生和乳制品风险点",
+          "act_ref": "A04",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A008",
+            "user_onset_after_text": "这个方向更稳，也省时间。北非蛋用已核实或省略的香料，奶酪另放；土豆杂烩只用整颗蔬菜、油和已核实调料；水果单独清洗切配，不让格兰诺拉进入操作区。",
+            "assistant_stop_after_text": "这个方向更稳，也省时间。北非蛋用已核实或省略的香料，奶酪另放；土豆杂烩只用整颗蔬菜、油和已核实调料；水果单独清洗切配，不让格兰诺拉进入操作区。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U10",
+          "assistant_id": "A010",
+          "user_utterance": "北非蛋有八个鸡蛋，土豆杂烩用一点二公斤土豆，再加一大盘水果。六个人够不够？我尤其不想让父亲和外甥女只能吃配菜。",
+          "assistant_utterance": "这套能让父亲和外甥女都吃到北非蛋与土豆主食，不只是水果。八个鸡蛋配一点二公斤土豆供六人基本可行；若担心分量，可再加一份经花生风险核实的密封面包，否则增加土豆更稳。",
+          "user_intent": "核对菜单分量及两位家人的主食保障",
+          "assistant_intent": "评估六人份量并给出风险受控的增量选项",
+          "semantic_goal": "确保六人有足够食物且特殊饮食者不被边缘化",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A009",
+            "user_onset_after_text": "这样更省心。为减少同一厨房里的误用和交叉接触，本次不做法式吐司，也不打开格兰诺拉。酸奶若要给能吃的人，可用独立容器另放；最稳妥的公共配菜仍是净水果。",
+            "assistant_stop_after_text": "这样更省心。为减少同一厨房里的误用和交叉接触，本次不做法式吐司，也不打开格兰诺拉。酸奶若要给能吃的人，可用独立容器另放；最稳妥的公共配菜仍是净水果。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U11",
+          "assistant_id": "A011",
+          "user_utterance": "家里平时有人吃花生酱，旧烤面包机和木柄抹刀都碰过。我有新烤盘、金属锅具、塑料砧板和能彻底洗的刀，厨房该按什么顺序收拾和制作？",
+          "assistant_utterance": "先收起花生酱和带警示包装，用清洁剂彻底洗手、台面、砧板、刀具和金属餐具，再换干净毛巾。新烤盘和洗净锅具先做陈瑶可吃的全部菜；旧烤面包机和木柄抹刀不要使用。",
+          "user_intent": "说明家庭厨房既往花生接触并询问清洁制作顺序",
+          "assistant_intent": "制定降低交叉接触风险的厨房操作流程",
+          "semantic_goal": "把筛选后的菜单落实为安全性更高的制作顺序",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A010",
+            "user_onset_after_text": "这套能让父亲和外甥女都吃到北非蛋与土豆主食，不只是水果。八个鸡蛋配一点二公斤土豆供六人基本可行；若担心分量，可再加一份经花生风险核实的密封面包，否则增加土豆更稳。",
+            "assistant_stop_after_text": "这套能让父亲和外甥女都吃到北非蛋与土豆主食，不只是水果。八个鸡蛋配一点二公斤土豆供六人基本可行；若担心分量，可再加一份经花生风险核实的密封面包，否则增加土豆更稳。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U12",
+          "assistant_id": "A012",
+          "user_utterance": "我明天如果联系面包店、咖啡馆或者香料生产者，具体得问哪些问题？光问一句有没有花生，我怕他们随口说没有。",
+          "assistant_utterance": "要问完整配料和花生警示，还要问是否同线、同设备或同操作台生产，夹具与抹酱刀是否共用，如何清洁、隔离和防止散装混放。若回答含糊或无法确认，就不要供陈瑶食用。",
+          "user_intent": "请求整理向店家和生产者核实风险的具体问题",
+          "assistant_intent": "提供覆盖隐性配料与交叉接触控制的询问框架",
+          "semantic_goal": "获得足以支持购买决定的核实问题清单",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A011",
+            "user_onset_after_text": "先收起花生酱和带警示包装，用清洁剂彻底洗手、台面、砧板、刀具和金属餐具，再换干净毛巾。新烤盘和洗净锅具先做陈瑶可吃的全部菜；旧烤面包机和木柄抹刀不要使用。",
+            "assistant_stop_after_text": "先收起花生酱和带警示包装，用清洁剂彻底洗手、台面、砧板、刀具和金属餐具，再换干净毛巾。新烤盘和洗净锅具先做陈瑶可吃的全部菜；旧烤面包机和木柄抹刀不要使用。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U13",
+          "assistant_id": "A013",
+          "user_utterance": "好，最后按我周六最多两小时、周日上午九十分钟，给我一个简短的定稿和时间安排，我照着准备。",
+          "assistant_utterance": "定稿：无可疑香料的北非蛋、无乳土豆杂烩、净水果，菲达奶酪另碟。周六核实标签、采购并清洁厨房，切好蔬菜冷藏；周日先烤土豆，再用炉头做北非蛋，最后切水果装盘。保留九十分钟足够，陈瑶的急救计划和注射器应随手可取。",
+          "user_intent": "请求汇总最终菜单及两阶段时间安排",
+          "assistant_intent": "给出可直接执行的菜单定稿、备餐顺序和安全提醒",
+          "semantic_goal": "形成满足时间、饮食和花生安全约束的最终方案",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A012",
+            "user_onset_after_text": "要问完整配料和花生警示，还要问是否同线、同设备或同操作台生产，夹具与抹酱刀是否共用，如何清洁、隔离和防止散装混放。若回答含糊或无法确认，就不要供陈瑶食用。",
+            "assistant_stop_after_text": "要问完整配料和花生警示，还要问是否同线、同设备或同操作台生产，夹具与抹酱刀是否共用，如何清洁、隔离和防止散装混放。若回答含糊或无法确认，就不要供陈瑶食用。"
+          },
+          "pause_cue": null
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，",
+          "text": "嗯，明白"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A006",
+          "after_text": "可以。改用新购、密封且标签无花生警示的单一香料；",
+          "text": "好"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A011",
+          "after_text": "先收起花生酱和带警示包装，用清洁剂彻底洗手、台面、砧板、刀具和金属餐具，",
+          "text": "嗯"
+        },
+        {
+          "event_id": "BC04",
+          "target_assistant_id": "A012",
+          "after_text": "要问完整配料和花生警示，还要问是否同线、同设备或同操作台生产，",
+          "text": "对"
+        }
+      ],
+      "side_speech": [
+        {
+          "event_id": "S01",
+          "source_id": "SP01",
+          "target_assistant_id": "A004",
+          "after_text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。",
+          "text": "林岚，把这两包先放远一点。",
+          "speaker": "user",
+          "recipient": "配偶林岚",
+          "gain": 0.46
+        }
+      ],
+      "environment_events": []
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。",
+          "final_shared_played_prefix": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。",
+          "final_shared_played_prefix": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三者里，陈瑶的花生过敏优先级最高，不能用试吃验证。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。",
+          "final_shared_played_prefix": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三",
+          "discarded_unheard_tail": "者里，陈瑶的花生过敏优先级最高，不能用试吃验证。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。",
+          "final_shared_played_prefix": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我不用这包混合香料，改买单独包装的孜然、甜椒粉和芫荽籽。菜谱里的菲达奶酪本来就是可选的，能不能另放？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A005",
+          "at_user_onset_heard_prefix": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。",
+          "final_shared_played_prefix": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我不用这包混合香料，改买单独包装的孜然、甜椒粉和芫荽籽。菜谱里的菲达奶酪本来就是可选的，能不能另放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我不用这包混合香料，改买单独包装的孜然、甜椒粉和芫荽籽。菜谱里的菲达奶酪本来就是可选的，能不能另放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "咖啡馆的贝果夹烟熏三文鱼、奶油奶酪和腌洋葱，菜单没列过敏原，贝果、抹酱刀、夹具和操作台是不是共用也不知道。这个候选怎么看？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A006",
+          "at_user_onset_heard_prefix": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。",
+          "final_shared_played_prefix": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "可以。改用新购、密封且标签无花生警示的单一香料；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。对陈瑶，菜单没列过敏原，而且贝果、抹酱刀、夹具和操作台都未核实，所以现在不能算安全。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我不用这包混合香料，改买单独包装的孜然、甜椒粉和芫荽籽。菜谱里的菲达奶酪本来就是可选的，能不能另放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "咖啡馆的贝果夹烟熏三文鱼、奶油奶酪和腌洋葱，菜单没列过敏原，贝果、抹酱刀、夹具和操作台是不是共用也不知道。这个候选怎么看？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我不用这包混合香料，改买单独包装的孜然、甜椒粉和芫荽籽。菜谱里的菲达奶酪本来就是可选的，能不能另放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "咖啡馆的贝果夹烟熏三文鱼、奶油奶酪和腌洋葱，菜单没列过敏原，贝果、抹酱刀、夹具和操作台是不是共用也不知道。这个候选怎么看？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。对陈"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "那咖啡馆先不考虑了，省得给每个人拆成不同版本。就用北非蛋、土豆杂烩和水果做核心，方向稳不稳？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A007",
+          "at_user_onset_heard_prefix": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。",
+          "final_shared_played_prefix": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。对陈",
+          "discarded_unheard_tail": "瑶，菜单没列过敏原，而且贝果、抹酱刀、夹具和操作台都未核实，所以现在不能算安全。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "可以。改用新购、密封且标签无花生警示的单一香料；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "这个方向更稳，也省时间。北非蛋用已核实或省略的香料，奶酪另放；土豆杂烩只用整颗蔬菜、油和已核实调料；水果单独清洗切配，不让格兰诺拉进入操作区。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我不用这包混合香料，改买单独包装的孜然、甜椒粉和芫荽籽。菜谱里的菲达奶酪本来就是可选的，能不能另放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "咖啡馆的贝果夹烟熏三文鱼、奶油奶酪和腌洋葱，菜单没列过敏原，贝果、抹酱刀、夹具和操作台是不是共用也不知道。这个候选怎么看？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。对陈"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "那咖啡馆先不考虑了，省得给每个人拆成不同版本。就用北非蛋、土豆杂烩和水果做核心，方向稳不稳？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这个方向更稳，也省时间。北非蛋用已核实或省略的香料，奶酪另放；土豆杂烩只用整颗蔬菜、油和已核实调料；水果单独清洗切配，不让格兰诺拉进入操作区。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我不用这包混合香料，改买单独包装的孜然、甜椒粉和芫荽籽。菜谱里的菲达奶酪本来就是可选的，能不能另放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "咖啡馆的贝果夹烟熏三文鱼、奶油奶酪和腌洋葱，菜单没列过敏原，贝果、抹酱刀、夹具和操作台是不是共用也不知道。这个候选怎么看？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。对陈"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "那咖啡馆先不考虑了，省得给每个人拆成不同版本。就用北非蛋、土豆杂烩和水果做核心，方向稳不稳？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这个方向更稳，也省时间。北非蛋用已核实或省略的香料，奶酪另放；土豆杂烩只用整颗蔬菜、油和已核实调料；水果单独清洗切配，不让格兰诺拉进入操作区。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "法式吐司还要用牛奶和黄油，酸奶杯也有乳制品，而且那两包花生警示我看着就不踏实。是不是这次干脆都不做，只留下净水果？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A008",
+          "at_user_onset_heard_prefix": "这个方向更稳，也省时间。北非蛋用已核实或省略的香料，奶酪另放；土豆杂烩只用整颗蔬菜、油和已核实调料；水果单独清洗切配，不让格兰诺拉进入操作区。",
+          "final_shared_played_prefix": "这个方向更稳，也省时间。北非蛋用已核实或省略的香料，奶酪另放；土豆杂烩只用整颗蔬菜、油和已核实调料；水果单独清洗切配，不让格兰诺拉进入操作区。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "可以。改用新购、密封且标签无花生警示的单一香料；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "这样更省心。为减少同一厨房里的误用和交叉接触，本次不做法式吐司，也不打开格兰诺拉。酸奶若要给能吃的人，可用独立容器另放；最稳妥的公共配菜仍是净水果。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我不用这包混合香料，改买单独包装的孜然、甜椒粉和芫荽籽。菜谱里的菲达奶酪本来就是可选的，能不能另放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "咖啡馆的贝果夹烟熏三文鱼、奶油奶酪和腌洋葱，菜单没列过敏原，贝果、抹酱刀、夹具和操作台是不是共用也不知道。这个候选怎么看？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。对陈"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "那咖啡馆先不考虑了，省得给每个人拆成不同版本。就用北非蛋、土豆杂烩和水果做核心，方向稳不稳？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这个方向更稳，也省时间。北非蛋用已核实或省略的香料，奶酪另放；土豆杂烩只用整颗蔬菜、油和已核实调料；水果单独清洗切配，不让格兰诺拉进入操作区。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "法式吐司还要用牛奶和黄油，酸奶杯也有乳制品，而且那两包花生警示我看着就不踏实。是不是这次干脆都不做，只留下净水果？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "这样更省心。为减少同一厨房里的误用和交叉接触，本次不做法式吐司，也不打开格兰诺拉。酸奶若要给能吃的人，可用独立容器另放；最稳妥的公共配菜仍是净水果。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我不用这包混合香料，改买单独包装的孜然、甜椒粉和芫荽籽。菜谱里的菲达奶酪本来就是可选的，能不能另放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "咖啡馆的贝果夹烟熏三文鱼、奶油奶酪和腌洋葱，菜单没列过敏原，贝果、抹酱刀、夹具和操作台是不是共用也不知道。这个候选怎么看？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。对陈"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "那咖啡馆先不考虑了，省得给每个人拆成不同版本。就用北非蛋、土豆杂烩和水果做核心，方向稳不稳？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这个方向更稳，也省时间。北非蛋用已核实或省略的香料，奶酪另放；土豆杂烩只用整颗蔬菜、油和已核实调料；水果单独清洗切配，不让格兰诺拉进入操作区。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "法式吐司还要用牛奶和黄油，酸奶杯也有乳制品，而且那两包花生警示我看着就不踏实。是不是这次干脆都不做，只留下净水果？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "这样更省心。为减少同一厨房里的误用和交叉接触，本次不做法式吐司，也不打开格兰诺拉。酸奶若要给能吃的人，可用独立容器另放；最稳妥的公共配菜仍是净水果。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "北非蛋有八个鸡蛋，土豆杂烩用一点二公斤土豆，再加一大盘水果。六个人够不够？我尤其不想让父亲和外甥女只能吃配菜。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A009",
+          "at_user_onset_heard_prefix": "这样更省心。为减少同一厨房里的误用和交叉接触，本次不做法式吐司，也不打开格兰诺拉。酸奶若要给能吃的人，可用独立容器另放；最稳妥的公共配菜仍是净水果。",
+          "final_shared_played_prefix": "这样更省心。为减少同一厨房里的误用和交叉接触，本次不做法式吐司，也不打开格兰诺拉。酸奶若要给能吃的人，可用独立容器另放；最稳妥的公共配菜仍是净水果。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "可以。改用新购、密封且标签无花生警示的单一香料；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "这套能让父亲和外甥女都吃到北非蛋与土豆主食，不只是水果。八个鸡蛋配一点二公斤土豆供六人基本可行；若担心分量，可再加一份经花生风险核实的密封面包，否则增加土豆更稳。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U11",
+        "assistant_id": "A011",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我不用这包混合香料，改买单独包装的孜然、甜椒粉和芫荽籽。菜谱里的菲达奶酪本来就是可选的，能不能另放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "咖啡馆的贝果夹烟熏三文鱼、奶油奶酪和腌洋葱，菜单没列过敏原，贝果、抹酱刀、夹具和操作台是不是共用也不知道。这个候选怎么看？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。对陈"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "那咖啡馆先不考虑了，省得给每个人拆成不同版本。就用北非蛋、土豆杂烩和水果做核心，方向稳不稳？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这个方向更稳，也省时间。北非蛋用已核实或省略的香料，奶酪另放；土豆杂烩只用整颗蔬菜、油和已核实调料；水果单独清洗切配，不让格兰诺拉进入操作区。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "法式吐司还要用牛奶和黄油，酸奶杯也有乳制品，而且那两包花生警示我看着就不踏实。是不是这次干脆都不做，只留下净水果？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "这样更省心。为减少同一厨房里的误用和交叉接触，本次不做法式吐司，也不打开格兰诺拉。酸奶若要给能吃的人，可用独立容器另放；最稳妥的公共配菜仍是净水果。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "北非蛋有八个鸡蛋，土豆杂烩用一点二公斤土豆，再加一大盘水果。六个人够不够？我尤其不想让父亲和外甥女只能吃配菜。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这套能让父亲和外甥女都吃到北非蛋与土豆主食，不只是水果。八个鸡蛋配一点二公斤土豆供六人基本可行；若担心分量，可再加一份经花生风险核实的密封面包，否则增加土豆更稳。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我不用这包混合香料，改买单独包装的孜然、甜椒粉和芫荽籽。菜谱里的菲达奶酪本来就是可选的，能不能另放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "咖啡馆的贝果夹烟熏三文鱼、奶油奶酪和腌洋葱，菜单没列过敏原，贝果、抹酱刀、夹具和操作台是不是共用也不知道。这个候选怎么看？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。对陈"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "那咖啡馆先不考虑了，省得给每个人拆成不同版本。就用北非蛋、土豆杂烩和水果做核心，方向稳不稳？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这个方向更稳，也省时间。北非蛋用已核实或省略的香料，奶酪另放；土豆杂烩只用整颗蔬菜、油和已核实调料；水果单独清洗切配，不让格兰诺拉进入操作区。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "法式吐司还要用牛奶和黄油，酸奶杯也有乳制品，而且那两包花生警示我看着就不踏实。是不是这次干脆都不做，只留下净水果？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "这样更省心。为减少同一厨房里的误用和交叉接触，本次不做法式吐司，也不打开格兰诺拉。酸奶若要给能吃的人，可用独立容器另放；最稳妥的公共配菜仍是净水果。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "北非蛋有八个鸡蛋，土豆杂烩用一点二公斤土豆，再加一大盘水果。六个人够不够？我尤其不想让父亲和外甥女只能吃配菜。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这套能让父亲和外甥女都吃到北非蛋与土豆主食，不只是水果。八个鸡蛋配一点二公斤土豆供六人基本可行；若担心分量，可再加一份经花生风险核实的密封面包，否则增加土豆更稳。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "家里平时有人吃花生酱，旧烤面包机和木柄抹刀都碰过。我有新烤盘、金属锅具、塑料砧板和能彻底洗的刀，厨房该按什么顺序收拾和制作？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A010",
+          "at_user_onset_heard_prefix": "这套能让父亲和外甥女都吃到北非蛋与土豆主食，不只是水果。八个鸡蛋配一点二公斤土豆供六人基本可行；若担心分量，可再加一份经花生风险核实的密封面包，否则增加土豆更稳。",
+          "final_shared_played_prefix": "这套能让父亲和外甥女都吃到北非蛋与土豆主食，不只是水果。八个鸡蛋配一点二公斤土豆供六人基本可行；若担心分量，可再加一份经花生风险核实的密封面包，否则增加土豆更稳。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "可以。改用新购、密封且标签无花生警示的单一香料；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "先收起花生酱和带警示包装，用清洁剂彻底洗手、台面、砧板、刀具和金属餐具，再换干净毛巾。新烤盘和洗净锅具先做陈瑶可吃的全部菜；旧烤面包机和木柄抹刀不要使用。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U12",
+        "assistant_id": "A012",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我不用这包混合香料，改买单独包装的孜然、甜椒粉和芫荽籽。菜谱里的菲达奶酪本来就是可选的，能不能另放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "咖啡馆的贝果夹烟熏三文鱼、奶油奶酪和腌洋葱，菜单没列过敏原，贝果、抹酱刀、夹具和操作台是不是共用也不知道。这个候选怎么看？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。对陈"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "那咖啡馆先不考虑了，省得给每个人拆成不同版本。就用北非蛋、土豆杂烩和水果做核心，方向稳不稳？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这个方向更稳，也省时间。北非蛋用已核实或省略的香料，奶酪另放；土豆杂烩只用整颗蔬菜、油和已核实调料；水果单独清洗切配，不让格兰诺拉进入操作区。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "法式吐司还要用牛奶和黄油，酸奶杯也有乳制品，而且那两包花生警示我看着就不踏实。是不是这次干脆都不做，只留下净水果？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "这样更省心。为减少同一厨房里的误用和交叉接触，本次不做法式吐司，也不打开格兰诺拉。酸奶若要给能吃的人，可用独立容器另放；最稳妥的公共配菜仍是净水果。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "北非蛋有八个鸡蛋，土豆杂烩用一点二公斤土豆，再加一大盘水果。六个人够不够？我尤其不想让父亲和外甥女只能吃配菜。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这套能让父亲和外甥女都吃到北非蛋与土豆主食，不只是水果。八个鸡蛋配一点二公斤土豆供六人基本可行；若担心分量，可再加一份经花生风险核实的密封面包，否则增加土豆更稳。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "家里平时有人吃花生酱，旧烤面包机和木柄抹刀都碰过。我有新烤盘、金属锅具、塑料砧板和能彻底洗的刀，厨房该按什么顺序收拾和制作？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "先收起花生酱和带警示包装，用清洁剂彻底洗手、台面、砧板、刀具和金属餐具，再换干净毛巾。新烤盘和洗净锅具先做陈瑶可吃的全部菜；旧烤面包机和木柄抹刀不要使用。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我不用这包混合香料，改买单独包装的孜然、甜椒粉和芫荽籽。菜谱里的菲达奶酪本来就是可选的，能不能另放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "咖啡馆的贝果夹烟熏三文鱼、奶油奶酪和腌洋葱，菜单没列过敏原，贝果、抹酱刀、夹具和操作台是不是共用也不知道。这个候选怎么看？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。对陈"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "那咖啡馆先不考虑了，省得给每个人拆成不同版本。就用北非蛋、土豆杂烩和水果做核心，方向稳不稳？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这个方向更稳，也省时间。北非蛋用已核实或省略的香料，奶酪另放；土豆杂烩只用整颗蔬菜、油和已核实调料；水果单独清洗切配，不让格兰诺拉进入操作区。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "法式吐司还要用牛奶和黄油，酸奶杯也有乳制品，而且那两包花生警示我看着就不踏实。是不是这次干脆都不做，只留下净水果？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "这样更省心。为减少同一厨房里的误用和交叉接触，本次不做法式吐司，也不打开格兰诺拉。酸奶若要给能吃的人，可用独立容器另放；最稳妥的公共配菜仍是净水果。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "北非蛋有八个鸡蛋，土豆杂烩用一点二公斤土豆，再加一大盘水果。六个人够不够？我尤其不想让父亲和外甥女只能吃配菜。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这套能让父亲和外甥女都吃到北非蛋与土豆主食，不只是水果。八个鸡蛋配一点二公斤土豆供六人基本可行；若担心分量，可再加一份经花生风险核实的密封面包，否则增加土豆更稳。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "家里平时有人吃花生酱，旧烤面包机和木柄抹刀都碰过。我有新烤盘、金属锅具、塑料砧板和能彻底洗的刀，厨房该按什么顺序收拾和制作？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "先收起花生酱和带警示包装，用清洁剂彻底洗手、台面、砧板、刀具和金属餐具，再换干净毛巾。新烤盘和洗净锅具先做陈瑶可吃的全部菜；旧烤面包机和木柄抹刀不要使用。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "我明天如果联系面包店、咖啡馆或者香料生产者，具体得问哪些问题？光问一句有没有花生，我怕他们随口说没有。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A011",
+          "at_user_onset_heard_prefix": "先收起花生酱和带警示包装，用清洁剂彻底洗手、台面、砧板、刀具和金属餐具，再换干净毛巾。新烤盘和洗净锅具先做陈瑶可吃的全部菜；旧烤面包机和木柄抹刀不要使用。",
+          "final_shared_played_prefix": "先收起花生酱和带警示包装，用清洁剂彻底洗手、台面、砧板、刀具和金属餐具，再换干净毛巾。新烤盘和洗净锅具先做陈瑶可吃的全部菜；旧烤面包机和木柄抹刀不要使用。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "可以。改用新购、密封且标签无花生警示的单一香料；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A011",
+            "after_text": "先收起花生酱和带警示包装，用清洁剂彻底洗手、台面、砧板、刀具和金属餐具，",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "要问完整配料和花生警示，还要问是否同线、同设备或同操作台生产，夹具与抹酱刀是否共用，如何清洁、隔离和防止散装混放。若回答含糊或无法确认，就不要供陈瑶食用。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U13",
+        "assistant_id": "A013",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我不用这包混合香料，改买单独包装的孜然、甜椒粉和芫荽籽。菜谱里的菲达奶酪本来就是可选的，能不能另放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "咖啡馆的贝果夹烟熏三文鱼、奶油奶酪和腌洋葱，菜单没列过敏原，贝果、抹酱刀、夹具和操作台是不是共用也不知道。这个候选怎么看？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。对陈"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "那咖啡馆先不考虑了，省得给每个人拆成不同版本。就用北非蛋、土豆杂烩和水果做核心，方向稳不稳？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这个方向更稳，也省时间。北非蛋用已核实或省略的香料，奶酪另放；土豆杂烩只用整颗蔬菜、油和已核实调料；水果单独清洗切配，不让格兰诺拉进入操作区。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "法式吐司还要用牛奶和黄油，酸奶杯也有乳制品，而且那两包花生警示我看着就不踏实。是不是这次干脆都不做，只留下净水果？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "这样更省心。为减少同一厨房里的误用和交叉接触，本次不做法式吐司，也不打开格兰诺拉。酸奶若要给能吃的人，可用独立容器另放；最稳妥的公共配菜仍是净水果。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "北非蛋有八个鸡蛋，土豆杂烩用一点二公斤土豆，再加一大盘水果。六个人够不够？我尤其不想让父亲和外甥女只能吃配菜。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这套能让父亲和外甥女都吃到北非蛋与土豆主食，不只是水果。八个鸡蛋配一点二公斤土豆供六人基本可行；若担心分量，可再加一份经花生风险核实的密封面包，否则增加土豆更稳。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "家里平时有人吃花生酱，旧烤面包机和木柄抹刀都碰过。我有新烤盘、金属锅具、塑料砧板和能彻底洗的刀，厨房该按什么顺序收拾和制作？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "先收起花生酱和带警示包装，用清洁剂彻底洗手、台面、砧板、刀具和金属餐具，再换干净毛巾。新烤盘和洗净锅具先做陈瑶可吃的全部菜；旧烤面包机和木柄抹刀不要使用。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "我明天如果联系面包店、咖啡馆或者香料生产者，具体得问哪些问题？光问一句有没有花生，我怕他们随口说没有。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "要问完整配料和花生警示，还要问是否同线、同设备或同操作台生产，夹具与抹酱刀是否共用，如何清洁、隔离和防止散装混放。若回答含糊或无法确认，就不要供陈瑶食用。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我不用这包混合香料，改买单独包装的孜然、甜椒粉和芫荽籽。菜谱里的菲达奶酪本来就是可选的，能不能另放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "咖啡馆的贝果夹烟熏三文鱼、奶油奶酪和腌洋葱，菜单没列过敏原，贝果、抹酱刀、夹具和操作台是不是共用也不知道。这个候选怎么看？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。对陈"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "那咖啡馆先不考虑了，省得给每个人拆成不同版本。就用北非蛋、土豆杂烩和水果做核心，方向稳不稳？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这个方向更稳，也省时间。北非蛋用已核实或省略的香料，奶酪另放；土豆杂烩只用整颗蔬菜、油和已核实调料；水果单独清洗切配，不让格兰诺拉进入操作区。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "法式吐司还要用牛奶和黄油，酸奶杯也有乳制品，而且那两包花生警示我看着就不踏实。是不是这次干脆都不做，只留下净水果？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "这样更省心。为减少同一厨房里的误用和交叉接触，本次不做法式吐司，也不打开格兰诺拉。酸奶若要给能吃的人，可用独立容器另放；最稳妥的公共配菜仍是净水果。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "北非蛋有八个鸡蛋，土豆杂烩用一点二公斤土豆，再加一大盘水果。六个人够不够？我尤其不想让父亲和外甥女只能吃配菜。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这套能让父亲和外甥女都吃到北非蛋与土豆主食，不只是水果。八个鸡蛋配一点二公斤土豆供六人基本可行；若担心分量，可再加一份经花生风险核实的密封面包，否则增加土豆更稳。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "家里平时有人吃花生酱，旧烤面包机和木柄抹刀都碰过。我有新烤盘、金属锅具、塑料砧板和能彻底洗的刀，厨房该按什么顺序收拾和制作？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "先收起花生酱和带警示包装，用清洁剂彻底洗手、台面、砧板、刀具和金属餐具，再换干净毛巾。新烤盘和洗净锅具先做陈瑶可吃的全部菜；旧烤面包机和木柄抹刀不要使用。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "我明天如果联系面包店、咖啡馆或者香料生产者，具体得问哪些问题？光问一句有没有花生，我怕他们随口说没有。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "要问完整配料和花生警示，还要问是否同线、同设备或同操作台生产，夹具与抹酱刀是否共用，如何清洁、隔离和防止散装混放。若回答含糊或无法确认，就不要供陈瑶食用。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "好，最后按我周六最多两小时、周日上午九十分钟，给我一个简短的定稿和时间安排，我照着准备。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A012",
+          "at_user_onset_heard_prefix": "要问完整配料和花生警示，还要问是否同线、同设备或同操作台生产，夹具与抹酱刀是否共用，如何清洁、隔离和防止散装混放。若回答含糊或无法确认，就不要供陈瑶食用。",
+          "final_shared_played_prefix": "要问完整配料和花生警示，还要问是否同线、同设备或同操作台生产，夹具与抹酱刀是否共用，如何清洁、隔离和防止散装混放。若回答含糊或无法确认，就不要供陈瑶食用。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，",
+            "text": "嗯，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "可以。改用新购、密封且标签无花生警示的单一香料；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A011",
+            "after_text": "先收起花生酱和带警示包装，用清洁剂彻底洗手、台面、砧板、刀具和金属餐具，",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A012",
+            "after_text": "要问完整配料和花生警示，还要问是否同线、同设备或同操作台生产，",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "定稿：无可疑香料的北非蛋、无乳土豆杂烩、净水果，菲达奶酪另碟。周六核实标签、采购并清洁厨房，切好蔬菜冷藏；周日先烤土豆，再用炉头做北非蛋，最后切水果装盘。保留九十分钟足够，陈瑶的急救计划和注射器应随手可取。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A002",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，"
+          }
+        ],
+        "at_event_onset_heard_prefix": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，",
+        "event_text": "嗯，明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC02",
+        "kind": "backchannels",
+        "target_assistant_id": "A006",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我不用这包混合香料，改买单独包装的孜然、甜椒粉和芫荽籽。菜谱里的菲达奶酪本来就是可选的，能不能另放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以。改用新购、密封且标签无花生警示的单一香料；"
+          }
+        ],
+        "at_event_onset_heard_prefix": "可以。改用新购、密封且标签无花生警示的单一香料；",
+        "event_text": "好",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC03",
+        "kind": "backchannels",
+        "target_assistant_id": "A011",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我不用这包混合香料，改买单独包装的孜然、甜椒粉和芫荽籽。菜谱里的菲达奶酪本来就是可选的，能不能另放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "咖啡馆的贝果夹烟熏三文鱼、奶油奶酪和腌洋葱，菜单没列过敏原，贝果、抹酱刀、夹具和操作台是不是共用也不知道。这个候选怎么看？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。对陈"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "那咖啡馆先不考虑了，省得给每个人拆成不同版本。就用北非蛋、土豆杂烩和水果做核心，方向稳不稳？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这个方向更稳，也省时间。北非蛋用已核实或省略的香料，奶酪另放；土豆杂烩只用整颗蔬菜、油和已核实调料；水果单独清洗切配，不让格兰诺拉进入操作区。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "法式吐司还要用牛奶和黄油，酸奶杯也有乳制品，而且那两包花生警示我看着就不踏实。是不是这次干脆都不做，只留下净水果？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "这样更省心。为减少同一厨房里的误用和交叉接触，本次不做法式吐司，也不打开格兰诺拉。酸奶若要给能吃的人，可用独立容器另放；最稳妥的公共配菜仍是净水果。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "北非蛋有八个鸡蛋，土豆杂烩用一点二公斤土豆，再加一大盘水果。六个人够不够？我尤其不想让父亲和外甥女只能吃配菜。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这套能让父亲和外甥女都吃到北非蛋与土豆主食，不只是水果。八个鸡蛋配一点二公斤土豆供六人基本可行；若担心分量，可再加一份经花生风险核实的密封面包，否则增加土豆更稳。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "家里平时有人吃花生酱，旧烤面包机和木柄抹刀都碰过。我有新烤盘、金属锅具、塑料砧板和能彻底洗的刀，厨房该按什么顺序收拾和制作？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "先收起花生酱和带警示包装，用清洁剂彻底洗手、台面、砧板、刀具和金属餐具，"
+          }
+        ],
+        "at_event_onset_heard_prefix": "先收起花生酱和带警示包装，用清洁剂彻底洗手、台面、砧板、刀具和金属餐具，",
+        "event_text": "嗯",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC04",
+        "kind": "backchannels",
+        "target_assistant_id": "A012",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。其余候选要继续核对全部配料、花生警示及制作设备；水果只有与格兰诺拉彻底分开，才值得保留。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "北非蛋用鸡蛋、罐装番茄、甜椒和洋葱。那包混合香料写着在同时处理花生和坚果的设施中包装，但没说是不是共线，这道菜现在能定吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "菜的基础配料可以保留，但这包香料暂时不能用于陈瑶的餐食。“同一设施”不等于一定污染，也不等于安全；在生产者说明共线设备和过敏原控制前，应换掉或不用。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "那我不用这包混合香料，改买单独包装的孜然、甜椒粉和芫荽籽。菜谱里的菲达奶酪本来就是可选的，能不能另放？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "可以。改用新购、密封且标签无花生警示的单一香料；若生产者仍无法说明共线情况，就只用盐和黑胡椒。菲达奶酪另碟提供，不下锅，父亲可避开，外甥女仍能吃。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "咖啡馆的贝果夹烟熏三文鱼、奶油奶酪和腌洋葱，菜单没列过敏原，贝果、抹酱刀、夹具和操作台是不是共用也不知道。这个候选怎么看？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "烟熏三文鱼不适合外甥女；奶油奶酪也不利于父亲。对陈"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "那咖啡馆先不考虑了，省得给每个人拆成不同版本。就用北非蛋、土豆杂烩和水果做核心，方向稳不稳？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这个方向更稳，也省时间。北非蛋用已核实或省略的香料，奶酪另放；土豆杂烩只用整颗蔬菜、油和已核实调料；水果单独清洗切配，不让格兰诺拉进入操作区。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "法式吐司还要用牛奶和黄油，酸奶杯也有乳制品，而且那两包花生警示我看着就不踏实。是不是这次干脆都不做，只留下净水果？"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "这样更省心。为减少同一厨房里的误用和交叉接触，本次不做法式吐司，也不打开格兰诺拉。酸奶若要给能吃的人，可用独立容器另放；最稳妥的公共配菜仍是净水果。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "北非蛋有八个鸡蛋，土豆杂烩用一点二公斤土豆，再加一大盘水果。六个人够不够？我尤其不想让父亲和外甥女只能吃配菜。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这套能让父亲和外甥女都吃到北非蛋与土豆主食，不只是水果。八个鸡蛋配一点二公斤土豆供六人基本可行；若担心分量，可再加一份经花生风险核实的密封面包，否则增加土豆更稳。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "家里平时有人吃花生酱，旧烤面包机和木柄抹刀都碰过。我有新烤盘、金属锅具、塑料砧板和能彻底洗的刀，厨房该按什么顺序收拾和制作？"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "先收起花生酱和带警示包装，用清洁剂彻底洗手、台面、砧板、刀具和金属餐具，再换干净毛巾。新烤盘和洗净锅具先做陈瑶可吃的全部菜；旧烤面包机和木柄抹刀不要使用。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "我明天如果联系面包店、咖啡馆或者香料生产者，具体得问哪些问题？光问一句有没有花生，我怕他们随口说没有。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "要问完整配料和花生警示，还要问是否同线、同设备或同操作台生产，"
+          }
+        ],
+        "at_event_onset_heard_prefix": "要问完整配料和花生警示，还要问是否同线、同设备或同操作台生产，",
+        "event_text": "对",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "S01",
+        "kind": "side_speech",
+        "target_assistant_id": "A004",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在安排周日六个人的早午餐，家里有人严重过敏，也有人乳糖不耐受和吃蛋奶素。你先帮我讲明白，这三种情况在选菜时到底该怎么区别？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "严重食物过敏可能迅速危及生命，要避开致敏物和交叉接触；不耐受通常是消化道不适，可按个人耐受量替换或减量；蛋奶素是饮食选择，也应尊重，但不等同于过敏风险。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "我妹妹陈瑶是医生诊断的花生过敏，以前误食后全身起风团、喉咙发紧，还喘过。她带着两支肾上腺素注射器，这是不是就得按最高风险处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "这属于可能危及生命的花生过敏史。两支肾上腺素是意外暴露后的急救保障，不是放宽饮食风险的理由；应严格避开花生和交叉接触，并按她医生的急救计划处理症状。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "父亲喝普通牛奶或吃很多奶油会腹痛腹泻，少量硬奶酪一般没事。外甥女能吃蛋和奶，但不吃鱼、肉、明胶和肉汤。这两位又该怎么安排？"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "父亲的情况更像乳糖不耐受，重点是减少乳糖、提供替代；外甥女是蛋奶素饮食，必须保证她有真正的主食和配菜。三"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "明白，先按最严格的来。我有法式吐司、北非蛋、三文鱼贝果、酸奶水果杯和土豆杂烩五个候选。布里欧修和格兰诺拉都写着可能含花生，先怎么筛？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "布里欧修和格兰诺拉先排除供陈瑶食用，不能靠挑掉配料解决。",
+        "event_text": "林岚，把这两包先放远一点。",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply.",
+        "speaker": "user",
+        "recipient": "配偶林岚",
+        "speech_direction": "user_to_third_party",
+        "stop_required": false,
+        "advances_main_turn": false,
+        "included_in_task_history": false
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

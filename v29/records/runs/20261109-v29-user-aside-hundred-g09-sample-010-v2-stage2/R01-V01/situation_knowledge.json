@@ -1,0 +1,226 @@
+{
+  "episode_situation": "晚上，用户独自在家分析虚构游戏《雾港回声》，但没有系统学过叙事理论，想先通俗理解不可靠叙事与普通叙事的区别。游戏中角色说法与玩家看到的痕迹互相冲突，现有材料足以练习区分主观陈述、可观察证据和解释缺口。由于无法用攻略或后续剧情验证，讨论需保留记忆出错、刻意隐瞒或另有其人等多种合理解释。",
+  "task_reference_data": [
+    "角色陈述：洛安说潮历十八日整晚都在诊所，火灾后从未进入灯塔；伊兰则称当晚见他远离灯塔，但承认自己喝过酒且记不准时间。",
+    "可观察痕迹：诊所登记簿写有“洛安”，但字迹异常且无值班人签名；灯塔画面拍到穿同款外套、戴同款戒指的人，脸被强光遮住。",
+    "仍有歧义的线索：洛安物品栏中多出沾黑灰的潮湿灯塔钥匙，但游戏未说明他如何取得，也未排除由别人放入。"
+  ],
+  "environment_audio": "房间里几乎没有可辨识的背景声，近处语音清晰稳定。只有极轻的室内底噪，没有突发声源或旁人说话。",
+  "estimated_snr_db": 36,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "分析时须明确区分角色的自述或证词、玩家直接观察到的痕迹，以及仍需解释的缺口。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "不得把尚未由现有材料排除其他可能的解读说成已经证实的唯一真相。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C03",
+      "text": "概念说明优先使用通俗语言，并可逐步引入叙事理论术语。",
+      "kind": "soft"
+    }
+  ],
+  "safety_limits": [],
+  "soundscape_plan": {
+    "mode": "quiet",
+    "ambient_layers": [],
+    "environment_events": [],
+    "schema": "duplex_v2.soundscape_plan.v4",
+    "side_speech_sources": [],
+    "side_speech_count": 0,
+    "sampling": {
+      "schema": "duplex_v2.ambient_draw.v3",
+      "policy": {
+        "schema": "duplex_v2.soundscape_policy.v3",
+        "quiet_probability": 0.5,
+        "discrete_targets_by_tier": {
+          "short": [
+            0,
+            1
+          ],
+          "medium": [
+            1,
+            2
+          ],
+          "long": [
+            2,
+            4
+          ]
+        },
+        "discrete_count_includes": [
+          "environment_events",
+          "side_speech"
+        ],
+        "max_ambient_layers": 2,
+        "gain_range": [
+          0.3,
+          0.7
+        ],
+        "speech_request_probability": 0.5,
+        "third_party_preference_probability": 0.8,
+        "speech_requires_existing_scene_source": true,
+        "environment_audio": "base_only",
+        "stage2_repair": "atomic_scoped_patch",
+        "stage2_max_judge_attempts": 3,
+        "json_parse_max_retries": 3,
+        "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+        "user_aside_preference_probability": 0.5,
+        "user_voice_source": "stage1_user",
+        "user_aside_requires_present_recipient": true
+      },
+      "preferences": {
+        "schema": "duplex_v2.ambient_preferences.v1",
+        "seed": 202611090009,
+        "slot": 9,
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "categories": {
+          "bed": [
+            "fan",
+            "traffic",
+            "birds",
+            "crowd",
+            "rain",
+            "wind"
+          ],
+          "event": [
+            "water_tap",
+            "paper",
+            "keyboard",
+            "doorbell",
+            "door",
+            "footsteps"
+          ]
+        },
+        "recordings": {
+          "bed:birds": [
+            "birds-fsd50k-eval-86343",
+            "birds-fsd50k-eval-319512",
+            "birds-fsd50k-eval-57907"
+          ],
+          "bed:crowd": [
+            "crowd-fsd50k-eval-121877",
+            "crowd-fsd50k-eval-340358",
+            "crowd-fsd50k-eval-185058"
+          ],
+          "bed:fan": [
+            "fan-fsd50k-eval-419427",
+            "fan-fsd50k-eval-235362",
+            "fan-fsd50k-eval-415925"
+          ],
+          "bed:rain": [
+            "rain-fsd50k-eval-238016",
+            "rain-fsd50k-eval-21189",
+            "rain-fsd50k-eval-382582"
+          ],
+          "bed:traffic": [
+            "traffic-fsd50k-eval-232686",
+            "traffic-fsd50k-eval-235541",
+            "traffic-fsd50k-eval-124020"
+          ],
+          "bed:wind": [
+            "wind-fsd50k-eval-113176",
+            "wind-fsd50k-eval-113175",
+            "wind-fsd50k-eval-113173"
+          ],
+          "event:door": [
+            "door-fsd50k-eval-209519",
+            "door-fsd50k-eval-71212",
+            "door-fsd50k-eval-119077"
+          ],
+          "event:doorbell": [
+            "doorbell-fsd50k-eval-426594",
+            "doorbell-fsd50k-eval-332563",
+            "doorbell-fsd50k-eval-348322"
+          ],
+          "event:footsteps": [
+            "footsteps-fsd50k-eval-272381",
+            "footsteps-fsd50k-eval-392303",
+            "footsteps-fsd50k-eval-153104"
+          ],
+          "event:keyboard": [
+            "keyboard-fsd50k-eval-399740",
+            "keyboard-fsd50k-eval-411545",
+            "keyboard-fsd50k-eval-233057"
+          ],
+          "event:paper": [
+            "paper-fsd50k-eval-121200",
+            "paper-fsd50k-eval-343098",
+            "paper-fsd50k-eval-82562"
+          ],
+          "event:water_tap": [
+            "water_tap-fsd50k-eval-402128",
+            "water_tap-fsd50k-eval-232499",
+            "water_tap-fsd50k-eval-402127"
+          ]
+        }
+      },
+      "control": {
+        "schema": "duplex_v2.soundscape_control.v3",
+        "seed": 3073582004,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "user_to_third_party",
+          "third_party",
+          "machine"
+        ]
+      },
+      "control_sha256": "293ed5fc851c469500c7d1e206939a804c7ae27eb68103982393bb4ce8dec51e",
+      "candidate_plan": {
+        "schema": "duplex_v2.soundscape_plan.v4",
+        "mode": "quiet",
+        "ambient_layers": [],
+        "environment_events": [],
+        "side_speech_eligibility": {
+          "user_to_third_party": {
+            "compatible": false,
+            "reason": "用户独自在家，故事中没有明确同场且可被转向交谈的旁人。",
+            "source": null
+          },
+          "third_party": {
+            "compatible": false,
+            "reason": "当前房间内没有第三方人物，游戏角色仅存在于已暂停的虚构内容中。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "当前场景中没有已明确正在发声的机器或语音提示。",
+            "source": null
+          }
+        }
+      },
+      "base_environment_audio_sha256": "d0d1ccc846a1c7c9a340b02ab0eec154371699496d963425254a84948d050291",
+      "aggregate_environment_audio": "房间里几乎没有可辨识的背景声，近处语音清晰稳定。只有极轻的室内底噪，没有突发声源或旁人说话。",
+      "draws": [],
+      "speech_selection": {
+        "requested": false,
+        "compatible_kinds": [],
+        "selected_kind": null,
+        "outcome": "not_requested",
+        "assessments": {
+          "user_to_third_party": {
+            "compatible": false,
+            "reason": "用户独自在家，故事中没有明确同场且可被转向交谈的旁人。",
+            "source": null
+          },
+          "third_party": {
+            "compatible": false,
+            "reason": "当前房间内没有第三方人物，游戏角色仅存在于已暂停的虚构内容中。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "当前场景中没有已明确正在发声的机器或语音提示。",
+            "source": null
+          }
+        }
+      }
+    }
+  }
+}

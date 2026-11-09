@@ -1,0 +1,73 @@
+{
+  "scenario": {
+    "domain_id": "D26",
+    "domain": "翻译、口译与跨文化沟通",
+    "domain_definition": "Google multilingual Live、SpokenUS 的多语/口语实现、VoiceBench 和 OpenAI Realtime 提供相邻依据；专门双工口译评测仍缺失。",
+    "scenario_id": "D26-S08",
+    "scenario": "无障碍语言沟通",
+    "requested_examples_per_style": 5,
+    "existing_example_task_seeds": [],
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "medium",
+      "target_turns": 14,
+      "min_turns": 13,
+      "max_turns": 15
+    },
+    "dialogue_length_instruction": "本条完整对话目标为 14 个主轮，允许 13–15 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    }
+  },
+  "current_example_tasks": {
+    "常识问答": [
+      "想弄清楚手语和唇读在无障碍沟通中的区别，以及在不同情况下各自可能遇到的限制。",
+      "遇到听力或语言表达有障碍的人时，想了解怎样放慢语速、确认理解，又不会显得像在替对方做决定。",
+      "请判断把一则复杂通知改成易懂说法时，下面哪些改写可能遗漏关键信息，并比较易懂表达和逐字翻译的区别。",
+      "如果对方用文字、图片或辅助沟通设备表示“没听懂”，应如何判断对方需要补充说明、换种表达还是更多时间，并自然地重新说明？",
+      "以一个公共场所问路的小情境为例，想请助手说明怎样通过简短句子、手势和书面信息配合，让不同语言或沟通能力的人都更容易理解。"
+    ]
+  },
+  "judge_findings": [
+    {
+      "severity": "must_fix",
+      "path": "/example_tasks/常识问答/2",
+      "problem": "任务要求判断“下面哪些改写”，但条目中没有提供任何待判断的改写内容，问题入口不完整。",
+      "evidence": "请判断把一则复杂通知改成易懂说法时，下面哪些改写可能遗漏关键信息，并比较易懂表达和逐字翻译的区别。",
+      "repair": "删除对缺失内容的指代，改为询问如何判断改写是否遗漏关键信息，并保留易懂表达与逐字翻译的区别这一相关追问。"
+    }
+  ],
+  "repair_targets": [
+    {
+      "path": "/example_tasks/常识问答/2",
+      "current_value": "请判断把一则复杂通知改成易懂说法时，下面哪些改写可能遗漏关键信息，并比较易懂表达和逐字翻译的区别。"
+    }
+  ]
+}

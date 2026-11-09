@@ -1,0 +1,77 @@
+{
+  "scene": {
+    "domain_id": "D19",
+    "domain": "媒体、娱乐与角色扮演",
+    "scenario_id": "D19-S03",
+    "scenario": "剧情回顾",
+    "example_tasks": [
+      "通过角色视角重演剧情中的关键转折，并讨论不同动机如何改变对事件的理解。",
+      "把一部复杂作品的故事讲给没看过的人听，练习用清晰的因果链压缩主要情节。",
+      "围绕伏笔、误导与回收展开一场剧情推理挑战，判断哪些线索真正支撑了结局。",
+      "共同设想一个替代结局，再讨论它是否符合人物性格、主题表达和前面铺设的冲突。",
+      "从观众体验和叙事结构两个角度辩论一个开放式结局是否成立，以及它留下了哪些合理疑问。"
+    ]
+  },
+  "task_style": "开放式互动",
+  "previous_task_goals": [],
+  "batch_size": 1,
+  "available_modalities": [
+    "audio"
+  ],
+  "capability_contract": {
+    "interaction_modalities": [
+      "audio"
+    ],
+    "available_tools": [],
+    "external_state_access": "none",
+    "external_side_effects": "forbidden"
+  },
+  "dialogue_length_plan": {
+    "schema": "duplex_v2.dialogue_length_plan.v1",
+    "tier": "short",
+    "target_turns": 8,
+    "min_turns": 7,
+    "max_turns": 8
+  },
+  "dialogue_length_instruction": "本条完整对话目标为 8 个主轮，允许 7–8 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+  "sampled_interaction_axes": {
+    "formality": "casual",
+    "directness": "indirect",
+    "emotional_expressiveness": "reserved",
+    "verbosity": "brief",
+    "initiative": "high",
+    "caution": "medium",
+    "patience": "high"
+  },
+  "interaction_profile_schema": "duplex_v2.interaction_profile.v1",
+  "text_policy": {
+    "schema": "duplex_v2.text_policy.v1",
+    "workflow_version": "v2.5",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "models": {
+      "sol": "openai/gpt-5.6-sol",
+      "luna": "openai/gpt-5.6-luna"
+    },
+    "roles": {
+      "stage0_generation": "luna",
+      "stage1_generation": "luna",
+      "stage2_generation": "sol",
+      "script_generation": "sol",
+      "script_patch": "sol",
+      "judge": "sol",
+      "compaction_first": "luna",
+      "compaction_later": "sol"
+    },
+    "reasoning_effort_policy": "default",
+    "stage0_max_judge_attempts": 5,
+    "content_max_repairs": 5,
+    "json_parse_max_retries": 3,
+    "length_compaction_max_attempts": 3,
+    "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+    "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+    "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+  }
+}

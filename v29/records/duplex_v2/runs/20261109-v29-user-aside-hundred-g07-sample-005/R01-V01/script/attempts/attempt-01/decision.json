@@ -1,0 +1,33 @@
+{
+  "decision": "repair",
+  "findings": [
+    {
+      "severity": "must_fix",
+      "path": "/rounds/0/assistant_utterance",
+      "problem": "助手在用户披露具体情境前使用了与隐藏材料吻合的地点和时间示例，构成提前泄漏。",
+      "evidence": "A001 说“明白，二楼窗口”和“十秒后跟进”，但其 assistant_before_reply_history 只有 U01 对三种确认层级的抽象提问；“二楼窗口”和“十秒后”此时只存在于 frozen_source.situation_knowledge.task_reference_data。",
+      "repair": "将这些示例改为不取自尚未披露情境的通用表达，并同步修正受影响的 timing 与 backchannel 精确前缀。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/rounds/2/assistant_utterance",
+      "problem": "助手继续提前使用用户尚未披露的具体站位信息。",
+      "evidence": "A003 说“我守楼梯，不前压”，但截至该轮用户只要求固定三档说法，尚未在 U04 披露自己当时“正在守楼梯”；该事实此前只在隐藏 task_reference_data 中。",
+      "repair": "保留三档规则，改用不依赖隐藏站位的通用行动示例，并同步修正该轮相关精确锚点。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/rounds/16/assistant_utterance",
+      "problem": "助手捏造了用户的具体游戏名。",
+      "evidence": "A017 使用“阿杰收到”，但 frozen_source 和此前已听对话均未给出用户游戏名；该内容虽位于被打断后的 discarded_unheard_tail，仍是候选助手正文中的无来源具体姓名。",
+      "repair": "删除具体姓名，改为不假定用户游戏名的泛化说明，并同步修正后续依赖及精确锚点。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/rounds/17/assistant_utterance",
+      "problem": "助手再次把无来源姓名当作用户可直接使用的话术。",
+      "evidence": "A018 完整说出“阿杰收到，继续守楼梯”，而 U18 只说“他喊我名字”，并未提供名字；冻结来源中也没有“阿杰”。",
+      "repair": "保留被点名时明确回应的建议，但不要填入任何未经用户提供的具体游戏名。"
+    }
+  ]
+}

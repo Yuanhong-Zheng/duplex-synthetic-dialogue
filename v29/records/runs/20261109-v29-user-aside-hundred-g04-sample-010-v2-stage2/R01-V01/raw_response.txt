@@ -1,0 +1,109 @@
+{
+  "episode_situation": "今天上午十点左右，用户在家中客厅陪七十四岁的父亲休息；父亲从沙发起身走了两步后突然软倒，用户全程在旁，因此现在需要在等待专业帮助时判断哪些变化必须立即升级处理。父亲约二十秒没有回应，倒下前说有些发晕，期间面色苍白并出汗，没有看到持续抽搐，也没有撞到头；他目前已经清醒，能完整回答简单问题，呼吸看起来正常，但仍然乏力，用户让他保持平躺，没有让他再次站起。家中另一位家人已拨打120，抵达时间尚不清楚，用户手边只有手机和一张常用药纸单，没有血压计、血糖仪或急救设备，也不准备自行驾车搬动父亲。用户知道父亲有高血压，但尚未确认事发前是否出现胸痛、心悸或气短，也拿不准短暂迷糊、单侧无力、说话含糊、再次晕倒及恢复缓慢分别意味着什么，希望按普通晕厥的常见表现、紧急警示信号和等待期间的优先事项逐项弄清。",
+  "task_reference_data": [],
+  "environment_audio": "客厅右侧约一米处的落地风扇持续发出低而稳定的转动声，音量没有明显起伏。室内其余声响很轻，近处说话清晰可辨。",
+  "estimated_snr_db": 29,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "应优先梳理意识、正常呼吸和紧急警示信号，再解释普通晕厥的常见特点，不能用一般性判断替代专业评估。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "解释尽量使用家庭照护者能够直接观察的表现，并对必要医学术语作简明说明。",
+      "kind": "soft"
+    }
+  ],
+  "safety_limits": [
+    {
+      "limit_id": "L01",
+      "text": "如果父亲再次失去反应或不能正常呼吸，应立即拨打或再次联系120，并按接线员指导开始心肺复苏和使用可获得的自动体外除颤器，不应继续等待问答。",
+      "severity": "critical"
+    },
+    {
+      "limit_id": "L02",
+      "text": "若出现胸痛、明显呼吸困难、单侧无力、面部歪斜、言语异常、剧烈头痛、持续意识混乱、反复晕倒或严重外伤，应立即把变化告知急救人员。",
+      "severity": "hard"
+    },
+    {
+      "limit_id": "L03",
+      "text": "等待期间不要让父亲独自站立或行走，也不要在意识和吞咽状态未充分恢复时强行喂水、食物或自行加服药物。",
+      "severity": "hard"
+    }
+  ],
+  "soundscape_plan": {
+    "schema": "duplex_v2.soundscape_plan.v4",
+    "mode": "layered",
+    "ambient_layers": [
+      {
+        "source_id": "AMB01",
+        "candidates": [
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "reason": "稳定的室内机械风扇声与安静客厅中的落地风扇相符。",
+            "environment_audio": "右侧近处传来持续、低沉而均匀的风扇转动声。"
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "reason": "连续通风声能够形成不妨碍语音辨识的家庭室内底噪。",
+            "environment_audio": "客厅一侧保持轻微而稳定的机械通风声。"
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "reason": "真实风扇录音适合作为当前客厅环境的低音量基础声层。",
+            "environment_audio": "近处风扇以固定节奏运转，声音平稳且没有明显变化。"
+          }
+        ]
+      }
+    ],
+    "environment_events": [
+      {
+        "source_id": "ENV01",
+        "candidates": [
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "reason": "用户手边已有常用药纸单，短暂翻动纸张符合现场物件和情境。",
+            "environment_audio": "近处传来一次短促的纸张翻动声。"
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "reason": "查看手边药物纸单时可能产生完整但短暂的纸张响动。",
+            "environment_audio": "用户身旁响起一阵轻微的纸页展开和摩擦声。"
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "reason": "简短纸张声与用户拿取现有药物记录的动作相容。",
+            "environment_audio": "近距离出现一次清楚但音量不高的纸张窸窣声。"
+          }
+        ]
+      }
+    ],
+    "side_speech_eligibility": {
+      "user_to_third_party": {
+        "compatible": true,
+        "reason": "父亲与用户同处客厅且已经清醒，助手播报期间用户可以短暂转向父亲作安抚或提醒他继续躺着。",
+        "source": {
+          "speaker": "user",
+          "recipient": "刚恢复意识并平躺在客厅的父亲",
+          "voice_source": "stage1_user",
+          "description": "陪护中的用户可在不终止助手播报的情况下，简短安抚同场的父亲或提醒他暂时不要起身。"
+        }
+      },
+      "third_party": {
+        "compatible": true,
+        "reason": "父亲是故事中明确在场且目前能够回答简单问题的人物，具备发出简短声音或回应的现实条件。",
+        "source": {
+          "speaker": "third_party",
+          "voice_profile": "年长男性，音量较轻，气息偏弱，语速缓慢",
+          "description": "刚从短暂意识丧失中恢复、正平躺休息的父亲。"
+        }
+      },
+      "machine": {
+        "compatible": false,
+        "reason": "现场虽有风扇，但故事中没有会播报语音或提示音的设备。",
+        "source": null
+      }
+    }
+  }
+}

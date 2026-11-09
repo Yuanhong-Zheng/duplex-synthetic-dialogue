@@ -18,19 +18,20 @@ main{height:calc(100dvh - 106px);min-height:420px}iframe{border:0;width:100%;hei
 <header><div class="head"><h1>全双工语音数据生成与评测</h1><span class="sub">流程 · 数据 · 评测</span></div>
 <nav aria-label="切换项目内容">
 <a href="#pipeline" aria-controls="panel-pipeline">V2.6 流程与示例</a>
-<a href="#v28" aria-controls="panel-v28">V2.8 中文百例 · 93 成功</a>
+<a href="#v29" aria-controls="panel-v29">V2.9 中文百例 · 90 成功</a>
 <a href="#benchmark" aria-controls="panel-benchmark">全双工 Benchmark 调研</a>
 </nav></header>
 <main>
 <iframe id="panel-pipeline" title="管线流程图与案例说明" data-src="pipeline.html" hidden></iframe>
-<iframe id="panel-v28" title="V2.8 中文 100 条案例" data-src="v28/index.html" hidden></iframe>
+<iframe id="panel-v29" title="V2.9 中文 100 条案例" data-src="v29/index.html" hidden></iframe>
 <iframe id="panel-benchmark" title="全双工 Benchmark 调研报告" data-src="benchmark/index.html" hidden></iframe>
 </main>
 <script>
 (function(){
- const names=['pipeline','v28','benchmark'];
+ const names=['pipeline','v29','benchmark'];
  function switchView(){
-   const key=names.includes(location.hash.slice(1))?location.hash.slice(1):'pipeline';
+   const requested=location.hash.slice(1)==='v28'?'v29':location.hash.slice(1);
+   const key=names.includes(requested)?requested:'pipeline';
    for(const name of names){
      const frame=document.getElementById('panel-'+name), link=document.querySelector('a[href="#'+name+'"]');
      const active=name===key; frame.hidden=!active;

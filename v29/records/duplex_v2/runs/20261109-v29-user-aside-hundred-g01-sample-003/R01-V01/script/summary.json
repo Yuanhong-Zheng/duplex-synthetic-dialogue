@@ -1,0 +1,447 @@
+{
+  "status": "passed",
+  "content_repair_budget": 5,
+  "content_max_attempts": 6,
+  "content_repairs_used": 1,
+  "v2_controls": {
+    "model_token_budgets": {
+      "generation": null,
+      "judge": null,
+      "compact": null
+    },
+    "output_token_budget": null,
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    },
+    "reasoning_effort_policy": "default",
+    "script_execution_policy": {
+      "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+      "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+      "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+      "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+      "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+      "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+      "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+    },
+    "program_anchor_seed": 2615247405,
+    "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+    "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+    "text_output_token_policy": "omit",
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "medium",
+      "target_turns": 12,
+      "min_turns": 11,
+      "max_turns": 13
+    },
+    "interaction_profile": {
+      "schema": "duplex_v2.interaction_profile.v1",
+      "formality": "formal",
+      "directness": "direct",
+      "emotional_expressiveness": "expressive",
+      "verbosity": "balanced",
+      "initiative": "low",
+      "caution": "low",
+      "patience": "medium",
+      "behavioral_notes": [
+        "表达通常较完整，倾向于先说明自己的判断和顾虑，再请对方给出具体比较。",
+        "对有启发性的分析会直接表现出兴趣或认同，遇到不确定处会简短说明自己还没想清楚。",
+        "不太主动延展无关话题，但愿意在获得清晰追问后补充必要信息。"
+      ]
+    },
+    "soundscape_plan": {
+      "mode": "layered",
+      "ambient_layers": [
+        {
+          "source_id": "AMB01",
+          "asset_id": "fan-fsd50k-eval-415925",
+          "reason": "稳定的室内机械通风声符合后期工作室的基础底噪，且不会掩盖语音。"
+        }
+      ],
+      "environment_events": [
+        {
+          "source_id": "ENV01",
+          "asset_id": "paper-fsd50k-eval-121200",
+          "reason": "用户和共同制片人正在桌边核对打印稿，短促翻页声与现有动作和材料一致。"
+        }
+      ],
+      "schema": "duplex_v2.soundscape_plan.v4",
+      "side_speech_sources": [
+        {
+          "source_id": "SP01",
+          "speaker": "user",
+          "recipient": "共同制片人林乔",
+          "voice_source": "stage1_user",
+          "description": "用户可就桌上的打印稿或既定制作条件向同场的共同制片人作简短确认。"
+        }
+      ],
+      "side_speech_count": 1,
+      "sampling": {
+        "schema": "duplex_v2.ambient_draw.v3",
+        "policy": {
+          "schema": "duplex_v2.soundscape_policy.v3",
+          "quiet_probability": 0.5,
+          "discrete_targets_by_tier": {
+            "short": [
+              0,
+              1
+            ],
+            "medium": [
+              1,
+              2
+            ],
+            "long": [
+              2,
+              4
+            ]
+          },
+          "discrete_count_includes": [
+            "environment_events",
+            "side_speech"
+          ],
+          "max_ambient_layers": 2,
+          "gain_range": [
+            0.3,
+            0.7
+          ],
+          "speech_request_probability": 0.5,
+          "third_party_preference_probability": 0.8,
+          "speech_requires_existing_scene_source": true,
+          "environment_audio": "base_only",
+          "stage2_repair": "atomic_scoped_patch",
+          "stage2_max_judge_attempts": 3,
+          "json_parse_max_retries": 3,
+          "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+          "user_aside_preference_probability": 0.5,
+          "user_voice_source": "stage1_user",
+          "user_aside_requires_present_recipient": true
+        },
+        "preferences": {
+          "schema": "duplex_v2.ambient_preferences.v1",
+          "seed": 202611090001,
+          "slot": 2,
+          "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+          "categories": {
+            "bed": [
+              "birds",
+              "wind",
+              "rain",
+              "traffic",
+              "fan",
+              "crowd"
+            ],
+            "event": [
+              "door",
+              "footsteps",
+              "doorbell",
+              "paper",
+              "water_tap",
+              "keyboard"
+            ]
+          },
+          "recordings": {
+            "bed:birds": [
+              "birds-fsd50k-eval-319512",
+              "birds-fsd50k-eval-86343",
+              "birds-fsd50k-eval-57907"
+            ],
+            "bed:crowd": [
+              "crowd-fsd50k-eval-185058",
+              "crowd-fsd50k-eval-340358",
+              "crowd-fsd50k-eval-121877"
+            ],
+            "bed:fan": [
+              "fan-fsd50k-eval-415925",
+              "fan-fsd50k-eval-235362",
+              "fan-fsd50k-eval-419427"
+            ],
+            "bed:rain": [
+              "rain-fsd50k-eval-382582",
+              "rain-fsd50k-eval-21189",
+              "rain-fsd50k-eval-238016"
+            ],
+            "bed:traffic": [
+              "traffic-fsd50k-eval-232686",
+              "traffic-fsd50k-eval-124020",
+              "traffic-fsd50k-eval-235541"
+            ],
+            "bed:wind": [
+              "wind-fsd50k-eval-113175",
+              "wind-fsd50k-eval-113173",
+              "wind-fsd50k-eval-113176"
+            ],
+            "event:door": [
+              "door-fsd50k-eval-209519",
+              "door-fsd50k-eval-71212",
+              "door-fsd50k-eval-119077"
+            ],
+            "event:doorbell": [
+              "doorbell-fsd50k-eval-426594",
+              "doorbell-fsd50k-eval-348322",
+              "doorbell-fsd50k-eval-332563"
+            ],
+            "event:footsteps": [
+              "footsteps-fsd50k-eval-392303",
+              "footsteps-fsd50k-eval-153104",
+              "footsteps-fsd50k-eval-272381"
+            ],
+            "event:keyboard": [
+              "keyboard-fsd50k-eval-399740",
+              "keyboard-fsd50k-eval-233057",
+              "keyboard-fsd50k-eval-411545"
+            ],
+            "event:paper": [
+              "paper-fsd50k-eval-121200",
+              "paper-fsd50k-eval-343098",
+              "paper-fsd50k-eval-82562"
+            ],
+            "event:water_tap": [
+              "water_tap-fsd50k-eval-402127",
+              "water_tap-fsd50k-eval-402128",
+              "water_tap-fsd50k-eval-232499"
+            ]
+          }
+        },
+        "control": {
+          "schema": "duplex_v2.soundscape_control.v3",
+          "seed": 1471511156,
+          "mode": "layered",
+          "discrete_event_target": 2,
+          "max_ambient_layers": 2,
+          "side_speech_requested": true,
+          "speech_kind_preferences": [
+            "user_to_third_party",
+            "third_party",
+            "machine"
+          ]
+        },
+        "control_sha256": "af5eab9ca332bf060a17833bc55501821ebda22dc1cb7416fd62254bf55fbb81",
+        "candidate_plan": {
+          "schema": "duplex_v2.soundscape_plan.v4",
+          "mode": "layered",
+          "ambient_layers": [
+            {
+              "source_id": "AMB01",
+              "candidates": [
+                {
+                  "asset_id": "fan-fsd50k-eval-415925",
+                  "reason": "稳定的室内机械通风声符合后期工作室的基础底噪，且不会掩盖语音。",
+                  "environment_audio": "右后方传来持续、低沉且较轻的通风机械声。"
+                },
+                {
+                  "asset_id": "fan-fsd50k-eval-235362",
+                  "reason": "可作为工作室持续运行的通风设备声，节奏稳定并适合长段对话。",
+                  "environment_audio": "数米外的通风口保持均匀低鸣，音量变化很小。"
+                },
+                {
+                  "asset_id": "fan-fsd50k-eval-419427",
+                  "reason": "真实机械风扇声与封闭编辑空间相容，可形成不突兀的室内底色。",
+                  "environment_audio": "房间后侧有平稳的机械送风声，偶尔轻微起伏。"
+                }
+              ]
+            }
+          ],
+          "environment_events": [
+            {
+              "source_id": "ENV01",
+              "candidates": [
+                {
+                  "asset_id": "paper-fsd50k-eval-121200",
+                  "reason": "用户和共同制片人正在桌边核对打印稿，短促翻页声与现有动作和材料一致。",
+                  "environment_audio": "近处桌面响起一次短促的纸页翻动声。"
+                },
+                {
+                  "asset_id": "paper-fsd50k-eval-343098",
+                  "reason": "完整而简短的纸张声可表现现场整理构想页，不引入新的场景事实。",
+                  "environment_audio": "桌边传来一阵轻而完整的纸张整理声。"
+                },
+                {
+                  "asset_id": "paper-fsd50k-eval-82562",
+                  "reason": "纸张翻动符合打印笔记正在被逐页核对的工作环境。",
+                  "environment_audio": "近距离响起一次略明显的打印稿翻动声，随后恢复安静。"
+                }
+              ]
+            }
+          ],
+          "side_speech_eligibility": {
+            "user_to_third_party": {
+              "compatible": true,
+              "reason": "共同制片人林乔与用户同坐工作桌旁，并参与整理材料，用户在助手播报期间转向她确认制作层面的简短事项符合现有场景。",
+              "source": {
+                "speaker": "user",
+                "recipient": "共同制片人林乔",
+                "voice_source": "stage1_user",
+                "description": "用户可就桌上的打印稿或既定制作条件向同场的共同制片人作简短确认。"
+              }
+            },
+            "third_party": {
+              "compatible": true,
+              "reason": "林乔是故事中已明确在场并参与准备工作的共同制片人，具备自然发出简短现场话语的条件。",
+              "source": {
+                "speaker": "third_party",
+                "voice_profile": "中等音高，音色温和清晰，近距离说话，音量克制。",
+                "description": "坐在同一工作桌旁整理打印稿的共同制片人林乔。"
+              }
+            },
+            "machine": {
+              "compatible": false,
+              "reason": "现场虽有笔记本电脑和通风设备，但没有已建立的语音播报机器或会说话的系统。",
+              "source": null
+            }
+          }
+        },
+        "base_environment_audio_sha256": "b7ec0683124d205c5e613db59d46581082ee10f0ae90d74c2830dd685c6b71f3",
+        "aggregate_environment_audio": "房间右后方的通风口持续发出低沉而稳定的机械风声，与说话位置保持数米距离。风声大部分时间音量平缓，偶尔随通风系统换挡略微抬高后又回落。 右后方传来持续、低沉且较轻的通风机械声。 近处桌面响起一次短促的纸页翻动声。",
+        "draws": [
+          {
+            "source_id": "AMB01",
+            "category": "fan",
+            "asset_id": "fan-fsd50k-eval-415925",
+            "eligible_categories": [
+              "fan"
+            ],
+            "eligible_assets": [
+              "fan-fsd50k-eval-235362",
+              "fan-fsd50k-eval-415925",
+              "fan-fsd50k-eval-419427"
+            ]
+          },
+          {
+            "source_id": "ENV01",
+            "category": "paper",
+            "asset_id": "paper-fsd50k-eval-121200",
+            "eligible_categories": [
+              "paper"
+            ],
+            "eligible_assets": [
+              "paper-fsd50k-eval-121200",
+              "paper-fsd50k-eval-343098",
+              "paper-fsd50k-eval-82562"
+            ]
+          }
+        ],
+        "speech_selection": {
+          "requested": true,
+          "compatible_kinds": [
+            "user_to_third_party",
+            "third_party"
+          ],
+          "selected_kind": "user_to_third_party",
+          "outcome": "selected",
+          "assessments": {
+            "user_to_third_party": {
+              "compatible": true,
+              "reason": "共同制片人林乔与用户同坐工作桌旁，并参与整理材料，用户在助手播报期间转向她确认制作层面的简短事项符合现有场景。",
+              "source": {
+                "speaker": "user",
+                "recipient": "共同制片人林乔",
+                "voice_source": "stage1_user",
+                "description": "用户可就桌上的打印稿或既定制作条件向同场的共同制片人作简短确认。"
+              }
+            },
+            "third_party": {
+              "compatible": true,
+              "reason": "林乔是故事中已明确在场并参与准备工作的共同制片人，具备自然发出简短现场话语的条件。",
+              "source": {
+                "speaker": "third_party",
+                "voice_profile": "中等音高，音色温和清晰，近距离说话，音量克制。",
+                "description": "坐在同一工作桌旁整理打印稿的共同制片人林乔。"
+              }
+            },
+            "machine": {
+              "compatible": false,
+              "reason": "现场虽有笔记本电脑和通风设备，但没有已建立的语音播报机器或会说话的系统。",
+              "source": null
+            }
+          }
+        }
+      }
+    },
+    "ambient_control": {
+      "schema": "duplex_v2.soundscape_control.v3",
+      "seed": 1471511156,
+      "mode": "layered",
+      "discrete_event_target": 2,
+      "max_ambient_layers": 2,
+      "side_speech_requested": true,
+      "speech_kind_preferences": [
+        "user_to_third_party",
+        "third_party",
+        "machine"
+      ]
+    },
+    "ambient_catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f"
+  },
+  "script_repair_policy": {
+    "schema": "duplex_v2.script_repair_policy.v1",
+    "mode": "json_patch",
+    "patch_schema": "duplex_v2.script_patch.v1",
+    "json_parse_max_retries": 3,
+    "content_max_repairs": 5,
+    "length_compaction_max_attempts": 3,
+    "overlength_after_compaction": "fail_case",
+    "judge_scope": "complete_script_and_heard_context"
+  },
+  "json_parse_max_retries": 3,
+  "repair_output": "changed_fields_only",
+  "script_execution_policy": {
+    "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+    "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+    "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+    "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+    "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+    "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+    "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+  },
+  "program_anchor_seed": 2615247405,
+  "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+  "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+  "attempts": [
+    {
+      "attempt": 1,
+      "decision": "repair",
+      "directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g01-sample-003/R01-V01/script/attempts/attempt-01"
+    },
+    {
+      "attempt": 2,
+      "decision": "pass",
+      "directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g01-sample-003/R01-V01/script/attempts/attempt-02"
+    }
+  ],
+  "rounds": 12,
+  "backchannels": 4,
+  "side_speech": 1,
+  "environment_events": 1,
+  "interruptions": 2,
+  "length_warnings": [],
+  "script_path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g01-sample-003/R01-V01/script/script.json",
+  "semantic_waivers": [],
+  "semantic_review_status": "passed"
+}

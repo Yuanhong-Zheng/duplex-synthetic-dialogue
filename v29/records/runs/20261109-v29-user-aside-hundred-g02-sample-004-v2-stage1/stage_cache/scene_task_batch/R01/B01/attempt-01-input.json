@@ -1,0 +1,77 @@
+{
+  "scene": {
+    "domain_id": "D24",
+    "domain": "体育、健身与户外活动",
+    "scenario_id": "D24-S01",
+    "scenario": "健身动作指导",
+    "example_tasks": [
+      "通过一轮口头教练式练习，掌握深蹲时下肢、躯干和呼吸的协调要领。",
+      "扮演健身新手接受动作纠错挑战，逐步辨别常见训练动作中的发力错误。",
+      "围绕如何安全完成平板支撑展开问答和即时练习，形成容易记住的身体提示。",
+      "共同设计一组不依赖器械的热身动作，并讨论每个动作适合激活的身体部位。",
+      "复盘一次常见的训练体验，讨论酸胀、疲劳与动作失误可能分别意味着什么。"
+    ]
+  },
+  "task_style": "开放式互动",
+  "previous_task_goals": [],
+  "batch_size": 1,
+  "available_modalities": [
+    "audio"
+  ],
+  "capability_contract": {
+    "interaction_modalities": [
+      "audio"
+    ],
+    "available_tools": [],
+    "external_state_access": "none",
+    "external_side_effects": "forbidden"
+  },
+  "dialogue_length_plan": {
+    "schema": "duplex_v2.dialogue_length_plan.v1",
+    "tier": "short",
+    "target_turns": 6,
+    "min_turns": 5,
+    "max_turns": 7
+  },
+  "dialogue_length_instruction": "本条完整对话目标为 6 个主轮，允许 5–7 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+  "sampled_interaction_axes": {
+    "formality": "formal",
+    "directness": "balanced",
+    "emotional_expressiveness": "reserved",
+    "verbosity": "brief",
+    "initiative": "high",
+    "caution": "medium",
+    "patience": "high"
+  },
+  "interaction_profile_schema": "duplex_v2.interaction_profile.v1",
+  "text_policy": {
+    "schema": "duplex_v2.text_policy.v1",
+    "workflow_version": "v2.5",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "models": {
+      "sol": "openai/gpt-5.6-sol",
+      "luna": "openai/gpt-5.6-luna"
+    },
+    "roles": {
+      "stage0_generation": "luna",
+      "stage1_generation": "luna",
+      "stage2_generation": "sol",
+      "script_generation": "sol",
+      "script_patch": "sol",
+      "judge": "sol",
+      "compaction_first": "luna",
+      "compaction_later": "sol"
+    },
+    "reasoning_effort_policy": "default",
+    "stage0_max_judge_attempts": 5,
+    "content_max_repairs": 5,
+    "json_parse_max_retries": 3,
+    "length_compaction_max_attempts": 3,
+    "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+    "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+    "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+  }
+}

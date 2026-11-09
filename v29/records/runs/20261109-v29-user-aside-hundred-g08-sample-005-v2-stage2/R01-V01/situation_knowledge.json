@@ -1,0 +1,299 @@
+{
+  "episode_situation": "周日晚上，用户独自在家整理最近与一位英语使用者的聊天记录，准备在下一次交流前弄明白语言切换对语气的影响。用户注意到，自己曾把较委婉的中文请求换成简短英文后感觉像命令，而对方保留中文“辛苦了”时又显得亲近却不易理解。用户手边只有两段已读过的聊天摘录，没有词典或实时查询条件，因此希望先掌握日常判断原则，再用这些句子比较礼貌程度并练习自然切回原语言。当前仍不确定双方熟悉程度、上下文和保留原文的目的分别会怎样改变合适的表达。",
+  "task_reference_data": [
+    "来自用户手边已读过的聊天摘录：用户原本想表达“你方便的话，今晚发我就行”，实际切换成英文写了“Send it tonight.”，用户觉得英文版本可能比原意更强硬。",
+    "来自用户手边已读过的另一段聊天：对方在英文消息末尾保留了中文“辛苦了”，随后询问这个说法的含义；用户认为它传达了亲近感，但担心直接保留会造成理解障碍。"
+  ],
+  "environment_audio": "窗外近处传来连续而轻柔的雨声，强弱基本稳定。房间一侧的风扇保持低沉均匀的转动声，音量明显低于说话声。",
+  "estimated_snr_db": 28,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "讨论优先围绕日常中英聊天中的语气、礼貌和语言切换，不扩展到正式笔译规范。",
+      "kind": "soft"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "练习示例应简短，并同时保留足够上下文以判断说话关系和表达目的。",
+      "kind": "soft"
+    }
+  ],
+  "safety_limits": [],
+  "soundscape_plan": {
+    "mode": "layered",
+    "ambient_layers": [
+      {
+        "source_id": "AMB01",
+        "asset_id": "rain-fsd50k-eval-382582",
+        "reason": "适合作为住宅窗外稳定、轻柔的雨声底色。"
+      },
+      {
+        "source_id": "AMB02",
+        "asset_id": "fan-fsd50k-eval-235362",
+        "reason": "稳定机械风扇声适合作为安静房间内的低音量底噪。"
+      }
+    ],
+    "environment_events": [],
+    "schema": "duplex_v2.soundscape_plan.v4",
+    "side_speech_sources": [],
+    "side_speech_count": 0,
+    "sampling": {
+      "schema": "duplex_v2.ambient_draw.v3",
+      "policy": {
+        "schema": "duplex_v2.soundscape_policy.v3",
+        "quiet_probability": 0.5,
+        "discrete_targets_by_tier": {
+          "short": [
+            0,
+            1
+          ],
+          "medium": [
+            1,
+            2
+          ],
+          "long": [
+            2,
+            4
+          ]
+        },
+        "discrete_count_includes": [
+          "environment_events",
+          "side_speech"
+        ],
+        "max_ambient_layers": 2,
+        "gain_range": [
+          0.3,
+          0.7
+        ],
+        "speech_request_probability": 0.5,
+        "third_party_preference_probability": 0.8,
+        "speech_requires_existing_scene_source": true,
+        "environment_audio": "base_only",
+        "stage2_repair": "atomic_scoped_patch",
+        "stage2_max_judge_attempts": 3,
+        "json_parse_max_retries": 3,
+        "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+        "user_aside_preference_probability": 0.5,
+        "user_voice_source": "stage1_user",
+        "user_aside_requires_present_recipient": true
+      },
+      "preferences": {
+        "schema": "duplex_v2.ambient_preferences.v1",
+        "seed": 202611090008,
+        "slot": 4,
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "categories": {
+          "bed": [
+            "crowd",
+            "traffic",
+            "birds",
+            "rain",
+            "wind",
+            "fan"
+          ],
+          "event": [
+            "keyboard",
+            "footsteps",
+            "water_tap",
+            "doorbell",
+            "paper",
+            "door"
+          ]
+        },
+        "recordings": {
+          "bed:birds": [
+            "birds-fsd50k-eval-86343",
+            "birds-fsd50k-eval-57907",
+            "birds-fsd50k-eval-319512"
+          ],
+          "bed:crowd": [
+            "crowd-fsd50k-eval-340358",
+            "crowd-fsd50k-eval-185058",
+            "crowd-fsd50k-eval-121877"
+          ],
+          "bed:fan": [
+            "fan-fsd50k-eval-235362",
+            "fan-fsd50k-eval-419427",
+            "fan-fsd50k-eval-415925"
+          ],
+          "bed:rain": [
+            "rain-fsd50k-eval-382582",
+            "rain-fsd50k-eval-21189",
+            "rain-fsd50k-eval-238016"
+          ],
+          "bed:traffic": [
+            "traffic-fsd50k-eval-235541",
+            "traffic-fsd50k-eval-232686",
+            "traffic-fsd50k-eval-124020"
+          ],
+          "bed:wind": [
+            "wind-fsd50k-eval-113175",
+            "wind-fsd50k-eval-113173",
+            "wind-fsd50k-eval-113176"
+          ],
+          "event:door": [
+            "door-fsd50k-eval-209519",
+            "door-fsd50k-eval-71212",
+            "door-fsd50k-eval-119077"
+          ],
+          "event:doorbell": [
+            "doorbell-fsd50k-eval-426594",
+            "doorbell-fsd50k-eval-348322",
+            "doorbell-fsd50k-eval-332563"
+          ],
+          "event:footsteps": [
+            "footsteps-fsd50k-eval-272381",
+            "footsteps-fsd50k-eval-153104",
+            "footsteps-fsd50k-eval-392303"
+          ],
+          "event:keyboard": [
+            "keyboard-fsd50k-eval-411545",
+            "keyboard-fsd50k-eval-399740",
+            "keyboard-fsd50k-eval-233057"
+          ],
+          "event:paper": [
+            "paper-fsd50k-eval-121200",
+            "paper-fsd50k-eval-82562",
+            "paper-fsd50k-eval-343098"
+          ],
+          "event:water_tap": [
+            "water_tap-fsd50k-eval-402127",
+            "water_tap-fsd50k-eval-402128",
+            "water_tap-fsd50k-eval-232499"
+          ]
+        }
+      },
+      "control": {
+        "schema": "duplex_v2.soundscape_control.v3",
+        "seed": 1567281360,
+        "mode": "layered",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "user_to_third_party",
+          "machine",
+          "third_party"
+        ]
+      },
+      "control_sha256": "3f1ea0e8ee587f8ab5ebbcfde62c56caffc2be50710a7d6500c4a6d0a786be9e",
+      "candidate_plan": {
+        "schema": "duplex_v2.soundscape_plan.v4",
+        "mode": "layered",
+        "ambient_layers": [
+          {
+            "source_id": "AMB01",
+            "candidates": [
+              {
+                "asset_id": "rain-fsd50k-eval-382582",
+                "reason": "适合作为住宅窗外稳定、轻柔的雨声底色。",
+                "environment_audio": "窗外近处传来连续而轻柔的雨声，强弱基本稳定。"
+              },
+              {
+                "asset_id": "rain-fsd50k-eval-21189",
+                "reason": "连续雨声与用户雨夜独自在家的当前环境相符。",
+                "environment_audio": "窗外近处传来连续而轻柔的雨声，强弱基本稳定。"
+              },
+              {
+                "asset_id": "rain-fsd50k-eval-238016",
+                "reason": "可提供不干扰语音交流的均匀窗外雨声。",
+                "environment_audio": "窗外近处传来连续而轻柔的雨声，强弱基本稳定。"
+              }
+            ]
+          },
+          {
+            "source_id": "AMB02",
+            "candidates": [
+              {
+                "asset_id": "fan-fsd50k-eval-235362",
+                "reason": "稳定机械风扇声适合作为安静房间内的低音量底噪。",
+                "environment_audio": "房间一侧的风扇保持低沉均匀的转动声，音量明显低于说话声。"
+              },
+              {
+                "asset_id": "fan-fsd50k-eval-419427",
+                "reason": "持续通风声符合室内桌边交谈环境，且不会形成离散事件。",
+                "environment_audio": "房间一侧的风扇保持低沉均匀的转动声，音量明显低于说话声。"
+              },
+              {
+                "asset_id": "fan-fsd50k-eval-415925",
+                "reason": "均匀的室内风扇声可与窗外雨声自然叠加。",
+                "environment_audio": "房间一侧的风扇保持低沉均匀的转动声，音量明显低于说话声。"
+              }
+            ]
+          }
+        ],
+        "environment_events": [],
+        "side_speech_eligibility": {
+          "user_to_third_party": {
+            "compatible": false,
+            "reason": "用户当前独自在家，故事中没有明确同场且可接收旁话的第三方。",
+            "source": null
+          },
+          "third_party": {
+            "compatible": false,
+            "reason": "聊天对象并不在现场，当前环境中也没有其他可发声人物。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "现场只有不具备语音播报功能的风扇，未设定任何可说话的机器。",
+            "source": null
+          }
+        }
+      },
+      "base_environment_audio_sha256": "ef2436a83416345629650bc9b4ab4d516f3e283c630eaa61ba3981f641b68e56",
+      "aggregate_environment_audio": "窗外近处传来连续而轻柔的雨声，强弱基本稳定。房间一侧的风扇保持低沉均匀的转动声，音量明显低于说话声。 窗外近处传来连续而轻柔的雨声，强弱基本稳定。 房间一侧的风扇保持低沉均匀的转动声，音量明显低于说话声。",
+      "draws": [
+        {
+          "source_id": "AMB01",
+          "category": "rain",
+          "asset_id": "rain-fsd50k-eval-382582",
+          "eligible_categories": [
+            "rain"
+          ],
+          "eligible_assets": [
+            "rain-fsd50k-eval-21189",
+            "rain-fsd50k-eval-238016",
+            "rain-fsd50k-eval-382582"
+          ]
+        },
+        {
+          "source_id": "AMB02",
+          "category": "fan",
+          "asset_id": "fan-fsd50k-eval-235362",
+          "eligible_categories": [
+            "fan"
+          ],
+          "eligible_assets": [
+            "fan-fsd50k-eval-235362",
+            "fan-fsd50k-eval-415925",
+            "fan-fsd50k-eval-419427"
+          ]
+        }
+      ],
+      "speech_selection": {
+        "requested": false,
+        "compatible_kinds": [],
+        "selected_kind": null,
+        "outcome": "not_requested",
+        "assessments": {
+          "user_to_third_party": {
+            "compatible": false,
+            "reason": "用户当前独自在家，故事中没有明确同场且可接收旁话的第三方。",
+            "source": null
+          },
+          "third_party": {
+            "compatible": false,
+            "reason": "聊天对象并不在现场，当前环境中也没有其他可发声人物。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "现场只有不具备语音播报功能的风扇，未设定任何可说话的机器。",
+            "source": null
+          }
+        }
+      }
+    }
+  }
+}

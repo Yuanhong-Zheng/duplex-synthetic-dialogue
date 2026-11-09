@@ -1,0 +1,234 @@
+{
+  "episode_situation": "成绩公布后的周日晚上九点左右，用户独自在杭州市的家中，坐在平时备考的书桌旁，希望趁第二天上班前处理一下这次失利带来的情绪。她目前从事采购工作，计划逐步转向企业合规岗位，因此把法律职业资格考试客观题视为转变职业方向的重要一步，但并非唯一途径。她为这次考试准备了约六个月，公布结果前一直认为自己有较大希望通过，最终看到174分时反复核对了成绩截图，因为普通合格线是180分。最初的失望很快夹杂了羞愧：她此前曾向同事林澄提过备考计划，现在既担心周一被问起，也觉得自己把职业转型说得太早。她还开始用“连这点分数都拿不到”质疑自己的学习能力，却也隐约知道，一次结果不足以证明自己不适合合规工作，只是暂时无法把这两件事真正分开。她试过对自己说“失败是成功之母”，但觉得这句话没有回应投入、差距和现实压力，因而不太相信。书桌上有成绩截图、备考时间记录和近期日历可供口头核对，但今晚没有老师或学习伙伴在场，也不打算临时联系同事或家人。她明白完整分析错题和制定下一轮计划都需要更多精力，目前更优先的是弄清最刺痛她的是分数本身、对他人眼光的担忧，还是对职业转型前景的怀疑。她希望安慰表达能够承认这次没有达到目标，而不是直接说结果不重要，也希望能找到可以由事实支撑、自己念出来不觉得虚假的措辞。她手边记着几个低门槛的重新开始方向，但还没有决定是先短暂接触错题、整理备考材料，还是只为下一次复盘预留时间。今晚尚待解决的是如何区分事实与自我评价、哪些表达足够可信，以及哪一个不超过二十分钟且能独立完成的近期动作最不容易引发逃避。",
+  "task_reference_data": [
+    "来源为用户已保存并反复核对的成绩截图：法律职业资格考试客观题成绩为174分，页面所示普通合格线为180分。",
+    "来源为用户书桌上的备考记录，当前可现场读取：连续准备约六个月，通常每周投入8至10小时，考前一个月约为每周14小时；记录中有三周因工作加班未完成原定进度。",
+    "来源为用户看到成绩后写下的私人便签，当前已读：“差六分也是没通过；我是不是高估了自己；周一如果林澄问起，我不知道怎么说。”这些是当时的想法，不是已核实的能力结论。",
+    "来源为用户已读的同事林澄先前发来的消息：“等成绩出来告诉我，过不过都请你喝咖啡。”消息没有批评或追问，但用户仍担心对方会失望。",
+    "来源为用户手边的近期日历，当前可现场读取：周一晚有工作安排，周二和周四晚各有约三十分钟空档，周六上午暂未安排事务。",
+    "来源为用户自己列出的未选择行动草稿，当前可现场读取：“只看一道做错的题并记下原因，十五分钟”；“把资料按科目归回文件夹，二十分钟”；“在日历上留出一次复盘时段，五分钟”。"
+  ],
+  "environment_audio": "房门关闭，室内底噪很低，近处没有持续运转的家电声。窗外与楼道都保持安静，没有清晰可辨的离散声响。",
+  "estimated_snr_db": 35,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "自我安慰表达需要承认本次未达到合格线，并以现有事实为依据，避免空泛保证或强行积极化。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "今晚不展开完整备考方案，只确定一个近期可重新开始的低压力方向。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C03",
+      "text": "拟定的第一步应能独立完成，单次用时不超过二十分钟。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C04",
+      "text": "用户倾向先区分事实、感受和自我评价，再讨论行动选择。",
+      "kind": "soft"
+    }
+  ],
+  "safety_limits": [],
+  "soundscape_plan": {
+    "mode": "quiet",
+    "ambient_layers": [],
+    "environment_events": [],
+    "schema": "duplex_v2.soundscape_plan.v4",
+    "side_speech_sources": [],
+    "side_speech_count": 0,
+    "sampling": {
+      "schema": "duplex_v2.ambient_draw.v3",
+      "policy": {
+        "schema": "duplex_v2.soundscape_policy.v3",
+        "quiet_probability": 0.5,
+        "discrete_targets_by_tier": {
+          "short": [
+            0,
+            1
+          ],
+          "medium": [
+            1,
+            2
+          ],
+          "long": [
+            2,
+            4
+          ]
+        },
+        "discrete_count_includes": [
+          "environment_events",
+          "side_speech"
+        ],
+        "max_ambient_layers": 2,
+        "gain_range": [
+          0.3,
+          0.7
+        ],
+        "speech_request_probability": 0.5,
+        "third_party_preference_probability": 0.8,
+        "speech_requires_existing_scene_source": true,
+        "environment_audio": "base_only",
+        "stage2_repair": "atomic_scoped_patch",
+        "stage2_max_judge_attempts": 3,
+        "json_parse_max_retries": 3,
+        "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+        "user_aside_preference_probability": 0.5,
+        "user_voice_source": "stage1_user",
+        "user_aside_requires_present_recipient": true
+      },
+      "preferences": {
+        "schema": "duplex_v2.ambient_preferences.v1",
+        "seed": 202611090008,
+        "slot": 7,
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "categories": {
+          "bed": [
+            "rain",
+            "wind",
+            "fan",
+            "crowd",
+            "traffic",
+            "birds"
+          ],
+          "event": [
+            "doorbell",
+            "paper",
+            "door",
+            "keyboard",
+            "footsteps",
+            "water_tap"
+          ]
+        },
+        "recordings": {
+          "bed:birds": [
+            "birds-fsd50k-eval-57907",
+            "birds-fsd50k-eval-319512",
+            "birds-fsd50k-eval-86343"
+          ],
+          "bed:crowd": [
+            "crowd-fsd50k-eval-185058",
+            "crowd-fsd50k-eval-121877",
+            "crowd-fsd50k-eval-340358"
+          ],
+          "bed:fan": [
+            "fan-fsd50k-eval-419427",
+            "fan-fsd50k-eval-415925",
+            "fan-fsd50k-eval-235362"
+          ],
+          "bed:rain": [
+            "rain-fsd50k-eval-21189",
+            "rain-fsd50k-eval-238016",
+            "rain-fsd50k-eval-382582"
+          ],
+          "bed:traffic": [
+            "traffic-fsd50k-eval-232686",
+            "traffic-fsd50k-eval-124020",
+            "traffic-fsd50k-eval-235541"
+          ],
+          "bed:wind": [
+            "wind-fsd50k-eval-113173",
+            "wind-fsd50k-eval-113176",
+            "wind-fsd50k-eval-113175"
+          ],
+          "event:door": [
+            "door-fsd50k-eval-71212",
+            "door-fsd50k-eval-119077",
+            "door-fsd50k-eval-209519"
+          ],
+          "event:doorbell": [
+            "doorbell-fsd50k-eval-348322",
+            "doorbell-fsd50k-eval-332563",
+            "doorbell-fsd50k-eval-426594"
+          ],
+          "event:footsteps": [
+            "footsteps-fsd50k-eval-153104",
+            "footsteps-fsd50k-eval-392303",
+            "footsteps-fsd50k-eval-272381"
+          ],
+          "event:keyboard": [
+            "keyboard-fsd50k-eval-399740",
+            "keyboard-fsd50k-eval-233057",
+            "keyboard-fsd50k-eval-411545"
+          ],
+          "event:paper": [
+            "paper-fsd50k-eval-82562",
+            "paper-fsd50k-eval-343098",
+            "paper-fsd50k-eval-121200"
+          ],
+          "event:water_tap": [
+            "water_tap-fsd50k-eval-402128",
+            "water_tap-fsd50k-eval-232499",
+            "water_tap-fsd50k-eval-402127"
+          ]
+        }
+      },
+      "control": {
+        "schema": "duplex_v2.soundscape_control.v3",
+        "seed": 3677412976,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "user_to_third_party",
+          "machine",
+          "third_party"
+        ]
+      },
+      "control_sha256": "070ba32149f18205f2d6af9efe119d40840525d259cbd03f50567a4b433708a8",
+      "candidate_plan": {
+        "schema": "duplex_v2.soundscape_plan.v4",
+        "mode": "quiet",
+        "ambient_layers": [],
+        "environment_events": [],
+        "side_speech_eligibility": {
+          "user_to_third_party": {
+            "compatible": false,
+            "reason": "用户独自在家，故事中没有同场且可接收话语的旁人。",
+            "source": null
+          },
+          "third_party": {
+            "compatible": false,
+            "reason": "当前房间内没有第三方人物，楼道和窗外也没有可辨识的人声来源。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "故事中没有正在播报或会发出语音提示的机器设备。",
+            "source": null
+          }
+        }
+      },
+      "base_environment_audio_sha256": "d29fd43bce395a329c118bceb51ff0f07a7eedcbeb69a35bf0ee6bb340a03ee8",
+      "aggregate_environment_audio": "房门关闭，室内底噪很低，近处没有持续运转的家电声。窗外与楼道都保持安静，没有清晰可辨的离散声响。",
+      "draws": [],
+      "speech_selection": {
+        "requested": false,
+        "compatible_kinds": [],
+        "selected_kind": null,
+        "outcome": "not_requested",
+        "assessments": {
+          "user_to_third_party": {
+            "compatible": false,
+            "reason": "用户独自在家，故事中没有同场且可接收话语的旁人。",
+            "source": null
+          },
+          "third_party": {
+            "compatible": false,
+            "reason": "当前房间内没有第三方人物，楼道和窗外也没有可辨识的人声来源。",
+            "source": null
+          },
+          "machine": {
+            "compatible": false,
+            "reason": "故事中没有正在播报或会发出语音提示的机器设备。",
+            "source": null
+          }
+        }
+      }
+    }
+  }
+}

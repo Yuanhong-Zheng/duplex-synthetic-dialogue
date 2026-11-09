@@ -1,0 +1,97 @@
+{
+  "episode_situation": "周六上午九点二十分，用户正在城市文化活动中心的休息区等候出发，准备陪一位第一次来本地参加文化活动的外地朋友参观路线终点的教堂。两人已在同一张桌旁坐下，距离集合还有一小段时间，因此用户想趁现在把容易失礼的环节先理清。用户过去只从外面看过教堂，没有参加礼拜或正式参访的经验，也不熟悉不同教派和不同场所之间可能存在的差异。朋友的信仰背景与教堂传统不同，愿意安静参观建筑和了解文化，但不希望被误认为同意参加祈祷、领受圣餐或其他宗教仪式。用户已经想到进入时的举止、与工作人员或信众问候、礼拜期间如何旁观、能否拍摄以及怎样礼貌婉拒参与，但还不知道这些场景中哪些表达最自然。两人手边没有该教堂的访客须知，也没有提前确认当天是否允许拍摄或是否设有仅供教友使用的区域。用户希望先掌握一套不过度假定当地规定的通用做法，再通过简短情境练习熟悉关键说法。当前优先级是既尊重场所和正在礼拜的人，也照顾朋友的信仰边界，不为了显得合群而勉强参与。仍需逐步厘清的包括进门后先观察什么、应向谁请教、拍摄前怎样询问，以及遇到听不懂或规定不明时如何暂停并确认。",
+  "task_reference_data": [],
+  "environment_audio": "头顶通风设备持续发出低而稳定的机械声，音量基本不变。休息区外侧走廊偶尔传来几个人模糊的交谈声，距离较远，时强时弱。",
+  "estimated_snr_db": 24,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "建议需要明确区分普遍适用的礼貌原则与必须向现场人员确认的教堂具体规定。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C02",
+      "text": "所有情境表达都应尊重朋友不参与祈祷、领受圣餐或其他宗教仪式的个人边界。",
+      "kind": "hard"
+    },
+    {
+      "constraint_id": "C03",
+      "text": "练习用语宜简短、自然且不预设对方的教派身份或具体礼仪。",
+      "kind": "soft"
+    }
+  ],
+  "safety_limits": [],
+  "soundscape_plan": {
+    "schema": "duplex_v2.soundscape_plan.v4",
+    "mode": "layered",
+    "ambient_layers": [
+      {
+        "source_id": "AMB01",
+        "candidates": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "reason": "适合作为活动中心室内通风设备的稳定底噪。",
+            "environment_audio": "头顶传来持续、低沉且均匀的通风声。"
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "reason": "可表现休息区内较轻的机械换气声。",
+            "environment_audio": "室内通风设备保持低音量运转，声响稳定。"
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "reason": "符合公共室内空间持续存在的机械风声。",
+            "environment_audio": "上方有平稳的机械送风声，没有明显起伏。"
+          }
+        ]
+      },
+      {
+        "source_id": "AMB02",
+        "candidates": [
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "reason": "可表现活动中心走廊远处短暂出现的人声底色。",
+            "environment_audio": "休息区外的走廊传来短暂而模糊的多人交谈声。"
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "reason": "适合公共文化场所远距离、不可辨词的人群声。",
+            "environment_audio": "远处有零散人群交谈，内容无法听清，音量轻微波动。"
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "reason": "可作为活动集合前走廊内较弱的背景人声。",
+            "environment_audio": "走廊方向隐约传来几个人的说话声，距离较远。"
+          }
+        ]
+      }
+    ],
+    "environment_events": [],
+    "side_speech_eligibility": {
+      "user_to_third_party": {
+        "compatible": true,
+        "reason": "外地朋友与用户同坐在休息区，用户在听取建议时可以自然转向朋友简短确认其参访边界或意愿。",
+        "source": {
+          "speaker": "user",
+          "recipient": "同桌等候出发的外地朋友",
+          "voice_source": "stage1_user",
+          "description": "用户正在为陪同这位朋友参访教堂做准备，现场确认朋友是否接受某种安排具有直接情境依据。"
+        }
+      },
+      "third_party": {
+        "compatible": true,
+        "reason": "外地朋友明确在场，并与参访准备及宗教参与边界直接相关。",
+        "source": {
+          "speaker": "third_party",
+          "voice_profile": "音量偏低，语速平稳，吐字自然清楚",
+          "description": "与用户同桌等候出发、信仰背景不同且希望只进行文化参观的外地朋友。"
+        }
+      },
+      "machine": {
+        "compatible": false,
+        "reason": "当前场景中只有普通通风设备，没有具备语音播报功能且与任务相关的机器。",
+        "source": null
+      }
+    }
+  }
+}

@@ -1,0 +1,5169 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 17 轮，允许 16–18 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 按下方V2.9用户旁话规则审查；第三方与机器旁语仍遵守冻结声源与信息边界。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 必须逐字匹配对应源；用户声源的recipient须逐字匹配且不含voice_profile，其余声源的voice_profile逐字匹配，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。\n[V2.9 用户对同场旁人说话]\n定稿根schema_version为duplex_v2.fixed_script.v3；根字段和原主轮字段不变，quiet声景也保留空environment_events和side_speech。\nside_speech仍只用已冻结的side_speech_sources，数量严格等于side_speech_count。第三方/机器的原字段不变。若冻结源speaker=user，每项严格只有event_id、source_id、target_assistant_id、after_text、text、speaker、recipient、gain；speaker=\"user\"，recipient逐字复制冻结源的同场接收者，不填写voice_profile、voice_source或其他字段。用户音色、克隆参考和表达画像由程序复用主用户，不另造声音。\n用户旁话是用户在助手已开始且仍在实际播报时对旁人说的短句，例如对已在场的小林说“小林，把杯子递给我一下”。台词应自然且接收对象可辨，不能只有“等等”这类不明确话语；不能作为对助手的新请求、附和、打断或主对话轮，也不能泄漏关键任务材料。接收者必须来自冻结场景，不能为了配额新增人物。\ntarget_assistant_id仍指作为音频host的助手A，不是旁话接收对象；after_text是A从首字开始的完整非终止已播前缀。用户旁话起声必须早于下一次用户主表达，且完整音频须装入实际会播出的A范围，与同一用户的主句、附和或另一旁话都不重叠。不要在助手将被真正打断的尾端强塞旁话，不把事件安排在未播尾部；不恢复“用户主句暂停→转头旁话→再继续主句”的模式。\n旁话期间助手继续同一段原音频，不停顿、不让出话权、不增加新回答；后续助手不回应或复述旁话，不把它吸收为任务事实。旁话分类依赖接收对象和语义，不依赖其音量；gain仍在0.3–0.7。用户的旁话仍符合其冻结表达画像。\n上述方向、继续播报与stop_required=false是数据审查/监督标注，不是提前透露给在线模型的输入。仅使用原Judge和局部修复预算：审查台词是否确实面向旁人、主线与已听因果是否保持；只按findings最小修复，并在助手正文变更时同步相关精确锚点。\n\n",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-008-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 1071526420,
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g06/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g06/relay-state",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D23",
+          "domain": "居住、房产与公用事业",
+          "scenario_id": "D23-S02",
+          "scenario": "租约和居住政策说明"
+        },
+        "task_style": "混合型",
+        "task_instance": {
+          "goal": "在决定是否续租前，结合通用的租约与居住政策判断框架，逐项审视我随后提供的续租通知、原租约和个人搬家安排，分清租金调整、费用承担、提前通知及其他限制中哪些已经明确、哪些存在歧义或需要协商，并形成一份我能据此与房东沟通的重点问题和可接受方案。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "准备决定是否续租的城市公寓承租人",
+          "task_familiarity": "low"
+        },
+        "voice_profile": "男性，四十多岁，音色偏低而稳，吐字清楚但语速较快，停顿短，整体听感克制而略显不耐久候。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "formal",
+          "directness": "balanced",
+          "emotional_expressiveness": "reserved",
+          "verbosity": "brief",
+          "initiative": "medium",
+          "caution": "medium",
+          "patience": "low",
+          "behavioral_notes": [
+            "通常先给出必要背景，再按顺序提出一两个核心问题，不倾向铺陈过多细节。",
+            "对不确定的表述会要求界定适用范围或区分不同情况，但会接受简短、明确的澄清。",
+            "等待时间较长时会用简短追问推进进度，情绪变化不明显。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "long",
+        "target_turns": 17,
+        "min_turns": 16,
+        "max_turns": 18
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v3",
+        "seed": 3861306731,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "user_to_third_party",
+          "third_party",
+          "machine"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "2026年11月9日晚上，用户独自在杭州市拱墅区现租住的公寓里，准备处理当天下午收到的书面续租通知。用户是这套公寓的承租人，日常通过房东委托的租赁经办人沟通，现有租期将于2027年1月31日届满。原租约、续租通知和用户记录的搬家安排都在手边，但他此前只快速浏览过，尚未逐条对照，也没有租约审阅经验。续租通知要求在11月20日前书面答复，因此租金、附加费用和退出条件需要优先弄清。通知列出的月度合计仍在用户预算上限以内，但计价方式与原租约不同，押金补足、维修承担和公共区域费用也出现了新表述。原租约与续租文本对提前解约的通知期和违约成本写法不一致，用户尚不确定新条件是替换原条款，还是只在特定期间适用。续租通知还新增宠物年度审批、访客住宿天数和公共能耗分摊等限制，其中一些没有写明计算方法或既有批准是否延续。用户养有一只已经获得书面批准的猫，伴侣可能从2027年5月起每周留宿两到三晚，因此宠物和访客条款会影响实际居住安排。与此同时，用户所在部门已通知办公地点将在2027年3月15日迁至滨江区，继续住在当前公寓后的单程通勤预计会明显变长。用户已经看过一套可在2027年2月1日入住的备选公寓，但其保留金期限早于续租答复期限，且保留金通常不可退，使两项决定互相牵制。若搬家，用户只能在1月31日交接现住房后集中处理，并希望避免支付超过三天的双重住房费用。用户更重视总月支出可控、猫能继续居住以及提前退出成本明确，不愿只根据表面月租作决定。当前可用资源只有手边文本、个人预算与搬家记录，没有专业人士已经给出的解释或双方确认过的补充约定。仍需逐项区分文本中已经明确的数字与期限、需要结合一般租约框架理解的风险点，以及应向房东要求澄清或协商的内容，再据此确定续租、附条件续租或搬家的可接受边界。",
+        "task_reference_data": [
+          "续租通知首页写明：答复截止日为2026年11月20日，拟续租期为2027年2月1日至2028年1月31日；该页用户已经读到，可现场逐字核对。",
+          "续租通知费用栏写明：基础租金每月6480元，住宅服务费每月200元，月度合计6680元；服务费说明仅写“物业行政及公共区域清洁”，用户已读，但未见更细项目表。",
+          "原租约费用条款写明：现租金每月6200元，物业管理费包含在租金内，户内水、电、燃气按实际使用由承租人承担；原件在用户手边，可现场读取。",
+          "原租约押金为12400元；续租通知要求押金维持为两个月基础租金，并在续租开始前补足差额，按通知数字计算需补560元，但通知没有写明补款日期，用户已核对金额。",
+          "原租约写明承租人不续租应至少提前60日书面通知；本次续租通知同时要求11月20日前答复，但没有说明逾期未答复是否自动视为不续租，用户已看到这两处表述。",
+          "原租约提前解约条款写明：承租人提前60日书面通知并支付一个月租金作为违约金；续租附加条款写明：续租前6个月不得提前解约，此后须提前90日通知并支付两个月基础租金，用户尚未确认两条如何衔接。",
+          "原租约维修条款写明：结构及主要设备故障由出租人承担，因承租人使用造成的损坏由承租人承担，单次300元以内的日常小修由承租人支付；续租附加条款改写为“每次维修前500元由承租人承担”，未区分故障原因，用户可现场朗读原文。",
+          "原租约附件记录一只猫已获书面许可；续租附加条款写明“宠物须每年重新审批，并收取每月300元额外清洁费”，但没有说明既有许可是否延续或费用是否适用于已登记宠物，用户已读到该条。",
+          "续租附加条款写明：访客连续住宿不得超过14晚，每个租赁年度累计不得超过30晚；用户的个人安排记录显示，伴侣可能从2027年5月起每周留宿两到三晚，具体频率尚未最终确定。",
+          "续租附加条款写明：公共区域能耗将按房屋面积比例向各户分摊；通知未列当前单价、历史月均金额、结算周期或核对账单的方法，用户尚未从房东处获得进一步说明。",
+          "用户的备选公寓看房记录写明：2027年2月1日起租，月租6400元，物业费每月280元，押金12800元；如要保留到签约，须在2026年11月18日前支付3000元保留金，除出租方撤回外不退，记录来自用户现场抄下的招租条件，尚未签署。",
+          "用户的搬家记录写明：搬运报价1800元，可安排在2027年2月1日；现住房交接预计在1月31日，用户希望新旧住房费用重叠不超过三天，这些是用户已确认的个人时间与预算安排。",
+          "用户保存的部门通知写明办公地点计划于2027年3月15日迁至滨江区；用户按平日路线估算，届时从现住房单程约55分钟，从备选公寓单程约25分钟，该时间是个人估算而非实时交通结果。"
+        ],
+        "environment_audio": "室内整体安静，近距离录音中只有极轻且均匀的房间底噪。没有可辨识的持续家电声、街声、人声或突发声响。",
+        "estimated_snr_db": 35,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "续租通知要求用户最迟在2026年11月20日前作出书面答复。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "用户可接受的固定月度住房支出上限为6800元，不含按实际使用结算的户内水、电和燃气。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C03",
+            "text": "任何可接受的续租方案都必须允许现有的一只猫继续居住，且相关审批与额外费用需明确。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C04",
+            "text": "若选择搬家，新旧住房费用重叠不得超过三天。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C05",
+            "text": "用户倾向于要求房东以书面方式确认费用构成、提前解约条件及新增限制的适用范围。",
+            "kind": "soft"
+          }
+        ],
+        "safety_limits": [],
+        "soundscape_plan": {
+          "mode": "quiet",
+          "ambient_layers": [],
+          "environment_events": [],
+          "schema": "duplex_v2.soundscape_plan.v4",
+          "side_speech_sources": [],
+          "side_speech_count": 0,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v3",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v3",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3,
+              "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+              "user_aside_preference_probability": 0.5,
+              "user_voice_source": "stage1_user",
+              "user_aside_requires_present_recipient": true
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611090006,
+              "slot": 7,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "crowd",
+                  "wind",
+                  "traffic",
+                  "birds",
+                  "fan",
+                  "rain"
+                ],
+                "event": [
+                  "doorbell",
+                  "water_tap",
+                  "footsteps",
+                  "paper",
+                  "door",
+                  "keyboard"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-319512",
+                  "birds-fsd50k-eval-86343",
+                  "birds-fsd50k-eval-57907"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-121877",
+                  "crowd-fsd50k-eval-185058",
+                  "crowd-fsd50k-eval-340358"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-419427"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-382582",
+                  "rain-fsd50k-eval-21189"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-124020",
+                  "traffic-fsd50k-eval-232686",
+                  "traffic-fsd50k-eval-235541"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113176",
+                  "wind-fsd50k-eval-113173",
+                  "wind-fsd50k-eval-113175"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-209519",
+                  "door-fsd50k-eval-119077",
+                  "door-fsd50k-eval-71212"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-426594",
+                  "doorbell-fsd50k-eval-332563",
+                  "doorbell-fsd50k-eval-348322"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-272381",
+                  "footsteps-fsd50k-eval-392303",
+                  "footsteps-fsd50k-eval-153104"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-411545",
+                  "keyboard-fsd50k-eval-399740",
+                  "keyboard-fsd50k-eval-233057"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-343098",
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-82562"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-232499",
+                  "water_tap-fsd50k-eval-402128",
+                  "water_tap-fsd50k-eval-402127"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v3",
+              "seed": 3861306731,
+              "mode": "quiet",
+              "discrete_event_target": 0,
+              "max_ambient_layers": 2,
+              "side_speech_requested": false,
+              "speech_kind_preferences": [
+                "user_to_third_party",
+                "third_party",
+                "machine"
+              ]
+            },
+            "control_sha256": "1af7505d42976b395310d057695a222c0773bdfdebee798d24358de49b92d830",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v4",
+              "mode": "quiet",
+              "ambient_layers": [],
+              "environment_events": [],
+              "side_speech_eligibility": {
+                "user_to_third_party": {
+                  "compatible": false,
+                  "reason": "用户当前独自在公寓内，故事中没有同场且可被用户转向交谈的旁人。",
+                  "source": null
+                },
+                "third_party": {
+                  "compatible": false,
+                  "reason": "当前场景没有同场第三方人物，也没有来自邻室或门外的可辨识说话者。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "故事中没有正在播报或可能发出语音提示的机器设备。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "0aca6c4c5767a559fe051ee611822a6d66acbbf5e419f796cc6dff22cb13835c",
+            "aggregate_environment_audio": "室内整体安静，近距离录音中只有极轻且均匀的房间底噪。没有可辨识的持续家电声、街声、人声或突发声响。",
+            "draws": [],
+            "speech_selection": {
+              "requested": false,
+              "compatible_kinds": [],
+              "selected_kind": null,
+              "outcome": "not_requested",
+              "assessments": {
+                "user_to_third_party": {
+                  "compatible": false,
+                  "reason": "用户当前独自在公寓内，故事中没有同场且可被用户转向交谈的旁人。",
+                  "source": null
+                },
+                "third_party": {
+                  "compatible": false,
+                  "reason": "当前场景没有同场第三方人物，也没有来自邻室或门外的可辨识说话者。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "故事中没有正在播报或可能发出语音提示的机器设备。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v3",
+      "title": "续租条件审视与沟通方案",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？",
+          "assistant_utterance": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。",
+          "user_intent": "说明续租期限并请求建立审视框架",
+          "assistant_intent": "提供按优先级核对续租条件的通用框架",
+          "semantic_goal": "确定后续逐项比较续租通知和原租约的方法",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。",
+          "assistant_utterance": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。",
+          "user_intent": "提供新旧租金和预算上限并判断是否可承受",
+          "assistant_intent": "计算预算余量并指出服务费范围和调整机制的疑点",
+          "semantic_goal": "判断通知列明的月费是否落在预算内及还缺哪些信息",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。",
+            "assistant_stop_after_text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。",
+          "assistant_utterance": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。",
+          "user_intent": "核对押金差额并指出付款期限缺失",
+          "assistant_intent": "确认计算并界定押金条款需要书面澄清的部分",
+          "semantic_goal": "形成有关押金补足时间和退还规则的问题",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。",
+            "assistant_stop_after_text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？",
+          "assistant_utterance": "答复截止与不续租通知是两件事。现文本没写逾期自动不续租，不能直接推定；应书面问清逾期后果，以及本次通知是否取代六十日条款。",
+          "user_intent": "提出续租答复期限与不续租通知期的冲突",
+          "assistant_intent": "区分两类期限并说明不能从沉默推定法律后果",
+          "semantic_goal": "明确逾期后果和原六十日通知条款是否仍适用",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。",
+            "assistant_stop_after_text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。",
+          "assistant_utterance": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。",
+          "user_intent": "打断期限解释并转向更重要的提前解约冲突",
+          "assistant_intent": "依据已听到的新旧条款识别成本上升和关键适用疑点",
+          "semantic_goal": "确定提前解约条款中必须澄清或协商的内容",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "答复截止与不续租通知是两件事。",
+            "assistant_stop_after_text": "答复截止与不续租通知是两件事。现文本"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U06",
+          "assistant_id": "A006",
+          "user_utterance": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。",
+          "assistant_utterance": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。",
+          "user_intent": "补充办公地点搬迁并评估锁定期风险",
+          "assistant_intent": "结合时间安排说明可能的最早退出风险并提出协商方向",
+          "semantic_goal": "形成可接受的提前退出替代条件",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A005",
+            "user_onset_after_text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。",
+            "assistant_stop_after_text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U07",
+          "assistant_id": "A007",
+          "user_utterance": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。",
+          "assistant_utterance": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。",
+          "user_intent": "提供新旧维修条款并询问责任变化",
+          "assistant_intent": "识别责任范围扩大及五百元表述的双重歧义",
+          "semantic_goal": "确定维修条款的可接受改写边界",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A006",
+            "user_onset_after_text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。",
+            "assistant_stop_after_text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U08",
+          "assistant_id": "A008",
+          "user_utterance": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。",
+          "assistant_utterance": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。",
+          "user_intent": "说明既有宠物许可及新增审批和收费",
+          "assistant_intent": "计算宠物费对预算的影响并确立宠物续住条件",
+          "semantic_goal": "把猫的许可延续和费用上限列为续租硬条件",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A007",
+            "user_onset_after_text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。",
+            "assistant_stop_after_text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U09",
+          "assistant_id": "A009",
+          "user_utterance": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。",
+          "assistant_utterance": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。",
+          "user_intent": "提供访客限制和伴侣可能的留宿频率",
+          "assistant_intent": "判断年度上限与生活安排的冲突并提出澄清路径",
+          "semantic_goal": "确认伴侣留宿能否获得明确且可执行的例外安排",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A008",
+            "user_onset_after_text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。",
+            "assistant_stop_after_text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U10",
+          "assistant_id": "A010",
+          "user_utterance": "还有公共区域能耗按房屋面积分摊，但没有单价、历史月均、结算周期，也没写怎么看账单。",
+          "assistant_utterance": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。",
+          "user_intent": "补充公共能耗分摊条款及缺失信息",
+          "assistant_intent": "指出预算余量不足以覆盖未封顶费用并列出必要依据",
+          "semantic_goal": "把公共能耗的透明度和费用上限纳入协商条件",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A009",
+            "user_onset_after_text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。",
+            "assistant_stop_after_text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U11",
+          "assistant_id": "A011",
+          "user_utterance": "我还有一套备选房，二月一日起租，月租六千四，物业二百八。保留金三千元，十一月十八日前交，除出租方撤回外不退。我还没签。",
+          "assistant_utterance": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。因为十一月十八日早于续租答复期限，你最好先争取延长保留期、降低金额或附加可退条件，不宜仅凭口头承诺付款。",
+          "user_intent": "提供备选公寓价格和不可退保留金期限",
+          "assistant_intent": "比较固定支出并识别两个决策期限错位的风险",
+          "semantic_goal": "判断如何避免在续租未明时承担不可退保留金",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A010",
+            "user_onset_after_text": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。",
+            "assistant_stop_after_text": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。"
+          },
+          "pause_cue": {
+            "after_text": "我还有一套备选房，二月一日起租，月租六千四，物业二百八。",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U12",
+          "assistant_id": "A012",
+          "user_utterance": "如果搬家，我一月三十一日交接现住房，搬运报价一千八，二月一日可以搬。我不接受超过三天的双重住房费用。",
+          "assistant_utterance": "按现有日期，名义上没有超过三天的租金重叠，搬运费是一千八百元的一次性成本。真正风险是先交旧房后才取得新房，因此签约前要确认二月一日交钥匙时间、无法按时交付的责任和临时住宿承担。",
+          "user_intent": "说明搬家日期、费用及住房重叠上限",
+          "assistant_intent": "核对时间衔接并指出交钥匙顺序带来的执行风险",
+          "semantic_goal": "确认搬家方案满足重叠限制并补足交付保障",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A011",
+            "user_onset_after_text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。因为十一月十八日早于续租答复期限，你最好先争取延长保留期、降低金额或附加可退条件，不宜仅凭口头承诺付款。",
+            "assistant_stop_after_text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。因为十一月十八日早于续租答复期限，你最好先争取延长保留期、降低金额或附加可退条件，不宜仅凭口头承诺付款。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U13",
+          "assistant_id": "A013",
+          "user_utterance": "通勤方面，我估算办公地点搬迁后，从现在这套房单程五十五分钟，从备选房二十五分钟。这不是实时交通结果。",
+          "assistant_utterance": "可把它作为个人决策权重，而不是确定的交通事实。按你的估算，备选房单程少三十分钟，工作日往返约少一小时；这能抵消部分搬家成本，但仍应排在预算、猫的居住许可和退出条件之后。",
+          "user_intent": "补充两处住所的个人通勤估算",
+          "assistant_intent": "量化通勤差异并放入决策优先级",
+          "semantic_goal": "判断通勤改善在续租与搬家比较中的权重",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A012",
+            "user_onset_after_text": "按现有日期，名义上没有超过三天的租金重叠，搬运费是一千八百元的一次性成本。真正风险是先交旧房后才取得新房，因此签约前要确认二月一日交钥匙时间、无法按时交付的责任和临时住宿承担。",
+            "assistant_stop_after_text": "按现有日期，名义上没有超过三天的租金重叠，搬运费是一千八百元的一次性成本。真正风险是先交旧房后才取得新房，因此签约前要确认二月一日交钥匙时间、无法按时交付的责任和临时住宿承担。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U14",
+          "assistant_id": "A014",
+          "user_utterance": "现在把两种选择直接比较一下，先说最影响决定的差别。",
+          "assistant_utterance": "目前续租的已知固定额是六千六百八十元，但宠物费若适用就超预算，公共能耗还未定，提前退出也偏重。备选房固定额同为六千六百八十元，通勤更短、搬家衔接可行，但三千元保留金不可退风险突出。",
+          "user_intent": "要求综合比较续租与搬家方案",
+          "assistant_intent": "集中呈现两种方案最关键的成本、限制和风险差异",
+          "semantic_goal": "形成决定前的核心利弊对照",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A013",
+            "user_onset_after_text": "可把它作为个人决策权重，而不是确定的交通事实。按你的估算，备选房单程少三十分钟，工作日往返约少一小时；这能抵消部分搬家成本，但仍应排在预算、猫的居住许可和退出条件之后。",
+            "assistant_stop_after_text": "可把它作为个人决策权重，而不是确定的交通事实。按你的估算，备选房单程少三十分钟，工作日往返约少一小时；这能抵消部分搬家成本，但仍应排在预算、猫的居住许可和退出条件之后。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U15",
+          "assistant_id": "A015",
+          "user_utterance": "比较先到这里。请直接界定，什么条件下我可以接受续租？",
+          "assistant_utterance": "可接受续租至少要满足三项：猫获书面续批，全部固定月费不超过六千八百元；公共能耗有算法、凭证和上限；提前退出成本降回可控范围。维修责任和伴侣留宿规则也应书面明确，否则只宜附条件答复。",
+          "user_intent": "打断比较并要求给出可接受续租边界",
+          "assistant_intent": "将预算、宠物和退出条件转化为明确底线",
+          "semantic_goal": "形成续租、附条件续租或拒绝续租的判断门槛",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A014",
+            "user_onset_after_text": "目前续租的已知固定额是六千六百八十元，但宠物费若适用就超预算，公共能耗还未定，提前退出也偏重。",
+            "assistant_stop_after_text": "目前续租的已知固定额是六千六百八十元，但宠物费若适用就超预算，公共能耗还未定，提前退出也偏重。备"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U16",
+          "assistant_id": "A016",
+          "user_utterance": "那请整理成我发给租赁经办人的重点问题，措辞简洁，但别漏掉关键项。",
+          "assistant_utterance": "可写：请书面确认，一，现有猫许可是否延续、三百元费用是否免除；二，固定月费及公共能耗算法、凭证和上限；三，新提前解约条款是否替换原条款，并明确最早退出日和总成本；四，维修五百元的适用原因与范围；五，伴侣留宿如何处理；六，押金补款日及逾期未答复后果。",
+          "user_intent": "要求生成与租赁经办人沟通的问题清单",
+          "assistant_intent": "把已识别的关键歧义和底线压缩为可直接发送的书面问题",
+          "semantic_goal": "获得覆盖费用、退出和新增限制的沟通提纲",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A015",
+            "user_onset_after_text": "可接受续租至少要满足三项：猫获书面续批，全部固定月费不超过六千八百元；公共能耗有算法、凭证和上限；提前退出成本降回可控范围。维修责任和伴侣留宿规则也应书面明确，否则只宜附条件答复。",
+            "assistant_stop_after_text": "可接受续租至少要满足三项：猫获书面续批，全部固定月费不超过六千八百元；公共能耗有算法、凭证和上限；提前退出成本降回可控范围。维修责任和伴侣留宿规则也应书面明确，否则只宜附条件答复。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U17",
+          "assistant_id": "A017",
+          "user_utterance": "最后给我一个截止日前的安排。我不想拖到最后，也不能错过十一月十八日的备选房期限。",
+          "assistant_utterance": "建议十一月十二日前发出问题，要求十六日前书面回复，并争取延长备选房保留期。十七日按续租底线评估；十八日前先确认备选房允许现有猫居住且关键条款可接受，再决定是否付款。最迟二十日明确书面答复。",
+          "user_intent": "要求协调续租答复和备选房保留期限",
+          "assistant_intent": "制定带中间节点的决策时间表并避免沉默逾期",
+          "semantic_goal": "在两个截止日前完成澄清、比较和书面决定",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A016",
+            "user_onset_after_text": "可写：请书面确认，一，现有猫许可是否延续、三百元费用是否免除；二，固定月费及公共能耗算法、凭证和上限；三，新提前解约条款是否替换原条款，并明确最早退出日和总成本；四，维修五百元的适用原因与范围；五，伴侣留宿如何处理；六，押金补款日及逾期未答复后果。",
+            "assistant_stop_after_text": "可写：请书面确认，一，现有猫许可是否延续、三百元费用是否免除；二，固定月费及公共能耗算法、凭证和上限；三，新提前解约条款是否替换原条款，并明确最早退出日和总成本；四，维修五百元的适用原因与范围；五，伴侣留宿如何处理；六，押金补款日及逾期未答复后果。"
+          },
+          "pause_cue": null
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。",
+          "text": "嗯"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A005",
+          "after_text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。",
+          "text": "明白"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A008",
+          "after_text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。",
+          "text": "对"
+        },
+        {
+          "event_id": "BC04",
+          "target_assistant_id": "A011",
+          "after_text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。",
+          "text": "嗯"
+        },
+        {
+          "event_id": "BC05",
+          "target_assistant_id": "A016",
+          "after_text": "可写：请书面确认，一，现有猫许可是否延续、三百元费用是否免除；二，固定月费及公共能耗算法、凭证和上限；",
+          "text": "好"
+        }
+      ],
+      "side_speech": [],
+      "environment_events": []
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。",
+          "final_shared_played_prefix": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。",
+          "final_shared_played_prefix": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。",
+          "final_shared_played_prefix": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "答复截止与不续租通知是两件事。现文本没写逾期自动不续租，不能直接推定；应书面问清逾期后果，以及本次通知是否取代六十日条款。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "答复截止与不续租通知是两件事。",
+          "final_shared_played_prefix": "答复截止与不续租通知是两件事。现文本",
+          "discarded_unheard_tail": "没写逾期自动不续租，不能直接推定；应书面问清逾期后果，以及本次通知是否取代六十日条款。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A005",
+          "at_user_onset_heard_prefix": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。",
+          "final_shared_played_prefix": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A006",
+          "at_user_onset_heard_prefix": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。",
+          "final_shared_played_prefix": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A007",
+          "at_user_onset_heard_prefix": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。",
+          "final_shared_played_prefix": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A008",
+          "at_user_onset_heard_prefix": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。",
+          "final_shared_played_prefix": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "还有公共区域能耗按房屋面积分摊，但没有单价、历史月均、结算周期，也没写怎么看账单。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A009",
+          "at_user_onset_heard_prefix": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。",
+          "final_shared_played_prefix": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U11",
+        "assistant_id": "A011",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "还有公共区域能耗按房屋面积分摊，但没有单价、历史月均、结算周期，也没写怎么看账单。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "还有公共区域能耗按房屋面积分摊，但没有单价、历史月均、结算周期，也没写怎么看账单。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "我还有一套备选房，二月一日起租，月租六千四，物业二百八。保留金三千元，十一月十八日前交，除出租方撤回外不退。我还没签。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A010",
+          "at_user_onset_heard_prefix": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。",
+          "final_shared_played_prefix": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。因为十一月十八日早于续租答复期限，你最好先争取延长保留期、降低金额或附加可退条件，不宜仅凭口头承诺付款。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U12",
+        "assistant_id": "A012",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "还有公共区域能耗按房屋面积分摊，但没有单价、历史月均、结算周期，也没写怎么看账单。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "我还有一套备选房，二月一日起租，月租六千四，物业二百八。保留金三千元，十一月十八日前交，除出租方撤回外不退。我还没签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。因为十一月十八日早于续租答复期限，你最好先争取延长保留期、降低金额或附加可退条件，不宜仅凭口头承诺付款。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "还有公共区域能耗按房屋面积分摊，但没有单价、历史月均、结算周期，也没写怎么看账单。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "我还有一套备选房，二月一日起租，月租六千四，物业二百八。保留金三千元，十一月十八日前交，除出租方撤回外不退。我还没签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。因为十一月十八日早于续租答复期限，你最好先争取延长保留期、降低金额或附加可退条件，不宜仅凭口头承诺付款。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果搬家，我一月三十一日交接现住房，搬运报价一千八，二月一日可以搬。我不接受超过三天的双重住房费用。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A011",
+          "at_user_onset_heard_prefix": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。因为十一月十八日早于续租答复期限，你最好先争取延长保留期、降低金额或附加可退条件，不宜仅凭口头承诺付款。",
+          "final_shared_played_prefix": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。因为十一月十八日早于续租答复期限，你最好先争取延长保留期、降低金额或附加可退条件，不宜仅凭口头承诺付款。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A011",
+            "after_text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "按现有日期，名义上没有超过三天的租金重叠，搬运费是一千八百元的一次性成本。真正风险是先交旧房后才取得新房，因此签约前要确认二月一日交钥匙时间、无法按时交付的责任和临时住宿承担。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U13",
+        "assistant_id": "A013",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "还有公共区域能耗按房屋面积分摊，但没有单价、历史月均、结算周期，也没写怎么看账单。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "我还有一套备选房，二月一日起租，月租六千四，物业二百八。保留金三千元，十一月十八日前交，除出租方撤回外不退。我还没签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。因为十一月十八日早于续租答复期限，你最好先争取延长保留期、降低金额或附加可退条件，不宜仅凭口头承诺付款。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果搬家，我一月三十一日交接现住房，搬运报价一千八，二月一日可以搬。我不接受超过三天的双重住房费用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "按现有日期，名义上没有超过三天的租金重叠，搬运费是一千八百元的一次性成本。真正风险是先交旧房后才取得新房，因此签约前要确认二月一日交钥匙时间、无法按时交付的责任和临时住宿承担。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "还有公共区域能耗按房屋面积分摊，但没有单价、历史月均、结算周期，也没写怎么看账单。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "我还有一套备选房，二月一日起租，月租六千四，物业二百八。保留金三千元，十一月十八日前交，除出租方撤回外不退。我还没签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。因为十一月十八日早于续租答复期限，你最好先争取延长保留期、降低金额或附加可退条件，不宜仅凭口头承诺付款。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果搬家，我一月三十一日交接现住房，搬运报价一千八，二月一日可以搬。我不接受超过三天的双重住房费用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "按现有日期，名义上没有超过三天的租金重叠，搬运费是一千八百元的一次性成本。真正风险是先交旧房后才取得新房，因此签约前要确认二月一日交钥匙时间、无法按时交付的责任和临时住宿承担。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "通勤方面，我估算办公地点搬迁后，从现在这套房单程五十五分钟，从备选房二十五分钟。这不是实时交通结果。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A012",
+          "at_user_onset_heard_prefix": "按现有日期，名义上没有超过三天的租金重叠，搬运费是一千八百元的一次性成本。真正风险是先交旧房后才取得新房，因此签约前要确认二月一日交钥匙时间、无法按时交付的责任和临时住宿承担。",
+          "final_shared_played_prefix": "按现有日期，名义上没有超过三天的租金重叠，搬运费是一千八百元的一次性成本。真正风险是先交旧房后才取得新房，因此签约前要确认二月一日交钥匙时间、无法按时交付的责任和临时住宿承担。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A011",
+            "after_text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可把它作为个人决策权重，而不是确定的交通事实。按你的估算，备选房单程少三十分钟，工作日往返约少一小时；这能抵消部分搬家成本，但仍应排在预算、猫的居住许可和退出条件之后。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U14",
+        "assistant_id": "A014",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "还有公共区域能耗按房屋面积分摊，但没有单价、历史月均、结算周期，也没写怎么看账单。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "我还有一套备选房，二月一日起租，月租六千四，物业二百八。保留金三千元，十一月十八日前交，除出租方撤回外不退。我还没签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。因为十一月十八日早于续租答复期限，你最好先争取延长保留期、降低金额或附加可退条件，不宜仅凭口头承诺付款。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果搬家，我一月三十一日交接现住房，搬运报价一千八，二月一日可以搬。我不接受超过三天的双重住房费用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "按现有日期，名义上没有超过三天的租金重叠，搬运费是一千八百元的一次性成本。真正风险是先交旧房后才取得新房，因此签约前要确认二月一日交钥匙时间、无法按时交付的责任和临时住宿承担。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "通勤方面，我估算办公地点搬迁后，从现在这套房单程五十五分钟，从备选房二十五分钟。这不是实时交通结果。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "可把它作为个人决策权重，而不是确定的交通事实。按你的估算，备选房单程少三十分钟，工作日往返约少一小时；这能抵消部分搬家成本，但仍应排在预算、猫的居住许可和退出条件之后。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "还有公共区域能耗按房屋面积分摊，但没有单价、历史月均、结算周期，也没写怎么看账单。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "我还有一套备选房，二月一日起租，月租六千四，物业二百八。保留金三千元，十一月十八日前交，除出租方撤回外不退。我还没签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。因为十一月十八日早于续租答复期限，你最好先争取延长保留期、降低金额或附加可退条件，不宜仅凭口头承诺付款。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果搬家，我一月三十一日交接现住房，搬运报价一千八，二月一日可以搬。我不接受超过三天的双重住房费用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "按现有日期，名义上没有超过三天的租金重叠，搬运费是一千八百元的一次性成本。真正风险是先交旧房后才取得新房，因此签约前要确认二月一日交钥匙时间、无法按时交付的责任和临时住宿承担。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "通勤方面，我估算办公地点搬迁后，从现在这套房单程五十五分钟，从备选房二十五分钟。这不是实时交通结果。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "可把它作为个人决策权重，而不是确定的交通事实。按你的估算，备选房单程少三十分钟，工作日往返约少一小时；这能抵消部分搬家成本，但仍应排在预算、猫的居住许可和退出条件之后。"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "现在把两种选择直接比较一下，先说最影响决定的差别。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A013",
+          "at_user_onset_heard_prefix": "可把它作为个人决策权重，而不是确定的交通事实。按你的估算，备选房单程少三十分钟，工作日往返约少一小时；这能抵消部分搬家成本，但仍应排在预算、猫的居住许可和退出条件之后。",
+          "final_shared_played_prefix": "可把它作为个人决策权重，而不是确定的交通事实。按你的估算，备选房单程少三十分钟，工作日往返约少一小时；这能抵消部分搬家成本，但仍应排在预算、猫的居住许可和退出条件之后。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A011",
+            "after_text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "目前续租的已知固定额是六千六百八十元，但宠物费若适用就超预算，公共能耗还未定，提前退出也偏重。备选房固定额同为六千六百八十元，通勤更短、搬家衔接可行，但三千元保留金不可退风险突出。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U15",
+        "assistant_id": "A015",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "还有公共区域能耗按房屋面积分摊，但没有单价、历史月均、结算周期，也没写怎么看账单。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "我还有一套备选房，二月一日起租，月租六千四，物业二百八。保留金三千元，十一月十八日前交，除出租方撤回外不退。我还没签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。因为十一月十八日早于续租答复期限，你最好先争取延长保留期、降低金额或附加可退条件，不宜仅凭口头承诺付款。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果搬家，我一月三十一日交接现住房，搬运报价一千八，二月一日可以搬。我不接受超过三天的双重住房费用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "按现有日期，名义上没有超过三天的租金重叠，搬运费是一千八百元的一次性成本。真正风险是先交旧房后才取得新房，因此签约前要确认二月一日交钥匙时间、无法按时交付的责任和临时住宿承担。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "通勤方面，我估算办公地点搬迁后，从现在这套房单程五十五分钟，从备选房二十五分钟。这不是实时交通结果。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "可把它作为个人决策权重，而不是确定的交通事实。按你的估算，备选房单程少三十分钟，工作日往返约少一小时；这能抵消部分搬家成本，但仍应排在预算、猫的居住许可和退出条件之后。"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "现在把两种选择直接比较一下，先说最影响决定的差别。"
+          },
+          {
+            "role": "assistant",
+            "id": "A014",
+            "text": "目前续租的已知固定额是六千六百八十元，但宠物费若适用就超预算，公共能耗还未定，提前退出也偏重。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "还有公共区域能耗按房屋面积分摊，但没有单价、历史月均、结算周期，也没写怎么看账单。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "我还有一套备选房，二月一日起租，月租六千四，物业二百八。保留金三千元，十一月十八日前交，除出租方撤回外不退。我还没签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。因为十一月十八日早于续租答复期限，你最好先争取延长保留期、降低金额或附加可退条件，不宜仅凭口头承诺付款。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果搬家，我一月三十一日交接现住房，搬运报价一千八，二月一日可以搬。我不接受超过三天的双重住房费用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "按现有日期，名义上没有超过三天的租金重叠，搬运费是一千八百元的一次性成本。真正风险是先交旧房后才取得新房，因此签约前要确认二月一日交钥匙时间、无法按时交付的责任和临时住宿承担。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "通勤方面，我估算办公地点搬迁后，从现在这套房单程五十五分钟，从备选房二十五分钟。这不是实时交通结果。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "可把它作为个人决策权重，而不是确定的交通事实。按你的估算，备选房单程少三十分钟，工作日往返约少一小时；这能抵消部分搬家成本，但仍应排在预算、猫的居住许可和退出条件之后。"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "现在把两种选择直接比较一下，先说最影响决定的差别。"
+          },
+          {
+            "role": "assistant",
+            "id": "A014",
+            "text": "目前续租的已知固定额是六千六百八十元，但宠物费若适用就超预算，公共能耗还未定，提前退出也偏重。备"
+          },
+          {
+            "role": "user",
+            "id": "U15",
+            "text": "比较先到这里。请直接界定，什么条件下我可以接受续租？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A014",
+          "at_user_onset_heard_prefix": "目前续租的已知固定额是六千六百八十元，但宠物费若适用就超预算，公共能耗还未定，提前退出也偏重。",
+          "final_shared_played_prefix": "目前续租的已知固定额是六千六百八十元，但宠物费若适用就超预算，公共能耗还未定，提前退出也偏重。备",
+          "discarded_unheard_tail": "选房固定额同为六千六百八十元，通勤更短、搬家衔接可行，但三千元保留金不可退风险突出。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A011",
+            "after_text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可接受续租至少要满足三项：猫获书面续批，全部固定月费不超过六千八百元；公共能耗有算法、凭证和上限；提前退出成本降回可控范围。维修责任和伴侣留宿规则也应书面明确，否则只宜附条件答复。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U16",
+        "assistant_id": "A016",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "还有公共区域能耗按房屋面积分摊，但没有单价、历史月均、结算周期，也没写怎么看账单。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "我还有一套备选房，二月一日起租，月租六千四，物业二百八。保留金三千元，十一月十八日前交，除出租方撤回外不退。我还没签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。因为十一月十八日早于续租答复期限，你最好先争取延长保留期、降低金额或附加可退条件，不宜仅凭口头承诺付款。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果搬家，我一月三十一日交接现住房，搬运报价一千八，二月一日可以搬。我不接受超过三天的双重住房费用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "按现有日期，名义上没有超过三天的租金重叠，搬运费是一千八百元的一次性成本。真正风险是先交旧房后才取得新房，因此签约前要确认二月一日交钥匙时间、无法按时交付的责任和临时住宿承担。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "通勤方面，我估算办公地点搬迁后，从现在这套房单程五十五分钟，从备选房二十五分钟。这不是实时交通结果。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "可把它作为个人决策权重，而不是确定的交通事实。按你的估算，备选房单程少三十分钟，工作日往返约少一小时；这能抵消部分搬家成本，但仍应排在预算、猫的居住许可和退出条件之后。"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "现在把两种选择直接比较一下，先说最影响决定的差别。"
+          },
+          {
+            "role": "assistant",
+            "id": "A014",
+            "text": "目前续租的已知固定额是六千六百八十元，但宠物费若适用就超预算，公共能耗还未定，提前退出也偏重。备"
+          },
+          {
+            "role": "user",
+            "id": "U15",
+            "text": "比较先到这里。请直接界定，什么条件下我可以接受续租？"
+          },
+          {
+            "role": "assistant",
+            "id": "A015",
+            "text": "可接受续租至少要满足三项：猫获书面续批，全部固定月费不超过六千八百元；公共能耗有算法、凭证和上限；提前退出成本降回可控范围。维修责任和伴侣留宿规则也应书面明确，否则只宜附条件答复。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "还有公共区域能耗按房屋面积分摊，但没有单价、历史月均、结算周期，也没写怎么看账单。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "我还有一套备选房，二月一日起租，月租六千四，物业二百八。保留金三千元，十一月十八日前交，除出租方撤回外不退。我还没签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。因为十一月十八日早于续租答复期限，你最好先争取延长保留期、降低金额或附加可退条件，不宜仅凭口头承诺付款。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果搬家，我一月三十一日交接现住房，搬运报价一千八，二月一日可以搬。我不接受超过三天的双重住房费用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "按现有日期，名义上没有超过三天的租金重叠，搬运费是一千八百元的一次性成本。真正风险是先交旧房后才取得新房，因此签约前要确认二月一日交钥匙时间、无法按时交付的责任和临时住宿承担。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "通勤方面，我估算办公地点搬迁后，从现在这套房单程五十五分钟，从备选房二十五分钟。这不是实时交通结果。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "可把它作为个人决策权重，而不是确定的交通事实。按你的估算，备选房单程少三十分钟，工作日往返约少一小时；这能抵消部分搬家成本，但仍应排在预算、猫的居住许可和退出条件之后。"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "现在把两种选择直接比较一下，先说最影响决定的差别。"
+          },
+          {
+            "role": "assistant",
+            "id": "A014",
+            "text": "目前续租的已知固定额是六千六百八十元，但宠物费若适用就超预算，公共能耗还未定，提前退出也偏重。备"
+          },
+          {
+            "role": "user",
+            "id": "U15",
+            "text": "比较先到这里。请直接界定，什么条件下我可以接受续租？"
+          },
+          {
+            "role": "assistant",
+            "id": "A015",
+            "text": "可接受续租至少要满足三项：猫获书面续批，全部固定月费不超过六千八百元；公共能耗有算法、凭证和上限；提前退出成本降回可控范围。维修责任和伴侣留宿规则也应书面明确，否则只宜附条件答复。"
+          },
+          {
+            "role": "user",
+            "id": "U16",
+            "text": "那请整理成我发给租赁经办人的重点问题，措辞简洁，但别漏掉关键项。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A015",
+          "at_user_onset_heard_prefix": "可接受续租至少要满足三项：猫获书面续批，全部固定月费不超过六千八百元；公共能耗有算法、凭证和上限；提前退出成本降回可控范围。维修责任和伴侣留宿规则也应书面明确，否则只宜附条件答复。",
+          "final_shared_played_prefix": "可接受续租至少要满足三项：猫获书面续批，全部固定月费不超过六千八百元；公共能耗有算法、凭证和上限；提前退出成本降回可控范围。维修责任和伴侣留宿规则也应书面明确，否则只宜附条件答复。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A011",
+            "after_text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可写：请书面确认，一，现有猫许可是否延续、三百元费用是否免除；二，固定月费及公共能耗算法、凭证和上限；三，新提前解约条款是否替换原条款，并明确最早退出日和总成本；四，维修五百元的适用原因与范围；五，伴侣留宿如何处理；六，押金补款日及逾期未答复后果。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U17",
+        "assistant_id": "A017",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "还有公共区域能耗按房屋面积分摊，但没有单价、历史月均、结算周期，也没写怎么看账单。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "我还有一套备选房，二月一日起租，月租六千四，物业二百八。保留金三千元，十一月十八日前交，除出租方撤回外不退。我还没签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。因为十一月十八日早于续租答复期限，你最好先争取延长保留期、降低金额或附加可退条件，不宜仅凭口头承诺付款。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果搬家，我一月三十一日交接现住房，搬运报价一千八，二月一日可以搬。我不接受超过三天的双重住房费用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "按现有日期，名义上没有超过三天的租金重叠，搬运费是一千八百元的一次性成本。真正风险是先交旧房后才取得新房，因此签约前要确认二月一日交钥匙时间、无法按时交付的责任和临时住宿承担。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "通勤方面，我估算办公地点搬迁后，从现在这套房单程五十五分钟，从备选房二十五分钟。这不是实时交通结果。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "可把它作为个人决策权重，而不是确定的交通事实。按你的估算，备选房单程少三十分钟，工作日往返约少一小时；这能抵消部分搬家成本，但仍应排在预算、猫的居住许可和退出条件之后。"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "现在把两种选择直接比较一下，先说最影响决定的差别。"
+          },
+          {
+            "role": "assistant",
+            "id": "A014",
+            "text": "目前续租的已知固定额是六千六百八十元，但宠物费若适用就超预算，公共能耗还未定，提前退出也偏重。备"
+          },
+          {
+            "role": "user",
+            "id": "U15",
+            "text": "比较先到这里。请直接界定，什么条件下我可以接受续租？"
+          },
+          {
+            "role": "assistant",
+            "id": "A015",
+            "text": "可接受续租至少要满足三项：猫获书面续批，全部固定月费不超过六千八百元；公共能耗有算法、凭证和上限；提前退出成本降回可控范围。维修责任和伴侣留宿规则也应书面明确，否则只宜附条件答复。"
+          },
+          {
+            "role": "user",
+            "id": "U16",
+            "text": "那请整理成我发给租赁经办人的重点问题，措辞简洁，但别漏掉关键项。"
+          },
+          {
+            "role": "assistant",
+            "id": "A016",
+            "text": "可写：请书面确认，一，现有猫许可是否延续、三百元费用是否免除；二，固定月费及公共能耗算法、凭证和上限；三，新提前解约条款是否替换原条款，并明确最早退出日和总成本；四，维修五百元的适用原因与范围；五，伴侣留宿如何处理；六，押金补款日及逾期未答复后果。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "还有公共区域能耗按房屋面积分摊，但没有单价、历史月均、结算周期，也没写怎么看账单。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "我还有一套备选房，二月一日起租，月租六千四，物业二百八。保留金三千元，十一月十八日前交，除出租方撤回外不退。我还没签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。因为十一月十八日早于续租答复期限，你最好先争取延长保留期、降低金额或附加可退条件，不宜仅凭口头承诺付款。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果搬家，我一月三十一日交接现住房，搬运报价一千八，二月一日可以搬。我不接受超过三天的双重住房费用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "按现有日期，名义上没有超过三天的租金重叠，搬运费是一千八百元的一次性成本。真正风险是先交旧房后才取得新房，因此签约前要确认二月一日交钥匙时间、无法按时交付的责任和临时住宿承担。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "通勤方面，我估算办公地点搬迁后，从现在这套房单程五十五分钟，从备选房二十五分钟。这不是实时交通结果。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "可把它作为个人决策权重，而不是确定的交通事实。按你的估算，备选房单程少三十分钟，工作日往返约少一小时；这能抵消部分搬家成本，但仍应排在预算、猫的居住许可和退出条件之后。"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "现在把两种选择直接比较一下，先说最影响决定的差别。"
+          },
+          {
+            "role": "assistant",
+            "id": "A014",
+            "text": "目前续租的已知固定额是六千六百八十元，但宠物费若适用就超预算，公共能耗还未定，提前退出也偏重。备"
+          },
+          {
+            "role": "user",
+            "id": "U15",
+            "text": "比较先到这里。请直接界定，什么条件下我可以接受续租？"
+          },
+          {
+            "role": "assistant",
+            "id": "A015",
+            "text": "可接受续租至少要满足三项：猫获书面续批，全部固定月费不超过六千八百元；公共能耗有算法、凭证和上限；提前退出成本降回可控范围。维修责任和伴侣留宿规则也应书面明确，否则只宜附条件答复。"
+          },
+          {
+            "role": "user",
+            "id": "U16",
+            "text": "那请整理成我发给租赁经办人的重点问题，措辞简洁，但别漏掉关键项。"
+          },
+          {
+            "role": "assistant",
+            "id": "A016",
+            "text": "可写：请书面确认，一，现有猫许可是否延续、三百元费用是否免除；二，固定月费及公共能耗算法、凭证和上限；三，新提前解约条款是否替换原条款，并明确最早退出日和总成本；四，维修五百元的适用原因与范围；五，伴侣留宿如何处理；六，押金补款日及逾期未答复后果。"
+          },
+          {
+            "role": "user",
+            "id": "U17",
+            "text": "最后给我一个截止日前的安排。我不想拖到最后，也不能错过十一月十八日的备选房期限。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A016",
+          "at_user_onset_heard_prefix": "可写：请书面确认，一，现有猫许可是否延续、三百元费用是否免除；二，固定月费及公共能耗算法、凭证和上限；三，新提前解约条款是否替换原条款，并明确最早退出日和总成本；四，维修五百元的适用原因与范围；五，伴侣留宿如何处理；六，押金补款日及逾期未答复后果。",
+          "final_shared_played_prefix": "可写：请书面确认，一，现有猫许可是否延续、三百元费用是否免除；二，固定月费及公共能耗算法、凭证和上限；三，新提前解约条款是否替换原条款，并明确最早退出日和总成本；四，维修五百元的适用原因与范围；五，伴侣留宿如何处理；六，押金补款日及逾期未答复后果。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A005",
+            "after_text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A008",
+            "after_text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A011",
+            "after_text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC05",
+            "target_assistant_id": "A016",
+            "after_text": "可写：请书面确认，一，现有猫许可是否延续、三百元费用是否免除；二，固定月费及公共能耗算法、凭证和上限；",
+            "text": "好",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "建议十一月十二日前发出问题，要求十六日前书面回复，并争取延长备选房保留期。十七日按续租底线评估；十八日前先确认备选房允许现有猫居住且关键条款可接受，再决定是否付款。最迟二十日明确书面答复。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A002",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。",
+        "event_text": "嗯",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC02",
+        "kind": "backchannels",
+        "target_assistant_id": "A005",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "新条款明显加重退出成本，且没有说明是否完全替换原条款。",
+        "event_text": "明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC03",
+        "kind": "backchannels",
+        "target_assistant_id": "A008",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。",
+        "event_text": "对",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC04",
+        "kind": "backchannels",
+        "target_assistant_id": "A011",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "还有公共区域能耗按房屋面积分摊，但没有单价、历史月均、结算周期，也没写怎么看账单。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "我还有一套备选房，二月一日起租，月租六千四，物业二百八。保留金三千元，十一月十八日前交，除出租方撤回外不退。我还没签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。",
+        "event_text": "嗯",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC05",
+        "kind": "backchannels",
+        "target_assistant_id": "A016",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我今天收到续租通知，现租约明年一月三十一日到期，通知要我十一月二十日前书面答复。我想先弄清条件再决定，应该怎么审视？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先分三层：明确的金额和期限、与原租约冲突或含糊的条款、必须协商的底线。优先核对月度总支出、押金、退出成本，再看维修、宠物、访客等限制。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "费用先看。通知写基础租金每月六千四百八十元，住宅服务费二百元，合计六千六百八十元。原来是六千二百元，物业费包含在租金里。我的固定月支出上限是六千八。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已知固定月支出是六千六百八十元，低于六千八百元上限一百二十元。还需确认二百元住宅服务费包含哪些项目、是否另有其他固定费用，以及租期内能否调整。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "押金原来是一万二千四百元。通知要求维持两个月基础租金，我算下来要补五百六十元，但没写什么时候补。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "五百六十元的差额计算正确。目前明确缺少的是补款日期，应要求写明最迟补款日；还可顺带确认收款方式，以及续租未生效时补款如何处理。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "原租约还写着，不续租要至少提前六十日书面通知。现在通知让我十一月二十日前答复，却没说不回复会怎样。这两个期限怎么理解？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "答复截止与不续租通知是两件事。现文本"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "先说提前解约。原租约是提前六十日通知，再付一个月租金。续租附加条款却说前六个月不得提前解约，之后提前九十日通知并付两个月基础租金。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "新条款明显加重退出成本，且没有说明是否完全替换原条款。应确认前六个月的起止日、锁定期内能否预先发通知，以及九十日通知和两个月违约金是否同时承担。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我们部门明年三月十五日要搬到滨江。续租从二月一日开始，这个六个月限制对我风险很大。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "是的。若锁定期从二月一日起算，通常会覆盖至七月底；若九十日通知只能在锁定期后发出，实际退出还会更晚。你应争取允许锁定期内发通知，或保留原六十日加一个月租金的方案。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "维修也变了。原来主要设备故障由房东承担，使用造成的损坏由我承担，三百元以内的小修我付。新条款只写每次维修前五百元由我承担。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "新写法没有区分故障原因，可能把原本由房东承担的主要设备故障也转给你。应要求保留责任归属，只把因你使用造成的损坏或明确列出的日常小修纳入限额，并说明五百元是免赔额还是费用上限。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "我有一只猫，原租约附件已经书面批准。新条款要求宠物每年重新审批，还要每月三百元清洁费，但没说是否适用于已登记的猫。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "这直接关系到你的续租底线。若三百元适用，固定月支出会升到六千九百八十元，超过预算。应要求书面确认现有猫继续获准，并争取不收该费；至少也要把总固定支出压在六千八百元内。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "访客条款是连续住宿不超过十四晚，每个租赁年度累计不超过三十晚。我伴侣可能从明年五月起每周住两到三晚，频率还没最终确定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "连续十四晚大概不是主要障碍，但年度三十晚很可能不够。应询问固定伴侣是否按普通访客计算，能否书面提高年度上限，或通过登记为长期访客等方式处理，同时确认这不会触发加租或转租认定。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "还有公共区域能耗按房屋面积分摊，但没有单价、历史月均、结算周期，也没写怎么看账单。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "这属于金额未封顶的新增支出。你目前只有一百二十元预算余量，应要求提供计算公式、面积基数、历史账单、结算周期和查账方式，并约定月度上限；否则不能把六千六百八十元当作真实总额。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "我还有一套备选房，二月一日起租，月租六千四，物业二百八。保留金三千元，十一月十八日前交，除出租方撤回外不退。我还没签。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "备选房固定月支出也是六千六百八十元，符合上限，但三千元保留金有实质损失风险。因为十一月十八日早于续租答复期限，你最好先争取延长保留期、降低金额或附加可退条件，不宜仅凭口头承诺付款。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "如果搬家，我一月三十一日交接现住房，搬运报价一千八，二月一日可以搬。我不接受超过三天的双重住房费用。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "按现有日期，名义上没有超过三天的租金重叠，搬运费是一千八百元的一次性成本。真正风险是先交旧房后才取得新房，因此签约前要确认二月一日交钥匙时间、无法按时交付的责任和临时住宿承担。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "通勤方面，我估算办公地点搬迁后，从现在这套房单程五十五分钟，从备选房二十五分钟。这不是实时交通结果。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "可把它作为个人决策权重，而不是确定的交通事实。按你的估算，备选房单程少三十分钟，工作日往返约少一小时；这能抵消部分搬家成本，但仍应排在预算、猫的居住许可和退出条件之后。"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "现在把两种选择直接比较一下，先说最影响决定的差别。"
+          },
+          {
+            "role": "assistant",
+            "id": "A014",
+            "text": "目前续租的已知固定额是六千六百八十元，但宠物费若适用就超预算，公共能耗还未定，提前退出也偏重。备"
+          },
+          {
+            "role": "user",
+            "id": "U15",
+            "text": "比较先到这里。请直接界定，什么条件下我可以接受续租？"
+          },
+          {
+            "role": "assistant",
+            "id": "A015",
+            "text": "可接受续租至少要满足三项：猫获书面续批，全部固定月费不超过六千八百元；公共能耗有算法、凭证和上限；提前退出成本降回可控范围。维修责任和伴侣留宿规则也应书面明确，否则只宜附条件答复。"
+          },
+          {
+            "role": "user",
+            "id": "U16",
+            "text": "那请整理成我发给租赁经办人的重点问题，措辞简洁，但别漏掉关键项。"
+          },
+          {
+            "role": "assistant",
+            "id": "A016",
+            "text": "可写：请书面确认，一，现有猫许可是否延续、三百元费用是否免除；二，固定月费及公共能耗算法、凭证和上限；"
+          }
+        ],
+        "at_event_onset_heard_prefix": "可写：请书面确认，一，现有猫许可是否延续、三百元费用是否免除；二，固定月费及公共能耗算法、凭证和上限；",
+        "event_text": "好",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

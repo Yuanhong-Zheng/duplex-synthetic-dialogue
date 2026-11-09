@@ -1,0 +1,262 @@
+{
+  "schema_version": "duplex_v2.fixed_script.v3",
+  "title": "微波炉亮屏不加热的逐步排查",
+  "rounds": [
+    {
+      "user_id": "U01",
+      "assistant_id": "A001",
+      "user_utterance": "微波炉屏幕亮着，按启动没声音也不转。我把饭拿出来了，也没闻到焦味。先看哪儿？",
+      "assistant_utterance": "先确认炉门。沿门边按一圈，再在把手侧推到明显扣住；门没扣紧时，屏幕会亮，但启动会被安全联锁拦住。",
+      "user_intent": "描述微波炉亮屏但不运转的现象并询问首要检查位置",
+      "assistant_intent": "优先引导确认炉门是否完全扣紧并解释安全联锁现象",
+      "semantic_goal": "确定第一项最关键且安全的外部观察",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": null,
+      "pause_cue": null
+    },
+    {
+      "user_id": "U02",
+      "assistant_id": "A002",
+      "user_utterance": "我把门边又推了一遍，听见一声扣上的响。下一步看什么？",
+      "assistant_utterance": "先看计时显示是不是零；如果不是零，再找有没有锁形或暂停字样。若看不清，先别反复按键，我可以按位置一步步带你确认。",
+      "user_intent": "报告炉门已重新扣紧并要求继续排查",
+      "assistant_intent": "引导检查计时是否为零，再检查锁定或暂停提示",
+      "semantic_goal": "进入面板可见状态的下一步判断",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A001",
+        "user_onset_after_text": "先确认炉门。沿门边按一圈，再在把手侧推到明显扣住；门没扣紧时，屏幕会亮，但启动会被安全联锁拦住。",
+        "assistant_stop_after_text": "先确认炉门。沿门边按一圈，再在把手侧推到明显扣住；门没扣紧时，屏幕会亮，但启动会被安全联锁拦住。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U03",
+      "assistant_id": "A003",
+      "user_utterance": "先别讲图标，我看不清，计时那里像是零……你就告诉我最关键的下一步。",
+      "assistant_utterance": "计时为零时，启动键通常不会加热，这更像操作遗漏。先找写着“加三十秒”或“时间”的键；没有食物时不要试运行。",
+      "user_intent": "打断较难辨认的图标说明并要求直接给出关键操作",
+      "assistant_intent": "解释零计时的含义并给出不空载的下一步操作",
+      "semantic_goal": "判断零计时是否足以解释无法启动并获得简短指引",
+      "act_ref": "A02",
+      "timing_refs": [
+        "T03",
+        "T02"
+      ],
+      "timing": {
+        "target_assistant_id": "A002",
+        "user_onset_after_text": "先看计时显示是不是零；如果不是零，",
+        "assistant_stop_after_text": "先看计时显示是不是零；如果不是零，再找"
+      },
+      "pause_cue": {
+        "after_text": "先别讲图标，我看不清，计时那里像是零……",
+        "duration_ms": 650
+      }
+    },
+    {
+      "user_id": "U04",
+      "assistant_id": "A004",
+      "user_utterance": "所以显示零不等于坏了，对吧？",
+      "assistant_utterance": "对，单凭显示零不能判定故障，只表示还没设加热时间。门扣紧、设出非零时间后仍无任何反馈，才需要继续查锁定或异常。",
+      "user_intent": "确认零计时是否代表设备故障",
+      "assistant_intent": "区分操作遗漏与需要继续检查的异常条件",
+      "semantic_goal": "避免把正常的零计时状态误判为故障",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A003",
+        "user_onset_after_text": "计时为零时，启动键通常不会加热，这更像操作遗漏。先找写着“加三十秒”或“时间”的键；没有食物时不要试运行。",
+        "assistant_stop_after_text": "计时为零时，启动键通常不会加热，这更像操作遗漏。先找写着“加三十秒”或“时间”的键；没有食物时不要试运行。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U05",
+      "assistant_id": "A005",
+      "user_utterance": "我摸到一个加三十秒的键了。饭已经放回微波炉用的玻璃碗里，没有金属，门也扣上了。现在按它吗？",
+      "assistant_utterance": "可以按一次“加三十秒”，手先离开按键，观察数字是否变成三十或开始倒数。若出现烟、火花、焦煳味，立刻停止并安全断电。",
+      "user_intent": "补充已具备安全测试条件并确认能否按快捷计时键",
+      "assistant_intent": "允许一次受控操作并说明要观察的反馈和紧急停止条件",
+      "semantic_goal": "安全设置非零计时并辨认设备反馈",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A004",
+        "user_onset_after_text": "对，单凭显示零不能判定故障，只表示还没设加热时间。门扣紧、设出非零时间后仍无任何反馈，才需要继续查锁定或异常。",
+        "assistant_stop_after_text": "对，单凭显示零不能判定故障，只表示还没设加热时间。门扣紧、设出非零时间后仍无任何反馈，才需要继续查锁定或异常。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U06",
+      "assistant_id": "A006",
+      "user_utterance": "数字变成三十了，但还没倒数，也没有运转声。是不是还得按启动？",
+      "assistant_utterance": "这说明时间已设好。再按一次平时的启动键，随后看数字是否倒数，并听转盘或风扇有没有启动；只按一次，不要连续猛按。",
+      "user_intent": "报告计时已设定但尚未运行并确认是否遗漏启动操作",
+      "assistant_intent": "引导单次按启动键并观察倒数和运转反馈",
+      "semantic_goal": "完成启动流程并判断按键是否生效",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A005",
+        "user_onset_after_text": "可以按一次“加三十秒”，手先离开按键，观察数字是否变成三十或开始倒数。若出现烟、火花、焦煳味，立刻停止并安全断电。",
+        "assistant_stop_after_text": "可以按一次“加三十秒”，手先离开按键，观察数字是否变成三十或开始倒数。若出现烟、火花、焦煳味，立刻停止并安全断电。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U07",
+      "assistant_id": "A007",
+      "user_utterance": "按了以后数字开始往下走，也听见转盘和风扇响了。这就算正常了吧？",
+      "assistant_utterance": "这就是正常加热，说明电源、门联锁和启动流程此刻都能工作。刚才更像计时为零或门未完全扣紧，不像持续性故障。",
+      "user_intent": "报告设备已经正常运转并请求判断",
+      "assistant_intent": "确认当前运行正常并给出对先前现象的初步归类",
+      "semantic_goal": "确认设备是否恢复正常以及是否仍像硬件故障",
+      "act_ref": "A01",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A006",
+        "user_onset_after_text": "这说明时间已设好。再按一次平时的启动键，随后看数字是否倒数，并听转盘或风扇有没有启动；只按一次，不要连续猛按。",
+        "assistant_stop_after_text": "这说明时间已设好。再按一次平时的启动键，随后看数字是否倒数，并听转盘或风扇有没有启动；只按一次，不要连续猛按。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U08",
+      "assistant_id": "A008",
+      "user_utterance": "那刚才到底是门没关严，还是我漏了设时间？能分出来吗？",
+      "assistant_utterance": "能扣门后设时启动，只能判断两者都已排除，不能倒推出刚才是哪一个。以后先看门是否扣住，再看计时是否非零，最快。",
+      "user_intent": "追问先前无法启动的具体原因",
+      "assistant_intent": "说明现有证据的判断边界并给出以后最快的检查顺序",
+      "semantic_goal": "区分可确认结论与无法倒推的原因",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A007",
+        "user_onset_after_text": "这就是正常加热，说明电源、门联锁和启动流程此刻都能工作。刚才更像计时为零或门未完全扣紧，不像持续性故障。",
+        "assistant_stop_after_text": "这就是正常加热，说明电源、门联锁和启动流程此刻都能工作。刚才更像计时为零或门未完全扣紧，不像持续性故障。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U09",
+      "assistant_id": "A009",
+      "user_utterance": "我刚想起来，第一次关门时其实也听见咔哒一声，就是没有设时间。那更像我漏操作了吧？",
+      "assistant_utterance": "这个新信息让“操作遗漏”更可能：门当时像已扣住，而计时确实为零。不过仅凭咔哒声不能百分百确认门锁状态。",
+      "user_intent": "补充并纠正先前关于炉门状态的信息",
+      "assistant_intent": "根据新增信息调整原因判断，同时保留证据边界",
+      "semantic_goal": "重新评估操作遗漏与门联锁的可能性",
+      "act_ref": "A04",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A008",
+        "user_onset_after_text": "能扣门后设时启动，只能判断两者都已排除，不能倒推出刚才是哪一个。以后先看门是否扣住，再看计时是否非零，最快。",
+        "assistant_stop_after_text": "能扣门后设时启动，只能判断两者都已排除，不能倒推出刚才是哪一个。以后先看门是否扣住，再看计时是否非零，最快。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U10",
+      "assistant_id": "A010",
+      "user_utterance": "要是以后门扣紧了，时间也不是零，按启动还是完全没反应，我先怎么处理？",
+      "assistant_utterance": "先按取消或停止一次，让面板回到待机，再重新设短时间并只按一次启动。若仍不倒数，查看是否有锁形、钥匙或暂停提示；不要拆机。",
+      "user_intent": "询问相同故障再次发生时的安全处理步骤",
+      "assistant_intent": "提供一次简单复位和重新测试流程，再引导检查锁定提示并禁止拆机",
+      "semantic_goal": "获得门和计时正常但仍无响应时的排查方法",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A009",
+        "user_onset_after_text": "这个新信息让“操作遗漏”更可能：门当时像已扣住，而计时确实为零。不过仅凭咔哒声不能百分百确认门锁状态。",
+        "assistant_stop_after_text": "这个新信息让“操作遗漏”更可能：门当时像已扣住，而计时确实为零。不过仅凭咔哒声不能百分百确认门锁状态。"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U11",
+      "assistant_id": "A011",
+      "user_utterance": "可图标太小，我看不清。你先告诉我，能不能随便长按一个键解锁？",
+      "assistant_utterance": "别盲目长按，解锁组合因型号不同。可以先用手机放大或请人读出面板和型号，再按说明书确认；若按键也无反馈，就停用并找售后，绝不要拆外壳。",
+      "user_intent": "打断视觉检查说明并询问能否盲目长按按键解锁",
+      "assistant_intent": "阻止猜测式解锁，提供适合看不清面板时的替代办法和维修边界",
+      "semantic_goal": "避免误操作并找到可靠的锁定状态确认方式",
+      "act_ref": "A02",
+      "timing_refs": [
+        "T03"
+      ],
+      "timing": {
+        "target_assistant_id": "A010",
+        "user_onset_after_text": "先按取消或停止一次，让面板回到待机，再重新设短时间并只按一次启动。若仍不倒数，",
+        "assistant_stop_after_text": "先按取消或停止一次，让面板回到待机，再重新设短时间并只按一次启动。若仍不倒数，查看是"
+      },
+      "pause_cue": null
+    },
+    {
+      "user_id": "U12",
+      "assistant_id": "A012",
+      "user_utterance": "好，最后按先后顺序给我念一遍吧，什么情况要马上停用也一起说。",
+      "assistant_utterance": "顺序是：一，确认门边贴合并扣住；二，看计时不是零；三，确认没有锁定或暂停提示；四，只按一次启动，看数字是否倒数并听转盘、风扇。门紧、计时非零仍无反馈，就停止使用并查说明书或售后。出现烟、火花、焦味、巨响、漏电迹象或电源线损坏，立即停用并安全断电，绝不拆壳。",
+      "user_intent": "要求完整回顾排查顺序和立即停用条件",
+      "assistant_intent": "按优先级总结外部观察步骤、异常判断和关键安全限制",
+      "semantic_goal": "形成可记忆的排查流程与明确的停止使用标准",
+      "act_ref": "A03",
+      "timing_refs": [
+        "T01"
+      ],
+      "timing": {
+        "target_assistant_id": "A011",
+        "user_onset_after_text": "别盲目长按，解锁组合因型号不同。可以先用手机放大或请人读出面板和型号，再按说明书确认；若按键也无反馈，就停用并找售后，绝不要拆外壳。",
+        "assistant_stop_after_text": "别盲目长按，解锁组合因型号不同。可以先用手机放大或请人读出面板和型号，再按说明书确认；若按键也无反馈，就停用并找售后，绝不要拆外壳。"
+      },
+      "pause_cue": null
+    }
+  ],
+  "backchannels": [
+    {
+      "event_id": "BC01",
+      "target_assistant_id": "A001",
+      "after_text": "先确认炉门。沿门边按一圈，再在把手侧推到明显扣住；",
+      "text": "嗯，好"
+    },
+    {
+      "event_id": "BC02",
+      "target_assistant_id": "A004",
+      "after_text": "对，单凭显示零不能判定故障，只表示还没设加热时间。",
+      "text": "明白"
+    },
+    {
+      "event_id": "BC03",
+      "target_assistant_id": "A008",
+      "after_text": "能扣门后设时启动，只能判断两者都已排除，不能倒推出刚才是哪一个。",
+      "text": "嗯"
+    },
+    {
+      "event_id": "BC04",
+      "target_assistant_id": "A011",
+      "after_text": "别盲目长按，解锁组合因型号不同。",
+      "text": "好，知道了"
+    }
+  ],
+  "side_speech": [],
+  "environment_events": []
+}

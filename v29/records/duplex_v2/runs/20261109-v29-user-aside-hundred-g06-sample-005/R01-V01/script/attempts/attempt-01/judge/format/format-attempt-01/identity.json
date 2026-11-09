@@ -1,0 +1,4379 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 15 轮，允许 14–15 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 按下方V2.9用户旁话规则审查；第三方与机器旁语仍遵守冻结声源与信息边界。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 必须逐字匹配对应源；用户声源的recipient须逐字匹配且不含voice_profile，其余声源的voice_profile逐字匹配，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。\n[V2.9 用户对同场旁人说话]\n定稿根schema_version为duplex_v2.fixed_script.v3；根字段和原主轮字段不变，quiet声景也保留空environment_events和side_speech。\nside_speech仍只用已冻结的side_speech_sources，数量严格等于side_speech_count。第三方/机器的原字段不变。若冻结源speaker=user，每项严格只有event_id、source_id、target_assistant_id、after_text、text、speaker、recipient、gain；speaker=\"user\"，recipient逐字复制冻结源的同场接收者，不填写voice_profile、voice_source或其他字段。用户音色、克隆参考和表达画像由程序复用主用户，不另造声音。\n用户旁话是用户在助手已开始且仍在实际播报时对旁人说的短句，例如对已在场的小林说“小林，把杯子递给我一下”。台词应自然且接收对象可辨，不能只有“等等”这类不明确话语；不能作为对助手的新请求、附和、打断或主对话轮，也不能泄漏关键任务材料。接收者必须来自冻结场景，不能为了配额新增人物。\ntarget_assistant_id仍指作为音频host的助手A，不是旁话接收对象；after_text是A从首字开始的完整非终止已播前缀。用户旁话起声必须早于下一次用户主表达，且完整音频须装入实际会播出的A范围，与同一用户的主句、附和或另一旁话都不重叠。不要在助手将被真正打断的尾端强塞旁话，不把事件安排在未播尾部；不恢复“用户主句暂停→转头旁话→再继续主句”的模式。\n旁话期间助手继续同一段原音频，不停顿、不让出话权、不增加新回答；后续助手不回应或复述旁话，不把它吸收为任务事实。旁话分类依赖接收对象和语义，不依赖其音量；gain仍在0.3–0.7。用户的旁话仍符合其冻结表达画像。\n上述方向、继续播报与stop_required=false是数据审查/监督标注，不是提前透露给在线模型的输入。仅使用原Judge和局部修复预算：审查台词是否确实面向旁人、主线与已听因果是否保持；只按findings最小修复，并在助手正文变更时同步相关精确锚点。\n\n",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-005-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 3650002718,
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g06/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g06/relay-state",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D29",
+          "domain": "宠物、动物与生态互动",
+          "scenario_id": "D29-S04",
+          "scenario": "宠物饮食与营养"
+        },
+        "task_style": "结构化整理",
+        "task_instance": {
+          "goal": "把随后提供的宠物近一周喂食记录、主粮和零食标签、补充品信息及家庭成员的喂食习惯整理成一份每日摄入清单，区分正餐、零食和额外补充，标出份量或成分缺失、重复摄入及需要进一步核对的营养事项。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "负责照顾家中老年犬日常饮食的主要饲养人",
+          "task_familiarity": "medium"
+        },
+        "voice_profile": "女性，四十多岁，音色温和偏低，吐字清楚，语速平稳，带有轻微的谨慎感。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "casual",
+          "directness": "direct",
+          "emotional_expressiveness": "balanced",
+          "verbosity": "brief",
+          "initiative": "medium",
+          "caution": "high",
+          "patience": "medium",
+          "behavioral_notes": [
+            "通常直接给出已有信息，并在不确定处主动说明自己记不清或需要核对。",
+            "倾向于先确认分类和判断依据，再继续补充下一组材料。",
+            "表达情绪较自然，发现遗漏时会简短地表现出担心，但不会反复强调。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "medium",
+        "target_turns": 15,
+        "min_turns": 14,
+        "max_turns": 15
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v3",
+        "seed": 4275011556,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "user_to_third_party",
+          "machine",
+          "third_party"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "2026年11月9日晚上，用户独自在家中厨房整理老年犬“豆包”的饮食资料，豆包正安静地趴在相邻的客厅里。豆包是用户负责日常照顾的12岁已绝育公犬，目前体重11.8公斤，最近两周出现过三次软便，体重也比8月称量时增加了0.7公斤。用户已经约好次日带豆包复诊，兽医此前请她尽量带上一周的完整喂食记录，以便了解正餐之外是否还有容易遗漏的摄入。她把11月2日至11月8日的手写记录、仍在使用的主粮包装、零食袋和两种补充品放到了餐桌上。记录按天写了早晚餐，但有些份量来自厨房秤，有些只写了量杯、半根或一小块，不能直接视为等量。用户通常负责正餐和补充品，丈夫偶尔在晚间遛狗后给肉条，女儿会用洁齿棒或训练粒逗豆包。两位家人已经回忆并补写了部分零食记录，不过仍有一处“抓了一把”和一处肉条数量没有确认。主粮包装上的营养保证值和建议喂食量仍清晰可读，湿粮餐盒、关节肉条、洁齿棒及训练粒也各有部分标签信息。关节粉和鱼油瓶身写有单次用量及主要有效成分，但用户不能确定周三那勺关节粉是否刮平。她注意到主粮、关节肉条和关节粉的配方中都出现了关节相关成分，因此希望保留各自原始数据，再判断是否存在重复摄入。当前没有购买记录、兽医病历或营养计算软件可供核对，能够使用的只有这些实物标签、手写记录和家人的回忆。整理时应优先按日期区分正餐、零食和额外补充，并保留克、盒、根、片、粒、勺等原始单位。对于缺少重量、热量、成分或实际数量的项目，用户希望明确标成待核对，而不是凭经验换算。尚未解决的问题包括每日总量能否可靠汇总、湿粮是否被误当作完整主食、几种关节相关产品是否重叠，以及哪些事项应在复诊时向兽医确认。",
+        "task_reference_data": [
+          "来自用户手写喂食本、当前可逐行读取：11月2日早上，安享龄全价犬粮55克，关节粉平勺1勺；晚上同款犬粮50克；丈夫记录遛狗后给关节肉条2条；女儿记录洁齿棒半根。11月3日早上，犬粮55克，鱼油1粒；晚上田园鸡肉南瓜鲜食餐盒1盒并混入犬粮20克；另记去核苹果3小片，单片重量未称。",
+          "来自用户手写喂食本、当前可逐行读取：11月4日早上只写犬粮1量杯，未记录克数，并写有关节粉1勺，用户记得这勺可能偏满；晚上犬粮50克；丈夫补写给过关节肉条，但条数记不清。11月5日早上犬粮55克、关节粉平勺1勺；晚上鲜食餐盒1盒并混入犬粮20克；另有洁齿棒1根。",
+          "来自用户手写喂食本和女儿补写内容、当前可读取但部分数量未核实：11月6日早上犬粮55克、鱼油1粒；晚上犬粮50克；丈夫写关节肉条3条；女儿写训练粒一把，未记粒数或重量。",
+          "来自用户手写喂食本、当前可逐行读取：11月7日早上犬粮60克、关节粉平勺1勺；中午去皮水煮鸡胸肉40克；晚上犬粮40克；另有洁齿棒半根。11月8日早上犬粮55克、关节粉平勺1勺、鱼油1粒；晚上鲜食餐盒1盒并混入犬粮20克；另有肉条2条和约10克奶酪。",
+          "来自仍在使用的“安享龄全价犬粮”包装、用户当前可现场朗读：标注为全价老年犬粮，代谢能355千卡/100克；粗蛋白质不低于24%，粗脂肪不低于12%，粗纤维不高于4.5%，水分不高于10%；配料中列有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺；11至13公斤老年犬建议每日145至175克，包装提示应结合体况与其他食物调整。",
+          "来自“田园鸡肉南瓜鲜食餐盒”外包装、用户当前可现场朗读：每盒净含量100克，代谢能82千卡/100克；粗蛋白质不低于8%，粗脂肪不低于4%，水分不高于82%；主要配料为鸡肉、鸡肝、南瓜、胡萝卜和水；品名下方标注“宠物营养补充性食品”，未标注可单独满足每日完整营养需求。",
+          "来自“护关节软肉条”零食袋、用户当前可现场朗读：配料包括鸡肉、甘油、淀粉、葡萄糖胺和硫酸软骨素；保证值写有葡萄糖胺1200毫克/千克、硫酸软骨素800毫克/千克；建议每日不超过3条。包装未给出单条重量或单条热量。",
+          "来自洁齿棒和训练粒包装、用户当前可现场朗读：洁齿棒标注每根约68千卡，建议10至15公斤犬每日不超过1根，未列钠含量；训练粒标注代谢能320千卡/100克，主要配料为鸭肉、马铃薯淀粉和甘油，但颗粒大小不完全一致，包装没有给出每粒重量。",
+          "来自关节粉瓶身、用户当前可现场朗读：10至20公斤犬每日1平勺，每平勺约3克；每平勺含葡萄糖胺450毫克、硫酸软骨素150毫克、MSM 300毫克。瓶身没有说明与含同类成分的主粮或零食同时使用时如何调整。",
+          "来自鱼油瓶身及家庭成员补记、当前可核对：鱼油建议每日1粒，每粒含EPA 180毫克、DHA 120毫克；用户只在记录写到鱼油的日期给过。丈夫通常在晚间遛狗后给肉条，女儿多在傍晚给洁齿棒或训练粒，两人过去不会固定称重，因此未写明的零食不能推定为零摄入。"
+        ],
+        "environment_audio": "室内整体安静，近处只有很轻且稳定的房间底噪。窗户关闭，远处没有清晰可辨的人声或车流声，背景音量基本不变。",
+        "estimated_snr_db": 34,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "整理范围限定为2026年11月2日至11月8日的喂食记录。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "每项摄入必须区分为正餐、零食或额外补充，并保留发生日期。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C03",
+            "text": "缺少重量、数量、热量、成分或实际用量时必须明确标为待核对，不得自行估算。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C04",
+            "text": "克、盒、根、片、粒、勺、量杯和一把等原始单位应先原样保留，只有存在可靠标签依据时才能换算。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C05",
+            "text": "整理结果优先按日期排列，并在相关条目旁保留手写本、包装标签或家庭成员补记等信息来源。",
+            "kind": "soft"
+          }
+        ],
+        "safety_limits": [
+          {
+            "limit_id": "L01",
+            "text": "不能仅凭本次口头整理自行增减关节粉、鱼油或主粮用量；涉及重复营养成分和老年犬长期摄入的调整应留待兽医确认。",
+            "severity": "hard"
+          },
+          {
+            "limit_id": "L02",
+            "text": "软便、体重变化及湿粮营养完整性只能作为复诊核对事项，不能据此作出疾病诊断或替代兽医评估。",
+            "severity": "advisory"
+          }
+        ],
+        "soundscape_plan": {
+          "mode": "quiet",
+          "ambient_layers": [],
+          "environment_events": [],
+          "schema": "duplex_v2.soundscape_plan.v4",
+          "side_speech_sources": [],
+          "side_speech_count": 0,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v3",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v3",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3,
+              "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+              "user_aside_preference_probability": 0.5,
+              "user_voice_source": "stage1_user",
+              "user_aside_requires_present_recipient": true
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611090006,
+              "slot": 4,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "birds",
+                  "fan",
+                  "rain",
+                  "crowd",
+                  "wind",
+                  "traffic"
+                ],
+                "event": [
+                  "paper",
+                  "door",
+                  "keyboard",
+                  "doorbell",
+                  "water_tap",
+                  "footsteps"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-57907",
+                  "birds-fsd50k-eval-319512",
+                  "birds-fsd50k-eval-86343"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-340358",
+                  "crowd-fsd50k-eval-121877",
+                  "crowd-fsd50k-eval-185058"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-419427",
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-235362"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-21189",
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-382582"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-235541",
+                  "traffic-fsd50k-eval-124020",
+                  "traffic-fsd50k-eval-232686"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113175",
+                  "wind-fsd50k-eval-113176",
+                  "wind-fsd50k-eval-113173"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-71212",
+                  "door-fsd50k-eval-209519",
+                  "door-fsd50k-eval-119077"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-348322",
+                  "doorbell-fsd50k-eval-426594",
+                  "doorbell-fsd50k-eval-332563"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-153104",
+                  "footsteps-fsd50k-eval-272381",
+                  "footsteps-fsd50k-eval-392303"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-411545",
+                  "keyboard-fsd50k-eval-399740"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-82562",
+                  "paper-fsd50k-eval-343098",
+                  "paper-fsd50k-eval-121200"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-402127",
+                  "water_tap-fsd50k-eval-232499",
+                  "water_tap-fsd50k-eval-402128"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v3",
+              "seed": 4275011556,
+              "mode": "quiet",
+              "discrete_event_target": 0,
+              "max_ambient_layers": 2,
+              "side_speech_requested": false,
+              "speech_kind_preferences": [
+                "user_to_third_party",
+                "machine",
+                "third_party"
+              ]
+            },
+            "control_sha256": "415fff2d390cbdcaaf1fe9a3abc90881d5f06918073d42bbfbe4e7e49429a6f5",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v4",
+              "mode": "quiet",
+              "ambient_layers": [],
+              "environment_events": [],
+              "side_speech_eligibility": {
+                "user_to_third_party": {
+                  "compatible": false,
+                  "reason": "用户当前独自在厨房整理资料，同场只有不会参与语言交流的宠物，没有已明确的旁人接收者。",
+                  "source": null
+                },
+                "third_party": {
+                  "compatible": false,
+                  "reason": "丈夫和女儿当前均不在场，故事中没有可自然发声的同场第三方人物。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "现场只有纸质记录、包装和普通厨房用品，没有已设定为会播报或提示的机器。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "80b54ed5eae7a322ea75888ea5f18053a4e12516bbc9594707013c8d8c9867ca",
+            "aggregate_environment_audio": "室内整体安静，近处只有很轻且稳定的房间底噪。窗户关闭，远处没有清晰可辨的人声或车流声，背景音量基本不变。",
+            "draws": [],
+            "speech_selection": {
+              "requested": false,
+              "compatible_kinds": [],
+              "selected_kind": null,
+              "outcome": "not_requested",
+              "assessments": {
+                "user_to_third_party": {
+                  "compatible": false,
+                  "reason": "用户当前独自在厨房整理资料，同场只有不会参与语言交流的宠物，没有已明确的旁人接收者。",
+                  "source": null
+                },
+                "third_party": {
+                  "compatible": false,
+                  "reason": "丈夫和女儿当前均不在场，故事中没有可自然发声的同场第三方人物。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "现场只有纸质记录、包装和普通厨房用品，没有已设定为会播报或提示的机器。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v3",
+      "title": "老年犬一周饮食摄入整理",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。",
+          "assistant_utterance": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重量、数量、热量或成分的都标待核对。先从11月2日开始读吧。",
+          "user_intent": "说明整理范围、分类要求和复诊背景。",
+          "assistant_intent": "建立按日期分类、保留原始单位并标记缺失信息的整理规则。",
+          "semantic_goal": "开始制作11月2日至8日的每日摄入清单。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。",
+          "assistant_utterance": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。",
+          "user_intent": "打断规则说明并提供11月2日和3日的逐项记录。",
+          "assistant_intent": "按日期和类别整理前两天摄入，并标出苹果重量缺失。",
+          "semantic_goal": "完成11月2日和3日的初步分类。",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；",
+            "assistant_stop_after_text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。",
+          "assistant_utterance": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。",
+          "user_intent": "补充11月4日记录并主动说明三个不确定点。",
+          "assistant_intent": "保留量杯和勺的原始单位，分别标记克数、条数和实际用量缺失。",
+          "semantic_goal": "完成11月4日分类且不对不确定份量作估算。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。",
+            "assistant_stop_after_text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。",
+          "assistant_utterance": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。",
+          "user_intent": "提供11月5日和6日的喂食记录。",
+          "assistant_intent": "完成两日分类，并保留训练粒一把这一原始单位。",
+          "semantic_goal": "将11月5日和6日摄入纳入清单。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。",
+            "assistant_stop_after_text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。",
+          "assistant_utterance": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。",
+          "user_intent": "确认模糊份量是否可以按经验换算。",
+          "assistant_intent": "明确拒绝无依据估算，并说明缺少重量时无法由标签换算热量。",
+          "semantic_goal": "确保训练粒的数量和热量保持待核对状态。",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。",
+            "assistant_stop_after_text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U06",
+          "assistant_id": "A006",
+          "user_utterance": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。",
+          "assistant_utterance": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。",
+          "user_intent": "提供11月7日和8日的完整手写记录。",
+          "assistant_intent": "按日期整理最后两天并保留半根、盒和约10克等原始表述。",
+          "semantic_goal": "补齐一周每日摄入记录。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A005",
+            "user_onset_after_text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。",
+            "assistant_stop_after_text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          "pause_cue": {
+            "after_text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U07",
+          "assistant_id": "A007",
+          "user_utterance": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。",
+          "assistant_utterance": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现有按克记录可据此换算主粮热量，但量杯那次不能换算；结合其他食物前，不宜拿建议量直接判断多或少。",
+          "user_intent": "朗读主粮的品类、能量、保证值、配料和建议喂食量。",
+          "assistant_intent": "记录主粮标签依据，并区分可按克换算与不可换算的记录。",
+          "semantic_goal": "建立主粮热量和营养信息的可靠标签来源。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A006",
+            "user_onset_after_text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。",
+            "assistant_stop_after_text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U08",
+          "assistant_id": "A008",
+          "user_utterance": "先等等，餐盒标签也得单独标。每盒100克，每100克82千卡，蛋白不低于8%，脂肪不低于4%，水分不高于82%。配料是鸡肉、鸡肝、南瓜、胡萝卜和水，但它写的是宠物营养补充性食品。",
+          "assistant_utterance": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。",
+          "user_intent": "打断主粮分析，补充餐盒标签并强调其补充性食品属性。",
+          "assistant_intent": "记录餐盒可靠换算信息，同时标明其营养完整性需要兽医核对。",
+          "semantic_goal": "避免把餐盒误当作可独立满足完整营养的主食。",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A007",
+            "user_onset_after_text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。",
+            "assistant_stop_after_text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U09",
+          "assistant_id": "A009",
+          "user_utterance": "肉条有鸡肉、甘油、淀粉、葡萄糖胺和硫酸软骨素，每公斤分别是1200毫克和800毫克，建议每天不超过3条，但没写单条重量和热量。洁齿棒每根约68千卡，10到15公斤每天不超过1根，没列钠含量。",
+          "assistant_utterance": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。",
+          "user_intent": "提供肉条和洁齿棒的标签信息及缺失项。",
+          "assistant_intent": "区分可可靠换算的洁齿棒与无法按条换算的肉条。",
+          "semantic_goal": "为两类零食补充热量、成分及待核对标记。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A008",
+            "user_onset_after_text": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。",
+            "assistant_stop_after_text": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U10",
+          "assistant_id": "A010",
+          "user_utterance": "训练粒每100克320千卡，配料是鸭肉、马铃薯淀粉和甘油，颗粒大小还不一样，也没写每粒重量。关节粉是10到20公斤犬每天1平勺，每平勺约3克，含葡萄糖胺450毫克、软骨素150毫克、MSM 300毫克。",
+          "assistant_utterance": "训练粒标签能量和配料可记录，但“一把”仍不能换算。关节粉的平勺重量与三种成分可逐日关联；4日因可能偏满，实际克数和成分摄入量仍待核对。主粮、肉条和关节粉都出现关节相关成分，应保留原值并列为重复摄入关注项。",
+          "user_intent": "补充训练粒和关节粉标签，并提供关节粉单次成分量。",
+          "assistant_intent": "记录可用标签数据，维持模糊份量待核对，并识别关节成分重复来源。",
+          "semantic_goal": "形成训练粒缺失项和关节成分重复摄入标记。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A009",
+            "user_onset_after_text": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。",
+            "assistant_stop_after_text": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U11",
+          "assistant_id": "A011",
+          "user_utterance": "鱼油是每天1粒，每粒EPA 180毫克、DHA 120毫克，我只在本子写到的那几天给过。肉条多是丈夫遛狗后给，洁齿棒和训练粒多是女儿傍晚给，以前都不固定称，所以没写的不一定就是没吃。",
+          "assistant_utterance": "鱼油只登记在3日、6日和8日，每次1粒，并关联EPA 180毫克、DHA 120毫克。家人补记作为零食来源保留；未记录的零食不能推定为零摄入，应注明记录可能不完整，因此每日总量和总热量暂不能可靠汇总。",
+          "user_intent": "说明鱼油实际使用日期和家庭成员喂零食的记录习惯。",
+          "assistant_intent": "限定鱼油记录范围，并标明未记录零食造成的完整性问题。",
+          "semantic_goal": "避免把空白记录误解为当天没有额外零食。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A010",
+            "user_onset_after_text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。关节粉的平勺重量与三种成分可逐日关联；4日因可能偏满，实际克数和成分摄入量仍待核对。主粮、肉条和关节粉都出现关节相关成分，应保留原值并列为重复摄入关注项。",
+            "assistant_stop_after_text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。关节粉的平勺重量与三种成分可逐日关联；4日因可能偏满，实际克数和成分摄入量仍待核对。主粮、肉条和关节粉都出现关节相关成分，应保留原值并列为重复摄入关注项。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U12",
+          "assistant_id": "A012",
+          "user_utterance": "先把2日到5日按日期完整回读一遍，分类和待核对项都带上。",
+          "assistant_utterance": "2日正餐犬粮55克、50克；零食肉条2条、洁齿棒半根；补充关节粉平勺1勺。3日正餐犬粮55克、餐盒1盒加犬粮20克；零食苹果3小片，单片重量待核对；补充鱼油1粒。4日正餐犬粮1量杯、50克，量杯克数待核对；零食肉条数量待核对；补充关节粉1勺，是否平勺待核对。5日正餐犬粮55克、餐盒1盒加犬粮20克；零食洁齿棒1根；补充关节粉平勺1勺。来源为手写本和家人补记。",
+          "user_intent": "要求完整核对11月2日至5日的分类清单。",
+          "assistant_intent": "按日期回读四天记录，包含原始单位、分类、来源和缺失信息。",
+          "semantic_goal": "确认前四天清单没有遗漏或错误换算。",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A011",
+            "user_onset_after_text": "鱼油只登记在3日、6日和8日，每次1粒，并关联EPA 180毫克、DHA 120毫克。家人补记作为零食来源保留；未记录的零食不能推定为零摄入，应注明记录可能不完整，因此每日总量和总热量暂不能可靠汇总。",
+            "assistant_stop_after_text": "鱼油只登记在3日、6日和8日，每次1粒，并关联EPA 180毫克、DHA 120毫克。家人补记作为零食来源保留；未记录的零食不能推定为零摄入，应注明记录可能不完整，因此每日总量和总热量暂不能可靠汇总。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U13",
+          "assistant_id": "A013",
+          "user_utterance": "这部分对。再回读6日到8日。7日的鸡胸肉就是中午那顿，按正餐记。",
+          "assistant_utterance": "6日正餐犬粮55克、50克；零食肉条3条、训练粒一把，粒数和重量待核对；补充鱼油1粒。7日正餐犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食洁齿棒半根；补充关节粉平勺1勺。8日正餐犬粮55克、餐盒1盒加犬粮20克；零食肉条2条、奶酪约10克；补充关节粉平勺1勺、鱼油1粒。来源为手写本和家人补记。",
+          "user_intent": "确认前段清单，明确鸡胸肉类别并要求回读后三天。",
+          "assistant_intent": "依据用户确认将鸡胸肉归入正餐，完整回读11月6日至8日。",
+          "semantic_goal": "确认后三天清单及鸡胸肉的分类。",
+          "act_ref": "A04",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A012",
+            "user_onset_after_text": "2日正餐犬粮55克、50克；零食肉条2条、洁齿棒半根；补充关节粉平勺1勺。3日正餐犬粮55克、餐盒1盒加犬粮20克；零食苹果3小片，单片重量待核对；补充鱼油1粒。4日正餐犬粮1量杯、50克，量杯克数待核对；零食肉条数量待核对；补充关节粉1勺，是否平勺待核对。5日正餐犬粮55克、餐盒1盒加犬粮20克；零食洁齿棒1根；补充关节粉平勺1勺。来源为手写本和家人补记。",
+            "assistant_stop_after_text": "2日正餐犬粮55克、50克；零食肉条2条、洁齿棒半根；补充关节粉平勺1勺。3日正餐犬粮55克、餐盒1盒加犬粮20克；零食苹果3小片，单片重量待核对；补充鱼油1粒。4日正餐犬粮1量杯、50克，量杯克数待核对；零食肉条数量待核对；补充关节粉1勺，是否平勺待核对。5日正餐犬粮55克、餐盒1盒加犬粮20克；零食洁齿棒1根；补充关节粉平勺1勺。来源为手写本和家人补记。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U14",
+          "assistant_id": "A014",
+          "user_utterance": "再把缺失、重复和明天要问兽医的事项归拢一下，但别直接建议我改用量。",
+          "assistant_utterance": "待核对：4日量杯克数、偏满勺实际量、4日肉条条数、训练粒一把的粒数或重量，以及苹果单片、肉条单条的重量和热量、洁齿棒钠含量。重复关注：主粮、肉条、关节粉均含关节相关成分。复诊确认餐盒的使用方式、每日总能量、体重增加与软便情况，以及补充品是否需要调整。",
+          "user_intent": "要求汇总数据缺口、重复成分和复诊问题，同时限制不得擅自改量。",
+          "assistant_intent": "归纳待核对项与兽医确认事项，不作诊断或剂量调整建议。",
+          "semantic_goal": "形成可直接带去复诊的问题清单。",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A013",
+            "user_onset_after_text": "6日正餐犬粮55克、50克；零食肉条3条、训练粒一把，粒数和重量待核对；补充鱼油1粒。7日正餐犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食洁齿棒半根；补充关节粉平勺1勺。8日正餐犬粮55克、餐盒1盒加犬粮20克；零食肉条2条、奶酪约10克；补充关节粉平勺1勺、鱼油1粒。来源为手写本和家人补记。",
+            "assistant_stop_after_text": "6日正餐犬粮55克、50克；零食肉条3条、训练粒一把，粒数和重量待核对；补充鱼油1粒。7日正餐犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食洁齿棒半根；补充关节粉平勺1勺。8日正餐犬粮55克、餐盒1盒加犬粮20克；零食肉条2条、奶酪约10克；补充关节粉平勺1勺、鱼油1粒。来源为手写本和家人补记。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U15",
+          "assistant_id": "A015",
+          "user_utterance": "最后确认一下，这份现在能不能算完整？我明天具体把哪些材料带上？",
+          "assistant_utterance": "它可作为复诊草稿，但还不能算完整，也无法可靠汇总每天总摄入和总热量，因为存在未称量零食、未知热量及可能漏记。带上手写本、主粮和零食包装、餐盒外包装、关节粉与鱼油瓶身，并把待核对清单交给兽医判断；复诊前不要自行调整主粮、关节粉或鱼油。",
+          "user_intent": "确认清单完整程度并询问复诊需要携带的资料。",
+          "assistant_intent": "说明当前清单局限，列出应携带的现有实物资料并重申不得自行调量。",
+          "semantic_goal": "明确整理成果的可用范围并为次日复诊做好准备。",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A014",
+            "user_onset_after_text": "待核对：4日量杯克数、偏满勺实际量、4日肉条条数、训练粒一把的粒数或重量，以及苹果单片、肉条单条的重量和热量、洁齿棒钠含量。重复关注：主粮、肉条、关节粉均含关节相关成分。复诊确认餐盒的使用方式、每日总能量、体重增加与软便情况，以及补充品是否需要调整。",
+            "assistant_stop_after_text": "待核对：4日量杯克数、偏满勺实际量、4日肉条条数、训练粒一把的粒数或重量，以及苹果单片、肉条单条的重量和热量、洁齿棒钠含量。重复关注：主粮、肉条、关节粉均含关节相关成分。复诊确认餐盒的使用方式、每日总能量、体重增加与软便情况，以及补充品是否需要调整。"
+          },
+          "pause_cue": null
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；",
+          "text": "嗯"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A004",
+          "after_text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。",
+          "text": "对"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A006",
+          "after_text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。",
+          "text": "嗯，没错"
+        },
+        {
+          "event_id": "BC04",
+          "target_assistant_id": "A010",
+          "after_text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。",
+          "text": "明白"
+        },
+        {
+          "event_id": "BC05",
+          "target_assistant_id": "A012",
+          "after_text": "2日正餐犬粮55克、50克；零食肉条2条、洁齿棒半根；补充关节粉平勺1勺。3日正餐犬粮55克、餐盒1盒加犬粮20克；零食苹果3小片，单片重量待核对；补充鱼油1粒。",
+          "text": "对"
+        }
+      ],
+      "side_speech": [],
+      "environment_events": []
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重量、数量、热量或成分的都标待核对。先从11月2日开始读吧。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；",
+          "final_shared_played_prefix": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重",
+          "discarded_unheard_tail": "量、数量、热量或成分的都标待核对。先从11月2日开始读吧。"
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。",
+          "final_shared_played_prefix": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。",
+          "final_shared_played_prefix": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。",
+          "final_shared_played_prefix": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A005",
+          "at_user_onset_heard_prefix": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。",
+          "final_shared_played_prefix": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A006",
+          "at_user_onset_heard_prefix": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。",
+          "final_shared_played_prefix": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A006",
+            "after_text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。",
+            "text": "嗯，没错",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现有按克记录可据此换算主粮热量，但量杯那次不能换算；结合其他食物前，不宜拿建议量直接判断多或少。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "先等等，餐盒标签也得单独标。每盒100克，每100克82千卡，蛋白不低于8%，脂肪不低于4%，水分不高于82%。配料是鸡肉、鸡肝、南瓜、胡萝卜和水，但它写的是宠物营养补充性食品。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A007",
+          "at_user_onset_heard_prefix": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。",
+          "final_shared_played_prefix": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现",
+          "discarded_unheard_tail": "有按克记录可据此换算主粮热量，但量杯那次不能换算；结合其他食物前，不宜拿建议量直接判断多或少。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A006",
+            "after_text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。",
+            "text": "嗯，没错",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "先等等，餐盒标签也得单独标。每盒100克，每100克82千卡，蛋白不低于8%，脂肪不低于4%，水分不高于82%。配料是鸡肉、鸡肝、南瓜、胡萝卜和水，但它写的是宠物营养补充性食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "先等等，餐盒标签也得单独标。每盒100克，每100克82千卡，蛋白不低于8%，脂肪不低于4%，水分不高于82%。配料是鸡肉、鸡肝、南瓜、胡萝卜和水，但它写的是宠物营养补充性食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "肉条有鸡肉、甘油、淀粉、葡萄糖胺和硫酸软骨素，每公斤分别是1200毫克和800毫克，建议每天不超过3条，但没写单条重量和热量。洁齿棒每根约68千卡，10到15公斤每天不超过1根，没列钠含量。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A008",
+          "at_user_onset_heard_prefix": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。",
+          "final_shared_played_prefix": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A006",
+            "after_text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。",
+            "text": "嗯，没错",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "先等等，餐盒标签也得单独标。每盒100克，每100克82千卡，蛋白不低于8%，脂肪不低于4%，水分不高于82%。配料是鸡肉、鸡肝、南瓜、胡萝卜和水，但它写的是宠物营养补充性食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "肉条有鸡肉、甘油、淀粉、葡萄糖胺和硫酸软骨素，每公斤分别是1200毫克和800毫克，建议每天不超过3条，但没写单条重量和热量。洁齿棒每根约68千卡，10到15公斤每天不超过1根，没列钠含量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "先等等，餐盒标签也得单独标。每盒100克，每100克82千卡，蛋白不低于8%，脂肪不低于4%，水分不高于82%。配料是鸡肉、鸡肝、南瓜、胡萝卜和水，但它写的是宠物营养补充性食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "肉条有鸡肉、甘油、淀粉、葡萄糖胺和硫酸软骨素，每公斤分别是1200毫克和800毫克，建议每天不超过3条，但没写单条重量和热量。洁齿棒每根约68千卡，10到15公斤每天不超过1根，没列钠含量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "训练粒每100克320千卡，配料是鸭肉、马铃薯淀粉和甘油，颗粒大小还不一样，也没写每粒重量。关节粉是10到20公斤犬每天1平勺，每平勺约3克，含葡萄糖胺450毫克、软骨素150毫克、MSM 300毫克。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A009",
+          "at_user_onset_heard_prefix": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。",
+          "final_shared_played_prefix": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A006",
+            "after_text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。",
+            "text": "嗯，没错",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "训练粒标签能量和配料可记录，但“一把”仍不能换算。关节粉的平勺重量与三种成分可逐日关联；4日因可能偏满，实际克数和成分摄入量仍待核对。主粮、肉条和关节粉都出现关节相关成分，应保留原值并列为重复摄入关注项。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U11",
+        "assistant_id": "A011",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "先等等，餐盒标签也得单独标。每盒100克，每100克82千卡，蛋白不低于8%，脂肪不低于4%，水分不高于82%。配料是鸡肉、鸡肝、南瓜、胡萝卜和水，但它写的是宠物营养补充性食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "肉条有鸡肉、甘油、淀粉、葡萄糖胺和硫酸软骨素，每公斤分别是1200毫克和800毫克，建议每天不超过3条，但没写单条重量和热量。洁齿棒每根约68千卡，10到15公斤每天不超过1根，没列钠含量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "训练粒每100克320千卡，配料是鸭肉、马铃薯淀粉和甘油，颗粒大小还不一样，也没写每粒重量。关节粉是10到20公斤犬每天1平勺，每平勺约3克，含葡萄糖胺450毫克、软骨素150毫克、MSM 300毫克。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。关节粉的平勺重量与三种成分可逐日关联；4日因可能偏满，实际克数和成分摄入量仍待核对。主粮、肉条和关节粉都出现关节相关成分，应保留原值并列为重复摄入关注项。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "先等等，餐盒标签也得单独标。每盒100克，每100克82千卡，蛋白不低于8%，脂肪不低于4%，水分不高于82%。配料是鸡肉、鸡肝、南瓜、胡萝卜和水，但它写的是宠物营养补充性食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "肉条有鸡肉、甘油、淀粉、葡萄糖胺和硫酸软骨素，每公斤分别是1200毫克和800毫克，建议每天不超过3条，但没写单条重量和热量。洁齿棒每根约68千卡，10到15公斤每天不超过1根，没列钠含量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "训练粒每100克320千卡，配料是鸭肉、马铃薯淀粉和甘油，颗粒大小还不一样，也没写每粒重量。关节粉是10到20公斤犬每天1平勺，每平勺约3克，含葡萄糖胺450毫克、软骨素150毫克、MSM 300毫克。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。关节粉的平勺重量与三种成分可逐日关联；4日因可能偏满，实际克数和成分摄入量仍待核对。主粮、肉条和关节粉都出现关节相关成分，应保留原值并列为重复摄入关注项。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "鱼油是每天1粒，每粒EPA 180毫克、DHA 120毫克，我只在本子写到的那几天给过。肉条多是丈夫遛狗后给，洁齿棒和训练粒多是女儿傍晚给，以前都不固定称，所以没写的不一定就是没吃。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A010",
+          "at_user_onset_heard_prefix": "训练粒标签能量和配料可记录，但“一把”仍不能换算。关节粉的平勺重量与三种成分可逐日关联；4日因可能偏满，实际克数和成分摄入量仍待核对。主粮、肉条和关节粉都出现关节相关成分，应保留原值并列为重复摄入关注项。",
+          "final_shared_played_prefix": "训练粒标签能量和配料可记录，但“一把”仍不能换算。关节粉的平勺重量与三种成分可逐日关联；4日因可能偏满，实际克数和成分摄入量仍待核对。主粮、肉条和关节粉都出现关节相关成分，应保留原值并列为重复摄入关注项。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A006",
+            "after_text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。",
+            "text": "嗯，没错",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A010",
+            "after_text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "鱼油只登记在3日、6日和8日，每次1粒，并关联EPA 180毫克、DHA 120毫克。家人补记作为零食来源保留；未记录的零食不能推定为零摄入，应注明记录可能不完整，因此每日总量和总热量暂不能可靠汇总。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U12",
+        "assistant_id": "A012",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "先等等，餐盒标签也得单独标。每盒100克，每100克82千卡，蛋白不低于8%，脂肪不低于4%，水分不高于82%。配料是鸡肉、鸡肝、南瓜、胡萝卜和水，但它写的是宠物营养补充性食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "肉条有鸡肉、甘油、淀粉、葡萄糖胺和硫酸软骨素，每公斤分别是1200毫克和800毫克，建议每天不超过3条，但没写单条重量和热量。洁齿棒每根约68千卡，10到15公斤每天不超过1根，没列钠含量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "训练粒每100克320千卡，配料是鸭肉、马铃薯淀粉和甘油，颗粒大小还不一样，也没写每粒重量。关节粉是10到20公斤犬每天1平勺，每平勺约3克，含葡萄糖胺450毫克、软骨素150毫克、MSM 300毫克。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。关节粉的平勺重量与三种成分可逐日关联；4日因可能偏满，实际克数和成分摄入量仍待核对。主粮、肉条和关节粉都出现关节相关成分，应保留原值并列为重复摄入关注项。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "鱼油是每天1粒，每粒EPA 180毫克、DHA 120毫克，我只在本子写到的那几天给过。肉条多是丈夫遛狗后给，洁齿棒和训练粒多是女儿傍晚给，以前都不固定称，所以没写的不一定就是没吃。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "鱼油只登记在3日、6日和8日，每次1粒，并关联EPA 180毫克、DHA 120毫克。家人补记作为零食来源保留；未记录的零食不能推定为零摄入，应注明记录可能不完整，因此每日总量和总热量暂不能可靠汇总。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "先等等，餐盒标签也得单独标。每盒100克，每100克82千卡，蛋白不低于8%，脂肪不低于4%，水分不高于82%。配料是鸡肉、鸡肝、南瓜、胡萝卜和水，但它写的是宠物营养补充性食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "肉条有鸡肉、甘油、淀粉、葡萄糖胺和硫酸软骨素，每公斤分别是1200毫克和800毫克，建议每天不超过3条，但没写单条重量和热量。洁齿棒每根约68千卡，10到15公斤每天不超过1根，没列钠含量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "训练粒每100克320千卡，配料是鸭肉、马铃薯淀粉和甘油，颗粒大小还不一样，也没写每粒重量。关节粉是10到20公斤犬每天1平勺，每平勺约3克，含葡萄糖胺450毫克、软骨素150毫克、MSM 300毫克。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。关节粉的平勺重量与三种成分可逐日关联；4日因可能偏满，实际克数和成分摄入量仍待核对。主粮、肉条和关节粉都出现关节相关成分，应保留原值并列为重复摄入关注项。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "鱼油是每天1粒，每粒EPA 180毫克、DHA 120毫克，我只在本子写到的那几天给过。肉条多是丈夫遛狗后给，洁齿棒和训练粒多是女儿傍晚给，以前都不固定称，所以没写的不一定就是没吃。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "鱼油只登记在3日、6日和8日，每次1粒，并关联EPA 180毫克、DHA 120毫克。家人补记作为零食来源保留；未记录的零食不能推定为零摄入，应注明记录可能不完整，因此每日总量和总热量暂不能可靠汇总。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "先把2日到5日按日期完整回读一遍，分类和待核对项都带上。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A011",
+          "at_user_onset_heard_prefix": "鱼油只登记在3日、6日和8日，每次1粒，并关联EPA 180毫克、DHA 120毫克。家人补记作为零食来源保留；未记录的零食不能推定为零摄入，应注明记录可能不完整，因此每日总量和总热量暂不能可靠汇总。",
+          "final_shared_played_prefix": "鱼油只登记在3日、6日和8日，每次1粒，并关联EPA 180毫克、DHA 120毫克。家人补记作为零食来源保留；未记录的零食不能推定为零摄入，应注明记录可能不完整，因此每日总量和总热量暂不能可靠汇总。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A006",
+            "after_text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。",
+            "text": "嗯，没错",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A010",
+            "after_text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "2日正餐犬粮55克、50克；零食肉条2条、洁齿棒半根；补充关节粉平勺1勺。3日正餐犬粮55克、餐盒1盒加犬粮20克；零食苹果3小片，单片重量待核对；补充鱼油1粒。4日正餐犬粮1量杯、50克，量杯克数待核对；零食肉条数量待核对；补充关节粉1勺，是否平勺待核对。5日正餐犬粮55克、餐盒1盒加犬粮20克；零食洁齿棒1根；补充关节粉平勺1勺。来源为手写本和家人补记。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U13",
+        "assistant_id": "A013",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "先等等，餐盒标签也得单独标。每盒100克，每100克82千卡，蛋白不低于8%，脂肪不低于4%，水分不高于82%。配料是鸡肉、鸡肝、南瓜、胡萝卜和水，但它写的是宠物营养补充性食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "肉条有鸡肉、甘油、淀粉、葡萄糖胺和硫酸软骨素，每公斤分别是1200毫克和800毫克，建议每天不超过3条，但没写单条重量和热量。洁齿棒每根约68千卡，10到15公斤每天不超过1根，没列钠含量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "训练粒每100克320千卡，配料是鸭肉、马铃薯淀粉和甘油，颗粒大小还不一样，也没写每粒重量。关节粉是10到20公斤犬每天1平勺，每平勺约3克，含葡萄糖胺450毫克、软骨素150毫克、MSM 300毫克。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。关节粉的平勺重量与三种成分可逐日关联；4日因可能偏满，实际克数和成分摄入量仍待核对。主粮、肉条和关节粉都出现关节相关成分，应保留原值并列为重复摄入关注项。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "鱼油是每天1粒，每粒EPA 180毫克、DHA 120毫克，我只在本子写到的那几天给过。肉条多是丈夫遛狗后给，洁齿棒和训练粒多是女儿傍晚给，以前都不固定称，所以没写的不一定就是没吃。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "鱼油只登记在3日、6日和8日，每次1粒，并关联EPA 180毫克、DHA 120毫克。家人补记作为零食来源保留；未记录的零食不能推定为零摄入，应注明记录可能不完整，因此每日总量和总热量暂不能可靠汇总。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "先把2日到5日按日期完整回读一遍，分类和待核对项都带上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "2日正餐犬粮55克、50克；零食肉条2条、洁齿棒半根；补充关节粉平勺1勺。3日正餐犬粮55克、餐盒1盒加犬粮20克；零食苹果3小片，单片重量待核对；补充鱼油1粒。4日正餐犬粮1量杯、50克，量杯克数待核对；零食肉条数量待核对；补充关节粉1勺，是否平勺待核对。5日正餐犬粮55克、餐盒1盒加犬粮20克；零食洁齿棒1根；补充关节粉平勺1勺。来源为手写本和家人补记。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "先等等，餐盒标签也得单独标。每盒100克，每100克82千卡，蛋白不低于8%，脂肪不低于4%，水分不高于82%。配料是鸡肉、鸡肝、南瓜、胡萝卜和水，但它写的是宠物营养补充性食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "肉条有鸡肉、甘油、淀粉、葡萄糖胺和硫酸软骨素，每公斤分别是1200毫克和800毫克，建议每天不超过3条，但没写单条重量和热量。洁齿棒每根约68千卡，10到15公斤每天不超过1根，没列钠含量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "训练粒每100克320千卡，配料是鸭肉、马铃薯淀粉和甘油，颗粒大小还不一样，也没写每粒重量。关节粉是10到20公斤犬每天1平勺，每平勺约3克，含葡萄糖胺450毫克、软骨素150毫克、MSM 300毫克。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。关节粉的平勺重量与三种成分可逐日关联；4日因可能偏满，实际克数和成分摄入量仍待核对。主粮、肉条和关节粉都出现关节相关成分，应保留原值并列为重复摄入关注项。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "鱼油是每天1粒，每粒EPA 180毫克、DHA 120毫克，我只在本子写到的那几天给过。肉条多是丈夫遛狗后给，洁齿棒和训练粒多是女儿傍晚给，以前都不固定称，所以没写的不一定就是没吃。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "鱼油只登记在3日、6日和8日，每次1粒，并关联EPA 180毫克、DHA 120毫克。家人补记作为零食来源保留；未记录的零食不能推定为零摄入，应注明记录可能不完整，因此每日总量和总热量暂不能可靠汇总。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "先把2日到5日按日期完整回读一遍，分类和待核对项都带上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "2日正餐犬粮55克、50克；零食肉条2条、洁齿棒半根；补充关节粉平勺1勺。3日正餐犬粮55克、餐盒1盒加犬粮20克；零食苹果3小片，单片重量待核对；补充鱼油1粒。4日正餐犬粮1量杯、50克，量杯克数待核对；零食肉条数量待核对；补充关节粉1勺，是否平勺待核对。5日正餐犬粮55克、餐盒1盒加犬粮20克；零食洁齿棒1根；补充关节粉平勺1勺。来源为手写本和家人补记。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "这部分对。再回读6日到8日。7日的鸡胸肉就是中午那顿，按正餐记。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A012",
+          "at_user_onset_heard_prefix": "2日正餐犬粮55克、50克；零食肉条2条、洁齿棒半根；补充关节粉平勺1勺。3日正餐犬粮55克、餐盒1盒加犬粮20克；零食苹果3小片，单片重量待核对；补充鱼油1粒。4日正餐犬粮1量杯、50克，量杯克数待核对；零食肉条数量待核对；补充关节粉1勺，是否平勺待核对。5日正餐犬粮55克、餐盒1盒加犬粮20克；零食洁齿棒1根；补充关节粉平勺1勺。来源为手写本和家人补记。",
+          "final_shared_played_prefix": "2日正餐犬粮55克、50克；零食肉条2条、洁齿棒半根；补充关节粉平勺1勺。3日正餐犬粮55克、餐盒1盒加犬粮20克；零食苹果3小片，单片重量待核对；补充鱼油1粒。4日正餐犬粮1量杯、50克，量杯克数待核对；零食肉条数量待核对；补充关节粉1勺，是否平勺待核对。5日正餐犬粮55克、餐盒1盒加犬粮20克；零食洁齿棒1根；补充关节粉平勺1勺。来源为手写本和家人补记。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A006",
+            "after_text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。",
+            "text": "嗯，没错",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A010",
+            "after_text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC05",
+            "target_assistant_id": "A012",
+            "after_text": "2日正餐犬粮55克、50克；零食肉条2条、洁齿棒半根；补充关节粉平勺1勺。3日正餐犬粮55克、餐盒1盒加犬粮20克；零食苹果3小片，单片重量待核对；补充鱼油1粒。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "6日正餐犬粮55克、50克；零食肉条3条、训练粒一把，粒数和重量待核对；补充鱼油1粒。7日正餐犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食洁齿棒半根；补充关节粉平勺1勺。8日正餐犬粮55克、餐盒1盒加犬粮20克；零食肉条2条、奶酪约10克；补充关节粉平勺1勺、鱼油1粒。来源为手写本和家人补记。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U14",
+        "assistant_id": "A014",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "先等等，餐盒标签也得单独标。每盒100克，每100克82千卡，蛋白不低于8%，脂肪不低于4%，水分不高于82%。配料是鸡肉、鸡肝、南瓜、胡萝卜和水，但它写的是宠物营养补充性食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "肉条有鸡肉、甘油、淀粉、葡萄糖胺和硫酸软骨素，每公斤分别是1200毫克和800毫克，建议每天不超过3条，但没写单条重量和热量。洁齿棒每根约68千卡，10到15公斤每天不超过1根，没列钠含量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "训练粒每100克320千卡，配料是鸭肉、马铃薯淀粉和甘油，颗粒大小还不一样，也没写每粒重量。关节粉是10到20公斤犬每天1平勺，每平勺约3克，含葡萄糖胺450毫克、软骨素150毫克、MSM 300毫克。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。关节粉的平勺重量与三种成分可逐日关联；4日因可能偏满，实际克数和成分摄入量仍待核对。主粮、肉条和关节粉都出现关节相关成分，应保留原值并列为重复摄入关注项。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "鱼油是每天1粒，每粒EPA 180毫克、DHA 120毫克，我只在本子写到的那几天给过。肉条多是丈夫遛狗后给，洁齿棒和训练粒多是女儿傍晚给，以前都不固定称，所以没写的不一定就是没吃。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "鱼油只登记在3日、6日和8日，每次1粒，并关联EPA 180毫克、DHA 120毫克。家人补记作为零食来源保留；未记录的零食不能推定为零摄入，应注明记录可能不完整，因此每日总量和总热量暂不能可靠汇总。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "先把2日到5日按日期完整回读一遍，分类和待核对项都带上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "2日正餐犬粮55克、50克；零食肉条2条、洁齿棒半根；补充关节粉平勺1勺。3日正餐犬粮55克、餐盒1盒加犬粮20克；零食苹果3小片，单片重量待核对；补充鱼油1粒。4日正餐犬粮1量杯、50克，量杯克数待核对；零食肉条数量待核对；补充关节粉1勺，是否平勺待核对。5日正餐犬粮55克、餐盒1盒加犬粮20克；零食洁齿棒1根；补充关节粉平勺1勺。来源为手写本和家人补记。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "这部分对。再回读6日到8日。7日的鸡胸肉就是中午那顿，按正餐记。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "6日正餐犬粮55克、50克；零食肉条3条、训练粒一把，粒数和重量待核对；补充鱼油1粒。7日正餐犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食洁齿棒半根；补充关节粉平勺1勺。8日正餐犬粮55克、餐盒1盒加犬粮20克；零食肉条2条、奶酪约10克；补充关节粉平勺1勺、鱼油1粒。来源为手写本和家人补记。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "先等等，餐盒标签也得单独标。每盒100克，每100克82千卡，蛋白不低于8%，脂肪不低于4%，水分不高于82%。配料是鸡肉、鸡肝、南瓜、胡萝卜和水，但它写的是宠物营养补充性食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "肉条有鸡肉、甘油、淀粉、葡萄糖胺和硫酸软骨素，每公斤分别是1200毫克和800毫克，建议每天不超过3条，但没写单条重量和热量。洁齿棒每根约68千卡，10到15公斤每天不超过1根，没列钠含量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "训练粒每100克320千卡，配料是鸭肉、马铃薯淀粉和甘油，颗粒大小还不一样，也没写每粒重量。关节粉是10到20公斤犬每天1平勺，每平勺约3克，含葡萄糖胺450毫克、软骨素150毫克、MSM 300毫克。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。关节粉的平勺重量与三种成分可逐日关联；4日因可能偏满，实际克数和成分摄入量仍待核对。主粮、肉条和关节粉都出现关节相关成分，应保留原值并列为重复摄入关注项。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "鱼油是每天1粒，每粒EPA 180毫克、DHA 120毫克，我只在本子写到的那几天给过。肉条多是丈夫遛狗后给，洁齿棒和训练粒多是女儿傍晚给，以前都不固定称，所以没写的不一定就是没吃。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "鱼油只登记在3日、6日和8日，每次1粒，并关联EPA 180毫克、DHA 120毫克。家人补记作为零食来源保留；未记录的零食不能推定为零摄入，应注明记录可能不完整，因此每日总量和总热量暂不能可靠汇总。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "先把2日到5日按日期完整回读一遍，分类和待核对项都带上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "2日正餐犬粮55克、50克；零食肉条2条、洁齿棒半根；补充关节粉平勺1勺。3日正餐犬粮55克、餐盒1盒加犬粮20克；零食苹果3小片，单片重量待核对；补充鱼油1粒。4日正餐犬粮1量杯、50克，量杯克数待核对；零食肉条数量待核对；补充关节粉1勺，是否平勺待核对。5日正餐犬粮55克、餐盒1盒加犬粮20克；零食洁齿棒1根；补充关节粉平勺1勺。来源为手写本和家人补记。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "这部分对。再回读6日到8日。7日的鸡胸肉就是中午那顿，按正餐记。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "6日正餐犬粮55克、50克；零食肉条3条、训练粒一把，粒数和重量待核对；补充鱼油1粒。7日正餐犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食洁齿棒半根；补充关节粉平勺1勺。8日正餐犬粮55克、餐盒1盒加犬粮20克；零食肉条2条、奶酪约10克；补充关节粉平勺1勺、鱼油1粒。来源为手写本和家人补记。"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "再把缺失、重复和明天要问兽医的事项归拢一下，但别直接建议我改用量。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A013",
+          "at_user_onset_heard_prefix": "6日正餐犬粮55克、50克；零食肉条3条、训练粒一把，粒数和重量待核对；补充鱼油1粒。7日正餐犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食洁齿棒半根；补充关节粉平勺1勺。8日正餐犬粮55克、餐盒1盒加犬粮20克；零食肉条2条、奶酪约10克；补充关节粉平勺1勺、鱼油1粒。来源为手写本和家人补记。",
+          "final_shared_played_prefix": "6日正餐犬粮55克、50克；零食肉条3条、训练粒一把，粒数和重量待核对；补充鱼油1粒。7日正餐犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食洁齿棒半根；补充关节粉平勺1勺。8日正餐犬粮55克、餐盒1盒加犬粮20克；零食肉条2条、奶酪约10克；补充关节粉平勺1勺、鱼油1粒。来源为手写本和家人补记。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A006",
+            "after_text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。",
+            "text": "嗯，没错",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A010",
+            "after_text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC05",
+            "target_assistant_id": "A012",
+            "after_text": "2日正餐犬粮55克、50克；零食肉条2条、洁齿棒半根；补充关节粉平勺1勺。3日正餐犬粮55克、餐盒1盒加犬粮20克；零食苹果3小片，单片重量待核对；补充鱼油1粒。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "待核对：4日量杯克数、偏满勺实际量、4日肉条条数、训练粒一把的粒数或重量，以及苹果单片、肉条单条的重量和热量、洁齿棒钠含量。重复关注：主粮、肉条、关节粉均含关节相关成分。复诊确认餐盒的使用方式、每日总能量、体重增加与软便情况，以及补充品是否需要调整。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U15",
+        "assistant_id": "A015",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "先等等，餐盒标签也得单独标。每盒100克，每100克82千卡，蛋白不低于8%，脂肪不低于4%，水分不高于82%。配料是鸡肉、鸡肝、南瓜、胡萝卜和水，但它写的是宠物营养补充性食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "肉条有鸡肉、甘油、淀粉、葡萄糖胺和硫酸软骨素，每公斤分别是1200毫克和800毫克，建议每天不超过3条，但没写单条重量和热量。洁齿棒每根约68千卡，10到15公斤每天不超过1根，没列钠含量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "训练粒每100克320千卡，配料是鸭肉、马铃薯淀粉和甘油，颗粒大小还不一样，也没写每粒重量。关节粉是10到20公斤犬每天1平勺，每平勺约3克，含葡萄糖胺450毫克、软骨素150毫克、MSM 300毫克。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。关节粉的平勺重量与三种成分可逐日关联；4日因可能偏满，实际克数和成分摄入量仍待核对。主粮、肉条和关节粉都出现关节相关成分，应保留原值并列为重复摄入关注项。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "鱼油是每天1粒，每粒EPA 180毫克、DHA 120毫克，我只在本子写到的那几天给过。肉条多是丈夫遛狗后给，洁齿棒和训练粒多是女儿傍晚给，以前都不固定称，所以没写的不一定就是没吃。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "鱼油只登记在3日、6日和8日，每次1粒，并关联EPA 180毫克、DHA 120毫克。家人补记作为零食来源保留；未记录的零食不能推定为零摄入，应注明记录可能不完整，因此每日总量和总热量暂不能可靠汇总。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "先把2日到5日按日期完整回读一遍，分类和待核对项都带上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "2日正餐犬粮55克、50克；零食肉条2条、洁齿棒半根；补充关节粉平勺1勺。3日正餐犬粮55克、餐盒1盒加犬粮20克；零食苹果3小片，单片重量待核对；补充鱼油1粒。4日正餐犬粮1量杯、50克，量杯克数待核对；零食肉条数量待核对；补充关节粉1勺，是否平勺待核对。5日正餐犬粮55克、餐盒1盒加犬粮20克；零食洁齿棒1根；补充关节粉平勺1勺。来源为手写本和家人补记。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "这部分对。再回读6日到8日。7日的鸡胸肉就是中午那顿，按正餐记。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "6日正餐犬粮55克、50克；零食肉条3条、训练粒一把，粒数和重量待核对；补充鱼油1粒。7日正餐犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食洁齿棒半根；补充关节粉平勺1勺。8日正餐犬粮55克、餐盒1盒加犬粮20克；零食肉条2条、奶酪约10克；补充关节粉平勺1勺、鱼油1粒。来源为手写本和家人补记。"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "再把缺失、重复和明天要问兽医的事项归拢一下，但别直接建议我改用量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A014",
+            "text": "待核对：4日量杯克数、偏满勺实际量、4日肉条条数、训练粒一把的粒数或重量，以及苹果单片、肉条单条的重量和热量、洁齿棒钠含量。重复关注：主粮、肉条、关节粉均含关节相关成分。复诊确认餐盒的使用方式、每日总能量、体重增加与软便情况，以及补充品是否需要调整。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "先等等，餐盒标签也得单独标。每盒100克，每100克82千卡，蛋白不低于8%，脂肪不低于4%，水分不高于82%。配料是鸡肉、鸡肝、南瓜、胡萝卜和水，但它写的是宠物营养补充性食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "肉条有鸡肉、甘油、淀粉、葡萄糖胺和硫酸软骨素，每公斤分别是1200毫克和800毫克，建议每天不超过3条，但没写单条重量和热量。洁齿棒每根约68千卡，10到15公斤每天不超过1根，没列钠含量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "训练粒每100克320千卡，配料是鸭肉、马铃薯淀粉和甘油，颗粒大小还不一样，也没写每粒重量。关节粉是10到20公斤犬每天1平勺，每平勺约3克，含葡萄糖胺450毫克、软骨素150毫克、MSM 300毫克。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。关节粉的平勺重量与三种成分可逐日关联；4日因可能偏满，实际克数和成分摄入量仍待核对。主粮、肉条和关节粉都出现关节相关成分，应保留原值并列为重复摄入关注项。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "鱼油是每天1粒，每粒EPA 180毫克、DHA 120毫克，我只在本子写到的那几天给过。肉条多是丈夫遛狗后给，洁齿棒和训练粒多是女儿傍晚给，以前都不固定称，所以没写的不一定就是没吃。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "鱼油只登记在3日、6日和8日，每次1粒，并关联EPA 180毫克、DHA 120毫克。家人补记作为零食来源保留；未记录的零食不能推定为零摄入，应注明记录可能不完整，因此每日总量和总热量暂不能可靠汇总。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "先把2日到5日按日期完整回读一遍，分类和待核对项都带上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "2日正餐犬粮55克、50克；零食肉条2条、洁齿棒半根；补充关节粉平勺1勺。3日正餐犬粮55克、餐盒1盒加犬粮20克；零食苹果3小片，单片重量待核对；补充鱼油1粒。4日正餐犬粮1量杯、50克，量杯克数待核对；零食肉条数量待核对；补充关节粉1勺，是否平勺待核对。5日正餐犬粮55克、餐盒1盒加犬粮20克；零食洁齿棒1根；补充关节粉平勺1勺。来源为手写本和家人补记。"
+          },
+          {
+            "role": "user",
+            "id": "U13",
+            "text": "这部分对。再回读6日到8日。7日的鸡胸肉就是中午那顿，按正餐记。"
+          },
+          {
+            "role": "assistant",
+            "id": "A013",
+            "text": "6日正餐犬粮55克、50克；零食肉条3条、训练粒一把，粒数和重量待核对；补充鱼油1粒。7日正餐犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食洁齿棒半根；补充关节粉平勺1勺。8日正餐犬粮55克、餐盒1盒加犬粮20克；零食肉条2条、奶酪约10克；补充关节粉平勺1勺、鱼油1粒。来源为手写本和家人补记。"
+          },
+          {
+            "role": "user",
+            "id": "U14",
+            "text": "再把缺失、重复和明天要问兽医的事项归拢一下，但别直接建议我改用量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A014",
+            "text": "待核对：4日量杯克数、偏满勺实际量、4日肉条条数、训练粒一把的粒数或重量，以及苹果单片、肉条单条的重量和热量、洁齿棒钠含量。重复关注：主粮、肉条、关节粉均含关节相关成分。复诊确认餐盒的使用方式、每日总能量、体重增加与软便情况，以及补充品是否需要调整。"
+          },
+          {
+            "role": "user",
+            "id": "U15",
+            "text": "最后确认一下，这份现在能不能算完整？我明天具体把哪些材料带上？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A014",
+          "at_user_onset_heard_prefix": "待核对：4日量杯克数、偏满勺实际量、4日肉条条数、训练粒一把的粒数或重量，以及苹果单片、肉条单条的重量和热量、洁齿棒钠含量。重复关注：主粮、肉条、关节粉均含关节相关成分。复诊确认餐盒的使用方式、每日总能量、体重增加与软便情况，以及补充品是否需要调整。",
+          "final_shared_played_prefix": "待核对：4日量杯克数、偏满勺实际量、4日肉条条数、训练粒一把的粒数或重量，以及苹果单片、肉条单条的重量和热量、洁齿棒钠含量。重复关注：主粮、肉条、关节粉均含关节相关成分。复诊确认餐盒的使用方式、每日总能量、体重增加与软便情况，以及补充品是否需要调整。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A006",
+            "after_text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。",
+            "text": "嗯，没错",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A010",
+            "after_text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC05",
+            "target_assistant_id": "A012",
+            "after_text": "2日正餐犬粮55克、50克；零食肉条2条、洁齿棒半根；补充关节粉平勺1勺。3日正餐犬粮55克、餐盒1盒加犬粮20克；零食苹果3小片，单片重量待核对；补充鱼油1粒。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "它可作为复诊草稿，但还不能算完整，也无法可靠汇总每天总摄入和总热量，因为存在未称量零食、未知热量及可能漏记。带上手写本、主粮和零食包装、餐盒外包装、关节粉与鱼油瓶身，并把待核对清单交给兽医判断；复诊前不要自行调整主粮、关节粉或鱼油。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A002",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；"
+          }
+        ],
+        "at_event_onset_heard_prefix": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；",
+        "event_text": "嗯",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC02",
+        "kind": "backchannels",
+        "target_assistant_id": "A004",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。",
+        "event_text": "对",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC03",
+        "kind": "backchannels",
+        "target_assistant_id": "A006",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。",
+        "event_text": "嗯，没错",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC04",
+        "kind": "backchannels",
+        "target_assistant_id": "A010",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "先等等，餐盒标签也得单独标。每盒100克，每100克82千卡，蛋白不低于8%，脂肪不低于4%，水分不高于82%。配料是鸡肉、鸡肝、南瓜、胡萝卜和水，但它写的是宠物营养补充性食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "肉条有鸡肉、甘油、淀粉、葡萄糖胺和硫酸软骨素，每公斤分别是1200毫克和800毫克，建议每天不超过3条，但没写单条重量和热量。洁齿棒每根约68千卡，10到15公斤每天不超过1根，没列钠含量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "训练粒每100克320千卡，配料是鸭肉、马铃薯淀粉和甘油，颗粒大小还不一样，也没写每粒重量。关节粉是10到20公斤犬每天1平勺，每平勺约3克，含葡萄糖胺450毫克、软骨素150毫克、MSM 300毫克。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "训练粒标签能量和配料可记录，但“一把”仍不能换算。",
+        "event_text": "明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC05",
+        "kind": "backchannels",
+        "target_assistant_id": "A012",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我想把豆包11月2日到8日吃的东西整理出来，按正餐、零食和补充品分开。它12岁，已绝育，11.8公斤，比8月重了0.7公斤，近两周有三次软便，明天要复诊。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我会按日期分成正餐、零食和额外补充，原样保留单位与来源；缺重"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "好，我直接读前两天。2日早上犬粮55克、关节粉平勺1勺，晚上犬粮50克，遛狗后肉条2条，还有洁齿棒半根。3日早上犬粮55克、鱼油1粒，晚上餐盒1盒混犬粮20克，另有去核苹果3小片，没称单片重量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "已记：2日正餐为犬粮55克、50克；零食为肉条2条、洁齿棒半根；补充为关节粉平勺1勺。3日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为苹果3小片；补充为鱼油1粒。苹果单片重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "4日早上只写了犬粮1量杯，没有克数，关节粉1勺，但我记得那勺可能偏满。晚上犬粮50克，丈夫补写给过肉条，条数记不清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "4日已列入：正餐为犬粮1量杯和50克，其中量杯对应克数待核对；零食为肉条，实际条数待核对；补充为关节粉1勺，并注明可能偏满、是否达到平勺用量待核对。继续读5日和6日吧。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "5日早上犬粮55克、关节粉平勺1勺，晚上餐盒1盒混犬粮20克，还有洁齿棒1根。6日早上犬粮55克、鱼油1粒，晚上犬粮50克，肉条3条，训练粒记成了一把。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "5日：正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为洁齿棒1根；补充为关节粉平勺1勺。6日：正餐为犬粮55克、50克；零食为肉条3条、训练粒一把；补充为鱼油1粒。训练粒的粒数和重量待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "训练粒这一把不能按常见粒数估吧？我宁愿先空着，也别算错热量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不能估。清单保留“一把”，同时标记粒数、重量和本次热量均待核对。即使后面标签给出每100克热量，没有这把的实际重量，也不能换算本次摄入热量。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "7日早上犬粮60克、关节粉平勺1勺，中午去皮水煮鸡胸肉40克，晚上犬粮40克，另有洁齿棒半根，8日早上犬粮55克、关节粉平勺1勺、鱼油1粒，晚上餐盒1盒混犬粮20克，另有肉条2条和约10克奶酪。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "7日已记：正餐为犬粮60克、中午鸡胸肉40克、晚间犬粮40克；零食为洁齿棒半根；补充为关节粉平勺1勺。8日正餐为犬粮55克、晚间餐盒1盒加犬粮20克；零食为肉条2条、奶酪约10克；补充为关节粉平勺1勺、鱼油1粒。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "主粮叫安享龄全价犬粮，老年犬用的。每100克355千卡，蛋白不低于24%，脂肪不低于12%，纤维不高于4.5%，水分不高于10%。配料有鸡肉粉、糙米、豌豆、鸡油、鱼油和葡萄糖胺。11到13公斤建议每天145到175克，还写了要结合体况和其他食物调整。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "主粮可标为全价老年犬粮，标签能量为每100克355千卡，建议11至13公斤犬每日145至175克。现"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "先等等，餐盒标签也得单独标。每盒100克，每100克82千卡，蛋白不低于8%，脂肪不低于4%，水分不高于82%。配料是鸡肉、鸡肝、南瓜、胡萝卜和水，但它写的是宠物营养补充性食品。"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "餐盒按实际喂法列在晚间正餐中，每盒100克和82千卡可直接保留；同时醒目标注它是补充性食品，标签未说明可单独满足每日完整营养需求，需在复诊时确认这种搭配是否合适。接着读零食标签吧。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "肉条有鸡肉、甘油、淀粉、葡萄糖胺和硫酸软骨素，每公斤分别是1200毫克和800毫克，建议每天不超过3条，但没写单条重量和热量。洁齿棒每根约68千卡，10到15公斤每天不超过1根，没列钠含量。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "肉条可保留每日条数、两种关节成分浓度和每日不超过3条的标签提示；因缺单条重量，无法算每条成分量或热量。洁齿棒可按整根68千卡记录，半根可依据标签换算为约34千卡；钠含量标待核对。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "训练粒每100克320千卡，配料是鸭肉、马铃薯淀粉和甘油，颗粒大小还不一样，也没写每粒重量。关节粉是10到20公斤犬每天1平勺，每平勺约3克，含葡萄糖胺450毫克、软骨素150毫克、MSM 300毫克。"
+          },
+          {
+            "role": "assistant",
+            "id": "A010",
+            "text": "训练粒标签能量和配料可记录，但“一把”仍不能换算。关节粉的平勺重量与三种成分可逐日关联；4日因可能偏满，实际克数和成分摄入量仍待核对。主粮、肉条和关节粉都出现关节相关成分，应保留原值并列为重复摄入关注项。"
+          },
+          {
+            "role": "user",
+            "id": "U11",
+            "text": "鱼油是每天1粒，每粒EPA 180毫克、DHA 120毫克，我只在本子写到的那几天给过。肉条多是丈夫遛狗后给，洁齿棒和训练粒多是女儿傍晚给，以前都不固定称，所以没写的不一定就是没吃。"
+          },
+          {
+            "role": "assistant",
+            "id": "A011",
+            "text": "鱼油只登记在3日、6日和8日，每次1粒，并关联EPA 180毫克、DHA 120毫克。家人补记作为零食来源保留；未记录的零食不能推定为零摄入，应注明记录可能不完整，因此每日总量和总热量暂不能可靠汇总。"
+          },
+          {
+            "role": "user",
+            "id": "U12",
+            "text": "先把2日到5日按日期完整回读一遍，分类和待核对项都带上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A012",
+            "text": "2日正餐犬粮55克、50克；零食肉条2条、洁齿棒半根；补充关节粉平勺1勺。3日正餐犬粮55克、餐盒1盒加犬粮20克；零食苹果3小片，单片重量待核对；补充鱼油1粒。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "2日正餐犬粮55克、50克；零食肉条2条、洁齿棒半根；补充关节粉平勺1勺。3日正餐犬粮55克、餐盒1盒加犬粮20克；零食苹果3小片，单片重量待核对；补充鱼油1粒。",
+        "event_text": "对",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

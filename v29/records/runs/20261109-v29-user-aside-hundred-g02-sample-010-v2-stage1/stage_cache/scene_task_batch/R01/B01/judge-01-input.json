@@ -1,0 +1,65 @@
+[
+  {
+    "item_index": 0,
+    "scene": {
+      "domain_id": "D14",
+      "domain": "医疗、健康与福祉",
+      "scenario_id": "D14-S01",
+      "scenario": "就诊信息采集",
+      "example_tasks": [
+        "把随后提供的症状记录按时间、部位、频率、诱因和影响整理成便于就诊时使用的清单",
+        "根据用户提供的用药、过敏、既往就诊和检查资料，分类汇总出一份就诊信息摘要",
+        "将用户列出的多个健康困扰按紧急感受、持续时间、对生活的影响和希望咨询的事项整理排序",
+        "核对用户提供的就诊准备材料，整理出缺失、重复或前后不一致的信息",
+        "把随后提供的生活作息、饮食、症状变化和自我处理记录编排成一条清晰的时间线"
+      ]
+    },
+    "task_style": "结构化整理",
+    "goal": "把我随后提供的母亲近期零散健康记录整理成一份就诊前摘要，分别归纳她自己描述的不适、家人观察到的变化、已经做过的自测和仍需向医生核实的问题，并标出记录之间可能存在的矛盾或缺口。",
+    "user_seed": {
+      "role_relation": "负责陪同母亲首次到综合门诊就诊的成年子女",
+      "task_familiarity": "low"
+    },
+    "voice_profile": "男性，四十多岁，音色偏低而温和，吐字清楚，语速平稳，带一点不太确定时的短暂停顿。",
+    "capability_contract": {
+      "interaction_modalities": [
+        "audio"
+      ],
+      "available_tools": [],
+      "external_state_access": "none",
+      "external_side_effects": "forbidden"
+    },
+    "sampled_interaction_axes": {
+      "formality": "casual",
+      "directness": "balanced",
+      "emotional_expressiveness": "balanced",
+      "verbosity": "brief",
+      "initiative": "low",
+      "caution": "high",
+      "patience": "high"
+    },
+    "interaction_profile": {
+      "schema": "duplex_v2.interaction_profile.v1",
+      "formality": "casual",
+      "directness": "balanced",
+      "emotional_expressiveness": "balanced",
+      "verbosity": "brief",
+      "initiative": "low",
+      "caution": "high",
+      "patience": "high",
+      "behavioral_notes": [
+        "通常先简短说明自己记得的部分，等对方追问后再补充细节。",
+        "对不确定的日期、描述或前后差异会主动标明不敢确认，倾向于先听清整理规则再继续提供信息。",
+        "愿意按步骤慢慢核对材料，不急于下结论，遇到听不懂的说法会礼貌地请求换一种表达。"
+      ]
+    },
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "medium",
+      "target_turns": 9,
+      "min_turns": 9,
+      "max_turns": 10
+    },
+    "dialogue_length_instruction": "本条完整对话目标为 9 个主轮，允许 9–10 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。"
+  }
+]

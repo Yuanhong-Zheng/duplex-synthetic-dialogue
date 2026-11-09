@@ -1,0 +1,850 @@
+{
+  "case_id": "R01-V01",
+  "scene": {
+    "domain_id": "D32",
+    "domain": "农业、乡村与自然环境",
+    "scenario_id": "D32-S01",
+    "scenario": "农作物种植与季节安排"
+  },
+  "task_style": "结构化整理",
+  "task_instance": {
+    "goal": "结合随后提供的多块地块条件、作物候选、已有农资和可投入的劳动力，把一季到一年的农事安排整理成按时间推进的种植计划；标明每种作物在不同地块的播种或育苗、移栽、施肥、除草、采收等阶段，核对农事高峰期是否冲突，并筛出需要优先落实或重新调整的事项。"
+  },
+  "user_seed": {
+    "role_relation": "负责管理村里家庭菜园和小规模农田安排的返乡种植户",
+    "task_familiarity": "medium"
+  },
+  "voice_profile": "男性，感知年龄四十多岁，音色偏沉稳清亮，吐字清楚，语速中等，语气里带着务实的专注感。",
+  "available_modalities": [
+    "audio"
+  ],
+  "capability_contract": {
+    "interaction_modalities": [
+      "audio"
+    ],
+    "available_tools": [],
+    "external_state_access": "none",
+    "external_side_effects": "forbidden"
+  },
+  "dialogue_length_plan": {
+    "schema": "duplex_v2.dialogue_length_plan.v1",
+    "tier": "long",
+    "target_turns": 20,
+    "min_turns": 19,
+    "max_turns": 21
+  },
+  "dialogue_length_instruction": "本条完整对话目标为 20 个主轮，允许 19–21 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+  "interaction_profile": {
+    "schema": "duplex_v2.interaction_profile.v1",
+    "formality": "formal",
+    "directness": "direct",
+    "emotional_expressiveness": "balanced",
+    "verbosity": "detailed",
+    "initiative": "high",
+    "caution": "medium",
+    "patience": "medium",
+    "behavioral_notes": [
+      "通常会主动补充背景、条件和限制，希望把信息交代完整后再进入判断。",
+      "提出请求时目标明确，倾向于要求分层说明依据、差异和遗漏之处。",
+      "遇到信息不确定时会直接指出不确定点，并耐心确认关键细节后继续推进。"
+    ]
+  },
+  "ambient_catalog": {
+    "schema": "duplex_v2.ambient_catalog.v1",
+    "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+    "assets": [
+      {
+        "asset_id": "fan-fsd50k-eval-419427",
+        "category": "fan",
+        "mode": "bed",
+        "tags": [
+          "indoor",
+          "home",
+          "office"
+        ],
+        "description": "稳定的真实机械风扇或通风声",
+        "duration_seconds": 10.3909375
+      },
+      {
+        "asset_id": "fan-fsd50k-eval-235362",
+        "category": "fan",
+        "mode": "bed",
+        "tags": [
+          "indoor",
+          "home",
+          "office"
+        ],
+        "description": "稳定的真实机械风扇或通风声",
+        "duration_seconds": 11.0
+      },
+      {
+        "asset_id": "fan-fsd50k-eval-415925",
+        "category": "fan",
+        "mode": "bed",
+        "tags": [
+          "indoor",
+          "home",
+          "office"
+        ],
+        "description": "稳定的真实机械风扇或通风声",
+        "duration_seconds": 7.178
+      },
+      {
+        "asset_id": "traffic-fsd50k-eval-235541",
+        "category": "traffic",
+        "mode": "bed",
+        "tags": [
+          "outdoor",
+          "road",
+          "street",
+          "travel"
+        ],
+        "description": "真实道路车流环境声",
+        "duration_seconds": 29.045875
+      },
+      {
+        "asset_id": "traffic-fsd50k-eval-232686",
+        "category": "traffic",
+        "mode": "bed",
+        "tags": [
+          "outdoor",
+          "road",
+          "street",
+          "travel"
+        ],
+        "description": "真实道路车流环境声",
+        "duration_seconds": 10.3445
+      },
+      {
+        "asset_id": "traffic-fsd50k-eval-124020",
+        "category": "traffic",
+        "mode": "bed",
+        "tags": [
+          "outdoor",
+          "road",
+          "street",
+          "travel"
+        ],
+        "description": "真实道路车流环境声",
+        "duration_seconds": 24.78875
+      },
+      {
+        "asset_id": "rain-fsd50k-eval-382582",
+        "category": "rain",
+        "mode": "bed",
+        "tags": [
+          "outdoor",
+          "window",
+          "rain",
+          "home"
+        ],
+        "description": "真实连续雨声",
+        "duration_seconds": 9.9788125
+      },
+      {
+        "asset_id": "rain-fsd50k-eval-21189",
+        "category": "rain",
+        "mode": "bed",
+        "tags": [
+          "outdoor",
+          "window",
+          "rain",
+          "home"
+        ],
+        "description": "真实连续雨声",
+        "duration_seconds": 9.962
+      },
+      {
+        "asset_id": "rain-fsd50k-eval-238016",
+        "category": "rain",
+        "mode": "bed",
+        "tags": [
+          "outdoor",
+          "window",
+          "rain",
+          "home"
+        ],
+        "description": "真实连续雨声",
+        "duration_seconds": 11.32
+      },
+      {
+        "asset_id": "crowd-fsd50k-eval-185058",
+        "category": "crowd",
+        "mode": "bed",
+        "tags": [
+          "public",
+          "crowd",
+          "cafe",
+          "station"
+        ],
+        "description": "远处人群嘈杂环境声，无指定第三方台词",
+        "duration_seconds": 5.2114375
+      },
+      {
+        "asset_id": "crowd-fsd50k-eval-121877",
+        "category": "crowd",
+        "mode": "bed",
+        "tags": [
+          "public",
+          "crowd",
+          "cafe",
+          "station"
+        ],
+        "description": "远处人群嘈杂环境声，无指定第三方台词",
+        "duration_seconds": 11.696
+      },
+      {
+        "asset_id": "crowd-fsd50k-eval-340358",
+        "category": "crowd",
+        "mode": "bed",
+        "tags": [
+          "public",
+          "crowd",
+          "cafe",
+          "station"
+        ],
+        "description": "远处人群嘈杂环境声，无指定第三方台词",
+        "duration_seconds": 4.2745
+      },
+      {
+        "asset_id": "paper-fsd50k-eval-82562",
+        "category": "paper",
+        "mode": "event",
+        "tags": [
+          "indoor",
+          "paper",
+          "office",
+          "home"
+        ],
+        "description": "完整的纸张翻动、揉动或撕纸声效",
+        "duration_seconds": 1.0094375
+      },
+      {
+        "asset_id": "paper-fsd50k-eval-121200",
+        "category": "paper",
+        "mode": "event",
+        "tags": [
+          "indoor",
+          "paper",
+          "office",
+          "home"
+        ],
+        "description": "完整的纸张翻动、揉动或撕纸声效",
+        "duration_seconds": 0.83525
+      },
+      {
+        "asset_id": "paper-fsd50k-eval-343098",
+        "category": "paper",
+        "mode": "event",
+        "tags": [
+          "indoor",
+          "paper",
+          "office",
+          "home"
+        ],
+        "description": "完整的纸张翻动、揉动或撕纸声效",
+        "duration_seconds": 0.796
+      },
+      {
+        "asset_id": "footsteps-fsd50k-eval-153104",
+        "category": "footsteps",
+        "mode": "event",
+        "tags": [
+          "footsteps",
+          "indoor",
+          "outdoor"
+        ],
+        "description": "完整的短段真实脚步声",
+        "duration_seconds": 3.4691875
+      },
+      {
+        "asset_id": "footsteps-fsd50k-eval-392303",
+        "category": "footsteps",
+        "mode": "event",
+        "tags": [
+          "footsteps",
+          "indoor",
+          "outdoor"
+        ],
+        "description": "完整的短段真实脚步声",
+        "duration_seconds": 3.6849375
+      },
+      {
+        "asset_id": "footsteps-fsd50k-eval-272381",
+        "category": "footsteps",
+        "mode": "event",
+        "tags": [
+          "footsteps",
+          "indoor",
+          "outdoor"
+        ],
+        "description": "完整的短段真实脚步声",
+        "duration_seconds": 3.933375
+      },
+      {
+        "asset_id": "door-fsd50k-eval-71212",
+        "category": "door",
+        "mode": "event",
+        "tags": [
+          "door",
+          "indoor",
+          "home",
+          "office"
+        ],
+        "description": "完整的短段真实开关门声",
+        "duration_seconds": 2.3638125
+      },
+      {
+        "asset_id": "door-fsd50k-eval-119077",
+        "category": "door",
+        "mode": "event",
+        "tags": [
+          "door",
+          "indoor",
+          "home",
+          "office"
+        ],
+        "description": "完整的短段真实开关门声",
+        "duration_seconds": 2.7944375
+      },
+      {
+        "asset_id": "door-fsd50k-eval-209519",
+        "category": "door",
+        "mode": "event",
+        "tags": [
+          "door",
+          "indoor",
+          "home",
+          "office"
+        ],
+        "description": "完整的短段真实开关门声",
+        "duration_seconds": 1.0398125
+      },
+      {
+        "asset_id": "keyboard-fsd50k-eval-399740",
+        "category": "keyboard",
+        "mode": "event",
+        "tags": [
+          "keyboard",
+          "office",
+          "computer",
+          "indoor"
+        ],
+        "description": "完整的短段真实电脑键盘输入声",
+        "duration_seconds": 2.322
+      },
+      {
+        "asset_id": "keyboard-fsd50k-eval-233057",
+        "category": "keyboard",
+        "mode": "event",
+        "tags": [
+          "keyboard",
+          "office",
+          "computer",
+          "indoor"
+        ],
+        "description": "完整的短段真实电脑键盘输入声",
+        "duration_seconds": 2.4700625
+      },
+      {
+        "asset_id": "keyboard-fsd50k-eval-411545",
+        "category": "keyboard",
+        "mode": "event",
+        "tags": [
+          "keyboard",
+          "office",
+          "computer",
+          "indoor"
+        ],
+        "description": "完整的短段真实电脑键盘输入声",
+        "duration_seconds": 2.5686875
+      },
+      {
+        "asset_id": "water_tap-fsd50k-eval-232499",
+        "category": "water_tap",
+        "mode": "event",
+        "tags": [
+          "water",
+          "kitchen",
+          "home",
+          "indoor"
+        ],
+        "description": "完整的短段真实水龙头声",
+        "duration_seconds": 0.842
+      },
+      {
+        "asset_id": "water_tap-fsd50k-eval-402127",
+        "category": "water_tap",
+        "mode": "event",
+        "tags": [
+          "water",
+          "kitchen",
+          "home",
+          "indoor"
+        ],
+        "description": "完整的短段真实水龙头声",
+        "duration_seconds": 2.0915
+      },
+      {
+        "asset_id": "water_tap-fsd50k-eval-402128",
+        "category": "water_tap",
+        "mode": "event",
+        "tags": [
+          "water",
+          "kitchen",
+          "home",
+          "indoor"
+        ],
+        "description": "完整的短段真实水龙头声",
+        "duration_seconds": 2.0915
+      },
+      {
+        "asset_id": "birds-fsd50k-eval-86343",
+        "category": "birds",
+        "mode": "bed",
+        "tags": [
+          "birds",
+          "park",
+          "outdoor",
+          "nature"
+        ],
+        "description": "真实鸟鸣环境声",
+        "duration_seconds": 7.5366875
+      },
+      {
+        "asset_id": "birds-fsd50k-eval-57907",
+        "category": "birds",
+        "mode": "bed",
+        "tags": [
+          "birds",
+          "park",
+          "outdoor",
+          "nature"
+        ],
+        "description": "真实鸟鸣环境声",
+        "duration_seconds": 12.5773125
+      },
+      {
+        "asset_id": "birds-fsd50k-eval-319512",
+        "category": "birds",
+        "mode": "bed",
+        "tags": [
+          "birds",
+          "park",
+          "outdoor",
+          "nature"
+        ],
+        "description": "真实鸟鸣环境声",
+        "duration_seconds": 12.755625
+      },
+      {
+        "asset_id": "wind-fsd50k-eval-113173",
+        "category": "wind",
+        "mode": "bed",
+        "tags": [
+          "wind",
+          "outdoor",
+          "nature"
+        ],
+        "description": "真实风声环境声",
+        "duration_seconds": 11.2184375
+      },
+      {
+        "asset_id": "wind-fsd50k-eval-113175",
+        "category": "wind",
+        "mode": "bed",
+        "tags": [
+          "wind",
+          "outdoor",
+          "nature"
+        ],
+        "description": "真实风声环境声",
+        "duration_seconds": 7.8773125
+      },
+      {
+        "asset_id": "wind-fsd50k-eval-113176",
+        "category": "wind",
+        "mode": "bed",
+        "tags": [
+          "wind",
+          "outdoor",
+          "nature"
+        ],
+        "description": "真实风声环境声",
+        "duration_seconds": 7.6341875
+      },
+      {
+        "asset_id": "doorbell-fsd50k-eval-348322",
+        "category": "doorbell",
+        "mode": "event",
+        "tags": [
+          "doorbell",
+          "home",
+          "door",
+          "indoor"
+        ],
+        "description": "完整的真实门铃声效",
+        "duration_seconds": 1.625
+      },
+      {
+        "asset_id": "doorbell-fsd50k-eval-426594",
+        "category": "doorbell",
+        "mode": "event",
+        "tags": [
+          "doorbell",
+          "home",
+          "door",
+          "indoor"
+        ],
+        "description": "完整的真实门铃声效",
+        "duration_seconds": 0.3666875
+      },
+      {
+        "asset_id": "doorbell-fsd50k-eval-332563",
+        "category": "doorbell",
+        "mode": "event",
+        "tags": [
+          "doorbell",
+          "home",
+          "door",
+          "indoor"
+        ],
+        "description": "完整的真实门铃声效",
+        "duration_seconds": 4.0
+      }
+    ]
+  },
+  "ambient_control": {
+    "schema": "duplex_v2.soundscape_control.v3",
+    "seed": 1459923038,
+    "mode": "layered",
+    "discrete_event_target": 3,
+    "max_ambient_layers": 2,
+    "side_speech_requested": true,
+    "speech_kind_preferences": [
+      "third_party",
+      "machine",
+      "user_to_third_party"
+    ]
+  },
+  "ambient_sampling": {
+    "schema": "duplex_v2.ambient_preferences.v1",
+    "seed": 202611090008,
+    "slot": 1,
+    "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+    "categories": {
+      "bed": [
+        "rain",
+        "wind",
+        "fan",
+        "crowd",
+        "traffic",
+        "birds"
+      ],
+      "event": [
+        "doorbell",
+        "paper",
+        "door",
+        "keyboard",
+        "footsteps",
+        "water_tap"
+      ]
+    },
+    "recordings": {
+      "bed:birds": [
+        "birds-fsd50k-eval-86343",
+        "birds-fsd50k-eval-57907",
+        "birds-fsd50k-eval-319512"
+      ],
+      "bed:crowd": [
+        "crowd-fsd50k-eval-340358",
+        "crowd-fsd50k-eval-185058",
+        "crowd-fsd50k-eval-121877"
+      ],
+      "bed:fan": [
+        "fan-fsd50k-eval-235362",
+        "fan-fsd50k-eval-419427",
+        "fan-fsd50k-eval-415925"
+      ],
+      "bed:rain": [
+        "rain-fsd50k-eval-382582",
+        "rain-fsd50k-eval-21189",
+        "rain-fsd50k-eval-238016"
+      ],
+      "bed:traffic": [
+        "traffic-fsd50k-eval-235541",
+        "traffic-fsd50k-eval-232686",
+        "traffic-fsd50k-eval-124020"
+      ],
+      "bed:wind": [
+        "wind-fsd50k-eval-113175",
+        "wind-fsd50k-eval-113173",
+        "wind-fsd50k-eval-113176"
+      ],
+      "event:door": [
+        "door-fsd50k-eval-209519",
+        "door-fsd50k-eval-71212",
+        "door-fsd50k-eval-119077"
+      ],
+      "event:doorbell": [
+        "doorbell-fsd50k-eval-426594",
+        "doorbell-fsd50k-eval-348322",
+        "doorbell-fsd50k-eval-332563"
+      ],
+      "event:footsteps": [
+        "footsteps-fsd50k-eval-272381",
+        "footsteps-fsd50k-eval-153104",
+        "footsteps-fsd50k-eval-392303"
+      ],
+      "event:keyboard": [
+        "keyboard-fsd50k-eval-411545",
+        "keyboard-fsd50k-eval-399740",
+        "keyboard-fsd50k-eval-233057"
+      ],
+      "event:paper": [
+        "paper-fsd50k-eval-121200",
+        "paper-fsd50k-eval-82562",
+        "paper-fsd50k-eval-343098"
+      ],
+      "event:water_tap": [
+        "water_tap-fsd50k-eval-402127",
+        "water_tap-fsd50k-eval-402128",
+        "water_tap-fsd50k-eval-232499"
+      ]
+    }
+  },
+  "stage2_soundscape_policy": {
+    "schema": "duplex_v2.soundscape_policy.v3",
+    "quiet_probability": 0.5,
+    "discrete_targets_by_tier": {
+      "short": [
+        0,
+        1
+      ],
+      "medium": [
+        1,
+        2
+      ],
+      "long": [
+        2,
+        4
+      ]
+    },
+    "discrete_count_includes": [
+      "environment_events",
+      "side_speech"
+    ],
+    "max_ambient_layers": 2,
+    "gain_range": [
+      0.3,
+      0.7
+    ],
+    "speech_request_probability": 0.5,
+    "third_party_preference_probability": 0.8,
+    "speech_requires_existing_scene_source": true,
+    "environment_audio": "base_only",
+    "stage2_repair": "atomic_scoped_patch",
+    "stage2_max_judge_attempts": 3,
+    "json_parse_max_retries": 3,
+    "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+    "user_aside_preference_probability": 0.5,
+    "user_voice_source": "stage1_user",
+    "user_aside_requires_present_recipient": true
+  },
+  "stage2_owner_attempt": 2,
+  "current_model_candidate": {
+    "episode_situation": "现在是2026年11月9日上午，用户坐在成都市郫都区唐昌镇战旗村自家院子的雨棚下，准备在冬季播种窗口进一步缩短前，把家庭菜园和小规模农田未来近一年的安排理清。用户返乡后主要负责四块地的种植，妻子负责育苗、零散浇水和采收，此刻也在旁边核对种子包装与旧农事本。四块地的面积、排水、光照和灌溉条件差别明显，其中河边地容易积水，院后菜园适合频繁照看，远处坡地则不便每日往返。用户已经量过各地块面积，并把近两年的种植记录、种子包装说明、库存农资和家庭可投入工时记在纸上，但还没有将这些信息合并成时间计划。现有候选包括越冬蔬菜、春季马铃薯、茄果类、玉米和豆类，既要满足家庭自用，也希望让一部分采收期错开以便在村集市出售。上一季种过茄果类和玉米的地块不宜简单照搬原布局，而一块刚清茬的地还残留较多秸秆，需要决定是先腐熟还田还是换种管理要求较低的作物。家里已有部分种子、肥料、育苗盘和滴灌带，但地膜数量不足，小型旋耕机也只能由用户本人操作。用户每周能安排三个完整白天做重体力农活，妻子每天最多抽出约一个半小时处理轻活，春季整地和夏季集中采收可能超过现有劳动力。用户担心二月下旬至四月间同时出现育苗、整地、播种和移栽任务，也担心六月以后玉米管理、茄果类采收及夏季除草相互挤占时间。今天持续降雨，用户只能先在雨棚下整理资料，无法现场复查河边地的积水深度，也尚未确认明年能否临时请到村里的旋耕机手。旧农事本里有往年的日期，但用户知道不同年份温度和降雨会有偏差，因此希望把包装说明和个人经验作为时间窗口，而不是固定到单一日期。当前还需要逐项核对哪些作物必须育苗、哪些可以直播、各地块的轮作风险、肥料是否够用，以及哪些高峰任务需要错开或缩减面积。用户希望先形成一份能够随天气和劳动力变化调整的顺序框架，再筛出近期必须购买、预订或确认的事项，而不是在资料尚未核实时直接定死全部日期。",
+    "task_reference_data": [
+      "用户纸质测量表记录：甲地为院后菜园，0.8亩，日照约7小时，水龙头距地边12米，排水顺畅，可每日查看；乙地为河边田，1.6亩，日照约8小时，有灌水沟，但连续降雨后低洼处可能积水；丙地为缓坡旱地，2.2亩，距家步行约18分钟，无固定水管；丁地为房前小畦，0.3亩，冬季日照约5小时，适合育苗和少量叶菜。该表已由用户读过，乙地当前积水情况尚未现场复查。",
+      "用户旧农事本记录：甲地在2026年3月至9月种过番茄和辣椒，9月底清茬；乙地在2026年4月至8月种过甜玉米，之后闲置；丙地在2026年3月至7月种过马铃薯，8月后种了一茬绿肥，现有秸秆和绿肥残体；丁地在2026年春季用于育苗，夏秋种过小白菜。记录可现场翻读，但未做土传病害检测。",
+      "现有蒜种包装标注：品种“川香早蒜”，净重8公斤，建议露地播种期为9月下旬至11月中旬，行距约20厘米、株距约10厘米；包装尚未开封，用户可现场读取，实际发芽率未核实。",
+      "现有豌豆种子包装标注：品种“春丰甜豌豆”，共3袋，每袋500克，适播温度为8至20摄氏度，可秋播越冬或早春直播，株距建议8至10厘米；种子购于2025年，包装完好但可能因存放时间影响发芽率。",
+      "待选马铃薯品种说明页写有“早春露地播种参考窗口为1月下旬至3月上旬，生育期约85至100天，忌长期积水”；用户已读到该说明，但尚未购买种薯，也未确定种植面积。",
+      "番茄和辣椒包装说明：番茄“蓉红6号”现有种子约180粒，建议先育苗、苗龄约45至55天；辣椒“蜀椒12号”现有种子约220粒，建议苗龄约60至75天，定植前需炼苗。两包种子均为2026年购买并已开封，剩余发芽率尚未试验。",
+      "玉米与豆类候选资料：甜玉米“金甜二号”计划考虑0.8至1.2亩，包装说明为春季地温稳定后直播、株距约25至30厘米；四季豆现有种子1公斤，可直播并需要搭架。两者具体落地地块尚未决定，玉米种子还未购买。",
+      "农资盘点纸记录：腐熟鸡粪约600公斤，复合肥15-15-15共3袋、每袋40公斤，尿素半袋约20公斤，育苗基质6袋、每袋50升，72孔育苗盘8张，滴灌带约260米，可重复使用的竹竿约180根，透明地膜仅剩一卷约400平方米。数量为用户目测和包装标称值，尚未重新称量。",
+      "家庭工时记录：用户通常每周一、周三、周六可各投入一个完整白天，其他日子只能早晚巡视；妻子每天可投入约1.5小时，能育苗、浇水、绑蔓和采收，但不承担旋耕、挑肥等重活；3月20日至4月5日用户预计只能保留周六做整天农活。该安排来自家庭日历，临时雇工尚未落实。",
+      "设备与用水记录：家里有一台小型旋耕机、两把锄头、一台背负式电动喷雾器和一辆三轮车；甲地、丁地可接自来水，乙地依靠灌水沟，丙地干旱时需用三轮车运水。旋耕机目前能启动，但用户尚未完成换机油和刀片紧固检查。"
+    ],
+    "environment_audio": "细密雨声从雨棚前方和两侧持续传来，落在瓦面上的声音均匀，偶尔随雨势略微增强。院外的风从右后方掠过竹叶，形成间歇性的低声沙响，整体不压过近距离说话声。",
+    "estimated_snr_db": 22,
+    "constraints": [
+      {
+        "constraint_id": "C01",
+        "text": "计划范围从2026年11月延伸至2027年10月，并按可调整的时间窗口而非无法变更的单日安排农事。",
+        "kind": "hard"
+      },
+      {
+        "constraint_id": "C02",
+        "text": "重体力任务原则上只能安排在用户每周一、周三、周六的完整工作日；2027年3月20日至4月5日期间仅周六可安排整天重活。",
+        "kind": "hard"
+      },
+      {
+        "constraint_id": "C03",
+        "text": "妻子的可用工时按每天约1.5小时计算，且不安排旋耕、挑肥等重体力任务。",
+        "kind": "hard"
+      },
+      {
+        "constraint_id": "C04",
+        "text": "计划需优先满足家庭持续自用，并尽量错开可出售部分的集中采收期。",
+        "kind": "soft"
+      },
+      {
+        "constraint_id": "C05",
+        "text": "对未经发芽试验的旧种子、尚未购买的种薯和玉米种子，以及尚未落实的临时雇工，不得按已经可靠可用处理。",
+        "kind": "hard"
+      }
+    ],
+    "safety_limits": [
+      {
+        "limit_id": "L01",
+        "text": "旋耕机投入使用前必须停机检查机油、紧固件和刀片，清理缠绕物时不得在发动机运行状态下接触刀具。",
+        "severity": "hard"
+      },
+      {
+        "limit_id": "L02",
+        "text": "任何肥料或农药的实际用量、混配禁忌、防护要求及采收安全间隔必须以产品标签为准；缺少清晰标签的制剂不得凭口头计划直接使用。",
+        "severity": "hard"
+      },
+      {
+        "limit_id": "L03",
+        "text": "河边乙地在雨后积水深度、沟边稳定性和通行条件未现场确认前，不安排机械下地或单人进入湿滑低洼区域作业。",
+        "severity": "hard"
+      }
+    ],
+    "soundscape_candidate_plan": {
+      "schema": "duplex_v2.soundscape_plan.v4",
+      "mode": "layered",
+      "ambient_layers": [
+        {
+          "source_id": "AMB01",
+          "candidates": [
+            {
+              "asset_id": "rain-fsd50k-eval-382582",
+              "reason": "连续雨声符合用户在乡村院子雨棚下整理农事资料的当前环境。",
+              "environment_audio": "前方瓦面传来稳定细雨声，雨点密度均匀，偶尔短暂增强。"
+            },
+            {
+              "asset_id": "rain-fsd50k-eval-21189",
+              "reason": "可作为近距离雨棚与院落背景，持续性适合长对话。",
+              "environment_audio": "雨水从雨棚四周连续落下，形成柔和而稳定的中低音背景。"
+            },
+            {
+              "asset_id": "rain-fsd50k-eval-238016",
+              "reason": "真实连续雨声与故事中无法立即下地复查的雨天状态一致。",
+              "environment_audio": "细密雨声覆盖院外，音量随雨势轻微起伏但不遮住说话。"
+            }
+          ]
+        },
+        {
+          "source_id": "AMB02",
+          "candidates": [
+            {
+              "asset_id": "wind-fsd50k-eval-113175",
+              "reason": "乡村院外的间歇风声可与雨声自然叠加。",
+              "environment_audio": "右后方传来轻风掠过竹叶的沙响，间隔数秒出现一次。"
+            },
+            {
+              "asset_id": "wind-fsd50k-eval-113173",
+              "reason": "自然风声适合半开放雨棚环境，且不会引入新的任务事实。",
+              "environment_audio": "院外风声缓慢起伏，偶尔带动树叶发出短促摩擦声。"
+            },
+            {
+              "asset_id": "wind-fsd50k-eval-113176",
+              "reason": "较短的真实风声可表现雨天院落中的轻微阵风。",
+              "environment_audio": "一阵轻风由院子右侧经过，叶片沙响后逐渐减弱。"
+            }
+          ]
+        }
+      ],
+      "environment_events": [
+        {
+          "source_id": "ENV01",
+          "candidates": [
+            {
+              "asset_id": "paper-fsd50k-eval-121200",
+              "reason": "用户和妻子正在核对种子包装、测量表及旧农事本，短促翻纸声有明确场景来源。",
+              "environment_audio": "近处传来一次简短的纸页翻动声，随后迅速安静。"
+            },
+            {
+              "asset_id": "paper-fsd50k-eval-82562",
+              "reason": "适合表现桌边整理多张农事记录时产生的完整纸张声。",
+              "environment_audio": "桌面方向响起一小段纸张翻动和重新放平的声音。"
+            },
+            {
+              "asset_id": "paper-fsd50k-eval-343098",
+              "reason": "短纸张声与现场查看包装说明和旧笔记的动作相容。",
+              "environment_audio": "近距离出现轻微纸张摩擦声，像是翻到下一页记录。"
+            }
+          ]
+        },
+        {
+          "source_id": "ENV02",
+          "candidates": [
+            {
+              "asset_id": "footsteps-fsd50k-eval-272381",
+              "reason": "妻子同在雨棚下核对材料，短距离脚步声符合其在桌边和农资之间走动。",
+              "environment_audio": "雨棚内侧响起几步短促脚步声，从左后方向桌边靠近。"
+            },
+            {
+              "asset_id": "footsteps-fsd50k-eval-153104",
+              "reason": "可表现同场家人在院内取放种子包装或记录本时的短段移动。",
+              "environment_audio": "近处传来一小段平稳脚步声，数步后停在桌旁。"
+            },
+            {
+              "asset_id": "footsteps-fsd50k-eval-392303",
+              "reason": "真实短段脚步适用于半开放院落，不需要新增其他人物。",
+              "environment_audio": "右侧响起几步轻缓脚步，经过雨棚下方后停止。"
+            }
+          ]
+        }
+      ],
+      "side_speech_eligibility": {
+        "user_to_third_party": {
+          "compatible": true,
+          "reason": "用户的妻子正在同一雨棚下核对种子包装和农事本，助手播报整理内容时，用户有合理依据转向她确认家庭工时或材料记录。",
+          "source": {
+            "speaker": "user",
+            "recipient": "同场核对种子包装和旧农事本的妻子",
+            "voice_source": "stage1_user",
+            "description": "用户可在共同整理家庭种植计划时，向身旁妻子简短核实她负责的轻活、育苗材料或日历安排。"
+          }
+        },
+        "third_party": {
+          "compatible": true,
+          "reason": "妻子是故事中已经明确同场且参与核对资料的家庭协作者，可能就手边包装或家庭日历作简短提醒。",
+          "source": {
+            "speaker": "third_party",
+            "voice_profile": "中等音高，音色清晰自然，语速平稳，近距离收音",
+            "description": "同场参与家庭菜园育苗、浇水和采收，并正在核对种子包装与旧农事本的妻子。"
+          }
+        },
+        "machine": {
+          "compatible": false,
+          "reason": "当前雨棚下没有已明确存在且会发出语音提示的机器或电子设备。",
+          "source": null
+        }
+      }
+    }
+  },
+  "base_sha256": "90977fd4609fc6e2059681eafd1ca2f0140f5bdfbc670ce32021b65e16d5fb92",
+  "judge_findings": [
+    {
+      "severity": "must_fix",
+      "path": "task_reference_data",
+      "problem": "作物候选缺少完成全年地块分配和农事高峰核对所需的关键种植规模与阶段窗口，现有材料不足以把每种作物落实到具体地块和时间段。",
+      "evidence": "只有甜玉米给出“计划考虑0.8至1.2亩”；蒜、豌豆、马铃薯、番茄、辣椒和四季豆均没有目标面积或家庭自用最低需求。番茄和辣椒仅有苗龄，四季豆仅写“可直播并需要搭架”，甜玉米仅写“春季地温稳定后直播”，也缺少移栽或田间管理、预计采收窗口，无法据此核对二月至六月的整地、移栽、搭架、除草和采收冲突。",
+      "repair": "补充用户已有记录或包装说明中的各作物拟种面积或可接受面积范围，并为缺失作物写出可用于排程的播种/育苗、移栽或直播、主要管理和采收参考窗口；仍未确定的方案应给出明确可比较的面积选项及对应取舍。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "task_reference_data",
+      "problem": "肥料盘点只有库存量，没有标签施用条件或各作物计划用量，无法完成故事明确要求的“核对肥料是否够用”。",
+      "evidence": "农资盘点仅记录“腐熟鸡粪约600公斤、复合肥15-15-15共120公斤、尿素约20公斤”，而L02又要求实际用量以产品标签为准；当前材料没有标签建议用量、适用作物、施用阶段，也没有可据面积计算需求的记录。",
+      "repair": "补充现有肥料包装标签或用户既有施肥记录中的具体适用范围、每亩建议用量和施用阶段，并结合各作物拟种面积提供可计算的需求基础；若标签无法读取，则把交付明确限制为列出待核实的肥料缺口，不能声称已经核定库存是否充足。"
+    }
+  ],
+  "allowed_repair_paths": [
+    "/task_reference_data"
+  ]
+}

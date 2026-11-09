@@ -1,0 +1,3389 @@
+{
+  "frozen_source": {
+    "case_id": "R01-V01",
+    "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g05-sample-010-v2-stage2",
+    "language": "zh",
+    "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+    "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+    "script_execution_policy": {
+      "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+      "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+      "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+      "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+      "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+      "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+      "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+    },
+    "program_anchor_seed": 12425101,
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    },
+    "relay_configuration": {
+      "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g05/relay-policy.json",
+      "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g05/relay-state",
+      "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+      "policy": {
+        "schema": "duplex_v2.timeout_relay_policy.v3",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "backup": {
+          "profile": "lianyu",
+          "endpoint": "https://api.openbili.com/v1/chat/completions",
+          "model_map": {
+            "openai/gpt-5.6-sol": "gpt-5.6-sol",
+            "openai/gpt-5.6-luna": "gpt-5.6-luna"
+          },
+          "verification": {
+            "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+            "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+          }
+        },
+        "trigger": {
+          "max_retries": 5,
+          "http_statuses": [
+            502,
+            503,
+            504
+          ],
+          "error_types": [
+            "TimeoutError",
+            "HTTP2DeadlineExceeded",
+            "ConnectionResetError",
+            "ConnectionAbortedError",
+            "BrokenPipeError",
+            "RemoteDisconnected",
+            "IncompleteRead"
+          ],
+          "http2_transport_errors": "negotiated_h2_only",
+          "require_all_attempts": true
+        },
+        "max_relay_switches": 1
+      }
+    },
+    "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+    "script_repair_policy": {
+      "schema": "duplex_v2.script_repair_policy.v1",
+      "mode": "json_patch",
+      "patch_schema": "duplex_v2.script_patch.v1",
+      "json_parse_max_retries": 3,
+      "content_max_repairs": 5,
+      "length_compaction_max_attempts": 3,
+      "overlength_after_compaction": "fail_case",
+      "judge_scope": "complete_script_and_heard_context"
+    },
+    "text_output_token_policy": "omit",
+    "scene_task": {
+      "scene": {
+        "domain_id": "D05",
+        "domain": "个人组织、计划与决策",
+        "scenario_id": "D05-S07",
+        "scenario": "户外与徒步计划"
+      },
+      "task_style": "结构化整理",
+      "task_instance": {
+        "goal": "把我收集的两天徒步行程笔记、路段描述和同行者补充信息按路段重新归并，区分已经确认与仍有矛盾或缺口的内容，整理出一份便于逐项核对的行程资料，并据此筛出最值得进一步确认的路线方案。"
+      }
+    },
+    "user_voice": {
+      "user_seed": {
+        "role_relation": "负责筹备一支朋友小队周末徒步活动的召集人",
+        "task_familiarity": "medium"
+      },
+      "voice_profile": "男性，三十多岁，音色偏低而清楚，语速中等，整体听感克制自然。",
+      "interaction_profile": {
+        "schema": "duplex_v2.interaction_profile.v1",
+        "formality": "neutral",
+        "directness": "direct",
+        "emotional_expressiveness": "reserved",
+        "verbosity": "balanced",
+        "initiative": "low",
+        "caution": "low",
+        "patience": "low",
+        "behavioral_notes": [
+          "通常直接给出当前需要处理的内容，较少铺垫背景。",
+          "表达较为平稳克制，信息不完整时会用简短问句请求澄清。",
+          "倾向于先听清整理结果，再决定是否补充下一批材料。"
+        ]
+      }
+    },
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "medium",
+      "target_turns": 13,
+      "min_turns": 12,
+      "max_turns": 14
+    },
+    "ambient_catalog": {
+      "schema": "duplex_v2.ambient_catalog.v1",
+      "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+      "assets": [
+        {
+          "asset_id": "fan-fsd50k-eval-419427",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 10.3909375
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-235362",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 11.0
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-415925",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 7.178
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-235541",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 29.045875
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-232686",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 10.3445
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-124020",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 24.78875
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-382582",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.9788125
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-21189",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.962
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-238016",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 11.32
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-185058",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 5.2114375
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-121877",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 11.696
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-340358",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 4.2745
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-82562",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 1.0094375
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-121200",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.83525
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-343098",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.796
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-153104",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.4691875
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-392303",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.6849375
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-272381",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.933375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-71212",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.3638125
+        },
+        {
+          "asset_id": "door-fsd50k-eval-119077",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.7944375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-209519",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 1.0398125
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-399740",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.322
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-233057",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.4700625
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-411545",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.5686875
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-232499",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 0.842
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402127",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402128",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-86343",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 7.5366875
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-57907",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.5773125
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-319512",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.755625
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113173",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 11.2184375
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113175",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.8773125
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113176",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.6341875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-348322",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 1.625
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-426594",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 0.3666875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-332563",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 4.0
+        }
+      ]
+    },
+    "ambient_control": {
+      "schema": "duplex_v2.soundscape_control.v3",
+      "seed": 1251159928,
+      "mode": "layered",
+      "discrete_event_target": 2,
+      "max_ambient_layers": 2,
+      "side_speech_requested": false,
+      "speech_kind_preferences": [
+        "user_to_third_party",
+        "machine",
+        "third_party"
+      ]
+    },
+    "situation_knowledge": {
+      "episode_situation": "2026年11月9日周一晚上，用户独自在杭州家中的书房里，准备整理11月21日至22日青岚山森林公园两天徒步的行程资料。用户是六人朋友小队的召集人，已经把自己的踏勘笔记、同行者林舟转发的轨迹摘要、客栈确认信息和群聊补充抄到了几张纸上。大家已确定从公园南门进入，并在第一晚住溪口客栈，但第一天后半程走公路捷径还是林间绕行线尚未决定。第二天目前有白石脊线和清水谷线两个候选，前者景观更好但有临崖路段，后者爬升较少却涉及溪流通行条件。现有资料采用了不同的路段分界，有的从停车场计程，有的从南门检票口计程，导致第一段里程和总用时不能直接相加。松风垭口附近的岔路标记也出现红线、蓝线两种说法，用户还无法判断是路线变更还是笔记记错。同行者唐婧近期膝部不适，希望避免过长下坡；周闻则必须在周日17点30分前到达杭州东站，这两项条件会影响第二天路线和返程班次的选择。群聊中关于北门接驳车末班时间有14点20分和15点10分两个版本，且两条消息的记录日期不同。用户暂时无法联网核验，也没有可以代为联系景区、客栈或交通方的工具，只能先把手边材料口头归并，再列出需要本人确认的问题。当前优先级是先按实际经过顺序统一路段名称和起止点，再区分多来源一致、单一来源记录以及相互矛盾的内容。完成这些基础整理后，用户希望比较各组合对体力、膝部负担、临崖暴露、溪流条件和返程时间的影响，而不是立即把某条路线视为最终定案。尚未解决的关键问题包括第一段统计口径、垭口岔路颜色、清水谷两处过溪点的替代路径、白石脊临崖段的通行状态以及接驳车时刻。",
+      "task_reference_data": [
+        "用户的黄色踏勘本已读记录：第一天第一段写作“南门停车场—竹影亭，3.4公里，约75分钟，缓坡石阶”；页边另注“检票口在停车场之后”，但未记两点间距离。",
+        "林舟转发给用户的轨迹摘要已读内容：第一天第一段标为“南门检票口—竹影亭，4.1公里，约95分钟，累计爬升210米”；摘要没有说明是否包含停车场步行，因此与黄色踏勘本的统计口径仍待核对。",
+        "黄色踏勘本与林舟轨迹摘要一致的路段：竹影亭—鹰嘴台5.6公里，累计爬升约520米，通常用时2小时30分至2小时50分；两份材料都标注途中没有稳定补水点。",
+        "用户现场拍照后抄下的岔路信息：鹰嘴台—松风垭口约4.2公里、约1小时50分；踏勘本写“岔口跟红色标记”，照片中的褪色指示板却可辨认出“蓝线往松风垭口”，颜色冲突尚未核实。",
+        "第一天后半程的两种记录均已读：松风垭口走公路到溪口客栈约2.8公里、约35分钟；走林间绕行线约4.6公里、约90分钟，途中增加约180米爬升。客栈确认信息写明11月21日晚保留六个床位，最晚20点办理入住。",
+        "白石脊线来自林舟的旧轨迹摘要：溪口客栈—白石脊—北门共12.6公里，累计爬升610米、下降930米，预计5小时30分至6小时；其中约1.8公里被标为临崖碎石路，轨迹记录日期为2025年10月18日，当前开放状态未核实。",
+        "清水谷线来自用户今年春季的踏勘本：溪口客栈—清水谷—南门共10.8公里，累计爬升330米、下降560米，预计4小时30分；在约4.3公里和6.1公里处各有一次过溪，笔记注明“水小时可踏石通过”，但没有记录涨水时的替代路径。",
+        "周闻在群聊中已明确：周日需在17点30分前抵达杭州东站；用户自己的返程估算纸条写着“北门至杭州东站至少预留2小时40分，南门至少预留2小时20分”，这些只是小队过往经验值，不是已核实的当日交通结果。",
+        "接驳车信息存在两个版本：用户保存的2026年9月游客中心纸质时刻表写北门末班14点20分，林舟转发的2026年10月群聊照片写北门末班15点10分；两份材料均可能过期，南门返程班次未记录。",
+        "同行者补充信息已读：六人中林舟近期完成过单日15公里、累计爬升700米的徒步；唐婧表示膝部不适，希望单日不超过12公里并尽量避免累计下降超过600米；其余三名队员没有提出特殊体力限制，但也没有提供近期徒步数据。"
+      ],
+      "environment_audio": "书房右后方约两米处的落地扇持续发出低而稳定的转动声，偶尔因摆头产生轻微强弱变化。房间其余位置较安静，近距离说话清晰可辨。",
+      "estimated_snr_db": 30,
+      "constraints": [
+        {
+          "constraint_id": "C01",
+          "text": "徒步日期固定为2026年11月21日至22日，第一晚住宿地点固定为溪口客栈。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C02",
+          "text": "为照顾唐婧，候选安排应优先控制其单日里程不超过12公里，并尽量避免累计下降超过600米。",
+          "kind": "soft"
+        },
+        {
+          "constraint_id": "C03",
+          "text": "周闻必须在11月22日17点30分前抵达杭州东站，因此第二天路线必须留出足够返程时间。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C04",
+          "text": "整理时必须按路段区分多来源一致、单一来源记录、相互矛盾和信息缺失，不把待核实内容写成确定事实。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C05",
+          "text": "筛选路线时优先考虑全队安全和按时返程，其次再比较景观与路线丰富度。",
+          "kind": "soft"
+        }
+      ],
+      "safety_limits": [
+        {
+          "limit_id": "L01",
+          "text": "白石脊临崖碎石路的开放状态未核实，不能仅凭2025年的旧轨迹将其视为可安全通行。",
+          "severity": "hard"
+        },
+        {
+          "limit_id": "L02",
+          "text": "清水谷两处过溪点只有低水位记录；若出发前出现降雨或现场水位明显上涨，不应在没有可靠替代路径的情况下强行涉水。",
+          "severity": "critical"
+        },
+        {
+          "limit_id": "L03",
+          "text": "鹰嘴台至松风垭口的标记颜色存在冲突，实际出行前必须通过现场正式指示或景区管理方确认，不能凭颜色笔记盲目进入岔路。",
+          "severity": "hard"
+        }
+      ],
+      "soundscape_plan": {
+        "mode": "layered",
+        "ambient_layers": [
+          {
+            "source_id": "AMB01",
+            "asset_id": "fan-fsd50k-eval-419427",
+            "reason": "适合作为安静家庭书房中的连续低声机械底噪，与故事中的落地扇一致。"
+          }
+        ],
+        "environment_events": [
+          {
+            "source_id": "ENV01",
+            "asset_id": "paper-fsd50k-eval-82562",
+            "reason": "用户正在查看多张踏勘笔记和纸质时刻表，短暂翻纸声有明确场景来源。"
+          },
+          {
+            "source_id": "ENV02",
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "reason": "书房内短暂键盘声可自然表现用户在本地整理已有笔记，不暗示联网或外部写入。"
+          }
+        ],
+        "schema": "duplex_v2.soundscape_plan.v4",
+        "side_speech_sources": [],
+        "side_speech_count": 0,
+        "sampling": {
+          "schema": "duplex_v2.ambient_draw.v3",
+          "policy": {
+            "schema": "duplex_v2.soundscape_policy.v3",
+            "quiet_probability": 0.5,
+            "discrete_targets_by_tier": {
+              "short": [
+                0,
+                1
+              ],
+              "medium": [
+                1,
+                2
+              ],
+              "long": [
+                2,
+                4
+              ]
+            },
+            "discrete_count_includes": [
+              "environment_events",
+              "side_speech"
+            ],
+            "max_ambient_layers": 2,
+            "gain_range": [
+              0.3,
+              0.7
+            ],
+            "speech_request_probability": 0.5,
+            "third_party_preference_probability": 0.8,
+            "speech_requires_existing_scene_source": true,
+            "environment_audio": "base_only",
+            "stage2_repair": "atomic_scoped_patch",
+            "stage2_max_judge_attempts": 3,
+            "json_parse_max_retries": 3,
+            "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+            "user_aside_preference_probability": 0.5,
+            "user_voice_source": "stage1_user",
+            "user_aside_requires_present_recipient": true
+          },
+          "preferences": {
+            "schema": "duplex_v2.ambient_preferences.v1",
+            "seed": 202611090005,
+            "slot": 9,
+            "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+            "categories": {
+              "bed": [
+                "wind",
+                "rain",
+                "fan",
+                "birds",
+                "traffic",
+                "crowd"
+              ],
+              "event": [
+                "paper",
+                "footsteps",
+                "door",
+                "water_tap",
+                "doorbell",
+                "keyboard"
+              ]
+            },
+            "recordings": {
+              "bed:birds": [
+                "birds-fsd50k-eval-57907",
+                "birds-fsd50k-eval-319512",
+                "birds-fsd50k-eval-86343"
+              ],
+              "bed:crowd": [
+                "crowd-fsd50k-eval-340358",
+                "crowd-fsd50k-eval-185058",
+                "crowd-fsd50k-eval-121877"
+              ],
+              "bed:fan": [
+                "fan-fsd50k-eval-419427",
+                "fan-fsd50k-eval-235362",
+                "fan-fsd50k-eval-415925"
+              ],
+              "bed:rain": [
+                "rain-fsd50k-eval-382582",
+                "rain-fsd50k-eval-21189",
+                "rain-fsd50k-eval-238016"
+              ],
+              "bed:traffic": [
+                "traffic-fsd50k-eval-232686",
+                "traffic-fsd50k-eval-124020",
+                "traffic-fsd50k-eval-235541"
+              ],
+              "bed:wind": [
+                "wind-fsd50k-eval-113173",
+                "wind-fsd50k-eval-113175",
+                "wind-fsd50k-eval-113176"
+              ],
+              "event:door": [
+                "door-fsd50k-eval-71212",
+                "door-fsd50k-eval-119077",
+                "door-fsd50k-eval-209519"
+              ],
+              "event:doorbell": [
+                "doorbell-fsd50k-eval-332563",
+                "doorbell-fsd50k-eval-426594",
+                "doorbell-fsd50k-eval-348322"
+              ],
+              "event:footsteps": [
+                "footsteps-fsd50k-eval-392303",
+                "footsteps-fsd50k-eval-272381",
+                "footsteps-fsd50k-eval-153104"
+              ],
+              "event:keyboard": [
+                "keyboard-fsd50k-eval-233057",
+                "keyboard-fsd50k-eval-411545",
+                "keyboard-fsd50k-eval-399740"
+              ],
+              "event:paper": [
+                "paper-fsd50k-eval-82562",
+                "paper-fsd50k-eval-343098",
+                "paper-fsd50k-eval-121200"
+              ],
+              "event:water_tap": [
+                "water_tap-fsd50k-eval-232499",
+                "water_tap-fsd50k-eval-402127",
+                "water_tap-fsd50k-eval-402128"
+              ]
+            }
+          },
+          "control": {
+            "schema": "duplex_v2.soundscape_control.v3",
+            "seed": 1251159928,
+            "mode": "layered",
+            "discrete_event_target": 2,
+            "max_ambient_layers": 2,
+            "side_speech_requested": false,
+            "speech_kind_preferences": [
+              "user_to_third_party",
+              "machine",
+              "third_party"
+            ]
+          },
+          "control_sha256": "7daa95c8f2841cfe165167c6913b2c8bce8eaee649621328cf427d4152c28097",
+          "candidate_plan": {
+            "schema": "duplex_v2.soundscape_plan.v4",
+            "mode": "layered",
+            "ambient_layers": [
+              {
+                "source_id": "AMB01",
+                "candidates": [
+                  {
+                    "asset_id": "fan-fsd50k-eval-419427",
+                    "reason": "适合作为安静家庭书房中的连续低声机械底噪，与故事中的落地扇一致。",
+                    "environment_audio": "右后方传来稳定的机械风扇声，音量较低，并随摆头出现轻微起伏。"
+                  },
+                  {
+                    "asset_id": "fan-fsd50k-eval-235362",
+                    "reason": "连续时间较长的室内风扇录音，适合维持书房基础声景。",
+                    "environment_audio": "近旁有持续而均匀的风扇转动声，整体不遮盖语音。"
+                  },
+                  {
+                    "asset_id": "fan-fsd50k-eval-415925",
+                    "reason": "可作为低强度室内通风底色，符合独自在书房整理纸质资料的环境。",
+                    "environment_audio": "室内风扇发出平稳的低频转动声，背景其余部分较安静。"
+                  }
+                ]
+              }
+            ],
+            "environment_events": [
+              {
+                "source_id": "ENV01",
+                "candidates": [
+                  {
+                    "asset_id": "paper-fsd50k-eval-82562",
+                    "reason": "用户正在查看多张踏勘笔记和纸质时刻表，短暂翻纸声有明确场景来源。",
+                    "environment_audio": "近距离响起一次完整的纸张翻动声，随后迅速恢复安静。"
+                  },
+                  {
+                    "asset_id": "paper-fsd50k-eval-343098",
+                    "reason": "简短纸张声适合表现用户在不同路线笔记之间切换。",
+                    "environment_audio": "桌面方向传来短促的纸页翻动和轻微揉动声。"
+                  },
+                  {
+                    "asset_id": "paper-fsd50k-eval-121200",
+                    "reason": "与用户手边已有纸质资料相符，且持续时间短，不会形成新的任务事实。",
+                    "environment_audio": "近处出现一次轻而完整的翻纸声。"
+                  }
+                ]
+              },
+              {
+                "source_id": "ENV02",
+                "candidates": [
+                  {
+                    "asset_id": "keyboard-fsd50k-eval-233057",
+                    "reason": "书房内短暂键盘声可自然表现用户在本地整理已有笔记，不暗示联网或外部写入。",
+                    "environment_audio": "书桌前传来一小段清晰而短促的键盘敲击声。"
+                  },
+                  {
+                    "asset_id": "keyboard-fsd50k-eval-411545",
+                    "reason": "完整的短段室内键盘录音与家庭书房环境相容。",
+                    "environment_audio": "近距离响起连续数下键盘按键声，随后停止。"
+                  },
+                  {
+                    "asset_id": "keyboard-fsd50k-eval-399740",
+                    "reason": "可作为整理本地资料时的偶发动作声，来源与当前场景一致。",
+                    "environment_audio": "桌面方向出现短暂而节奏均匀的电脑键盘输入声。"
+                  }
+                ]
+              }
+            ],
+            "side_speech_eligibility": {
+              "user_to_third_party": {
+                "compatible": false,
+                "reason": "用户当前独自在书房内，故事中没有明确同场且可接收旁话的第三方。",
+                "source": null
+              },
+              "third_party": {
+                "compatible": false,
+                "reason": "当前场景没有同场第三方人物，也没有合理的第三方说话来源。",
+                "source": null
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "场景中的落地扇只产生连续机械噪声，不具备语音播报来源。",
+                "source": null
+              }
+            }
+          },
+          "base_environment_audio_sha256": "f8632d8c9298e04bac861decb7e9b00eed6faf8873115703501cf69747cd55db",
+          "aggregate_environment_audio": "书房右后方约两米处的落地扇持续发出低而稳定的转动声，偶尔因摆头产生轻微强弱变化。房间其余位置较安静，近距离说话清晰可辨。 右后方传来稳定的机械风扇声，音量较低，并随摆头出现轻微起伏。 近距离响起一次完整的纸张翻动声，随后迅速恢复安静。 书桌前传来一小段清晰而短促的键盘敲击声。",
+          "draws": [
+            {
+              "source_id": "AMB01",
+              "category": "fan",
+              "asset_id": "fan-fsd50k-eval-419427",
+              "eligible_categories": [
+                "fan"
+              ],
+              "eligible_assets": [
+                "fan-fsd50k-eval-235362",
+                "fan-fsd50k-eval-415925",
+                "fan-fsd50k-eval-419427"
+              ]
+            },
+            {
+              "source_id": "ENV01",
+              "category": "paper",
+              "asset_id": "paper-fsd50k-eval-82562",
+              "eligible_categories": [
+                "paper"
+              ],
+              "eligible_assets": [
+                "paper-fsd50k-eval-121200",
+                "paper-fsd50k-eval-343098",
+                "paper-fsd50k-eval-82562"
+              ]
+            },
+            {
+              "source_id": "ENV02",
+              "category": "keyboard",
+              "asset_id": "keyboard-fsd50k-eval-233057",
+              "eligible_categories": [
+                "keyboard"
+              ],
+              "eligible_assets": [
+                "keyboard-fsd50k-eval-233057",
+                "keyboard-fsd50k-eval-399740",
+                "keyboard-fsd50k-eval-411545"
+              ]
+            }
+          ],
+          "speech_selection": {
+            "requested": false,
+            "compatible_kinds": [],
+            "selected_kind": null,
+            "outcome": "not_requested",
+            "assessments": {
+              "user_to_third_party": {
+                "compatible": false,
+                "reason": "用户当前独自在书房内，故事中没有明确同场且可接收旁话的第三方。",
+                "source": null
+              },
+              "third_party": {
+                "compatible": false,
+                "reason": "当前场景没有同场第三方人物，也没有合理的第三方说话来源。",
+                "source": null
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "场景中的落地扇只产生连续机械噪声，不具备语音播报来源。",
+                "source": null
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "content_approved_script": {
+    "schema_version": "duplex_v2.fixed_script.v3",
+    "title": "青岚山两日徒步资料归并",
+    "rounds": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_utterance": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。",
+        "assistant_utterance": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。",
+        "user_intent": "提供第一天首段的两份不同来源记录，要求统一归类。",
+        "assistant_intent": "统一首段名称，并区分已确认关系、口径矛盾和信息缺口。",
+        "semantic_goal": "形成首段可核对的结构化记录，避免直接合并不同口径。",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": null,
+        "pause_cue": null
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_utterance": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。",
+        "assistant_utterance": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。",
+        "user_intent": "补充两份材料一致的第二路段数据。",
+        "assistant_intent": "将一致的里程、爬升、用时和补水条件归入确认项。",
+        "semantic_goal": "建立第一天第二路段的可靠基准。",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A001",
+          "user_onset_after_text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。",
+          "assistant_stop_after_text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_utterance": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。",
+        "assistant_utterance": "这段的距离和用时可暂记为单一来源；标记颜色必须列为矛盾，不能选边。出发前应以现场正式指示或景区确认路线，不能凭红蓝颜色进入岔路。",
+        "user_intent": "补充第三路段数据和岔路标记冲突。",
+        "assistant_intent": "区分单一来源数据与颜色矛盾，并说明不能凭冲突记录选路。",
+        "semantic_goal": "明确第三路段哪些可暂存、哪些必须核验。",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A002",
+          "user_onset_after_text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。",
+          "assistant_stop_after_text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_utterance": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。",
+        "assistant_utterance": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。",
+        "user_intent": "打断核验说明，转而补充第一天后半程选项和住宿限制。",
+        "assistant_intent": "停止展开核验方式，归并两条后半程路线并记录入住硬条件。",
+        "semantic_goal": "完成第一天后半程的分支整理。",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A003",
+          "user_onset_after_text": "这段的距离和用时可暂记为单一来源；标记颜色",
+          "assistant_stop_after_text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_utterance": "按现有用时算，两条走法分别需要多久？先不加休息。",
+        "assistant_utterance": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。",
+        "user_intent": "要求基于现有分段数据估算第一天两种走法的纯行走时间。",
+        "assistant_intent": "计算两条分支的时间区间，同时保留首段口径不确定性。",
+        "semantic_goal": "获得可用于比较和入住安排的初步时间范围。",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A004",
+          "user_onset_after_text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。",
+          "assistant_stop_after_text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_utterance": "第二天先看白石脊。林舟的旧轨迹是溪口客栈经白石脊到北门，12.6公里，爬升610米、下降930米，5小时30分到6小时。里面有1.8公里临崖碎石路，记录日期是2025年10月18日。",
+        "assistant_utterance": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。",
+        "user_intent": "提供白石脊候选线的旧轨迹数据和风险信息。",
+        "assistant_intent": "标明来源局限，并把开放状态和临崖通行列为安全缺口。",
+        "semantic_goal": "建立白石脊线的候选档案且不误判为已开放。",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A005",
+          "user_onset_after_text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。",
+          "assistant_stop_after_text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_utterance": "另一个是清水谷，我今年春天记的是客栈经清水谷到南门，10.8公里，爬升330米、下降560米，约4小时30分。4.3公里和6.1公里处各过一次溪，只写了水小时能踏石走，没有涨水替代路。",
+        "assistant_utterance": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。两处过溪及涨水替代路径是关键缺口；若出发前降雨或现场水位上涨，不能在没有可靠替代路时强行涉水。",
+        "user_intent": "补充清水谷候选线数据和两处过溪条件。",
+        "assistant_intent": "归类路线数据，并突出过溪替代路径缺失带来的安全限制。",
+        "semantic_goal": "建立清水谷线档案并明确涉水决策边界。",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A006",
+          "user_onset_after_text": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。",
+          "assistant_stop_after_text": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_utterance": "唐婧膝部不舒服，希望单日不超过12公里，累计下降尽量别超过600米。按这个条件先比较两条线。",
+        "assistant_utterance": "按唐婧单日不超过12公里、下降尽量不超600米的要求，白石脊12.6公里、下降930米，两项都超；清水谷10.8公里、下降560米，落在偏好内。所以体力与膝部负担上清水谷更合适，但过溪安全未确认前不能定案。",
+        "user_intent": "加入同行者膝部限制，要求比较两条第二天路线。",
+        "assistant_intent": "按里程和累计下降逐项筛选候选线，并保留安全条件。",
+        "semantic_goal": "判断哪条路线更符合唐婧的体力与膝部偏好。",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A007",
+          "user_onset_after_text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。两处过溪及涨水替代路径是关键缺口；若出发前降雨或现场水位上涨，不能在没有可靠替代路时强行涉水。",
+          "assistant_stop_after_text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。两处过溪及涨水替代路径是关键缺口；若出发前降雨或现场水位上涨，不能在没有可靠替代路时强行涉水。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_utterance": "先把返程也算进去。周闻必须在22日17点30分前到杭州东站，这个是硬条件。",
+        "assistant_utterance": "加入返程硬约束后，第二天不能只看路程和膝部负担。还需要北门、南门到杭州东站的预留时长，以及两边接驳车的末班资料，才能倒推最晚出发和离园时间。",
+        "user_intent": "打断路线倾向结论，补充周闻的返程硬期限。",
+        "assistant_intent": "将返程期限纳入筛选，并指出倒推时间所需的交通资料。",
+        "semantic_goal": "防止在忽略返程要求的情况下确定第二天路线。",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A008",
+          "user_onset_after_text": "按唐婧单日不超过12公里、下降尽量不超600米的要求，白石脊12.6公里、下降930米，两项都超；清水谷10.8公里、下降560米，落在偏好内。",
+          "assistant_stop_after_text": "按唐婧单日不超过12公里、下降尽量不超600米的要求，白石脊12.6公里、下降930米，两项都超；清水谷10.8公里、下降560米，落在偏好内。所"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_utterance": "我的经验纸条写北门到东站至少留2小时40分，南门至少2小时20分。北门末班有两个版本，一个是2026年9月纸表的14点20分，另一个是10月群聊照片的15点10分；南门班次没记。",
+        "assistant_utterance": "按经验值倒推，北门最迟14点50分离开，南门最迟15点10分离开；北门若末班是14点20分，则以14点20分为上限。交通时长和班次都未核实，实际还应预留机动时间。",
+        "user_intent": "提供返程经验时长、北门末班冲突和南门班次缺口。",
+        "assistant_intent": "倒推理论最晚离园时间，并标明接驳车冲突和经验值局限。",
+        "semantic_goal": "得到第二天路线比较所需的返程时间边界。",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01",
+          "T02"
+        ],
+        "timing": {
+          "target_assistant_id": "A009",
+          "user_onset_after_text": "加入返程硬约束后，第二天不能只看路程和膝部负担。还需要北门、南门到杭州东站的预留时长，以及两边接驳车的末班资料，才能倒推最晚出发和离园时间。",
+          "assistant_stop_after_text": "加入返程硬约束后，第二天不能只看路程和膝部负担。还需要北门、南门到杭州东站的预留时长，以及两边接驳车的末班资料，才能倒推最晚出发和离园时间。"
+        },
+        "pause_cue": {
+          "after_text": "我的经验纸条写北门到东站至少留2小时40分，南门至少2小时20分。",
+          "duration_ms": 650
+        }
+      },
+      {
+        "user_id": "U11",
+        "assistant_id": "A011",
+        "user_utterance": "那现在先筛一个最值得确认的组合，别当成最终定案。",
+        "assistant_utterance": "初筛首选是第一天走公路捷径、第二天走清水谷，更利于控制体力和返程；但须先确认两处过溪替代路及南门班次。白石脊仅在开放、临崖安全和膝部负担可接受时保留，林间绕行暂不优先。",
+        "user_intent": "要求基于现有信息筛出优先核验的两日路线组合。",
+        "assistant_intent": "给出条件化首选组合和备选保留条件，不作最终定案。",
+        "semantic_goal": "确定后续最值得投入核验精力的路线方案。",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A010",
+          "user_onset_after_text": "按经验值倒推，北门最迟14点50分离开，南门最迟15点10分离开；北门若末班是14点20分，则以14点20分为上限。交通时长和班次都未核实，实际还应预留机动时间。",
+          "assistant_stop_after_text": "按经验值倒推，北门最迟14点50分离开，南门最迟15点10分离开；北门若末班是14点20分，则以14点20分为上限。交通时长和班次都未核实，实际还应预留机动时间。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U12",
+        "assistant_id": "A012",
+        "user_utterance": "再补队伍情况：林舟最近走过单日15公里、爬升700米；另外三个人没提特殊限制，但也没有近期徒步数据。这个会改变刚才的排序吗？",
+        "assistant_utterance": "不会改变首选排序。林舟的记录只说明他个人大概率能承受较高强度，不能代表全队；其余三人缺少近期数据，应按保守强度安排。唐婧的膝部限制和周闻的返程期限仍是筛选重点。",
+        "user_intent": "补充其他队员的体力信息并询问是否影响路线排序。",
+        "assistant_intent": "评估新增队伍信息的权重，避免用单个强队员代表全队。",
+        "semantic_goal": "确认路线排序是否需要因队伍能力信息而调整。",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A011",
+          "user_onset_after_text": "初筛首选是第一天走公路捷径、第二天走清水谷，更利于控制体力和返程；但须先确认两处过溪替代路及南门班次。白石脊仅在开放、临崖安全和膝部负担可接受时保留，林间绕行暂不优先。",
+          "assistant_stop_after_text": "初筛首选是第一天走公路捷径、第二天走清水谷，更利于控制体力和返程；但须先确认两处过溪替代路及南门班次。白石脊仅在开放、临崖安全和膝部负担可接受时保留，林间绕行暂不优先。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U13",
+        "assistant_id": "A013",
+        "user_utterance": "最后按确认、矛盾、缺口和核验顺序，给我一版能逐项对照的简表。",
+        "assistant_utterance": "确认：21日晚溪口客栈六床，20点前入住；竹影亭—鹰嘴台5.6公里、爬升约520米、2小时30分至2小时50分，无稳定补水。单一来源：首段黄色本为停车场—竹影亭3.4公里、75分钟，林舟轨迹为检票口—竹影亭4.1公里、95分钟、爬升210米；鹰嘴台—松风垭口4.2公里、1小时50分；后半程公路2.8公里、35分钟，林间线4.6公里、90分钟并多爬180米；白石脊12.6公里、升610米、降930米、5小时30分至6小时，含1.8公里临崖碎石路；清水谷10.8公里、升330米、降560米、约4小时30分，4.3和6.1公里处过溪。矛盾：首段统计口径、垭口红蓝标记、北门末班14点20分与15点10分。缺口：停车场至检票口距离及轨迹是否含该段、白石脊开放和临崖状态、清水谷涨水替代路、南门班次及当日交通。核验顺序：先垭口正式指示，再查清水谷替代路、南门班次和交通时长，同时核白石脊状态。暂以公路捷径加清水谷为首选待核方案；降雨或水位上涨且无替代路时不涉溪，并确保周闻17点30分前到站及照顾唐婧的里程、下降偏好。",
+        "user_intent": "要求汇总为按状态和优先级排列的最终核对资料。",
+        "assistant_intent": "完整回读确认项、矛盾项、缺口、核验顺序和条件化首选方案。",
+        "semantic_goal": "获得可直接用于后续逐项核验的简明行程资料。",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A012",
+          "user_onset_after_text": "不会改变首选排序。林舟的记录只说明他个人大概率能承受较高强度，不能代表全队；其余三人缺少近期数据，应按保守强度安排。唐婧的膝部限制和周闻的返程期限仍是筛选重点。",
+          "assistant_stop_after_text": "不会改变首选排序。林舟的记录只说明他个人大概率能承受较高强度，不能代表全队；其余三人缺少近期数据，应按保守强度安排。唐婧的膝部限制和周闻的返程期限仍是筛选重点。"
+        },
+        "pause_cue": null
+      }
+    ],
+    "backchannels": [
+      {
+        "event_id": "BC01",
+        "target_assistant_id": "A002",
+        "after_text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。",
+        "text": "嗯"
+      },
+      {
+        "event_id": "BC02",
+        "target_assistant_id": "A005",
+        "after_text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，",
+        "text": "明白"
+      },
+      {
+        "event_id": "BC03",
+        "target_assistant_id": "A007",
+        "after_text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。",
+        "text": "嗯"
+      },
+      {
+        "event_id": "BC04",
+        "target_assistant_id": "A010",
+        "after_text": "按经验值倒推，北门最迟14点50分离开，南门最迟15点10分离开；",
+        "text": "好"
+      }
+    ],
+    "side_speech": [],
+    "environment_events": [
+      {
+        "event_id": "ENV01",
+        "source_id": "ENV01",
+        "target_audio_id": "U01",
+        "placement_fraction": 0.42
+      },
+      {
+        "event_id": "ENV02",
+        "source_id": "ENV02",
+        "target_audio_id": "A010",
+        "placement_fraction": 0.58
+      }
+    ]
+  },
+  "reconstructed_heard_context": [
+    {
+      "user_id": "U01",
+      "assistant_id": "A001",
+      "user_at_onset_history": [],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        }
+      ],
+      "boundary": null,
+      "prior_backchannel_onsets": [],
+      "assistant_candidate": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    },
+    {
+      "user_id": "U02",
+      "assistant_id": "A002",
+      "user_at_onset_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        }
+      ],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        }
+      ],
+      "boundary": {
+        "target_assistant_id": "A001",
+        "at_user_onset_heard_prefix": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。",
+        "final_shared_played_prefix": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。",
+        "discarded_unheard_tail": ""
+      },
+      "prior_backchannel_onsets": [],
+      "assistant_candidate": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    },
+    {
+      "user_id": "U03",
+      "assistant_id": "A003",
+      "user_at_onset_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        }
+      ],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        }
+      ],
+      "boundary": {
+        "target_assistant_id": "A002",
+        "at_user_onset_heard_prefix": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。",
+        "final_shared_played_prefix": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。",
+        "discarded_unheard_tail": ""
+      },
+      "prior_backchannel_onsets": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        }
+      ],
+      "assistant_candidate": "这段的距离和用时可暂记为单一来源；标记颜色必须列为矛盾，不能选边。出发前应以现场正式指示或景区确认路线，不能凭红蓝颜色进入岔路。",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    },
+    {
+      "user_id": "U04",
+      "assistant_id": "A004",
+      "user_at_onset_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色"
+        }
+      ],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。"
+        }
+      ],
+      "boundary": {
+        "target_assistant_id": "A003",
+        "at_user_onset_heard_prefix": "这段的距离和用时可暂记为单一来源；标记颜色",
+        "final_shared_played_prefix": "这段的距离和用时可暂记为单一来源；标记颜色必须",
+        "discarded_unheard_tail": "列为矛盾，不能选边。出发前应以现场正式指示或景区确认路线，不能凭红蓝颜色进入岔路。"
+      },
+      "prior_backchannel_onsets": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        }
+      ],
+      "assistant_candidate": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    },
+    {
+      "user_id": "U05",
+      "assistant_id": "A005",
+      "user_at_onset_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。"
+        }
+      ],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "按现有用时算，两条走法分别需要多久？先不加休息。"
+        }
+      ],
+      "boundary": {
+        "target_assistant_id": "A004",
+        "at_user_onset_heard_prefix": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。",
+        "final_shared_played_prefix": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。",
+        "discarded_unheard_tail": ""
+      },
+      "prior_backchannel_onsets": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        }
+      ],
+      "assistant_candidate": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    },
+    {
+      "user_id": "U06",
+      "assistant_id": "A006",
+      "user_at_onset_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "按现有用时算，两条走法分别需要多久？先不加休息。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。"
+        }
+      ],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "按现有用时算，两条走法分别需要多久？先不加休息。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。"
+        },
+        {
+          "role": "user",
+          "id": "U06",
+          "text": "第二天先看白石脊。林舟的旧轨迹是溪口客栈经白石脊到北门，12.6公里，爬升610米、下降930米，5小时30分到6小时。里面有1.8公里临崖碎石路，记录日期是2025年10月18日。"
+        }
+      ],
+      "boundary": {
+        "target_assistant_id": "A005",
+        "at_user_onset_heard_prefix": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。",
+        "final_shared_played_prefix": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。",
+        "discarded_unheard_tail": ""
+      },
+      "prior_backchannel_onsets": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A005",
+          "after_text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，",
+          "text": "明白",
+          "completion_status": "not_known_before_tts"
+        }
+      ],
+      "assistant_candidate": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    },
+    {
+      "user_id": "U07",
+      "assistant_id": "A007",
+      "user_at_onset_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "按现有用时算，两条走法分别需要多久？先不加休息。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。"
+        },
+        {
+          "role": "user",
+          "id": "U06",
+          "text": "第二天先看白石脊。林舟的旧轨迹是溪口客栈经白石脊到北门，12.6公里，爬升610米、下降930米，5小时30分到6小时。里面有1.8公里临崖碎石路，记录日期是2025年10月18日。"
+        },
+        {
+          "role": "assistant",
+          "id": "A006",
+          "text": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。"
+        }
+      ],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "按现有用时算，两条走法分别需要多久？先不加休息。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。"
+        },
+        {
+          "role": "user",
+          "id": "U06",
+          "text": "第二天先看白石脊。林舟的旧轨迹是溪口客栈经白石脊到北门，12.6公里，爬升610米、下降930米，5小时30分到6小时。里面有1.8公里临崖碎石路，记录日期是2025年10月18日。"
+        },
+        {
+          "role": "assistant",
+          "id": "A006",
+          "text": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。"
+        },
+        {
+          "role": "user",
+          "id": "U07",
+          "text": "另一个是清水谷，我今年春天记的是客栈经清水谷到南门，10.8公里，爬升330米、下降560米，约4小时30分。4.3公里和6.1公里处各过一次溪，只写了水小时能踏石走，没有涨水替代路。"
+        }
+      ],
+      "boundary": {
+        "target_assistant_id": "A006",
+        "at_user_onset_heard_prefix": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。",
+        "final_shared_played_prefix": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。",
+        "discarded_unheard_tail": ""
+      },
+      "prior_backchannel_onsets": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A005",
+          "after_text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，",
+          "text": "明白",
+          "completion_status": "not_known_before_tts"
+        }
+      ],
+      "assistant_candidate": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。两处过溪及涨水替代路径是关键缺口；若出发前降雨或现场水位上涨，不能在没有可靠替代路时强行涉水。",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    },
+    {
+      "user_id": "U08",
+      "assistant_id": "A008",
+      "user_at_onset_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "按现有用时算，两条走法分别需要多久？先不加休息。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。"
+        },
+        {
+          "role": "user",
+          "id": "U06",
+          "text": "第二天先看白石脊。林舟的旧轨迹是溪口客栈经白石脊到北门，12.6公里，爬升610米、下降930米，5小时30分到6小时。里面有1.8公里临崖碎石路，记录日期是2025年10月18日。"
+        },
+        {
+          "role": "assistant",
+          "id": "A006",
+          "text": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。"
+        },
+        {
+          "role": "user",
+          "id": "U07",
+          "text": "另一个是清水谷，我今年春天记的是客栈经清水谷到南门，10.8公里，爬升330米、下降560米，约4小时30分。4.3公里和6.1公里处各过一次溪，只写了水小时能踏石走，没有涨水替代路。"
+        },
+        {
+          "role": "assistant",
+          "id": "A007",
+          "text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。两处过溪及涨水替代路径是关键缺口；若出发前降雨或现场水位上涨，不能在没有可靠替代路时强行涉水。"
+        }
+      ],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "按现有用时算，两条走法分别需要多久？先不加休息。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。"
+        },
+        {
+          "role": "user",
+          "id": "U06",
+          "text": "第二天先看白石脊。林舟的旧轨迹是溪口客栈经白石脊到北门，12.6公里，爬升610米、下降930米，5小时30分到6小时。里面有1.8公里临崖碎石路，记录日期是2025年10月18日。"
+        },
+        {
+          "role": "assistant",
+          "id": "A006",
+          "text": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。"
+        },
+        {
+          "role": "user",
+          "id": "U07",
+          "text": "另一个是清水谷，我今年春天记的是客栈经清水谷到南门，10.8公里，爬升330米、下降560米，约4小时30分。4.3公里和6.1公里处各过一次溪，只写了水小时能踏石走，没有涨水替代路。"
+        },
+        {
+          "role": "assistant",
+          "id": "A007",
+          "text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。两处过溪及涨水替代路径是关键缺口；若出发前降雨或现场水位上涨，不能在没有可靠替代路时强行涉水。"
+        },
+        {
+          "role": "user",
+          "id": "U08",
+          "text": "唐婧膝部不舒服，希望单日不超过12公里，累计下降尽量别超过600米。按这个条件先比较两条线。"
+        }
+      ],
+      "boundary": {
+        "target_assistant_id": "A007",
+        "at_user_onset_heard_prefix": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。两处过溪及涨水替代路径是关键缺口；若出发前降雨或现场水位上涨，不能在没有可靠替代路时强行涉水。",
+        "final_shared_played_prefix": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。两处过溪及涨水替代路径是关键缺口；若出发前降雨或现场水位上涨，不能在没有可靠替代路时强行涉水。",
+        "discarded_unheard_tail": ""
+      },
+      "prior_backchannel_onsets": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A005",
+          "after_text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，",
+          "text": "明白",
+          "completion_status": "not_known_before_tts"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A007",
+          "after_text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        }
+      ],
+      "assistant_candidate": "按唐婧单日不超过12公里、下降尽量不超600米的要求，白石脊12.6公里、下降930米，两项都超；清水谷10.8公里、下降560米，落在偏好内。所以体力与膝部负担上清水谷更合适，但过溪安全未确认前不能定案。",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    },
+    {
+      "user_id": "U09",
+      "assistant_id": "A009",
+      "user_at_onset_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "按现有用时算，两条走法分别需要多久？先不加休息。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。"
+        },
+        {
+          "role": "user",
+          "id": "U06",
+          "text": "第二天先看白石脊。林舟的旧轨迹是溪口客栈经白石脊到北门，12.6公里，爬升610米、下降930米，5小时30分到6小时。里面有1.8公里临崖碎石路，记录日期是2025年10月18日。"
+        },
+        {
+          "role": "assistant",
+          "id": "A006",
+          "text": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。"
+        },
+        {
+          "role": "user",
+          "id": "U07",
+          "text": "另一个是清水谷，我今年春天记的是客栈经清水谷到南门，10.8公里，爬升330米、下降560米，约4小时30分。4.3公里和6.1公里处各过一次溪，只写了水小时能踏石走，没有涨水替代路。"
+        },
+        {
+          "role": "assistant",
+          "id": "A007",
+          "text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。两处过溪及涨水替代路径是关键缺口；若出发前降雨或现场水位上涨，不能在没有可靠替代路时强行涉水。"
+        },
+        {
+          "role": "user",
+          "id": "U08",
+          "text": "唐婧膝部不舒服，希望单日不超过12公里，累计下降尽量别超过600米。按这个条件先比较两条线。"
+        },
+        {
+          "role": "assistant",
+          "id": "A008",
+          "text": "按唐婧单日不超过12公里、下降尽量不超600米的要求，白石脊12.6公里、下降930米，两项都超；清水谷10.8公里、下降560米，落在偏好内。"
+        }
+      ],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "按现有用时算，两条走法分别需要多久？先不加休息。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。"
+        },
+        {
+          "role": "user",
+          "id": "U06",
+          "text": "第二天先看白石脊。林舟的旧轨迹是溪口客栈经白石脊到北门，12.6公里，爬升610米、下降930米，5小时30分到6小时。里面有1.8公里临崖碎石路，记录日期是2025年10月18日。"
+        },
+        {
+          "role": "assistant",
+          "id": "A006",
+          "text": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。"
+        },
+        {
+          "role": "user",
+          "id": "U07",
+          "text": "另一个是清水谷，我今年春天记的是客栈经清水谷到南门，10.8公里，爬升330米、下降560米，约4小时30分。4.3公里和6.1公里处各过一次溪，只写了水小时能踏石走，没有涨水替代路。"
+        },
+        {
+          "role": "assistant",
+          "id": "A007",
+          "text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。两处过溪及涨水替代路径是关键缺口；若出发前降雨或现场水位上涨，不能在没有可靠替代路时强行涉水。"
+        },
+        {
+          "role": "user",
+          "id": "U08",
+          "text": "唐婧膝部不舒服，希望单日不超过12公里，累计下降尽量别超过600米。按这个条件先比较两条线。"
+        },
+        {
+          "role": "assistant",
+          "id": "A008",
+          "text": "按唐婧单日不超过12公里、下降尽量不超600米的要求，白石脊12.6公里、下降930米，两项都超；清水谷10.8公里、下降560米，落在偏好内。所"
+        },
+        {
+          "role": "user",
+          "id": "U09",
+          "text": "先把返程也算进去。周闻必须在22日17点30分前到杭州东站，这个是硬条件。"
+        }
+      ],
+      "boundary": {
+        "target_assistant_id": "A008",
+        "at_user_onset_heard_prefix": "按唐婧单日不超过12公里、下降尽量不超600米的要求，白石脊12.6公里、下降930米，两项都超；清水谷10.8公里、下降560米，落在偏好内。",
+        "final_shared_played_prefix": "按唐婧单日不超过12公里、下降尽量不超600米的要求，白石脊12.6公里、下降930米，两项都超；清水谷10.8公里、下降560米，落在偏好内。所",
+        "discarded_unheard_tail": "以体力与膝部负担上清水谷更合适，但过溪安全未确认前不能定案。"
+      },
+      "prior_backchannel_onsets": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A005",
+          "after_text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，",
+          "text": "明白",
+          "completion_status": "not_known_before_tts"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A007",
+          "after_text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        }
+      ],
+      "assistant_candidate": "加入返程硬约束后，第二天不能只看路程和膝部负担。还需要北门、南门到杭州东站的预留时长，以及两边接驳车的末班资料，才能倒推最晚出发和离园时间。",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    },
+    {
+      "user_id": "U10",
+      "assistant_id": "A010",
+      "user_at_onset_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "按现有用时算，两条走法分别需要多久？先不加休息。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。"
+        },
+        {
+          "role": "user",
+          "id": "U06",
+          "text": "第二天先看白石脊。林舟的旧轨迹是溪口客栈经白石脊到北门，12.6公里，爬升610米、下降930米，5小时30分到6小时。里面有1.8公里临崖碎石路，记录日期是2025年10月18日。"
+        },
+        {
+          "role": "assistant",
+          "id": "A006",
+          "text": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。"
+        },
+        {
+          "role": "user",
+          "id": "U07",
+          "text": "另一个是清水谷，我今年春天记的是客栈经清水谷到南门，10.8公里，爬升330米、下降560米，约4小时30分。4.3公里和6.1公里处各过一次溪，只写了水小时能踏石走，没有涨水替代路。"
+        },
+        {
+          "role": "assistant",
+          "id": "A007",
+          "text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。两处过溪及涨水替代路径是关键缺口；若出发前降雨或现场水位上涨，不能在没有可靠替代路时强行涉水。"
+        },
+        {
+          "role": "user",
+          "id": "U08",
+          "text": "唐婧膝部不舒服，希望单日不超过12公里，累计下降尽量别超过600米。按这个条件先比较两条线。"
+        },
+        {
+          "role": "assistant",
+          "id": "A008",
+          "text": "按唐婧单日不超过12公里、下降尽量不超600米的要求，白石脊12.6公里、下降930米，两项都超；清水谷10.8公里、下降560米，落在偏好内。所"
+        },
+        {
+          "role": "user",
+          "id": "U09",
+          "text": "先把返程也算进去。周闻必须在22日17点30分前到杭州东站，这个是硬条件。"
+        },
+        {
+          "role": "assistant",
+          "id": "A009",
+          "text": "加入返程硬约束后，第二天不能只看路程和膝部负担。还需要北门、南门到杭州东站的预留时长，以及两边接驳车的末班资料，才能倒推最晚出发和离园时间。"
+        }
+      ],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "按现有用时算，两条走法分别需要多久？先不加休息。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。"
+        },
+        {
+          "role": "user",
+          "id": "U06",
+          "text": "第二天先看白石脊。林舟的旧轨迹是溪口客栈经白石脊到北门，12.6公里，爬升610米、下降930米，5小时30分到6小时。里面有1.8公里临崖碎石路，记录日期是2025年10月18日。"
+        },
+        {
+          "role": "assistant",
+          "id": "A006",
+          "text": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。"
+        },
+        {
+          "role": "user",
+          "id": "U07",
+          "text": "另一个是清水谷，我今年春天记的是客栈经清水谷到南门，10.8公里，爬升330米、下降560米，约4小时30分。4.3公里和6.1公里处各过一次溪，只写了水小时能踏石走，没有涨水替代路。"
+        },
+        {
+          "role": "assistant",
+          "id": "A007",
+          "text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。两处过溪及涨水替代路径是关键缺口；若出发前降雨或现场水位上涨，不能在没有可靠替代路时强行涉水。"
+        },
+        {
+          "role": "user",
+          "id": "U08",
+          "text": "唐婧膝部不舒服，希望单日不超过12公里，累计下降尽量别超过600米。按这个条件先比较两条线。"
+        },
+        {
+          "role": "assistant",
+          "id": "A008",
+          "text": "按唐婧单日不超过12公里、下降尽量不超600米的要求，白石脊12.6公里、下降930米，两项都超；清水谷10.8公里、下降560米，落在偏好内。所"
+        },
+        {
+          "role": "user",
+          "id": "U09",
+          "text": "先把返程也算进去。周闻必须在22日17点30分前到杭州东站，这个是硬条件。"
+        },
+        {
+          "role": "assistant",
+          "id": "A009",
+          "text": "加入返程硬约束后，第二天不能只看路程和膝部负担。还需要北门、南门到杭州东站的预留时长，以及两边接驳车的末班资料，才能倒推最晚出发和离园时间。"
+        },
+        {
+          "role": "user",
+          "id": "U10",
+          "text": "我的经验纸条写北门到东站至少留2小时40分，南门至少2小时20分。北门末班有两个版本，一个是2026年9月纸表的14点20分，另一个是10月群聊照片的15点10分；南门班次没记。"
+        }
+      ],
+      "boundary": {
+        "target_assistant_id": "A009",
+        "at_user_onset_heard_prefix": "加入返程硬约束后，第二天不能只看路程和膝部负担。还需要北门、南门到杭州东站的预留时长，以及两边接驳车的末班资料，才能倒推最晚出发和离园时间。",
+        "final_shared_played_prefix": "加入返程硬约束后，第二天不能只看路程和膝部负担。还需要北门、南门到杭州东站的预留时长，以及两边接驳车的末班资料，才能倒推最晚出发和离园时间。",
+        "discarded_unheard_tail": ""
+      },
+      "prior_backchannel_onsets": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A005",
+          "after_text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，",
+          "text": "明白",
+          "completion_status": "not_known_before_tts"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A007",
+          "after_text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        }
+      ],
+      "assistant_candidate": "按经验值倒推，北门最迟14点50分离开，南门最迟15点10分离开；北门若末班是14点20分，则以14点20分为上限。交通时长和班次都未核实，实际还应预留机动时间。",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    },
+    {
+      "user_id": "U11",
+      "assistant_id": "A011",
+      "user_at_onset_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "按现有用时算，两条走法分别需要多久？先不加休息。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。"
+        },
+        {
+          "role": "user",
+          "id": "U06",
+          "text": "第二天先看白石脊。林舟的旧轨迹是溪口客栈经白石脊到北门，12.6公里，爬升610米、下降930米，5小时30分到6小时。里面有1.8公里临崖碎石路，记录日期是2025年10月18日。"
+        },
+        {
+          "role": "assistant",
+          "id": "A006",
+          "text": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。"
+        },
+        {
+          "role": "user",
+          "id": "U07",
+          "text": "另一个是清水谷，我今年春天记的是客栈经清水谷到南门，10.8公里，爬升330米、下降560米，约4小时30分。4.3公里和6.1公里处各过一次溪，只写了水小时能踏石走，没有涨水替代路。"
+        },
+        {
+          "role": "assistant",
+          "id": "A007",
+          "text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。两处过溪及涨水替代路径是关键缺口；若出发前降雨或现场水位上涨，不能在没有可靠替代路时强行涉水。"
+        },
+        {
+          "role": "user",
+          "id": "U08",
+          "text": "唐婧膝部不舒服，希望单日不超过12公里，累计下降尽量别超过600米。按这个条件先比较两条线。"
+        },
+        {
+          "role": "assistant",
+          "id": "A008",
+          "text": "按唐婧单日不超过12公里、下降尽量不超600米的要求，白石脊12.6公里、下降930米，两项都超；清水谷10.8公里、下降560米，落在偏好内。所"
+        },
+        {
+          "role": "user",
+          "id": "U09",
+          "text": "先把返程也算进去。周闻必须在22日17点30分前到杭州东站，这个是硬条件。"
+        },
+        {
+          "role": "assistant",
+          "id": "A009",
+          "text": "加入返程硬约束后，第二天不能只看路程和膝部负担。还需要北门、南门到杭州东站的预留时长，以及两边接驳车的末班资料，才能倒推最晚出发和离园时间。"
+        },
+        {
+          "role": "user",
+          "id": "U10",
+          "text": "我的经验纸条写北门到东站至少留2小时40分，南门至少2小时20分。北门末班有两个版本，一个是2026年9月纸表的14点20分，另一个是10月群聊照片的15点10分；南门班次没记。"
+        },
+        {
+          "role": "assistant",
+          "id": "A010",
+          "text": "按经验值倒推，北门最迟14点50分离开，南门最迟15点10分离开；北门若末班是14点20分，则以14点20分为上限。交通时长和班次都未核实，实际还应预留机动时间。"
+        }
+      ],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "按现有用时算，两条走法分别需要多久？先不加休息。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。"
+        },
+        {
+          "role": "user",
+          "id": "U06",
+          "text": "第二天先看白石脊。林舟的旧轨迹是溪口客栈经白石脊到北门，12.6公里，爬升610米、下降930米，5小时30分到6小时。里面有1.8公里临崖碎石路，记录日期是2025年10月18日。"
+        },
+        {
+          "role": "assistant",
+          "id": "A006",
+          "text": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。"
+        },
+        {
+          "role": "user",
+          "id": "U07",
+          "text": "另一个是清水谷，我今年春天记的是客栈经清水谷到南门，10.8公里，爬升330米、下降560米，约4小时30分。4.3公里和6.1公里处各过一次溪，只写了水小时能踏石走，没有涨水替代路。"
+        },
+        {
+          "role": "assistant",
+          "id": "A007",
+          "text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。两处过溪及涨水替代路径是关键缺口；若出发前降雨或现场水位上涨，不能在没有可靠替代路时强行涉水。"
+        },
+        {
+          "role": "user",
+          "id": "U08",
+          "text": "唐婧膝部不舒服，希望单日不超过12公里，累计下降尽量别超过600米。按这个条件先比较两条线。"
+        },
+        {
+          "role": "assistant",
+          "id": "A008",
+          "text": "按唐婧单日不超过12公里、下降尽量不超600米的要求，白石脊12.6公里、下降930米，两项都超；清水谷10.8公里、下降560米，落在偏好内。所"
+        },
+        {
+          "role": "user",
+          "id": "U09",
+          "text": "先把返程也算进去。周闻必须在22日17点30分前到杭州东站，这个是硬条件。"
+        },
+        {
+          "role": "assistant",
+          "id": "A009",
+          "text": "加入返程硬约束后，第二天不能只看路程和膝部负担。还需要北门、南门到杭州东站的预留时长，以及两边接驳车的末班资料，才能倒推最晚出发和离园时间。"
+        },
+        {
+          "role": "user",
+          "id": "U10",
+          "text": "我的经验纸条写北门到东站至少留2小时40分，南门至少2小时20分。北门末班有两个版本，一个是2026年9月纸表的14点20分，另一个是10月群聊照片的15点10分；南门班次没记。"
+        },
+        {
+          "role": "assistant",
+          "id": "A010",
+          "text": "按经验值倒推，北门最迟14点50分离开，南门最迟15点10分离开；北门若末班是14点20分，则以14点20分为上限。交通时长和班次都未核实，实际还应预留机动时间。"
+        },
+        {
+          "role": "user",
+          "id": "U11",
+          "text": "那现在先筛一个最值得确认的组合，别当成最终定案。"
+        }
+      ],
+      "boundary": {
+        "target_assistant_id": "A010",
+        "at_user_onset_heard_prefix": "按经验值倒推，北门最迟14点50分离开，南门最迟15点10分离开；北门若末班是14点20分，则以14点20分为上限。交通时长和班次都未核实，实际还应预留机动时间。",
+        "final_shared_played_prefix": "按经验值倒推，北门最迟14点50分离开，南门最迟15点10分离开；北门若末班是14点20分，则以14点20分为上限。交通时长和班次都未核实，实际还应预留机动时间。",
+        "discarded_unheard_tail": ""
+      },
+      "prior_backchannel_onsets": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A005",
+          "after_text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，",
+          "text": "明白",
+          "completion_status": "not_known_before_tts"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A007",
+          "after_text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        },
+        {
+          "event_id": "BC04",
+          "target_assistant_id": "A010",
+          "after_text": "按经验值倒推，北门最迟14点50分离开，南门最迟15点10分离开；",
+          "text": "好",
+          "completion_status": "not_known_before_tts"
+        }
+      ],
+      "assistant_candidate": "初筛首选是第一天走公路捷径、第二天走清水谷，更利于控制体力和返程；但须先确认两处过溪替代路及南门班次。白石脊仅在开放、临崖安全和膝部负担可接受时保留，林间绕行暂不优先。",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    },
+    {
+      "user_id": "U12",
+      "assistant_id": "A012",
+      "user_at_onset_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "按现有用时算，两条走法分别需要多久？先不加休息。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。"
+        },
+        {
+          "role": "user",
+          "id": "U06",
+          "text": "第二天先看白石脊。林舟的旧轨迹是溪口客栈经白石脊到北门，12.6公里，爬升610米、下降930米，5小时30分到6小时。里面有1.8公里临崖碎石路，记录日期是2025年10月18日。"
+        },
+        {
+          "role": "assistant",
+          "id": "A006",
+          "text": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。"
+        },
+        {
+          "role": "user",
+          "id": "U07",
+          "text": "另一个是清水谷，我今年春天记的是客栈经清水谷到南门，10.8公里，爬升330米、下降560米，约4小时30分。4.3公里和6.1公里处各过一次溪，只写了水小时能踏石走，没有涨水替代路。"
+        },
+        {
+          "role": "assistant",
+          "id": "A007",
+          "text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。两处过溪及涨水替代路径是关键缺口；若出发前降雨或现场水位上涨，不能在没有可靠替代路时强行涉水。"
+        },
+        {
+          "role": "user",
+          "id": "U08",
+          "text": "唐婧膝部不舒服，希望单日不超过12公里，累计下降尽量别超过600米。按这个条件先比较两条线。"
+        },
+        {
+          "role": "assistant",
+          "id": "A008",
+          "text": "按唐婧单日不超过12公里、下降尽量不超600米的要求，白石脊12.6公里、下降930米，两项都超；清水谷10.8公里、下降560米，落在偏好内。所"
+        },
+        {
+          "role": "user",
+          "id": "U09",
+          "text": "先把返程也算进去。周闻必须在22日17点30分前到杭州东站，这个是硬条件。"
+        },
+        {
+          "role": "assistant",
+          "id": "A009",
+          "text": "加入返程硬约束后，第二天不能只看路程和膝部负担。还需要北门、南门到杭州东站的预留时长，以及两边接驳车的末班资料，才能倒推最晚出发和离园时间。"
+        },
+        {
+          "role": "user",
+          "id": "U10",
+          "text": "我的经验纸条写北门到东站至少留2小时40分，南门至少2小时20分。北门末班有两个版本，一个是2026年9月纸表的14点20分，另一个是10月群聊照片的15点10分；南门班次没记。"
+        },
+        {
+          "role": "assistant",
+          "id": "A010",
+          "text": "按经验值倒推，北门最迟14点50分离开，南门最迟15点10分离开；北门若末班是14点20分，则以14点20分为上限。交通时长和班次都未核实，实际还应预留机动时间。"
+        },
+        {
+          "role": "user",
+          "id": "U11",
+          "text": "那现在先筛一个最值得确认的组合，别当成最终定案。"
+        },
+        {
+          "role": "assistant",
+          "id": "A011",
+          "text": "初筛首选是第一天走公路捷径、第二天走清水谷，更利于控制体力和返程；但须先确认两处过溪替代路及南门班次。白石脊仅在开放、临崖安全和膝部负担可接受时保留，林间绕行暂不优先。"
+        }
+      ],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "按现有用时算，两条走法分别需要多久？先不加休息。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。"
+        },
+        {
+          "role": "user",
+          "id": "U06",
+          "text": "第二天先看白石脊。林舟的旧轨迹是溪口客栈经白石脊到北门，12.6公里，爬升610米、下降930米，5小时30分到6小时。里面有1.8公里临崖碎石路，记录日期是2025年10月18日。"
+        },
+        {
+          "role": "assistant",
+          "id": "A006",
+          "text": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。"
+        },
+        {
+          "role": "user",
+          "id": "U07",
+          "text": "另一个是清水谷，我今年春天记的是客栈经清水谷到南门，10.8公里，爬升330米、下降560米，约4小时30分。4.3公里和6.1公里处各过一次溪，只写了水小时能踏石走，没有涨水替代路。"
+        },
+        {
+          "role": "assistant",
+          "id": "A007",
+          "text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。两处过溪及涨水替代路径是关键缺口；若出发前降雨或现场水位上涨，不能在没有可靠替代路时强行涉水。"
+        },
+        {
+          "role": "user",
+          "id": "U08",
+          "text": "唐婧膝部不舒服，希望单日不超过12公里，累计下降尽量别超过600米。按这个条件先比较两条线。"
+        },
+        {
+          "role": "assistant",
+          "id": "A008",
+          "text": "按唐婧单日不超过12公里、下降尽量不超600米的要求，白石脊12.6公里、下降930米，两项都超；清水谷10.8公里、下降560米，落在偏好内。所"
+        },
+        {
+          "role": "user",
+          "id": "U09",
+          "text": "先把返程也算进去。周闻必须在22日17点30分前到杭州东站，这个是硬条件。"
+        },
+        {
+          "role": "assistant",
+          "id": "A009",
+          "text": "加入返程硬约束后，第二天不能只看路程和膝部负担。还需要北门、南门到杭州东站的预留时长，以及两边接驳车的末班资料，才能倒推最晚出发和离园时间。"
+        },
+        {
+          "role": "user",
+          "id": "U10",
+          "text": "我的经验纸条写北门到东站至少留2小时40分，南门至少2小时20分。北门末班有两个版本，一个是2026年9月纸表的14点20分，另一个是10月群聊照片的15点10分；南门班次没记。"
+        },
+        {
+          "role": "assistant",
+          "id": "A010",
+          "text": "按经验值倒推，北门最迟14点50分离开，南门最迟15点10分离开；北门若末班是14点20分，则以14点20分为上限。交通时长和班次都未核实，实际还应预留机动时间。"
+        },
+        {
+          "role": "user",
+          "id": "U11",
+          "text": "那现在先筛一个最值得确认的组合，别当成最终定案。"
+        },
+        {
+          "role": "assistant",
+          "id": "A011",
+          "text": "初筛首选是第一天走公路捷径、第二天走清水谷，更利于控制体力和返程；但须先确认两处过溪替代路及南门班次。白石脊仅在开放、临崖安全和膝部负担可接受时保留，林间绕行暂不优先。"
+        },
+        {
+          "role": "user",
+          "id": "U12",
+          "text": "再补队伍情况：林舟最近走过单日15公里、爬升700米；另外三个人没提特殊限制，但也没有近期徒步数据。这个会改变刚才的排序吗？"
+        }
+      ],
+      "boundary": {
+        "target_assistant_id": "A011",
+        "at_user_onset_heard_prefix": "初筛首选是第一天走公路捷径、第二天走清水谷，更利于控制体力和返程；但须先确认两处过溪替代路及南门班次。白石脊仅在开放、临崖安全和膝部负担可接受时保留，林间绕行暂不优先。",
+        "final_shared_played_prefix": "初筛首选是第一天走公路捷径、第二天走清水谷，更利于控制体力和返程；但须先确认两处过溪替代路及南门班次。白石脊仅在开放、临崖安全和膝部负担可接受时保留，林间绕行暂不优先。",
+        "discarded_unheard_tail": ""
+      },
+      "prior_backchannel_onsets": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A005",
+          "after_text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，",
+          "text": "明白",
+          "completion_status": "not_known_before_tts"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A007",
+          "after_text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        },
+        {
+          "event_id": "BC04",
+          "target_assistant_id": "A010",
+          "after_text": "按经验值倒推，北门最迟14点50分离开，南门最迟15点10分离开；",
+          "text": "好",
+          "completion_status": "not_known_before_tts"
+        }
+      ],
+      "assistant_candidate": "不会改变首选排序。林舟的记录只说明他个人大概率能承受较高强度，不能代表全队；其余三人缺少近期数据，应按保守强度安排。唐婧的膝部限制和周闻的返程期限仍是筛选重点。",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    },
+    {
+      "user_id": "U13",
+      "assistant_id": "A013",
+      "user_at_onset_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "按现有用时算，两条走法分别需要多久？先不加休息。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。"
+        },
+        {
+          "role": "user",
+          "id": "U06",
+          "text": "第二天先看白石脊。林舟的旧轨迹是溪口客栈经白石脊到北门，12.6公里，爬升610米、下降930米，5小时30分到6小时。里面有1.8公里临崖碎石路，记录日期是2025年10月18日。"
+        },
+        {
+          "role": "assistant",
+          "id": "A006",
+          "text": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。"
+        },
+        {
+          "role": "user",
+          "id": "U07",
+          "text": "另一个是清水谷，我今年春天记的是客栈经清水谷到南门，10.8公里，爬升330米、下降560米，约4小时30分。4.3公里和6.1公里处各过一次溪，只写了水小时能踏石走，没有涨水替代路。"
+        },
+        {
+          "role": "assistant",
+          "id": "A007",
+          "text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。两处过溪及涨水替代路径是关键缺口；若出发前降雨或现场水位上涨，不能在没有可靠替代路时强行涉水。"
+        },
+        {
+          "role": "user",
+          "id": "U08",
+          "text": "唐婧膝部不舒服，希望单日不超过12公里，累计下降尽量别超过600米。按这个条件先比较两条线。"
+        },
+        {
+          "role": "assistant",
+          "id": "A008",
+          "text": "按唐婧单日不超过12公里、下降尽量不超600米的要求，白石脊12.6公里、下降930米，两项都超；清水谷10.8公里、下降560米，落在偏好内。所"
+        },
+        {
+          "role": "user",
+          "id": "U09",
+          "text": "先把返程也算进去。周闻必须在22日17点30分前到杭州东站，这个是硬条件。"
+        },
+        {
+          "role": "assistant",
+          "id": "A009",
+          "text": "加入返程硬约束后，第二天不能只看路程和膝部负担。还需要北门、南门到杭州东站的预留时长，以及两边接驳车的末班资料，才能倒推最晚出发和离园时间。"
+        },
+        {
+          "role": "user",
+          "id": "U10",
+          "text": "我的经验纸条写北门到东站至少留2小时40分，南门至少2小时20分。北门末班有两个版本，一个是2026年9月纸表的14点20分，另一个是10月群聊照片的15点10分；南门班次没记。"
+        },
+        {
+          "role": "assistant",
+          "id": "A010",
+          "text": "按经验值倒推，北门最迟14点50分离开，南门最迟15点10分离开；北门若末班是14点20分，则以14点20分为上限。交通时长和班次都未核实，实际还应预留机动时间。"
+        },
+        {
+          "role": "user",
+          "id": "U11",
+          "text": "那现在先筛一个最值得确认的组合，别当成最终定案。"
+        },
+        {
+          "role": "assistant",
+          "id": "A011",
+          "text": "初筛首选是第一天走公路捷径、第二天走清水谷，更利于控制体力和返程；但须先确认两处过溪替代路及南门班次。白石脊仅在开放、临崖安全和膝部负担可接受时保留，林间绕行暂不优先。"
+        },
+        {
+          "role": "user",
+          "id": "U12",
+          "text": "再补队伍情况：林舟最近走过单日15公里、爬升700米；另外三个人没提特殊限制，但也没有近期徒步数据。这个会改变刚才的排序吗？"
+        },
+        {
+          "role": "assistant",
+          "id": "A012",
+          "text": "不会改变首选排序。林舟的记录只说明他个人大概率能承受较高强度，不能代表全队；其余三人缺少近期数据，应按保守强度安排。唐婧的膝部限制和周闻的返程期限仍是筛选重点。"
+        }
+      ],
+      "assistant_before_reply_history": [
+        {
+          "role": "user",
+          "id": "U01",
+          "text": "先整理第一天开头。黄色本写南门停车场到竹影亭3.4公里、75分钟，缓坡石阶，页边说检票口在停车场后；林舟轨迹却写检票口到竹影亭4.1公里、95分钟、爬升210米，也没说是否包含停车场步行。"
+        },
+        {
+          "role": "assistant",
+          "id": "A001",
+          "text": "先记为“起点至竹影亭”：黄色本单一记录检票口位于停车场之后；矛盾是3.4公里75分钟与4.1公里95分钟口径不同；缺口是停车场到检票口的距离，以及轨迹是否包含这段。"
+        },
+        {
+          "role": "user",
+          "id": "U02",
+          "text": "下一段是竹影亭到鹰嘴台，两份材料都写5.6公里、爬升约520米，通常2小时30分到2小时50分，而且途中没有稳定补水点。"
+        },
+        {
+          "role": "assistant",
+          "id": "A002",
+          "text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。途中无稳定补水点也属一致信息，可直接列入行前准备。"
+        },
+        {
+          "role": "user",
+          "id": "U03",
+          "text": "再往后，鹰嘴台到松风垭口约4.2公里、1小时50分，这是我照片抄的单一记录。黄色本说岔口跟红色标记，照片里的旧指示板却写蓝线往松风垭口。"
+        },
+        {
+          "role": "assistant",
+          "id": "A003",
+          "text": "这段的距离和用时可暂记为单一来源；标记颜色必须"
+        },
+        {
+          "role": "user",
+          "id": "U04",
+          "text": "这项先放清单里，我接着说后半程。松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟，还多爬升约180米。客栈保留11月21日晚六个床位，最晚20点入住。"
+        },
+        {
+          "role": "assistant",
+          "id": "A004",
+          "text": "后半程分为两支：公路捷径2.8公里、35分钟；林间绕行4.6公里、90分钟并增加约180米爬升。住宿为已确认项：11月21日晚溪口客栈六床，须在20点前办理入住。"
+        },
+        {
+          "role": "user",
+          "id": "U05",
+          "text": "按现有用时算，两条走法分别需要多久？先不加休息。"
+        },
+        {
+          "role": "assistant",
+          "id": "A005",
+          "text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，绕行7小时5分至7小时25分；检票口起算，分别为6小时30分至6小时50分、7小时25分至7小时45分。因停车场至检票口耗时缺失，两套不能直接比较。"
+        },
+        {
+          "role": "user",
+          "id": "U06",
+          "text": "第二天先看白石脊。林舟的旧轨迹是溪口客栈经白石脊到北门，12.6公里，爬升610米、下降930米，5小时30分到6小时。里面有1.8公里临崖碎石路，记录日期是2025年10月18日。"
+        },
+        {
+          "role": "assistant",
+          "id": "A006",
+          "text": "白石脊数据均来自一份旧轨迹，只能列为单一来源。当前缺口是路线开放状态和1.8公里临崖碎石段的通行情况；核实前不能把它视为可安全通行。"
+        },
+        {
+          "role": "user",
+          "id": "U07",
+          "text": "另一个是清水谷，我今年春天记的是客栈经清水谷到南门，10.8公里，爬升330米、下降560米，约4小时30分。4.3公里和6.1公里处各过一次溪，只写了水小时能踏石走，没有涨水替代路。"
+        },
+        {
+          "role": "assistant",
+          "id": "A007",
+          "text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。两处过溪及涨水替代路径是关键缺口；若出发前降雨或现场水位上涨，不能在没有可靠替代路时强行涉水。"
+        },
+        {
+          "role": "user",
+          "id": "U08",
+          "text": "唐婧膝部不舒服，希望单日不超过12公里，累计下降尽量别超过600米。按这个条件先比较两条线。"
+        },
+        {
+          "role": "assistant",
+          "id": "A008",
+          "text": "按唐婧单日不超过12公里、下降尽量不超600米的要求，白石脊12.6公里、下降930米，两项都超；清水谷10.8公里、下降560米，落在偏好内。所"
+        },
+        {
+          "role": "user",
+          "id": "U09",
+          "text": "先把返程也算进去。周闻必须在22日17点30分前到杭州东站，这个是硬条件。"
+        },
+        {
+          "role": "assistant",
+          "id": "A009",
+          "text": "加入返程硬约束后，第二天不能只看路程和膝部负担。还需要北门、南门到杭州东站的预留时长，以及两边接驳车的末班资料，才能倒推最晚出发和离园时间。"
+        },
+        {
+          "role": "user",
+          "id": "U10",
+          "text": "我的经验纸条写北门到东站至少留2小时40分，南门至少2小时20分。北门末班有两个版本，一个是2026年9月纸表的14点20分，另一个是10月群聊照片的15点10分；南门班次没记。"
+        },
+        {
+          "role": "assistant",
+          "id": "A010",
+          "text": "按经验值倒推，北门最迟14点50分离开，南门最迟15点10分离开；北门若末班是14点20分，则以14点20分为上限。交通时长和班次都未核实，实际还应预留机动时间。"
+        },
+        {
+          "role": "user",
+          "id": "U11",
+          "text": "那现在先筛一个最值得确认的组合，别当成最终定案。"
+        },
+        {
+          "role": "assistant",
+          "id": "A011",
+          "text": "初筛首选是第一天走公路捷径、第二天走清水谷，更利于控制体力和返程；但须先确认两处过溪替代路及南门班次。白石脊仅在开放、临崖安全和膝部负担可接受时保留，林间绕行暂不优先。"
+        },
+        {
+          "role": "user",
+          "id": "U12",
+          "text": "再补队伍情况：林舟最近走过单日15公里、爬升700米；另外三个人没提特殊限制，但也没有近期徒步数据。这个会改变刚才的排序吗？"
+        },
+        {
+          "role": "assistant",
+          "id": "A012",
+          "text": "不会改变首选排序。林舟的记录只说明他个人大概率能承受较高强度，不能代表全队；其余三人缺少近期数据，应按保守强度安排。唐婧的膝部限制和周闻的返程期限仍是筛选重点。"
+        },
+        {
+          "role": "user",
+          "id": "U13",
+          "text": "最后按确认、矛盾、缺口和核验顺序，给我一版能逐项对照的简表。"
+        }
+      ],
+      "boundary": {
+        "target_assistant_id": "A012",
+        "at_user_onset_heard_prefix": "不会改变首选排序。林舟的记录只说明他个人大概率能承受较高强度，不能代表全队；其余三人缺少近期数据，应按保守强度安排。唐婧的膝部限制和周闻的返程期限仍是筛选重点。",
+        "final_shared_played_prefix": "不会改变首选排序。林舟的记录只说明他个人大概率能承受较高强度，不能代表全队；其余三人缺少近期数据，应按保守强度安排。唐婧的膝部限制和周闻的返程期限仍是筛选重点。",
+        "discarded_unheard_tail": ""
+      },
+      "prior_backchannel_onsets": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "竹影亭到鹰嘴台可列为多来源一致：5.6公里、爬升约520米，常用2小时30分至2小时50分。",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A005",
+          "after_text": "未含休息：停车场起算，公路暂算6小时10分至6小时30分，",
+          "text": "明白",
+          "completion_status": "not_known_before_tts"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A007",
+          "after_text": "清水谷也属于单一来源：10.8公里、爬升330米、下降560米、约4小时30分。",
+          "text": "嗯",
+          "completion_status": "not_known_before_tts"
+        },
+        {
+          "event_id": "BC04",
+          "target_assistant_id": "A010",
+          "after_text": "按经验值倒推，北门最迟14点50分离开，南门最迟15点10分离开；",
+          "text": "好",
+          "completion_status": "not_known_before_tts"
+        }
+      ],
+      "assistant_candidate": "确认：21日晚溪口客栈六床，20点前入住；竹影亭—鹰嘴台5.6公里、爬升约520米、2小时30分至2小时50分，无稳定补水。单一来源：首段黄色本为停车场—竹影亭3.4公里、75分钟，林舟轨迹为检票口—竹影亭4.1公里、95分钟、爬升210米；鹰嘴台—松风垭口4.2公里、1小时50分；后半程公路2.8公里、35分钟，林间线4.6公里、90分钟并多爬180米；白石脊12.6公里、升610米、降930米、5小时30分至6小时，含1.8公里临崖碎石路；清水谷10.8公里、升330米、降560米、约4小时30分，4.3和6.1公里处过溪。矛盾：首段统计口径、垭口红蓝标记、北门末班14点20分与15点10分。缺口：停车场至检票口距离及轨迹是否含该段、白石脊开放和临崖状态、清水谷涨水替代路、南门班次及当日交通。核验顺序：先垭口正式指示，再查清水谷替代路、南门班次和交通时长，同时核白石脊状态。暂以公路捷径加清水谷为首选待核方案；降雨或水位上涨且无替代路时不涉溪，并确保周闻17点30分前到站及照顾唐婧的里程、下降偏好。",
+      "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+    }
+  ],
+  "target_assistant_id": "A013",
+  "maximum_characters": 250,
+  "compaction_attempt": 3,
+  "previous_compaction_feedback": {
+    "findings": [
+      {
+        "severity": "must_fix",
+        "path": "/rounds/12/assistant_utterance",
+        "problem": "把第一天两条后半程记录归为“单源”缺少已听依据。",
+        "evidence": "U04只说“松风垭口走公路到溪口客栈是2.8公里、35分钟；林间绕行是4.6公里、90分钟”，没有说明各自来源数量；A013却在“单源”项下写“公路2.8/35，林线4.6/90”。助手不能依据未向其披露的冻结材料补出来源分类。",
+        "repair": "保留两条路线的数据，但改列为“来源数量未说明的已记录项”或将来源情况列为缺口；不要断言单一来源。"
+      },
+      {
+        "severity": "must_fix",
+        "path": "/rounds/12/assistant_utterance",
+        "problem": "最终口头简表大量省略单位并使用斜杠压缩，直接TTS后数值含义不清。",
+        "evidence": "如“鹰—垭4.2公里/110分；公路2.8/35，林线4.6/90；白石脊12.6/升610降930/5.5—6时/临崖1.8”，其中2.8、35、12.6、610、930、1.8等需依赖读者猜测单位，斜杠也不适合自然口播。",
+        "repair": "保留简表结构，给各数值补齐“公里、分钟、米、小时”等单位，并用短句或顿号替代斜杠。"
+      },
+      {
+        "severity": "must_fix",
+        "path": "/rounds/12/assistant_utterance",
+        "problem": "核验顺序没有覆盖简表中已列出的两项关键未决内容，无法逐项闭环。",
+        "evidence": "A013列出“首段口径”和“北门末班14:20/15:10”的矛盾，也列出“首段衔接”缺口，但核验序列只有“垭口→清水谷→南门交通→白石脊”，遗漏首段统计口径以及北门末班冲突。前者影响第一天总用时，后者影响白石脊候选的返程可行性。",
+        "repair": "在现有核验序列中补入“首段停车场—检票口口径”和“北门末班时刻”；可按首选方案优先核验垭口、清水谷和南门交通，再列其余候选相关项目。"
+      }
+    ],
+    "characters": 252,
+    "length_error": "Still exceeds 250 characters; preserve required semantics while compacting."
+  },
+  "compaction_output_contract": {
+    "policy": "four_fields_exact_readonly_echo_v1",
+    "required_fields": [
+      "assistant_utterance",
+      "next_user_timing",
+      "backchannels",
+      "side_speech"
+    ],
+    "program_preserved_script_fields": [
+      "environment_events"
+    ]
+  },
+  "anchor_dependencies": [],
+  "prior_semantic_waivers": []
+}

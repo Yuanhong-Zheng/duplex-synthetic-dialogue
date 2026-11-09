@@ -1,0 +1,87 @@
+{
+  "scenario": {
+    "domain_id": "D18",
+    "domain": "会议、访谈与团队协作",
+    "domain_definition": "EchoChain 的 coordination、Audio MultiChallenge 的计划/消息、Google brainstorm 与 ElevenLabs interview 提供主要证据。",
+    "scenario_id": "D18-S01",
+    "scenario": "会议准备",
+    "requested_examples_per_style": 5,
+    "existing_example_task_seeds": [],
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "short",
+      "target_turns": 6,
+      "min_turns": 5,
+      "max_turns": 7
+    },
+    "dialogue_length_instruction": "本条完整对话目标为 6 个主轮，允许 5–7 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    }
+  },
+  "current_example_tasks": {
+    "开放式互动": [
+      "来一轮会议开场与收尾的口头演练，逐步找到自然、清晰又能推动讨论的表达方式。",
+      "把自己扮演成主持人，模拟一次需要控制节奏、邀请不同成员发言的团队会议。",
+      "针对会议中可能出现的质疑、跑题或冷场，练习几种既不回避问题又能继续推进的应对方式。",
+      "共同设计一套适用于不同会议类型的提问思路，让讨论更容易产生具体结论。",
+      "从一次即将到来的重要沟通出发，讨论如何确定会议目标、判断参会者需求并营造合适的交流氛围。"
+    ],
+    "结构化整理": [
+      "我会提供会议目标、参会者和待讨论主题，希望整理成一份有时长分配和讨论顺序的会议议程。",
+      "把我随后给出的会议主题、讨论问题和背景笔记归类，形成一份层次清楚的会议提纲或议程。",
+      "根据我提供的会议事项、负责人和截止条件，整理出会前准备清单并标注各项之间的依赖关系。",
+      "我会列出多个候选议题及其背景，希望按重要性、紧迫性和对会议目标的贡献进行排序。",
+      "核对我提供的会议目标、议程草案和参会者信息，整理出目标覆盖情况、缺漏点和需要提前确认的问题。"
+    ],
+    "混合型": [
+      "我有一份尚未成形的议程和几项彼此冲突的讨论诉求，想结合高效会议的取舍原则判断哪些内容应保留、合并或移到会后。",
+      "面对一次参会者立场差异较大的会议，我会提供相关背景和已知分歧，希望借助中立提问与冲突管理框架调整准备方案。",
+      "我会带来一组候选讨论问题和参会者的背景或立场信息，想依据信息价值、敏感程度与时间限制选出最适合会议讨论和决策准备的提问组合。",
+      "我会带来几种会议流程设想以及团队过去的反馈记录，希望结合参与度和决策效率的判断标准，确定更适合这次会议的流程。",
+      "我需要准备一次可能偏离主题的协作会议，想把现有议题、参会者顾虑和预期成果放在一起，判断应如何设置边界、留出讨论空间并安排后续决策。"
+    ]
+  },
+  "judge_findings": [
+    {
+      "severity": "must_fix",
+      "path": "/example_tasks/混合型/4",
+      "problem": "该任务包含对现有材料的综合判断，但没有明确引入可先讨论或建立的通用框架，混合型的两段结构不完整。",
+      "evidence": "我需要准备一次可能偏离主题的协作会议，想把现有议题、参会者顾虑和预期成果放在一起，判断应如何设置边界、留出讨论空间并安排后续决策。",
+      "repair": "补充明确的通用会议控场或议题收束框架，并说明随后用该框架判断现有材料的安排。"
+    }
+  ],
+  "repair_targets": [
+    {
+      "path": "/example_tasks/混合型/4",
+      "current_value": "我需要准备一次可能偏离主题的协作会议，想把现有议题、参会者顾虑和预期成果放在一起，判断应如何设置边界、留出讨论空间并安排后续决策。"
+    }
+  ]
+}

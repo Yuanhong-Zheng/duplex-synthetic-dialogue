@@ -1,0 +1,1492 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 5 轮，允许 5–6 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 按下方V2.9用户旁话规则审查；第三方与机器旁语仍遵守冻结声源与信息边界。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 必须逐字匹配对应源；用户声源的recipient须逐字匹配且不含voice_profile，其余声源的voice_profile逐字匹配，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。\n[V2.9 用户对同场旁人说话]\n定稿根schema_version为duplex_v2.fixed_script.v3；根字段和原主轮字段不变，quiet声景也保留空environment_events和side_speech。\nside_speech仍只用已冻结的side_speech_sources，数量严格等于side_speech_count。第三方/机器的原字段不变。若冻结源speaker=user，每项严格只有event_id、source_id、target_assistant_id、after_text、text、speaker、recipient、gain；speaker=\"user\"，recipient逐字复制冻结源的同场接收者，不填写voice_profile、voice_source或其他字段。用户音色、克隆参考和表达画像由程序复用主用户，不另造声音。\n用户旁话是用户在助手已开始且仍在实际播报时对旁人说的短句，例如对已在场的小林说“小林，把杯子递给我一下”。台词应自然且接收对象可辨，不能只有“等等”这类不明确话语；不能作为对助手的新请求、附和、打断或主对话轮，也不能泄漏关键任务材料。接收者必须来自冻结场景，不能为了配额新增人物。\ntarget_assistant_id仍指作为音频host的助手A，不是旁话接收对象；after_text是A从首字开始的完整非终止已播前缀。用户旁话起声必须早于下一次用户主表达，且完整音频须装入实际会播出的A范围，与同一用户的主句、附和或另一旁话都不重叠。不要在助手将被真正打断的尾端强塞旁话，不把事件安排在未播尾部；不恢复“用户主句暂停→转头旁话→再继续主句”的模式。\n旁话期间助手继续同一段原音频，不停顿、不让出话权、不增加新回答；后续助手不回应或复述旁话，不把它吸收为任务事实。旁话分类依赖接收对象和语义，不依赖其音量；gain仍在0.3–0.7。用户的旁话仍符合其冻结表达画像。\n上述方向、继续播报与stop_required=false是数据审查/监督标注，不是提前透露给在线模型的输入。仅使用原Judge和局部修复预算：审查台词是否确实面向旁人、主线与已听因果是否保持；只按findings最小修复，并在助手正文变更时同步相关精确锚点。\n\n",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-engineering-g06-n003-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 3297771172,
+      "restart_provenance": {
+        "schema": "duplex_v2.responsibility_stage_restart.v1",
+        "kind": "new_bounded_stage_run_after_interface_fix",
+        "restart_stage": 2,
+        "parent_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g06-sample-003",
+        "parent_run_id": "20261109-v29-user-aside-hundred-g06-sample-003",
+        "parent_manifest_sha256": "490ea273022691956b83e13cd75ff34a7a5e9ca396139bad161a021e4c81d315",
+        "reused_stages": {
+          "0": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage0",
+          "0qa": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage0qa",
+          "1": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage1"
+        },
+        "branch_execution_controls_sha256": "a010f044afa5a5f2b075721076690b25a215758dad2ade3e0ad4e8b72d835583",
+        "source_files_sha256": {
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g06-sample-003/ambient-catalog.json": "c045e64d1e2723ac9fdd70fa7a5bdad1c96917d45bdd9c0ef7901604218baaa1",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g06-sample-003/ambient-controls.json": "3a377a881e401b0aa9b1bb07231c724037efbf14a4d87c60698ebddc91543121",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g06-sample-003/ambient-preferences.json": "40d1107768a96c8bd34870d6b8686c5d1b957dde68a2b675b0b9aaf253250a34",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g06-sample-003/http-policy.json": "d4e4e6bb56c6c7c1f08657d6e7f0d35360f2dba12f8226cad65185c100268545",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g06-sample-003/interaction-axes.json": "015f968f4f878f87c3618d01acc81fc0de7e4a442424661ed840988f6196f8c2",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g06-sample-003/length-plans.json": "001dac72f37298320aa432d41fdd868dce720a2aa3a5bd8d73b92c7e5c829b13",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g06-sample-003/manifest.json": "490ea273022691956b83e13cd75ff34a7a5e9ca396139bad161a021e4c81d315",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g06-sample-003/taxonomy-three-styles.json": "f8fc260aa7ab6fbf25559809f77934c5e773307e2d3a1bb81004d0f4935fa5b1",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g06-sample-003/taxonomy.json": "8e9604c8285b86bb818902325f838ebd007f49323be0fb8276c0fb4e88a9b7dd",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g06-sample-003/text-policy.json": "c769cd2d9a4fcaaf16fc52113d898f7488321bcc0755605bb92a762b153f8738",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage0/D18-S01/example_tasks.json": "8d1ae4865d8234eda53a834bd406ffc75124e31713647c43ec743524f9833a93",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage0/D18-S01/input.json": "61125103b6e81b51f5d9481c7de921193edcb4ededeac103c6dcfc0d846b0f0a",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage0/D18-S01/metadata.json": "646d11ee819b36f8d02ee622af177fb157c32b3e5ce703f9ca53d23261424877",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage0/D18-S01/prompt.md": "972af0cb5710eafc6daab8ea4686b2f26c958002fbf1819474446c629eee0a84",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage0/D18-S01/raw_response.txt": "c8e2cdeeb6de1290d172085c2cb61cda6713a691f662c1679e4a36d2b72a2c6b",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage0/D18-S01/validation.json": "c28485a913e8e4166fb5eb2ccc87dbd877e60004015c59d2a1b3a5ab309c94be",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage0/manifest.json": "3ff7f2a375da10f76e22f94e619f8c2dc7b8c6d25f9ec156c44e46d51632269d",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage0qa/D18-S01/example_tasks.json": "1dc785dd5719a661d23a302161158487d9277d08d522f75dd027ac9b786f83e8",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage0qa/D18-S01/input.json": "61125103b6e81b51f5d9481c7de921193edcb4ededeac103c6dcfc0d846b0f0a",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage0qa/D18-S01/metadata.json": "7ce13a2d2a3803ffaa954c0460ba74e615f7b0d5c0abda99ff5ad50acfc6adda",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage0qa/D18-S01/prompt.md": "81b5ba9025b4f08e087794096ef26b91e1ebefd1fa36bff5d7087cdf97c335ba",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage0qa/D18-S01/raw_response.txt": "ac21ac0610780fdb83c7e668a6be0850459064047e117f8223984ac09fe7ed05",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage0qa/D18-S01/validation.json": "261da61a6c2745de8db6df2c1f397084717aebb8bea905f5ab84dc7565a079dc",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage0qa/manifest.json": "90c4161572a103d7c31ad87a255737883de1be26c1164b0be67fda0c01d3fb1c",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage1/R01-V01/metadata.json": "b79fc2515aed7f248e113e264981696e142fbef114707d9954b54f64f5117d27",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage1/R01-V01/prompt.md": "6c124900327305fbc790932da038ab5478cdb709afbada627897ddb17b55a227",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage1/R01-V01/raw_response.txt": "752cffa7636ec2f82f9425060b131fe6f5873308983a46e96cfd72c793f225e0",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage1/R01-V01/scene_task.json": "932c0cbceb1634811f932c50e0a2ab57ab44fe3e6dac443b0dbd08f0f952be14",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage1/R01-V01/user_voice.json": "ac771396d11a3ac0c9031810f303ce9d5e4f1046ae90998861062430b0aa8ac3",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage1/R01-V01/validation.json": "b1d32b5e43cedccfdcd3ae6d7ad606595f725350aa75ade9e0dd5a053fc6f1c7",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage1/manifest.json": "50dbdfda40618f9b30c861563b8b864a8b915032a527cb47e732e539cc449c44",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage2/R01-V01/validation.json": "c857c4ee81e724b30c980fca6a7da4f2566b5a6238637907aeea027328e5fc35",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage2/manifest.json": "5dc62ff54512870e68d5b72df5f0217fa283b61428018d01bde5e7fad1fb2157"
+        },
+        "original_failure_validation": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g06-sample-003-v2-stage2/R01-V01/validation.json",
+        "budget_note": "New bounded stage execution explicitly requested after an interface fix; not an HTTP retry or reset of the original run."
+      },
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g06/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-stage2-engineering/relay-state/G06-N003-R01-V01",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D18",
+          "domain": "会议、访谈与团队协作",
+          "scenario_id": "D18-S01",
+          "scenario": "会议准备"
+        },
+        "task_style": "结构化整理",
+        "task_instance": {
+          "goal": "把用户随后提供的跨部门项目启动会背景、参会人信息和已有准备事项整理成一份可执行的会前方案，明确议题优先级、讨论顺序、每项议题需要补齐的材料以及预期形成的决定或产出，并标出需要提前向相关人员确认的缺口。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "负责协调公司新产品上线项目启动会的项目协调员",
+          "task_familiarity": "medium"
+        },
+        "voice_profile": "男性，三十多岁，音色清亮偏薄，吐字利落，语速自然偏快，整体听感精力充足。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "casual",
+          "directness": "direct",
+          "emotional_expressiveness": "expressive",
+          "verbosity": "brief",
+          "initiative": "low",
+          "caution": "low",
+          "patience": "high",
+          "behavioral_notes": [
+            "表达简短直接，通常一次只提出当前最需要整理的一部分信息。",
+            "会用明显的语气变化表示认可、疑惑或觉得某项安排不合理，但不刻意铺陈情绪。",
+            "倾向于先听清楚整理结果，再耐心补充遗漏的材料或条件。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "short",
+        "target_turns": 5,
+        "min_turns": 5,
+        "max_turns": 6
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v3",
+        "seed": 557268831,
+        "mode": "layered",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "user_to_third_party",
+          "machine",
+          "third_party"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "2026年11月9日周一下午4点，用户独自在公司办公区的一间小型专注间里，准备三天后的“星桥智能台灯”跨部门项目启动会。用户是该项目的协调员，负责把产品、研发、供应链、市场和客服之间分散的信息整理成一场能够形成明确决定的会议。会议邀请已发出时间占位，但议程正文仍是空白，两位关键参会人的可参会时段也不完整重合，因此讨论顺序不能随意安排。项目计划在12月18日上线，倒排节点已经写进项目简报，但其中部分日期仍标为草案。产品范围也没有完全锁定，基础颜色、应用内引导和首发数量分别牵涉研发工期、物料供应与市场宣传。用户已经把项目简报、参会人名单、供应链便签和各部门留言放在手边，但这些材料尚未按议题归并。现有准备包括0.8版产品简报、可现场演示的工程样机和一份粗略里程碑表，预算、销量预测及最终功能边界仍有缺口。市场团队需要尽早讨论命名和宣传素材，研发团队更关心范围冻结与验收口径，供应链则需要确认首批数量才能判断物料风险。客服代表希望了解用户指引和培训安排，但只能在会议开始十五分钟后加入。用户希望会议优先处理会阻塞后续工作的事项，同时避免把纯信息同步占用过多讨论时间。由于手边记录中既有已确认内容也有部门自行提出的草案，方案中需要区分可直接用于会议的材料、应当补充的数据以及必须提前找责任人确认的问题。当前尚未解决的是议题的优先级、受参会时间影响的讨论顺序、每项议题应准备到什么程度，以及会议结束时分别需要形成哪些决定、负责人或后续产出。",
+        "task_reference_data": [
+          "用户手边的《星桥项目简报0.8版》写明：产品为支持亮度与色温调节的联网智能台灯，目标上线日为2026年12月18日；该版本可现场读取，但封面标注“讨论稿”。",
+          "用户手边的会议邀请草稿列有：产品负责人林越负责主持和范围决策，研发负责人周帆负责技术计划，工业设计负责人何青负责外观与包装，供应链负责人孙宇负责物料和首批备货，市场负责人高雯负责命名与上市传播，客服负责人罗宁负责帮助内容与培训；名单已由用户整理，尚未逐人核对职责表述。",
+          "项目简报中的里程碑草案为：11月20日前锁定首发范围，11月27日工程版本冻结，12月4日开始首批试产，12月11日完成上市素材与客服培训，12月18日正式上线；日期可读取，但尚未得到所有部门共同确认。",
+          "产品与研发的留言中存在两项待定范围：首发颜色是仅保留白色还是同时加入深灰色；应用内首次配网引导是随首发上线还是延后到后续版本。留言来自内部协作记录，用户已读，但没有看到最终决策人签字。",
+          "供应链便签写明：联网模组常规交期为21天，当前可调配数量约300套；孙宇要求在确认首批计划数量和销量预测后再判断是否需要加急。便签在用户手边，数量为供应链当前估算，仍需会上或会前核实。",
+          "市场团队留言写明：希望最晚在12月1日前拿到最终产品名称、主视觉使用的外观颜色和三条已确认核心卖点，否则12月11日完成上市素材存在风险；该留言用户已读，核心卖点目前没有确认稿。",
+          "客服团队留言写明：上线前需要一份配网故障排查流程、一页快速入门说明和一次内部培训；罗宁尚未拿到稳定的配网步骤，也未确认培训由产品还是研发主讲。",
+          "用户的准备记录写明：产品简报0.8版已收齐，工程样机可用于会议演示，粗略里程碑表已打印；首发预算、销量预测、范围决策权限、验收口径及各项产出的负责人仍未补齐。记录由用户本人整理，可逐项口头核对。"
+        ],
+        "environment_audio": "头顶约两米处的通风口持续发出低而稳定的机械送风声，音量基本不变。隔音门外偶尔透入很轻的办公区底噪，但听不清具体人声。",
+        "estimated_snr_db": 30,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "启动会已安排在2026年11月12日10:00至11:00，可用于全部议题的总时长为60分钟。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "市场负责人高雯只能参加10:00至10:30，与市场命名、卖点或素材有关的讨论必须考虑这一时间窗口。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C03",
+            "text": "客服负责人罗宁最早可在10:15加入，涉及客服材料和培训安排的讨论不能依赖其在此前参与。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C04",
+            "text": "会前方案中的每个主要议题都应标明所需材料、希望形成的决定或产出，以及需要提前确认的缺口。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C05",
+            "text": "优先安排会阻塞范围冻结、试产或上市素材的议题，并尽量压缩单纯的信息同步。",
+            "kind": "soft"
+          }
+        ],
+        "safety_limits": [],
+        "soundscape_plan": {
+          "mode": "layered",
+          "ambient_layers": [
+            {
+              "source_id": "AMB01",
+              "asset_id": "fan-fsd50k-eval-419427",
+              "reason": "稳定的机械通风声符合公司专注间内持续运行的送风背景。"
+            }
+          ],
+          "environment_events": [],
+          "schema": "duplex_v2.soundscape_plan.v4",
+          "side_speech_sources": [],
+          "side_speech_count": 0,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v3",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v3",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3,
+              "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+              "user_aside_preference_probability": 0.5,
+              "user_voice_source": "stage1_user",
+              "user_aside_requires_present_recipient": true
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611090006,
+              "slot": 2,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "wind",
+                  "traffic",
+                  "birds",
+                  "fan",
+                  "rain",
+                  "crowd"
+                ],
+                "event": [
+                  "water_tap",
+                  "footsteps",
+                  "paper",
+                  "door",
+                  "keyboard",
+                  "doorbell"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-57907",
+                  "birds-fsd50k-eval-319512",
+                  "birds-fsd50k-eval-86343"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-340358",
+                  "crowd-fsd50k-eval-121877",
+                  "crowd-fsd50k-eval-185058"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-419427",
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-235362"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-21189",
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-382582"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-235541",
+                  "traffic-fsd50k-eval-124020",
+                  "traffic-fsd50k-eval-232686"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113175",
+                  "wind-fsd50k-eval-113176",
+                  "wind-fsd50k-eval-113173"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-71212",
+                  "door-fsd50k-eval-209519",
+                  "door-fsd50k-eval-119077"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-348322",
+                  "doorbell-fsd50k-eval-426594",
+                  "doorbell-fsd50k-eval-332563"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-153104",
+                  "footsteps-fsd50k-eval-272381",
+                  "footsteps-fsd50k-eval-392303"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-411545",
+                  "keyboard-fsd50k-eval-399740"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-82562",
+                  "paper-fsd50k-eval-343098",
+                  "paper-fsd50k-eval-121200"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-402127",
+                  "water_tap-fsd50k-eval-232499",
+                  "water_tap-fsd50k-eval-402128"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v3",
+              "seed": 557268831,
+              "mode": "layered",
+              "discrete_event_target": 0,
+              "max_ambient_layers": 2,
+              "side_speech_requested": false,
+              "speech_kind_preferences": [
+                "user_to_third_party",
+                "machine",
+                "third_party"
+              ]
+            },
+            "control_sha256": "05bcf918455e05006309fde4eb88c37c63553efe72bc47cb0371d938be1e129b",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v4",
+              "mode": "layered",
+              "ambient_layers": [
+                {
+                  "source_id": "AMB01",
+                  "candidates": [
+                    {
+                      "asset_id": "fan-fsd50k-eval-419427",
+                      "reason": "稳定的机械通风声符合公司专注间内持续运行的送风背景。",
+                      "environment_audio": "近上方持续传来平稳、低沉的机械送风声。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-415925",
+                      "reason": "短而稳定的室内风扇录音可作为不干扰语音的通风底噪。",
+                      "environment_audio": "头顶方向保持轻微而均匀的通风声。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-235362",
+                      "reason": "连续机械风声与安静办公隔间的现有声源相容。",
+                      "environment_audio": "室内有持续、音量变化很小的机械送风底噪。"
+                    }
+                  ]
+                }
+              ],
+              "environment_events": [],
+              "side_speech_eligibility": {
+                "user_to_third_party": {
+                  "compatible": false,
+                  "reason": "用户独自在专注间内，故事中没有明确同场且可接收话语的旁人。",
+                  "source": null
+                },
+                "third_party": {
+                  "compatible": false,
+                  "reason": "门外只有无法辨认内容的远处办公底噪，没有可作为独立说话者的同场人物。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "场景中只有机械通风声，没有已存在的语音播报设备或机器话语来源。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "71edf32415aea49827a86349fed010381efd5102644fed9e288273140471984e",
+            "aggregate_environment_audio": "头顶约两米处的通风口持续发出低而稳定的机械送风声，音量基本不变。隔音门外偶尔透入很轻的办公区底噪，但听不清具体人声。 近上方持续传来平稳、低沉的机械送风声。",
+            "draws": [
+              {
+                "source_id": "AMB01",
+                "category": "fan",
+                "asset_id": "fan-fsd50k-eval-419427",
+                "eligible_categories": [
+                  "fan"
+                ],
+                "eligible_assets": [
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-419427"
+                ]
+              }
+            ],
+            "speech_selection": {
+              "requested": false,
+              "compatible_kinds": [],
+              "selected_kind": null,
+              "outcome": "not_requested",
+              "assessments": {
+                "user_to_third_party": {
+                  "compatible": false,
+                  "reason": "用户独自在专注间内，故事中没有明确同场且可接收话语的旁人。",
+                  "source": null
+                },
+                "third_party": {
+                  "compatible": false,
+                  "reason": "门外只有无法辨认内容的远处办公底噪，没有可作为独立说话者的同场人物。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "场景中只有机械通风声，没有已存在的语音播报设备或机器话语来源。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v3",
+      "title": "智能台灯项目启动会会前方案",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "我在排星桥智能台灯启动会，十一月十二日十点到十一点，目标十二月十八日上线。林越主持并做范围决策，周帆管研发，何青管设计包装，孙宇管供应链，高雯管市场，罗宁管客服。高雯只能到十点半，罗宁十点十五分后才到。先帮我定优先级和顺序。",
+          "assistant_utterance": "先按阻塞后续优先排：范围冻结、市场素材、首批备货放前面，信息同步改成会前阅读。要把顺序落到分钟，我还需要两类信息：当前待决范围，以及供应链最晚需要什么输入。",
+          "user_intent": "提供会议基本背景、参会职责和时间窗口，请助手先确定议题优先级与顺序。",
+          "assistant_intent": "建立阻塞事项优先的排序原则，并索取安排具体时段所需的范围与供应链信息。",
+          "semantic_goal": "形成会议排序框架，并明确下一步需要补充的信息。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "待决范围有两个：首发只做白色还是加深灰；首次配网引导首发还是后续。模组常规交期二十一天，现可调约三百套，但首批量和销量预测没定。",
+          "assistant_utterance": "先把前半小时留给阻塞项：十点到十点十二分定首发范围，十点十二分到十点二十五分处理市场决策；之后讨论首批数量与物料风险，十点十五分后再安排客服议题，最后五分钟确认负责人和截止日。",
+          "user_intent": "补充产品范围分歧和供应链约束，供助手细化议程。",
+          "assistant_intent": "依据新增约束提出按分钟划分的初步讨论顺序。",
+          "semantic_goal": "把范围、市场、供应链和客服议题排入六十分钟会议。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "先按阻塞后续优先排：范围冻结、市场素材、首批备货放前面，信息同步改成会前阅读。要把顺序落到分钟，我还需要两类信息：当前待决范围，以及供应链最晚需要什么输入。",
+            "assistant_stop_after_text": "先按阻塞后续优先排：范围冻结、市场素材、首批备货放前面，信息同步改成会前阅读。要把顺序落到分钟，我还需要两类信息：当前待决范围，以及供应链最晚需要什么输入。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "先停一下，范围后面就得接市场：高雯十点半要走，名称、主视觉颜色和三条卖点最晚十二月一日前得定。另外罗宁十点十五分才到，客服要排障流程、快速入门和培训安排。",
+          "assistant_utterance": "那就改成：十点至十点十二分锁范围；十点十二分至十点二十五分定名称、主视觉颜色和三条卖点；十点二十五分至十点三十五分定首批量与模组处置；之后十分钟评估两项范围对研发计划的影响，再用十分钟定客服材料和主讲人，末五分钟收口。",
+          "user_intent": "打断初步安排，补充市场截止要求和客服交付需求，要求调整顺序。",
+          "assistant_intent": "停止原播报并根据市场、客服时间窗口重新给出完整分钟议程。",
+          "semantic_goal": "确保市场议题在高雯离场前完成，客服议题在罗宁到场后进行。",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "先把前半小时留给阻塞项：十点到十点十二分定首发范围，",
+            "assistant_stop_after_text": "先把前半小时留给阻塞项：十点到十点十二分定首发范围，十点十"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "现成材料有0.8版简报、工程样机和粗略里程碑表，日期还是草案。缺的是预算、销量预测、范围决策权限、验收口径和产出负责人。你把每个议题的材料和会前确认人对应起来。",
+          "assistant_utterance": "材料这样配：范围带简报、样机和两项待定清单，会前补决策权限；市场补名称候选、颜色方案和卖点草案；供应链带二十一天交期与三百套估算，补销量预测、首批量和预算；研发补验收口径；客服补稳定配网步骤。林越、周帆、何青、孙宇、高雯、罗宁分别核职责与输入，各部门共同核里程碑日期。",
+          "user_intent": "说明现有材料和关键缺口，要求建立议题、材料与确认人的对应关系。",
+          "assistant_intent": "逐项区分可直接使用的材料、待补数据及会前应找谁确认。",
+          "semantic_goal": "形成可执行的会前材料准备与责任人确认清单。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "那就改成：十点至十点十二分锁范围；十点十二分至十点二十五分定名称、主视觉颜色和三条卖点；十点二十五分至十点三十五分定首批量与模组处置；之后十分钟评估两项范围对研发计划的影响，再用十分钟定客服材料和主讲人，末五分钟收口。",
+            "assistant_stop_after_text": "那就改成：十点至十点十二分锁范围；十点十二分至十点二十五分定名称、主视觉颜色和三条卖点；十点二十五分至十点三十五分定首批量与模组处置；之后十分钟评估两项范围对研发计划的影响，再用十分钟定客服材料和主讲人，末五分钟收口。"
+          },
+          "pause_cue": {
+            "after_text": "现成材料有0.8版简报、工程样机和粗略里程碑表，",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "好，最后按会议顺序完整读一遍，每项都带上材料、要形成的结果和会前缺口。",
+          "assistant_utterance": "目标十二月十八日上线。十点至十二分锁范围：带简报、样机和待定清单，定颜色、配网引导和决策人；林越、周帆先核权限。十二至二十五分定名称、主视觉、三条卖点；高雯、何青补候选。二十五至三十五分定首批量、模组是否加急；带交期和三百套估算，孙宇核库存，市场补预测，产品补预算。三十五至四十五分核里程碑草案并定验收口径；周帆和各部门先核日期。四十五至五十五分定排障、快速入门、培训主讲；罗宁、周帆先核配网步骤。末五分钟锁负责人和截止日。",
+          "user_intent": "要求按最终会议顺序完整回读可执行方案。",
+          "assistant_intent": "整合时间、材料、预期决定或产出以及会前确认缺口，给出最终方案。",
+          "semantic_goal": "获得可直接用于填写会议议程和组织会前准备的完整版本。",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "材料这样配：范围带简报、样机和两项待定清单，会前补决策权限；市场补名称候选、颜色方案和卖点草案；供应链带二十一天交期与三百套估算，补销量预测、首批量和预算；研发补验收口径；客服补稳定配网步骤。林越、周帆、何青、孙宇、高雯、罗宁分别核职责与输入，各部门共同核里程碑日期。",
+            "assistant_stop_after_text": "材料这样配：范围带简报、样机和两项待定清单，会前补决策权限；市场补名称候选、颜色方案和卖点草案；供应链带二十一天交期与三百套估算，补销量预测、首批量和预算；研发补验收口径；客服补稳定配网步骤。林越、周帆、何青、孙宇、高雯、罗宁分别核职责与输入，各部门共同核里程碑日期。"
+          },
+          "pause_cue": null
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A004",
+          "after_text": "材料这样配：范围带简报、样机和两项待定清单，会前补决策权限；市场补名称候选、颜色方案和卖点草案；",
+          "text": "嗯，清楚"
+        }
+      ],
+      "side_speech": [],
+      "environment_events": []
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在排星桥智能台灯启动会，十一月十二日十点到十一点，目标十二月十八日上线。林越主持并做范围决策，周帆管研发，何青管设计包装，孙宇管供应链，高雯管市场，罗宁管客服。高雯只能到十点半，罗宁十点十五分后才到。先帮我定优先级和顺序。"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "先按阻塞后续优先排：范围冻结、市场素材、首批备货放前面，信息同步改成会前阅读。要把顺序落到分钟，我还需要两类信息：当前待决范围，以及供应链最晚需要什么输入。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在排星桥智能台灯启动会，十一月十二日十点到十一点，目标十二月十八日上线。林越主持并做范围决策，周帆管研发，何青管设计包装，孙宇管供应链，高雯管市场，罗宁管客服。高雯只能到十点半，罗宁十点十五分后才到。先帮我定优先级和顺序。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先按阻塞后续优先排：范围冻结、市场素材、首批备货放前面，信息同步改成会前阅读。要把顺序落到分钟，我还需要两类信息：当前待决范围，以及供应链最晚需要什么输入。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在排星桥智能台灯启动会，十一月十二日十点到十一点，目标十二月十八日上线。林越主持并做范围决策，周帆管研发，何青管设计包装，孙宇管供应链，高雯管市场，罗宁管客服。高雯只能到十点半，罗宁十点十五分后才到。先帮我定优先级和顺序。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先按阻塞后续优先排：范围冻结、市场素材、首批备货放前面，信息同步改成会前阅读。要把顺序落到分钟，我还需要两类信息：当前待决范围，以及供应链最晚需要什么输入。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "待决范围有两个：首发只做白色还是加深灰；首次配网引导首发还是后续。模组常规交期二十一天，现可调约三百套，但首批量和销量预测没定。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "先按阻塞后续优先排：范围冻结、市场素材、首批备货放前面，信息同步改成会前阅读。要把顺序落到分钟，我还需要两类信息：当前待决范围，以及供应链最晚需要什么输入。",
+          "final_shared_played_prefix": "先按阻塞后续优先排：范围冻结、市场素材、首批备货放前面，信息同步改成会前阅读。要把顺序落到分钟，我还需要两类信息：当前待决范围，以及供应链最晚需要什么输入。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "先把前半小时留给阻塞项：十点到十点十二分定首发范围，十点十二分到十点二十五分处理市场决策；之后讨论首批数量与物料风险，十点十五分后再安排客服议题，最后五分钟确认负责人和截止日。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在排星桥智能台灯启动会，十一月十二日十点到十一点，目标十二月十八日上线。林越主持并做范围决策，周帆管研发，何青管设计包装，孙宇管供应链，高雯管市场，罗宁管客服。高雯只能到十点半，罗宁十点十五分后才到。先帮我定优先级和顺序。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先按阻塞后续优先排：范围冻结、市场素材、首批备货放前面，信息同步改成会前阅读。要把顺序落到分钟，我还需要两类信息：当前待决范围，以及供应链最晚需要什么输入。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "待决范围有两个：首发只做白色还是加深灰；首次配网引导首发还是后续。模组常规交期二十一天，现可调约三百套，但首批量和销量预测没定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先把前半小时留给阻塞项：十点到十点十二分定首发范围，"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在排星桥智能台灯启动会，十一月十二日十点到十一点，目标十二月十八日上线。林越主持并做范围决策，周帆管研发，何青管设计包装，孙宇管供应链，高雯管市场，罗宁管客服。高雯只能到十点半，罗宁十点十五分后才到。先帮我定优先级和顺序。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先按阻塞后续优先排：范围冻结、市场素材、首批备货放前面，信息同步改成会前阅读。要把顺序落到分钟，我还需要两类信息：当前待决范围，以及供应链最晚需要什么输入。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "待决范围有两个：首发只做白色还是加深灰；首次配网引导首发还是后续。模组常规交期二十一天，现可调约三百套，但首批量和销量预测没定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先把前半小时留给阻塞项：十点到十点十二分定首发范围，十点十"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，范围后面就得接市场：高雯十点半要走，名称、主视觉颜色和三条卖点最晚十二月一日前得定。另外罗宁十点十五分才到，客服要排障流程、快速入门和培训安排。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "先把前半小时留给阻塞项：十点到十点十二分定首发范围，",
+          "final_shared_played_prefix": "先把前半小时留给阻塞项：十点到十点十二分定首发范围，十点十",
+          "discarded_unheard_tail": "二分到十点二十五分处理市场决策；之后讨论首批数量与物料风险，十点十五分后再安排客服议题，最后五分钟确认负责人和截止日。"
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "那就改成：十点至十点十二分锁范围；十点十二分至十点二十五分定名称、主视觉颜色和三条卖点；十点二十五分至十点三十五分定首批量与模组处置；之后十分钟评估两项范围对研发计划的影响，再用十分钟定客服材料和主讲人，末五分钟收口。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在排星桥智能台灯启动会，十一月十二日十点到十一点，目标十二月十八日上线。林越主持并做范围决策，周帆管研发，何青管设计包装，孙宇管供应链，高雯管市场，罗宁管客服。高雯只能到十点半，罗宁十点十五分后才到。先帮我定优先级和顺序。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先按阻塞后续优先排：范围冻结、市场素材、首批备货放前面，信息同步改成会前阅读。要把顺序落到分钟，我还需要两类信息：当前待决范围，以及供应链最晚需要什么输入。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "待决范围有两个：首发只做白色还是加深灰；首次配网引导首发还是后续。模组常规交期二十一天，现可调约三百套，但首批量和销量预测没定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先把前半小时留给阻塞项：十点到十点十二分定首发范围，十点十"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，范围后面就得接市场：高雯十点半要走，名称、主视觉颜色和三条卖点最晚十二月一日前得定。另外罗宁十点十五分才到，客服要排障流程、快速入门和培训安排。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "那就改成：十点至十点十二分锁范围；十点十二分至十点二十五分定名称、主视觉颜色和三条卖点；十点二十五分至十点三十五分定首批量与模组处置；之后十分钟评估两项范围对研发计划的影响，再用十分钟定客服材料和主讲人，末五分钟收口。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在排星桥智能台灯启动会，十一月十二日十点到十一点，目标十二月十八日上线。林越主持并做范围决策，周帆管研发，何青管设计包装，孙宇管供应链，高雯管市场，罗宁管客服。高雯只能到十点半，罗宁十点十五分后才到。先帮我定优先级和顺序。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先按阻塞后续优先排：范围冻结、市场素材、首批备货放前面，信息同步改成会前阅读。要把顺序落到分钟，我还需要两类信息：当前待决范围，以及供应链最晚需要什么输入。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "待决范围有两个：首发只做白色还是加深灰；首次配网引导首发还是后续。模组常规交期二十一天，现可调约三百套，但首批量和销量预测没定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先把前半小时留给阻塞项：十点到十点十二分定首发范围，十点十"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，范围后面就得接市场：高雯十点半要走，名称、主视觉颜色和三条卖点最晚十二月一日前得定。另外罗宁十点十五分才到，客服要排障流程、快速入门和培训安排。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "那就改成：十点至十点十二分锁范围；十点十二分至十点二十五分定名称、主视觉颜色和三条卖点；十点二十五分至十点三十五分定首批量与模组处置；之后十分钟评估两项范围对研发计划的影响，再用十分钟定客服材料和主讲人，末五分钟收口。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "现成材料有0.8版简报、工程样机和粗略里程碑表，日期还是草案。缺的是预算、销量预测、范围决策权限、验收口径和产出负责人。你把每个议题的材料和会前确认人对应起来。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "那就改成：十点至十点十二分锁范围；十点十二分至十点二十五分定名称、主视觉颜色和三条卖点；十点二十五分至十点三十五分定首批量与模组处置；之后十分钟评估两项范围对研发计划的影响，再用十分钟定客服材料和主讲人，末五分钟收口。",
+          "final_shared_played_prefix": "那就改成：十点至十点十二分锁范围；十点十二分至十点二十五分定名称、主视觉颜色和三条卖点；十点二十五分至十点三十五分定首批量与模组处置；之后十分钟评估两项范围对研发计划的影响，再用十分钟定客服材料和主讲人，末五分钟收口。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "材料这样配：范围带简报、样机和两项待定清单，会前补决策权限；市场补名称候选、颜色方案和卖点草案；供应链带二十一天交期与三百套估算，补销量预测、首批量和预算；研发补验收口径；客服补稳定配网步骤。林越、周帆、何青、孙宇、高雯、罗宁分别核职责与输入，各部门共同核里程碑日期。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在排星桥智能台灯启动会，十一月十二日十点到十一点，目标十二月十八日上线。林越主持并做范围决策，周帆管研发，何青管设计包装，孙宇管供应链，高雯管市场，罗宁管客服。高雯只能到十点半，罗宁十点十五分后才到。先帮我定优先级和顺序。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先按阻塞后续优先排：范围冻结、市场素材、首批备货放前面，信息同步改成会前阅读。要把顺序落到分钟，我还需要两类信息：当前待决范围，以及供应链最晚需要什么输入。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "待决范围有两个：首发只做白色还是加深灰；首次配网引导首发还是后续。模组常规交期二十一天，现可调约三百套，但首批量和销量预测没定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先把前半小时留给阻塞项：十点到十点十二分定首发范围，十点十"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，范围后面就得接市场：高雯十点半要走，名称、主视觉颜色和三条卖点最晚十二月一日前得定。另外罗宁十点十五分才到，客服要排障流程、快速入门和培训安排。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "那就改成：十点至十点十二分锁范围；十点十二分至十点二十五分定名称、主视觉颜色和三条卖点；十点二十五分至十点三十五分定首批量与模组处置；之后十分钟评估两项范围对研发计划的影响，再用十分钟定客服材料和主讲人，末五分钟收口。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "现成材料有0.8版简报、工程样机和粗略里程碑表，日期还是草案。缺的是预算、销量预测、范围决策权限、验收口径和产出负责人。你把每个议题的材料和会前确认人对应起来。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "材料这样配：范围带简报、样机和两项待定清单，会前补决策权限；市场补名称候选、颜色方案和卖点草案；供应链带二十一天交期与三百套估算，补销量预测、首批量和预算；研发补验收口径；客服补稳定配网步骤。林越、周帆、何青、孙宇、高雯、罗宁分别核职责与输入，各部门共同核里程碑日期。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在排星桥智能台灯启动会，十一月十二日十点到十一点，目标十二月十八日上线。林越主持并做范围决策，周帆管研发，何青管设计包装，孙宇管供应链，高雯管市场，罗宁管客服。高雯只能到十点半，罗宁十点十五分后才到。先帮我定优先级和顺序。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先按阻塞后续优先排：范围冻结、市场素材、首批备货放前面，信息同步改成会前阅读。要把顺序落到分钟，我还需要两类信息：当前待决范围，以及供应链最晚需要什么输入。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "待决范围有两个：首发只做白色还是加深灰；首次配网引导首发还是后续。模组常规交期二十一天，现可调约三百套，但首批量和销量预测没定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先把前半小时留给阻塞项：十点到十点十二分定首发范围，十点十"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，范围后面就得接市场：高雯十点半要走，名称、主视觉颜色和三条卖点最晚十二月一日前得定。另外罗宁十点十五分才到，客服要排障流程、快速入门和培训安排。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "那就改成：十点至十点十二分锁范围；十点十二分至十点二十五分定名称、主视觉颜色和三条卖点；十点二十五分至十点三十五分定首批量与模组处置；之后十分钟评估两项范围对研发计划的影响，再用十分钟定客服材料和主讲人，末五分钟收口。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "现成材料有0.8版简报、工程样机和粗略里程碑表，日期还是草案。缺的是预算、销量预测、范围决策权限、验收口径和产出负责人。你把每个议题的材料和会前确认人对应起来。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "材料这样配：范围带简报、样机和两项待定清单，会前补决策权限；市场补名称候选、颜色方案和卖点草案；供应链带二十一天交期与三百套估算，补销量预测、首批量和预算；研发补验收口径；客服补稳定配网步骤。林越、周帆、何青、孙宇、高雯、罗宁分别核职责与输入，各部门共同核里程碑日期。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "好，最后按会议顺序完整读一遍，每项都带上材料、要形成的结果和会前缺口。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "材料这样配：范围带简报、样机和两项待定清单，会前补决策权限；市场补名称候选、颜色方案和卖点草案；供应链带二十一天交期与三百套估算，补销量预测、首批量和预算；研发补验收口径；客服补稳定配网步骤。林越、周帆、何青、孙宇、高雯、罗宁分别核职责与输入，各部门共同核里程碑日期。",
+          "final_shared_played_prefix": "材料这样配：范围带简报、样机和两项待定清单，会前补决策权限；市场补名称候选、颜色方案和卖点草案；供应链带二十一天交期与三百套估算，补销量预测、首批量和预算；研发补验收口径；客服补稳定配网步骤。林越、周帆、何青、孙宇、高雯、罗宁分别核职责与输入，各部门共同核里程碑日期。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A004",
+            "after_text": "材料这样配：范围带简报、样机和两项待定清单，会前补决策权限；市场补名称候选、颜色方案和卖点草案；",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "目标十二月十八日上线。十点至十二分锁范围：带简报、样机和待定清单，定颜色、配网引导和决策人；林越、周帆先核权限。十二至二十五分定名称、主视觉、三条卖点；高雯、何青补候选。二十五至三十五分定首批量、模组是否加急；带交期和三百套估算，孙宇核库存，市场补预测，产品补预算。三十五至四十五分核里程碑草案并定验收口径；周帆和各部门先核日期。四十五至五十五分定排障、快速入门、培训主讲；罗宁、周帆先核配网步骤。末五分钟锁负责人和截止日。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A004",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我在排星桥智能台灯启动会，十一月十二日十点到十一点，目标十二月十八日上线。林越主持并做范围决策，周帆管研发，何青管设计包装，孙宇管供应链，高雯管市场，罗宁管客服。高雯只能到十点半，罗宁十点十五分后才到。先帮我定优先级和顺序。"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "先按阻塞后续优先排：范围冻结、市场素材、首批备货放前面，信息同步改成会前阅读。要把顺序落到分钟，我还需要两类信息：当前待决范围，以及供应链最晚需要什么输入。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "待决范围有两个：首发只做白色还是加深灰；首次配网引导首发还是后续。模组常规交期二十一天，现可调约三百套，但首批量和销量预测没定。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先把前半小时留给阻塞项：十点到十点十二分定首发范围，十点十"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "先停一下，范围后面就得接市场：高雯十点半要走，名称、主视觉颜色和三条卖点最晚十二月一日前得定。另外罗宁十点十五分才到，客服要排障流程、快速入门和培训安排。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "那就改成：十点至十点十二分锁范围；十点十二分至十点二十五分定名称、主视觉颜色和三条卖点；十点二十五分至十点三十五分定首批量与模组处置；之后十分钟评估两项范围对研发计划的影响，再用十分钟定客服材料和主讲人，末五分钟收口。"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "现成材料有0.8版简报、工程样机和粗略里程碑表，日期还是草案。缺的是预算、销量预测、范围决策权限、验收口径和产出负责人。你把每个议题的材料和会前确认人对应起来。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "材料这样配：范围带简报、样机和两项待定清单，会前补决策权限；市场补名称候选、颜色方案和卖点草案；"
+          }
+        ],
+        "at_event_onset_heard_prefix": "材料这样配：范围带简报、样机和两项待定清单，会前补决策权限；市场补名称候选、颜色方案和卖点草案；",
+        "event_text": "嗯，清楚",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

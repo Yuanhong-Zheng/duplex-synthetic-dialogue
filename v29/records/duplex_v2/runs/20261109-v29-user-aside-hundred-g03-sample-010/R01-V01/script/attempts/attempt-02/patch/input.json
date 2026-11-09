@@ -1,0 +1,1148 @@
+{
+  "frozen_source": {
+    "case_id": "R01-V01",
+    "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g03-sample-010-v2-stage2",
+    "language": "zh",
+    "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+    "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+    "script_execution_policy": {
+      "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+      "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+      "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+      "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+      "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+      "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+      "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+    },
+    "program_anchor_seed": 1252374479,
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    },
+    "relay_configuration": {
+      "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g03/relay-policy.json",
+      "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g03/relay-state",
+      "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+      "policy": {
+        "schema": "duplex_v2.timeout_relay_policy.v3",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "backup": {
+          "profile": "lianyu",
+          "endpoint": "https://api.openbili.com/v1/chat/completions",
+          "model_map": {
+            "openai/gpt-5.6-sol": "gpt-5.6-sol",
+            "openai/gpt-5.6-luna": "gpt-5.6-luna"
+          },
+          "verification": {
+            "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+            "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+          }
+        },
+        "trigger": {
+          "max_retries": 5,
+          "http_statuses": [
+            502,
+            503,
+            504
+          ],
+          "error_types": [
+            "TimeoutError",
+            "HTTP2DeadlineExceeded",
+            "ConnectionResetError",
+            "ConnectionAbortedError",
+            "BrokenPipeError",
+            "RemoteDisconnected",
+            "IncompleteRead"
+          ],
+          "http2_transport_errors": "negotiated_h2_only",
+          "require_all_attempts": true
+        },
+        "max_relay_switches": 1
+      }
+    },
+    "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+    "script_repair_policy": {
+      "schema": "duplex_v2.script_repair_policy.v1",
+      "mode": "json_patch",
+      "patch_schema": "duplex_v2.script_patch.v1",
+      "json_parse_max_retries": 3,
+      "content_max_repairs": 5,
+      "length_compaction_max_attempts": 3,
+      "overlength_after_compaction": "fail_case",
+      "judge_scope": "complete_script_and_heard_context"
+    },
+    "text_output_token_policy": "omit",
+    "scene_task": {
+      "scene": {
+        "domain_id": "D10",
+        "domain": "家庭、空间整理与日常维护",
+        "scenario_id": "D10-S03",
+        "scenario": "清洁计划"
+      },
+      "task_style": "结构化整理",
+      "task_instance": {
+        "goal": "根据随后提供的家中各区域当前状况、污渍或杂乱程度、可用清洁时段和现有用品，整理出一份分阶段的清洁计划：先确定哪些问题需要优先处理，再安排每个区域的任务顺序、预计投入和所需用品，并标出可以延后的事项。"
+      }
+    },
+    "user_voice": {
+      "user_seed": {
+        "role_relation": "刚搬入一套二居室、负责安排日常维护的独居住户",
+        "task_familiarity": "medium"
+      },
+      "voice_profile": "男性，感知四十多岁，音色偏温厚，吐字清楚，语速平稳，带有轻微的鼻腔共鸣，整体听感沉着自然。",
+      "interaction_profile": {
+        "schema": "duplex_v2.interaction_profile.v1",
+        "formality": "neutral",
+        "directness": "balanced",
+        "emotional_expressiveness": "balanced",
+        "verbosity": "brief",
+        "initiative": "medium",
+        "caution": "high",
+        "patience": "medium",
+        "behavioral_notes": [
+          "通常先概括自己的情况，再逐项补充需要整理的信息。",
+          "对分类依据和先后顺序比较在意，遇到不确定的归类会主动请求说明。",
+          "表达简洁但不生硬，确认关键安排后才继续提供下一部分信息。"
+        ]
+      }
+    },
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "short",
+      "target_turns": 6,
+      "min_turns": 5,
+      "max_turns": 7
+    },
+    "ambient_catalog": {
+      "schema": "duplex_v2.ambient_catalog.v1",
+      "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+      "assets": [
+        {
+          "asset_id": "fan-fsd50k-eval-419427",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 10.3909375
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-235362",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 11.0
+        },
+        {
+          "asset_id": "fan-fsd50k-eval-415925",
+          "category": "fan",
+          "mode": "bed",
+          "tags": [
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "稳定的真实机械风扇或通风声",
+          "duration_seconds": 7.178
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-235541",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 29.045875
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-232686",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 10.3445
+        },
+        {
+          "asset_id": "traffic-fsd50k-eval-124020",
+          "category": "traffic",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "road",
+            "street",
+            "travel"
+          ],
+          "description": "真实道路车流环境声",
+          "duration_seconds": 24.78875
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-382582",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.9788125
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-21189",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 9.962
+        },
+        {
+          "asset_id": "rain-fsd50k-eval-238016",
+          "category": "rain",
+          "mode": "bed",
+          "tags": [
+            "outdoor",
+            "window",
+            "rain",
+            "home"
+          ],
+          "description": "真实连续雨声",
+          "duration_seconds": 11.32
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-185058",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 5.2114375
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-121877",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 11.696
+        },
+        {
+          "asset_id": "crowd-fsd50k-eval-340358",
+          "category": "crowd",
+          "mode": "bed",
+          "tags": [
+            "public",
+            "crowd",
+            "cafe",
+            "station"
+          ],
+          "description": "远处人群嘈杂环境声，无指定第三方台词",
+          "duration_seconds": 4.2745
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-82562",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 1.0094375
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-121200",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.83525
+        },
+        {
+          "asset_id": "paper-fsd50k-eval-343098",
+          "category": "paper",
+          "mode": "event",
+          "tags": [
+            "indoor",
+            "paper",
+            "office",
+            "home"
+          ],
+          "description": "完整的纸张翻动、揉动或撕纸声效",
+          "duration_seconds": 0.796
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-153104",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.4691875
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-392303",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.6849375
+        },
+        {
+          "asset_id": "footsteps-fsd50k-eval-272381",
+          "category": "footsteps",
+          "mode": "event",
+          "tags": [
+            "footsteps",
+            "indoor",
+            "outdoor"
+          ],
+          "description": "完整的短段真实脚步声",
+          "duration_seconds": 3.933375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-71212",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.3638125
+        },
+        {
+          "asset_id": "door-fsd50k-eval-119077",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 2.7944375
+        },
+        {
+          "asset_id": "door-fsd50k-eval-209519",
+          "category": "door",
+          "mode": "event",
+          "tags": [
+            "door",
+            "indoor",
+            "home",
+            "office"
+          ],
+          "description": "完整的短段真实开关门声",
+          "duration_seconds": 1.0398125
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-399740",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.322
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-233057",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.4700625
+        },
+        {
+          "asset_id": "keyboard-fsd50k-eval-411545",
+          "category": "keyboard",
+          "mode": "event",
+          "tags": [
+            "keyboard",
+            "office",
+            "computer",
+            "indoor"
+          ],
+          "description": "完整的短段真实电脑键盘输入声",
+          "duration_seconds": 2.5686875
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-232499",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 0.842
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402127",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "water_tap-fsd50k-eval-402128",
+          "category": "water_tap",
+          "mode": "event",
+          "tags": [
+            "water",
+            "kitchen",
+            "home",
+            "indoor"
+          ],
+          "description": "完整的短段真实水龙头声",
+          "duration_seconds": 2.0915
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-86343",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 7.5366875
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-57907",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.5773125
+        },
+        {
+          "asset_id": "birds-fsd50k-eval-319512",
+          "category": "birds",
+          "mode": "bed",
+          "tags": [
+            "birds",
+            "park",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实鸟鸣环境声",
+          "duration_seconds": 12.755625
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113173",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 11.2184375
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113175",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.8773125
+        },
+        {
+          "asset_id": "wind-fsd50k-eval-113176",
+          "category": "wind",
+          "mode": "bed",
+          "tags": [
+            "wind",
+            "outdoor",
+            "nature"
+          ],
+          "description": "真实风声环境声",
+          "duration_seconds": 7.6341875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-348322",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 1.625
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-426594",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 0.3666875
+        },
+        {
+          "asset_id": "doorbell-fsd50k-eval-332563",
+          "category": "doorbell",
+          "mode": "event",
+          "tags": [
+            "doorbell",
+            "home",
+            "door",
+            "indoor"
+          ],
+          "description": "完整的真实门铃声效",
+          "duration_seconds": 4.0
+        }
+      ]
+    },
+    "ambient_control": {
+      "schema": "duplex_v2.soundscape_control.v3",
+      "seed": 3025723881,
+      "mode": "layered",
+      "discrete_event_target": 0,
+      "max_ambient_layers": 2,
+      "side_speech_requested": false,
+      "speech_kind_preferences": [
+        "user_to_third_party",
+        "third_party",
+        "machine"
+      ]
+    },
+    "situation_knowledge": {
+      "episode_situation": "2026年11月9日周一晚上八点十分，用户独自在刚搬入四天的二居室里，准备趁纸箱尚未完全拆完，把首次全面清洁和后续整理排出顺序。用户负责这套住房的全部日常维护，过去会做基础清洁，但不太确定搬家后的积尘、厨卫污渍和未拆物品应如何分阶段处理。他已经逐个房间走了一遍，并在纸上记下通道、污渍、积尘和杂物的大致情况，同时把现有清洁用品集中到了厨房门边。入户过道被纸箱压缩得较窄，厨房还有一处新鲜黏渍，因此用户不希望一开始就把时间平均分给所有房间。卫生间的淋浴区存在水垢和少量霉点，但目前没有积水、堵塞或漏水迹象，可以在清出通道后集中处理。客厅和主卧主要是搬家产生的灰尘、包装碎屑与待归位物品，次卧则仍堆着多只已经封好的收纳箱。用户不打算在本轮清洁中逐箱拆开次卧物品，只希望先恢复可行走区域并处理裸露表面的灰尘。接下来三个工作日每天只能抽出约三十分钟，周六上午有连续两小时，周日下午另有九十分钟，因此重任务需要与短时段任务分开安排。现有吸尘器、拖把和多种清洁剂基本够用，但不同清洁剂的标签警告需要在安排浴室和厨房任务时纳入考虑。楼内对夜间噪声有明确限制，今晚可以进行归类、擦拭等安静工作，但不适合长时间吸尘。用户希望计划能说明每个区域的先后关系、粗略耗时和用品需求，而不是只按房间列一张不分轻重的清单。当前仍需逐步确认的是，各时段应做到什么程度、哪些任务适合合并，以及次卧深度整理和非紧迫的外观清洁应延后到哪一阶段。",
+      "task_reference_data": [
+        "来自用户今晚手写巡查记录、已现场看过：入户过道有6只搬家纸箱和2个空购物袋，最窄处只剩约60厘米可通行；其中4只纸箱已有房间标签，可以直接移到对应房间，另外2只尚未分类。",
+        "来自用户现场观察、已确认：厨房灶台和油烟机外壳有一层轻度油膜，水槽内有3只待洗餐具；冰箱前地面有一块约30厘米见方的饮料黏渍，是当天形成的，橱柜内部暂时不需要清理。",
+        "来自用户现场观察、已确认：卫生间淋浴玻璃下缘和龙头周围有明显水垢，墙角约有三处指甲盖大小的黑色霉点；地漏排水正常，地面目前干燥。",
+        "来自用户现场观察、已确认：客厅地面有灰尘和少量泡沫包装碎屑，茶几上有待归位的小物件；主卧主要是床下与踢脚线积尘；次卧有8只封好的收纳箱，中央仍保留一条可通行窄道。",
+        "来自用户日程本、当前有效：周二、周三和周四晚间各可安排30分钟；周六10:00至12:00可连续清洁；周日15:30至17:00可继续处理。今晚最多再做20分钟安静任务。",
+        "来自用户已集中并清点的用品：有吸尘器1台、平板拖把1把、水桶1只、橡胶手套1副、超细纤维布4块、海绵2块、旧牙刷1把、垃圾袋8只，以及厨房去油剂、中性地板清洁剂、含氯漂白剂和酸性浴室除垢剂各1瓶；没有梯子、长柄除尘掸或专用玻璃刮。",
+        "来自瓶身标签、用户可现场朗读核对：含氯漂白剂标注主要成分为次氯酸钠，并写有“不得与酸性产品混用”；浴室除垢剂标注为酸性配方；中性地板清洁剂可用于家中的强化复合地板，但要求拧干拖布、避免积水。",
+        "来自楼内公告和用户的搬家安排、已知且当前适用：21:00后应避免持续使用吸尘器等明显噪声设备；次卧封箱暂不逐个拆开，空纸箱和包装废料可先压平装袋，之后再由用户自行处理。"
+      ],
+      "environment_audio": "室内右后方传来持续而低沉的通风设备运转声，音量稳定。关闭的窗外有很远的道路车流底声，车辆经过时略有起伏，但不会盖住近距离说话。",
+      "estimated_snr_db": 27,
+      "constraints": [
+        {
+          "constraint_id": "C01",
+          "text": "计划必须适配今晚最多20分钟、三个工作日晚间各30分钟、周六连续2小时和周日90分钟的可用时段。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C02",
+          "text": "21:00后不得安排持续吸尘等明显噪声任务。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C03",
+          "text": "次卧的8只封箱不纳入逐箱拆解，只处理通道、外露表面和能够直接归位的物品。",
+          "kind": "hard"
+        },
+        {
+          "constraint_id": "C04",
+          "text": "优先利用现有用品；若某项确实缺少工具，应单独标明并允许延期，不预设已经购得新用品。",
+          "kind": "soft"
+        }
+      ],
+      "safety_limits": [
+        {
+          "limit_id": "L01",
+          "text": "含氯漂白剂不得与酸性浴室除垢剂混合、连续叠加使用或装入同一容器。",
+          "severity": "critical"
+        },
+        {
+          "limit_id": "L02",
+          "text": "清洁被纸箱压窄的过道前，应先恢复稳定通行空间，避免在受阻通道内留下湿滑地面。",
+          "severity": "hard"
+        },
+        {
+          "limit_id": "L03",
+          "text": "强化复合地板只能使用拧干的拖布，不能长时间积水或浸泡。",
+          "severity": "advisory"
+        }
+      ],
+      "soundscape_plan": {
+        "mode": "layered",
+        "ambient_layers": [
+          {
+            "source_id": "AMB01",
+            "asset_id": "fan-fsd50k-eval-415925",
+            "reason": "稳定的室内机械通风声符合独居住宅晚间环境，适合作为低音量连续底色。"
+          },
+          {
+            "source_id": "AMB02",
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "reason": "远距离道路车流可作为关闭窗户后的微弱城市住宅底噪。"
+          }
+        ],
+        "environment_events": [],
+        "schema": "duplex_v2.soundscape_plan.v4",
+        "side_speech_sources": [],
+        "side_speech_count": 0,
+        "sampling": {
+          "schema": "duplex_v2.ambient_draw.v3",
+          "policy": {
+            "schema": "duplex_v2.soundscape_policy.v3",
+            "quiet_probability": 0.5,
+            "discrete_targets_by_tier": {
+              "short": [
+                0,
+                1
+              ],
+              "medium": [
+                1,
+                2
+              ],
+              "long": [
+                2,
+                4
+              ]
+            },
+            "discrete_count_includes": [
+              "environment_events",
+              "side_speech"
+            ],
+            "max_ambient_layers": 2,
+            "gain_range": [
+              0.3,
+              0.7
+            ],
+            "speech_request_probability": 0.5,
+            "third_party_preference_probability": 0.8,
+            "speech_requires_existing_scene_source": true,
+            "environment_audio": "base_only",
+            "stage2_repair": "atomic_scoped_patch",
+            "stage2_max_judge_attempts": 3,
+            "json_parse_max_retries": 3,
+            "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+            "user_aside_preference_probability": 0.5,
+            "user_voice_source": "stage1_user",
+            "user_aside_requires_present_recipient": true
+          },
+          "preferences": {
+            "schema": "duplex_v2.ambient_preferences.v1",
+            "seed": 202611090003,
+            "slot": 9,
+            "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+            "categories": {
+              "bed": [
+                "traffic",
+                "crowd",
+                "birds",
+                "fan",
+                "rain",
+                "wind"
+              ],
+              "event": [
+                "footsteps",
+                "door",
+                "water_tap",
+                "paper",
+                "doorbell",
+                "keyboard"
+              ]
+            },
+            "recordings": {
+              "bed:birds": [
+                "birds-fsd50k-eval-319512",
+                "birds-fsd50k-eval-57907",
+                "birds-fsd50k-eval-86343"
+              ],
+              "bed:crowd": [
+                "crowd-fsd50k-eval-185058",
+                "crowd-fsd50k-eval-340358",
+                "crowd-fsd50k-eval-121877"
+              ],
+              "bed:fan": [
+                "fan-fsd50k-eval-415925",
+                "fan-fsd50k-eval-419427",
+                "fan-fsd50k-eval-235362"
+              ],
+              "bed:rain": [
+                "rain-fsd50k-eval-238016",
+                "rain-fsd50k-eval-382582",
+                "rain-fsd50k-eval-21189"
+              ],
+              "bed:traffic": [
+                "traffic-fsd50k-eval-124020",
+                "traffic-fsd50k-eval-235541",
+                "traffic-fsd50k-eval-232686"
+              ],
+              "bed:wind": [
+                "wind-fsd50k-eval-113176",
+                "wind-fsd50k-eval-113175",
+                "wind-fsd50k-eval-113173"
+              ],
+              "event:door": [
+                "door-fsd50k-eval-71212",
+                "door-fsd50k-eval-119077",
+                "door-fsd50k-eval-209519"
+              ],
+              "event:doorbell": [
+                "doorbell-fsd50k-eval-332563",
+                "doorbell-fsd50k-eval-348322",
+                "doorbell-fsd50k-eval-426594"
+              ],
+              "event:footsteps": [
+                "footsteps-fsd50k-eval-153104",
+                "footsteps-fsd50k-eval-392303",
+                "footsteps-fsd50k-eval-272381"
+              ],
+              "event:keyboard": [
+                "keyboard-fsd50k-eval-399740",
+                "keyboard-fsd50k-eval-411545",
+                "keyboard-fsd50k-eval-233057"
+              ],
+              "event:paper": [
+                "paper-fsd50k-eval-82562",
+                "paper-fsd50k-eval-343098",
+                "paper-fsd50k-eval-121200"
+              ],
+              "event:water_tap": [
+                "water_tap-fsd50k-eval-402128",
+                "water_tap-fsd50k-eval-232499",
+                "water_tap-fsd50k-eval-402127"
+              ]
+            }
+          },
+          "control": {
+            "schema": "duplex_v2.soundscape_control.v3",
+            "seed": 3025723881,
+            "mode": "layered",
+            "discrete_event_target": 0,
+            "max_ambient_layers": 2,
+            "side_speech_requested": false,
+            "speech_kind_preferences": [
+              "user_to_third_party",
+              "third_party",
+              "machine"
+            ]
+          },
+          "control_sha256": "19d9207455a45c38c9660ec0aa64cbf6894b0da962180155a2ee0ae1133eefed",
+          "candidate_plan": {
+            "schema": "duplex_v2.soundscape_plan.v4",
+            "mode": "layered",
+            "ambient_layers": [
+              {
+                "source_id": "AMB01",
+                "candidates": [
+                  {
+                    "asset_id": "fan-fsd50k-eval-415925",
+                    "reason": "稳定的室内机械通风声符合独居住宅晚间环境，适合作为低音量连续底色。",
+                    "environment_audio": "右后方持续传来低沉平稳的通风设备运转声。"
+                  },
+                  {
+                    "asset_id": "fan-fsd50k-eval-419427",
+                    "reason": "连续风扇或通风录音能够表现住宅内正在运转的通风设备，不引入额外事件。",
+                    "environment_audio": "室内一侧有稳定的机械送风声，响度没有明显变化。"
+                  },
+                  {
+                    "asset_id": "fan-fsd50k-eval-235362",
+                    "reason": "较长的稳定机械风声适合覆盖短对话，并与当前室内场景相容。",
+                    "environment_audio": "近处偏后方保持着轻微而连续的通风机低鸣。"
+                  }
+                ]
+              },
+              {
+                "source_id": "AMB02",
+                "candidates": [
+                  {
+                    "asset_id": "traffic-fsd50k-eval-124020",
+                    "reason": "远距离道路车流可作为关闭窗户后的微弱城市住宅底噪。",
+                    "environment_audio": "窗外远处有稀疏车流声，车辆经过时音量缓慢起伏。"
+                  },
+                  {
+                    "asset_id": "traffic-fsd50k-eval-235541",
+                    "reason": "真实车流底声与晚间住宅环境相符，保持较远距离即可不干扰语音。",
+                    "environment_audio": "关闭的窗外隐约传来道路车流，偶尔稍响后又退远。"
+                  },
+                  {
+                    "asset_id": "traffic-fsd50k-eval-232686",
+                    "reason": "短段连续交通声可表现窗外远处道路，不会新增人物或离散动作。",
+                    "environment_audio": "远处车辆持续掠过，声音隔着窗户显得低而模糊。"
+                  }
+                ]
+              }
+            ],
+            "environment_events": [],
+            "side_speech_eligibility": {
+              "user_to_third_party": {
+                "compatible": false,
+                "reason": "故事明确用户独自在家，现场没有可供用户转向交谈的旁人。",
+                "source": null
+              },
+              "third_party": {
+                "compatible": false,
+                "reason": "当前住宅场景中没有已存在且会出声的第三方人物。",
+                "source": null
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "现场仅有通风设备等不具备语音播报能力的普通家用设备。",
+                "source": null
+              }
+            }
+          },
+          "base_environment_audio_sha256": "3dfa1b147ff58327e057d08b3cab1699eb2ca4aa43ddc4a505a75684375cf97d",
+          "aggregate_environment_audio": "室内右后方传来持续而低沉的通风设备运转声，音量稳定。关闭的窗外有很远的道路车流底声，车辆经过时略有起伏，但不会盖住近距离说话。 右后方持续传来低沉平稳的通风设备运转声。 窗外远处有稀疏车流声，车辆经过时音量缓慢起伏。",
+          "draws": [
+            {
+              "source_id": "AMB01",
+              "category": "fan",
+              "asset_id": "fan-fsd50k-eval-415925",
+              "eligible_categories": [
+                "fan"
+              ],
+              "eligible_assets": [
+                "fan-fsd50k-eval-235362",
+                "fan-fsd50k-eval-415925",
+                "fan-fsd50k-eval-419427"
+              ]
+            },
+            {
+              "source_id": "AMB02",
+              "category": "traffic",
+              "asset_id": "traffic-fsd50k-eval-124020",
+              "eligible_categories": [
+                "traffic"
+              ],
+              "eligible_assets": [
+                "traffic-fsd50k-eval-124020",
+                "traffic-fsd50k-eval-232686",
+                "traffic-fsd50k-eval-235541"
+              ]
+            }
+          ],
+          "speech_selection": {
+            "requested": false,
+            "compatible_kinds": [],
+            "selected_kind": null,
+            "outcome": "not_requested",
+            "assessments": {
+              "user_to_third_party": {
+                "compatible": false,
+                "reason": "故事明确用户独自在家，现场没有可供用户转向交谈的旁人。",
+                "source": null
+              },
+              "third_party": {
+                "compatible": false,
+                "reason": "当前住宅场景中没有已存在且会出声的第三方人物。",
+                "source": null
+              },
+              "machine": {
+                "compatible": false,
+                "reason": "现场仅有通风设备等不具备语音播报能力的普通家用设备。",
+                "source": null
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "schema_version": "duplex_v2.fixed_script.v3",
+  "owner_attempt": 2,
+  "previous_candidate": {
+    "schema_version": "duplex_v2.fixed_script.v3",
+    "title": "搬家后分阶段清洁计划",
+    "rounds": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_utterance": "我刚搬进来，今晚最多再做二十分钟。过道有六只纸箱和两个空购物袋，只剩六十厘米宽；四只箱子有房间标签，两只还没分类。厨房冰箱前还有一块今天留下的饮料黏渍。先做什么比较合适？",
+        "assistant_utterance": "今晚先恢复通道，再处理新鲜黏渍：约八分钟把四只标箱移到对应房、收起空袋，两只未分类箱靠边；再用湿布擦黏渍约七分钟，余下时间洗三只餐具。过道先别湿拖。",
+        "user_intent": "提供过道和厨房的紧迫状况，请求确定今晚的处理优先级。",
+        "assistant_intent": "按通行安全和污渍时效安排二十分钟内的安静任务。",
+        "semantic_goal": "明确今晚先恢复通道、再清理新鲜黏渍的执行顺序。",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": null,
+        "pause_cue": null
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_utterance": "这个顺序可以。卫生间淋浴玻璃和龙头有明显水垢，墙角有三处小霉点，不过没有积水、堵塞或漏水。它应该排在客厅卧室前面吗？",
+        "assistant_utterance": "卫生间没有积水或堵塞，不必抢在通道前；把它列为第二级重清洁，水垢和霉点分开处理。再告诉我客厅、卧室状况和这周可用时段，我来排进日程。",
+        "user_intent": "补充卫生间情况，并追问其相对优先级。",
+        "assistant_intent": "说明卫生间的优先层级，并索取后续排期所需信息。",
+        "semantic_goal": "判断厨卫问题与其他房间之间的先后关系。",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A001",
+          "user_onset_after_text": "今晚先恢复通道，再处理新鲜黏渍：约八分钟把四只标箱移到对应房、收起空袋，两只未分类箱靠边；再用湿布擦黏渍约七分钟，余下时间洗三只餐具。过道先别湿拖。",
+          "assistant_stop_after_text": "今晚先恢复通道，再处理新鲜黏渍：约八分钟把四只标箱移到对应房、收起空袋，两只未分类箱靠边；再用湿布擦黏渍约七分钟，余下时间洗三只餐具。过道先别湿拖。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_utterance": "客厅是灰尘、泡沫碎屑和茶几小物，主卧主要是床下和踢脚线积尘。次卧有八只封箱，不拆，只清通道和外露表面。周二到周四每天三十分钟，周六上午两小时，周日下午九十分钟。",
+        "assistant_utterance": "按这些时段，周二晚先吸尘客厅和主卧，再擦踢脚线；周三处理厨房，周四处理浴室，周末再拖地和整理次卧。",
+        "user_intent": "补充其余房间状态、次卧限制和全部可用时段。",
+        "assistant_intent": "依据房间工作量和时间窗口提出初步分配方案。",
+        "semantic_goal": "把各区域任务分配到工作日晚和周末时段。",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A002",
+          "user_onset_after_text": "卫生间没有积水或堵塞，不必抢在通道前；把它列为第二级重清洁，水垢和霉点分开处理。再告诉我客厅、卧室状况和这周可用时段，我来排进日程。",
+          "assistant_stop_after_text": "卫生间没有积水或堵塞，不必抢在通道前；把它列为第二级重清洁，水垢和霉点分开处理。再告诉我客厅、卧室状况和这周可用时段，我来排进日程。"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_utterance": "先停一下，楼里规定九点后不能持续吸尘。工作日晚那三十分钟都按安静任务排，吸尘放到周六白天。",
+        "assistant_utterance": "明白，工作日晚全部改成安静任务，吸尘集中到周六白天。厨房和浴室要分清药剂：你现有哪些清洁剂，标签上是否写了禁忌？",
+        "user_intent": "立即打断不符合楼内噪声限制的安排，并指定调整方向。",
+        "assistant_intent": "停止原排期，按安静任务要求重设框架并询问清洁剂信息。",
+        "semantic_goal": "取消工作日晚吸尘，将噪声任务集中到周六。",
+        "act_ref": "A02",
+        "timing_refs": [
+          "T03"
+        ],
+        "timing": {
+          "target_assistant_id": "A003",
+          "user_onset_after_text": "按这些时段，周二晚先吸尘",
+          "assistant_stop_after_text": "按这些时段，周二晚先吸尘客厅"
+        },
+        "pause_cue": null
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_utterance": "有吸尘器、拖把、水桶、手套、四块布、两块海绵、旧牙刷和垃圾袋，四种清洁剂也都有，我看了标签，含氯漂白剂不能和酸性浴室除垢剂混用，地板清洁剂要求拖布拧干。酸剂和含氯剂能安排在同一天吗？",
+        "assistant_utterance": "酸性除垢剂和含氯漂白剂绝不能混用或连续叠加，也不要装进同一容器。可周三除垢并充分冲洗晾干，周日再单独除霉；操作时戴手套、保持通风。地板只用拧干拖布。",
+        "user_intent": "说明现有用品和标签警告，并核实两类药剂能否同日使用。",
+        "assistant_intent": "明确化学品隔离原则，并给出分日使用和地板清洁要求。",
+        "semantic_goal": "安全安排除垢、除霉和拖地任务，避免清洁剂冲突。",
+        "act_ref": "A01",
+        "timing_refs": [
+          "T01",
+          "T02"
+        ],
+        "timing": {
+          "target_assistant_id": "A004",
+          "user_onset_after_text": "明白，工作日晚全部改成安静任务，吸尘集中到周六白天。厨房和浴室要分清药剂：你现有哪些清洁剂，标签上是否写了禁忌？",
+          "assistant_stop_after_text": "明白，工作日晚全部改成安静任务，吸尘集中到周六白天。厨房和浴室要分清药剂：你现有哪些清洁剂，标签上是否写了禁忌？"
+        },
+        "pause_cue": {
+          "after_text": "有吸尘器、拖把、水桶、手套、四块布、两块海绵、旧牙刷和垃圾袋，四种清洁剂也都有，",
+          "duration_ms": 650
+        }
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_utterance": "好，那请把今晚到周日的完整顺序、每段大致用时和用品合并说一遍，再标出可以延后的项目。",
+        "assistant_utterance": "计划定为：今晚二十分钟先移四只标箱、收袋并把两只未分类箱靠边，再用湿布擦黏渍、洗餐具。周二三十分钟用海绵和去油剂清灶台、油烟机；周三三十分钟戴手套，用酸剂和旧牙刷除水垢，冲净晾干；周四三十分钟归位小物、擦裸露面、装袋包装。周六两小时吸尘过道、客厅、主卧及次卧通道，再用中性剂和拧干拖布清地。周日九十分钟通风，仅用含氯剂除霉，再补擦整理。次卧八只封箱、橱柜内部、高处和精细玻璃清洁延后，缺长柄工具和玻璃刮的项目先不做。",
+        "user_intent": "要求汇总最终分阶段计划并明确延期事项。",
+        "assistant_intent": "完整整合各时段、区域、用时、用品、安全要求和延期项目。",
+        "semantic_goal": "获得一份可直接执行的首次全面清洁计划。",
+        "act_ref": "A03",
+        "timing_refs": [
+          "T01"
+        ],
+        "timing": {
+          "target_assistant_id": "A005",
+          "user_onset_after_text": "酸性除垢剂和含氯漂白剂绝不能混用或连续叠加，也不要装进同一容器。可周三除垢并充分冲洗晾干，周日再单独除霉；操作时戴手套、保持通风。地板只用拧干拖布。",
+          "assistant_stop_after_text": "酸性除垢剂和含氯漂白剂绝不能混用或连续叠加，也不要装进同一容器。可周三除垢并充分冲洗晾干，周日再单独除霉；操作时戴手套、保持通风。地板只用拧干拖布。"
+        },
+        "pause_cue": null
+      }
+    ],
+    "backchannels": [
+      {
+        "event_id": "BC01",
+        "target_assistant_id": "A002",
+        "after_text": "卫生间没有积水或堵塞，不必抢在通道前；",
+        "text": "嗯，明白"
+      },
+      {
+        "event_id": "BC02",
+        "target_assistant_id": "A005",
+        "after_text": "酸性除垢剂和含氯漂白剂绝不能混用或连续叠加，也不要装进同一容器。",
+        "text": "嗯，分开用"
+      }
+    ],
+    "side_speech": [],
+    "environment_events": []
+  },
+  "findings": [
+    {
+      "severity": "must_fix",
+      "path": "/rounds/0/assistant_utterance",
+      "problem": "助手提前使用了用户尚未说出的餐具数量。",
+      "evidence": "U01只说明纸箱、购物袋、通道宽度和饮料黏渍；A001却安排“余下时间洗三只餐具”。“水槽内有3只待洗餐具”只存在于隐藏的task_reference_data，不在assistant_before_reply_history中。",
+      "repair": "删除洗三只餐具的安排，或将余下时间用于用户已披露的通道整理、未分类箱临时归拢及黏渍处理；同步删除后续对该未披露事项的依赖。"
+    },
+    {
+      "severity": "must_fix",
+      "path": "/rounds/5/assistant_utterance",
+      "problem": "最终计划混入了多项从未由用户披露的具体房况、清洁剂种类和缺失工具。",
+      "evidence": "已听对话中，用户未提到灶台与油烟机油膜、橱柜内部、高处清洁，也未说缺少长柄工具和玻璃刮；U05仅说“四种清洁剂也都有”并明确提到含氯剂、酸剂和地板清洁剂，未说明第四种是去油剂。A006却写“用海绵和去油剂清灶台、油烟机”“橱柜内部、高处和精细玻璃清洁延后，缺长柄工具和玻璃刮的项目先不做”，并再次写入此前无来源的“洗餐具”。",
+      "repair": "最终汇总只使用已听到的区域状况、用品和限制；删除餐具、灶台、油烟机、橱柜、高处、去油剂及缺失工具等未披露内容，保留通道、黏渍、客厅与卧室积尘、浴室水垢和霉点、分日用药及次卧封箱延期这条主线。"
+    }
+  ],
+  "anchor_dependencies": [
+    {
+      "target_id": "A001",
+      "path": "/rounds/1/timing/user_onset_after_text",
+      "value": "今晚先恢复通道，再处理新鲜黏渍：约八分钟把四只标箱移到对应房、收起空袋，两只未分类箱靠边；再用湿布擦黏渍约七分钟，余下时间洗三只餐具。过道先别湿拖。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A001",
+      "path": "/rounds/1/timing/assistant_stop_after_text",
+      "value": "今晚先恢复通道，再处理新鲜黏渍：约八分钟把四只标箱移到对应房、收起空袋，两只未分类箱靠边；再用湿布擦黏渍约七分钟，余下时间洗三只餐具。过道先别湿拖。",
+      "owner": "program"
+    },
+    {
+      "target_id": "U05",
+      "path": "/rounds/4/pause_cue/after_text",
+      "value": "有吸尘器、拖把、水桶、手套、四块布、两块海绵、旧牙刷和垃圾袋，四种清洁剂也都有，",
+      "owner": "model"
+    },
+    {
+      "target_id": "A005",
+      "path": "/rounds/5/timing/user_onset_after_text",
+      "value": "酸性除垢剂和含氯漂白剂绝不能混用或连续叠加，也不要装进同一容器。可周三除垢并充分冲洗晾干，周日再单独除霉；操作时戴手套、保持通风。地板只用拧干拖布。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A005",
+      "path": "/rounds/5/timing/assistant_stop_after_text",
+      "value": "酸性除垢剂和含氯漂白剂绝不能混用或连续叠加，也不要装进同一容器。可周三除垢并充分冲洗晾干，周日再单独除霉；操作时戴手套、保持通风。地板只用拧干拖布。",
+      "owner": "program"
+    },
+    {
+      "target_id": "A005",
+      "path": "/backchannels/1/after_text",
+      "value": "酸性除垢剂和含氯漂白剂绝不能混用或连续叠加，也不要装进同一容器。",
+      "owner": "model"
+    }
+  ],
+  "base_sha256": "26bc6ac92ac646290ebc14867d77615b33835e25d2dee082c0859c1cccc82757"
+}

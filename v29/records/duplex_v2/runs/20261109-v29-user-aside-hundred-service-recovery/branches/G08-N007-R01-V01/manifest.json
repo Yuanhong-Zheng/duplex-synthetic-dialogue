@@ -1,0 +1,966 @@
+{
+  "schema": "duplex_v2.same_sdk_service_checkpoint.v1",
+  "run_id": "G08-N007-R01-V01",
+  "seed": 3686078037,
+  "count": 1,
+  "model": "openai/gpt-5.6-sol",
+  "profile": "qiniu-chat",
+  "taxonomy": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/taxonomy/domain-scenario-with-task-examples-gpt56-sol-v5.json",
+  "taxonomy_sha256": "1bc5014e3da83a7c3a7c71d86565c26244d651ee0701204304490590596329fc",
+  "sampling": [
+    {
+      "case_id": null,
+      "rng_seed": 466232064,
+      "domain_id": "D19",
+      "domain": "媒体、娱乐与角色扮演",
+      "domain_definition": "PersonaPlex 的开放角色、Audio MultiChallenge 的 roleplay 与 SPEARBench 的自然话题支持娱乐和内容交流。",
+      "scenario_id": "D19-S05",
+      "scenario": "体育与文化话题",
+      "example_tasks": {
+        "开放式互动": [
+          "来一轮体育冷知识竞猜，题目覆盖不同项目并允许我随时解释自己的猜测",
+          "扮演一位赛后记者和运动员，围绕一场虚构比赛即兴进行采访与回应",
+          "共同构思一档结合体育故事与地方文化的音频节目，包括主题、角色和节目氛围",
+          "练习用通俗方式向不了解这项运动的人解释它的基本规则、观赏重点和独特魅力",
+          "围绕体育赛事如何影响城市文化展开一场有来有回的观点讨论，比较不同立场的理由"
+        ],
+        "结构化整理": [
+          "我会提供几段体育或文化活动的介绍，希望按主题、参与方式和观赏重点整理成分类清单",
+          "把我随后列出的运动项目和文化体验按适合独自参与、适合结伴参与和适合现场观看进行归类",
+          "根据我提供的多份赛事或演出信息，整理出时间线并标注每项活动的核心看点",
+          "我会给出几位运动员或文化人物的简介，请按成就、风格、代表性经历和公众影响整理成对照表",
+          "面对我列出的多个观赛或文化活动选择，依据我提供的兴趣、时间和出行条件筛选并排序"
+        ],
+        "混合型": [
+          "我会提供几个想看的体育或文化活动以及自己的兴趣和限制，希望结合内容特色与选择标准判断最适合的一项",
+          "拿我收集的几种体育观赛方式作比较，结合现场体验、理解门槛和社交需求，帮我厘清各自适合什么情境",
+          "我会讲述一次观赛或参加文化活动后的失望经历，再提供相关活动信息，希望结合体验判断问题来自期待、内容还是参与方式",
+          "从我列出的几种体育或文化主题中挑一个做音频节目方向，同时结合受众特点、内容价值和可持续展开空间调整取舍",
+          "我会提供一组运动与文化话题及准备讨论的听众背景，希望依据话题的争议性、知识门槛和共鸣可能性安排讨论顺序"
+        ],
+        "常识问答": [
+          "想弄明白足球越位大致是怎么判断的，并顺带举个容易理解的例子。",
+          "聊聊为什么马拉松通常是这个距离，以及它和普通长跑有什么区别。",
+          "想分清网球中的局、盘和场分别指什么，可以结合一场比赛简单说明。",
+          "对奥运会开幕式中常见的文化元素感兴趣，想了解它们通常各自代表什么。",
+          "想用一道简短的体育文化小题测试自己，题目围绕不同国家的传统运动及其特点展开。"
+        ]
+      },
+      "example_task_seeds": [],
+      "sampling_mode": "uniform_distinct_domains_then_scenario",
+      "sampling_reason": "fixed_domain",
+      "taxonomy_version": "2026-08-02-task-examples-v5",
+      "taxonomy_sha256": "1bc5014e3da83a7c3a7c71d86565c26244d651ee0701204304490590596329fc"
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "R01-V01",
+      "status": "completed",
+      "directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-service-recovery/branches/G08-N007-R01-V01/R01-V01",
+      "source_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g08-sample-007-v2-stage2/R01-V01",
+      "script_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script",
+      "audio_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-service-recovery/branches/G08-N007-R01-V01/R01-V01/audio",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "speech_onset_policy": "cpu_vad_t03_outer_silence_preroll30ms_same_prefix_speech_start_calibration_v1",
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "text_policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/text-policy.json",
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08/relay-state",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "text_request_timeout_seconds": 1800.0,
+      "http_policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/http-policy.json",
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "long",
+        "target_turns": 22,
+        "min_turns": 21,
+        "max_turns": 23
+      },
+      "workflow_version": "v2.9",
+      "ambient_catalog_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/ambient-catalog.json",
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v3",
+        "seed": 802455460,
+        "mode": "layered",
+        "discrete_event_target": 3,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "user_to_third_party",
+          "third_party",
+          "machine"
+        ]
+      },
+      "source_manifest": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/manifest.json",
+      "source_case_id": "R01-V01",
+      "service_recovery": {
+        "schema": "duplex_v2.same_sdk_service_checkpoint.v1",
+        "runtime": {
+          "proof_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261109-v29-user-aside-hundred/service-proof.json",
+          "files_sha256": {
+            "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261109-v29-user-aside-hundred/service-proof.json": "8462e145302725ed850be0b5e9d30fa58f0895a2809ffe3e3de2ded6fd707ceb",
+            "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261109-v29-user-aside-hundred/service-before-recovery.json": "15c51be65b5a51e861604bb572a31d6bc64d573be52063b5e2f2ba936b5c63ad",
+            "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261109-v29-user-aside-hundred/service-after-recovery.json": "4f5bb92ef65bd64d5ba89453ae7ce1b2d04253d11f63cf6803ad1d4c2c8156e4",
+            "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred/manifest.json": "91386f2743add40ae11f551afe60650704815f2b563e16928a1435a74502050b"
+          },
+          "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred",
+          "shared_assistant_reference_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/portable/qwen3-tts/voice-references/ac9cfa7b3cf77221ad8bf9f7f244ecb3d2dba752b00f51b216804b9380575b32",
+          "old_service_id": "b02c160d58d3406b94e3ec2464f739a1",
+          "new_service_id": "dbc8e6cd83724b249752b83ccd715bfd",
+          "qwen_options": {
+            "engine": "vllm_omni",
+            "service_url": "http://127.0.0.1:18766",
+            "engine_identity": {
+              "vllm": "0.28.0+cu129",
+              "vllm_omni": "0.28.0",
+              "dtype": "bfloat16",
+              "dependency_versions": {
+                "torch": "2.13.0+cu129",
+                "vllm": "0.28.0+cu129",
+                "vllm-omni": "0.28.0",
+                "transformers": "5.14.1",
+                "tokenizers": "0.22.2"
+              },
+              "max_inflight_per_gpu": 8,
+              "languages": [
+                "Chinese",
+                "English"
+              ],
+              "speech_source_revision": "v27",
+              "model_config_sha256": "b4f01752d15a488abde3e1ab44723ae4f4b9e68a4037257b098b3737893cc1f9",
+              "deploy_config_sha256": "faaf35e2136c852e7d8f2d9706ecc41a88054ccbe0ccf7e1a9244fc008b9f063",
+              "reference_preparation": {
+                "policy": "validated_reference_fast_path_singleflight_gpu_pool_v1",
+                "workers": 2,
+                "gpus": [
+                  0,
+                  1
+                ],
+                "cache": "reference_settings_manifest_and_audio_sha256",
+                "singleflight": "per_reference_key_with_retained_failures"
+              }
+            },
+            "health_timeout_seconds": 1800,
+            "health_policy": "cached_gateway_health_long_wait_v1"
+          },
+          "qwen_options_sha256": "754ff197d3ca3ffc1d63525fb6c09ea2379876ba156d8d0ca48a84a06080f210"
+        },
+        "source_case_id": "R01-V01",
+        "old_case_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01",
+        "old_audio_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/audio",
+        "new_audio_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-service-recovery/branches/G08-N007-R01-V01/R01-V01/audio",
+        "original_audio_started": false,
+        "job_mappings": {},
+        "protected_files_sha256": {
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/candidate.json": "9fe528260ec00bcc0d2c0d93eabee45671576f2d0b2eae1c16e91a3261605edf",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/decision.json": "7896de8828e6296010a49c7baf57e7cfa3443b19cade9631dc6ff9a254dda621",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/event_heard_context.json": "835c3f1875368a8d145b29f7e2a2d121a3a1a8c2a3c0921d2fe755a41a3933e9",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/generate/input.json": "bfa5e135c3aee50e89e2d1167545edfce45e1115c876f3cbc5ad49a19d63cc70",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/generate/metadata.json": "a2fc195ba2f02cdd6202194140606a2cfe453c9f61e4198ae3206f58c66c5944",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/generate/prompt.md": "c175920fa7f40a00439e979f42511b4906c31e17912559209c8e555942db134b",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/generate/raw_response.txt": "e03a4979d5ca475ebc9c74953d96f339d3e1d6ad17fbb6154d2c5d3801f6c688",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/heard_context.json": "201f8cbce094029142a21bc705bd3a966371c9bfe43a6b39b90a578e359a899e",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/judge/format/format-attempt-01/commit.json": "fd513b0177774ded84203aea76cc6318256744a269a9cc3ae2af965090434f92",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/judge/format/format-attempt-01/identity.json": "bd63149fa6c04cfdb6f4b6314fdf1291eff5b688e95a6488db6c3ca41a41d5f3",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/judge/format/format-attempt-01/metadata.json": "477f70783786d7087013ade524ff8cb84fb684f5f0afdb93e8056964f9b6c359",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/judge/format/format-attempt-01/raw_response.txt": "db732fd18352de6998e573ce4438bfa7cafd2cb5db2e29e013f6420aab9e4a36",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/judge/format/format-attempt-01/validation.json": "0d7ed55471811fff176952c5504dfe8dd963faa2735f42ff3f54cbe8ad7c3b52",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/judge/input.json": "39788a002a6d6b1a5c47838135b0d141466bd31a4d1d377ea82fd32d160b992c",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/judge/metadata.json": "5831cc6bba5b59b446e006b1575afe72a1def4c1587667a5551e50dbc02cd327",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/judge/prompt.md": "29f5151f69db8b2520d0113218776cfa5465f473e7cc7e1598d3157912141fff",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/judge/raw_response.txt": "db732fd18352de6998e573ce4438bfa7cafd2cb5db2e29e013f6420aab9e4a36",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/judge/result.json": "7896de8828e6296010a49c7baf57e7cfa3443b19cade9631dc6ff9a254dda621",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/parse-report.json": "51df5268ea38adcb067e0c99a517ffbd55f51953b07d654e1626028bb8efe9e7",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/program-anchors.json": "36cfb450c8a0d7c4b4fcbb02a51fbcf6564c1ecd73cf202fdf2dd89cabed1c1e",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-01/validation.json": "339acc3b09add3c3d0e689adf17878a1bd264d3a3f00fccce7db538630e20066",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/candidate.json": "f010d062197330da80598567b5bc8e323ccff1b163c10f0ef0c3a50d7e180d7b",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/decision.json": "6b9928c642a8ccc08a51bc32fef3eaf3b59b884f809f02cb2c7c4bb9d40b5a71",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/dependency-closure.json": "8c8e2caa76b6c5c58d848c10ae5dda09605df908a37fb71439c8b77535830cb1",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/event_heard_context.json": "5776227d2ef0b6c4bfcc3e080f6ca91cecf0b3194b4b3372d66f034cf6344333",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/heard_context.json": "d6b04393d42569af23e1eb9dca73543215f5268c00f3a8375a51246364506722",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/judge/format/format-attempt-01/commit.json": "0dc135836171fb17f31dfc1005e4041d882b087698a06752e0152f436faa3b78",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/judge/format/format-attempt-01/identity.json": "2c46d3d77dd62007e519b9f849fc0f5b3f5df2b8fff8121e7d5fe7a4abe76998",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/judge/format/format-attempt-01/metadata.json": "e2bf2a0fc4aa2ad35e683dd1289310ff8450116a9ef0f00c1a7fe00ee2a1f393",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/judge/format/format-attempt-01/raw_response.txt": "be631b80c6ddc9670a18a648fe64775f6f1b45ea644bf9ad66c4f1a484704fbc",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/judge/format/format-attempt-01/validation.json": "0d7ed55471811fff176952c5504dfe8dd963faa2735f42ff3f54cbe8ad7c3b52",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/judge/input.json": "157d4dd8b64a95d5fe788b72b9ee255f6a8f4cda20e72747b4f1c65612476f74",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/judge/metadata.json": "1ebb9b784eb032bc5f32453c6f168d8b7171327cd53e2530342c0ab2b91cb1e3",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/judge/prompt.md": "29f5151f69db8b2520d0113218776cfa5465f473e7cc7e1598d3157912141fff",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/judge/raw_response.txt": "be631b80c6ddc9670a18a648fe64775f6f1b45ea644bf9ad66c4f1a484704fbc",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/judge/result.json": "6b9928c642a8ccc08a51bc32fef3eaf3b59b884f809f02cb2c7c4bb9d40b5a71",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/parse-report.json": "340c2090d0e527d3181bd0e0e3771c28529e765698c651002405804df5361282",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/patch/input.json": "96a8ac55c0eba3aaa4cabc2b942744873510e62cd59fce5793a5bc042f26b90a",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/patch/metadata.json": "95dbfb81aa3b2f3c762c183536342a471d46a7a024253ae5d58cb398ef63d443",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/patch/prompt.md": "56c817c621cd19c61199719ec6a4e491c79f699d417fb6793816b8c46db94625",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/patch/raw_response.txt": "7211883199c45cad9082c2c470bd84a92f0199983bed32c4c45c9ddcc26e8b4b",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/patch-applied.json": "6dd0c18c99694440a57ff11ccad2a9aa6243b9079bafac00be13d1cf7034be3a",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/patch.json": "e33e35facf4606aaa3bbcf02afa959e0c65646bf392505e915603d94a6d0e632",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-02/validation.json": "339acc3b09add3c3d0e689adf17878a1bd264d3a3f00fccce7db538630e20066",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/candidate.json": "a71a165c095d4ce9ec5d3e2bafd24f4aa061f76c6d29153af4264fc4d4eb9d83",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/decision.json": "f856c76f997ece3db37c77025ca681581c4bb2e70badf1890f203ee5242adf7f",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/dependency-closure.json": "cb8dd2f98befcadc3d9b0660bfa1749fa6471c727a241447fadf7eb947263e92",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/event_heard_context.json": "ef3ae573c63949b8d130feff187ae52cad8c43d63c78c1bbd3beb3f7a4bba1ff",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/heard_context.json": "734bb5750317f99bf03f5037262d0bb2fec79ed09fe56ff6ff9744cc04c8ecf6",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/judge/format/format-attempt-01/commit.json": "081491e9f1d01d649473796b9245fcfd77f4f81857bfcce327b484bd698c08a3",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/judge/format/format-attempt-01/identity.json": "487d13a6227a6efdba8c5204fe07e40a5efd5dd52b376361f874b6f4917d0b32",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/judge/format/format-attempt-01/metadata.json": "4d2f84a07ea513ee73b553299fe90f062e140d8862bcf0d482b5d1a91334dd1a",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/judge/format/format-attempt-01/raw_response.txt": "c48078e08dbfb7aa1c1ac787dd3d4f9bd31e117dfdb3976d7bd689760afbdb1a",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/judge/format/format-attempt-01/validation.json": "0d7ed55471811fff176952c5504dfe8dd963faa2735f42ff3f54cbe8ad7c3b52",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/judge/input.json": "69a810722335d1cf88dc4f06f14ac4e46785edc29bc02be449f798b7c4e8b3d5",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/judge/metadata.json": "28628112feaa5426e29860f67ef671e7a28f7fe8b5e60e312a8cc0957eaf4181",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/judge/prompt.md": "29f5151f69db8b2520d0113218776cfa5465f473e7cc7e1598d3157912141fff",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/judge/raw_response.txt": "c48078e08dbfb7aa1c1ac787dd3d4f9bd31e117dfdb3976d7bd689760afbdb1a",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/judge/result.json": "f856c76f997ece3db37c77025ca681581c4bb2e70badf1890f203ee5242adf7f",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/parse-report.json": "cfc144b480e99c0a083bd60ea1e7411228bde05f36996e901090d87ed2f8c051",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/patch/input.json": "3135aaac7e559eb8a345851d2d26d2db1f483feb819446c8663473b3a2fb4bf0",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/patch/metadata.json": "5bfee1bef1ff3287aa79226073432cef2ae25c5abc365929e93cc93ef81e46a6",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/patch/prompt.md": "56c817c621cd19c61199719ec6a4e491c79f699d417fb6793816b8c46db94625",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/patch/raw_response.txt": "00868e35bf0de52dc4091d981cf7abb559a4b3bcf2d941a3bb1b0081a8843716",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/patch-applied.json": "9c9ebb997ceab12a9c2ef6f01fbc6449ed9e497c0f2a7102bb9669b0766149c2",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/patch.json": "f4980c8e391d5bf032a92ebf2296bb5636cb9fb5eed56ae23313cfb74104f9c3",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-03/validation.json": "339acc3b09add3c3d0e689adf17878a1bd264d3a3f00fccce7db538630e20066",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/candidate.json": "a49ad6bd21132158d711510a876285502062a65a20b6b7ec4a6f8e0c181a2871",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/decision.json": "00122b1da82e0feb15f7eef602a1aa560770c18ac348f629e7833d3734fdf372",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/dependency-closure.json": "7fa3e03eaf454e4eacfa5436f9826b22763ec5e6efe1cb2d3306a462a76df890",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/event_heard_context.json": "ef3ae573c63949b8d130feff187ae52cad8c43d63c78c1bbd3beb3f7a4bba1ff",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/heard_context.json": "5e2d09b0aea3573f0b1fd9b45eca801b13e42c660bc6a0e6c929b5b5355535f8",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/judge/format/format-attempt-01/commit.json": "27e85fe8694580f343595ce85b8b41da6ff245e36ec1017344e8f58ad86ce975",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/judge/format/format-attempt-01/identity.json": "d25e7748043fdb40e772e1c65060bcc9bdcf0987a44c2beea605c3c2cf9b9a84",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/judge/format/format-attempt-01/metadata.json": "bbec24eb8cb72ed7502e2a015cb329c80f0e12283043eec97adfd5266f3c04bd",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/judge/format/format-attempt-01/raw_response.txt": "dd4b5008edb5743fda91d36cde5b0a0f66b037bd1fc8b06bde1a625e6c0efe33",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/judge/format/format-attempt-01/validation.json": "0d7ed55471811fff176952c5504dfe8dd963faa2735f42ff3f54cbe8ad7c3b52",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/judge/input.json": "16d4f1bfa657a7553a95bafffcc9a937107d11a2325eecc5cccd18dd5592ce86",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/judge/metadata.json": "3a269d154415683e2c7edf88e4bffc7dec660f7cdd5891cfca198d3002e2b149",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/judge/prompt.md": "29f5151f69db8b2520d0113218776cfa5465f473e7cc7e1598d3157912141fff",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/judge/raw_response.txt": "dd4b5008edb5743fda91d36cde5b0a0f66b037bd1fc8b06bde1a625e6c0efe33",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/judge/result.json": "00122b1da82e0feb15f7eef602a1aa560770c18ac348f629e7833d3734fdf372",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/parse-report.json": "39d5cb8051ce976ed67c5460343e881778f4288c6677a98b40b9059816c5210a",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/patch/input.json": "c2afd3e22f1cb976c5a8444d07ff9be01060aa4d0ad02463db6b62a8b1b0babb",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/patch/metadata.json": "95c24954313c6b6d2a863ba332c3b28658f29b5d5424bd12ce454207046d690c",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/patch/prompt.md": "56c817c621cd19c61199719ec6a4e491c79f699d417fb6793816b8c46db94625",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/patch/raw_response.txt": "a1e2dbfa765f792250a8f7aa229c41db53d60f4eb0cd302d14ec4892bf27d1da",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/patch-applied.json": "0ddc779a24cffd0d98a1ab98a2c0a37e0841468c4d791e8f45241fd0410c5bdd",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/patch.json": "d39802c882a516c6c415f5cd61a1c372610257f4c50314511c86b539ad55a11e",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/attempts/attempt-04/validation.json": "339acc3b09add3c3d0e689adf17878a1bd264d3a3f00fccce7db538630e20066",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/2581d95ff5e8e3d9e737bb614ec056ccabea3545619a9bfe33c9676e777a9cb0/commit.json": "a9cceca90fb7fae56a037f9adca8067b374716d9590126a68452da2aac321af3",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/2581d95ff5e8e3d9e737bb614ec056ccabea3545619a9bfe33c9676e777a9cb0/identity.json": "ea8f02813c107eeb035b80e16fdf25cc3d2d190e5245d562dee4676fd5309f1d",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/2581d95ff5e8e3d9e737bb614ec056ccabea3545619a9bfe33c9676e777a9cb0/metadata.json": "477f70783786d7087013ade524ff8cb84fb684f5f0afdb93e8056964f9b6c359",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/2581d95ff5e8e3d9e737bb614ec056ccabea3545619a9bfe33c9676e777a9cb0/raw_response.txt": "db732fd18352de6998e573ce4438bfa7cafd2cb5db2e29e013f6420aab9e4a36",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/36c5bf89a5ea1f92c63719575db877be1f55063078df547a6093eb8f30f9675e/commit.json": "184f8f91bc9a234fb4560f54279010b20b55ea2f7da9402ddc045a39e250842a",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/36c5bf89a5ea1f92c63719575db877be1f55063078df547a6093eb8f30f9675e/identity.json": "855dbedd88d41f8a2f832d9a4682cdaf60a89c55f73ab1647af74f7460df9d71",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/36c5bf89a5ea1f92c63719575db877be1f55063078df547a6093eb8f30f9675e/metadata.json": "92d26762f85d0638cd9f70d5c838fe36a3d70300edc4fc1770401a18af3030c9",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/36c5bf89a5ea1f92c63719575db877be1f55063078df547a6093eb8f30f9675e/raw_response.txt": "00868e35bf0de52dc4091d981cf7abb559a4b3bcf2d941a3bb1b0081a8843716",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/7ab59b9e2624e61e356b04e9f4c10e188b841da6451fac2fbc42f409c1f17e5f/commit.json": "ddd9506f39a6c0ab3900fba5220d246b3fdf78587e9e56d8791fe87e882d0499",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/7ab59b9e2624e61e356b04e9f4c10e188b841da6451fac2fbc42f409c1f17e5f/identity.json": "b9bf2655cf1c1184688eba56415f8a924d3d8259d038ce77bf0af9cd47539afd",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/7ab59b9e2624e61e356b04e9f4c10e188b841da6451fac2fbc42f409c1f17e5f/metadata.json": "b6b06e2cf20b53fc23a40921b405534bbfe02bb26fceefad25b4b8f806c99f16",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/7ab59b9e2624e61e356b04e9f4c10e188b841da6451fac2fbc42f409c1f17e5f/raw_response.txt": "e03a4979d5ca475ebc9c74953d96f339d3e1d6ad17fbb6154d2c5d3801f6c688",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/888b5087ce7bfd2d9f817a379c6e3b3d54292253821ad0c296889377b82601b7/commit.json": "2e84ece3eef1c1ef1fdfbedbbce243ad19cc35007100df8e6a34e688fc05ff1f",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/888b5087ce7bfd2d9f817a379c6e3b3d54292253821ad0c296889377b82601b7/identity.json": "e1f5dfa5d9b228639dc33348e77255c7a56d2e4708ede3d7ea11069480a2d209",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/888b5087ce7bfd2d9f817a379c6e3b3d54292253821ad0c296889377b82601b7/metadata.json": "e2bf2a0fc4aa2ad35e683dd1289310ff8450116a9ef0f00c1a7fe00ee2a1f393",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/888b5087ce7bfd2d9f817a379c6e3b3d54292253821ad0c296889377b82601b7/raw_response.txt": "be631b80c6ddc9670a18a648fe64775f6f1b45ea644bf9ad66c4f1a484704fbc",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/9c1330937f0aff41703c9d1d3db2f32156c2ef25900abf1a940f35f29a210399/commit.json": "2403bfc56a40673c0d64aa8697b267f396a1b0c8fddbc8dac804848a28ec12eb",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/9c1330937f0aff41703c9d1d3db2f32156c2ef25900abf1a940f35f29a210399/identity.json": "2e3e68c0a7c20961be730eb325ea0b64aedbf5374f23be1e421ed4096c36da12",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/9c1330937f0aff41703c9d1d3db2f32156c2ef25900abf1a940f35f29a210399/metadata.json": "61f561e76aa39ee01bb9424537277608f9525b31a68ee4214226a82841c7ede0",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/9c1330937f0aff41703c9d1d3db2f32156c2ef25900abf1a940f35f29a210399/raw_response.txt": "7211883199c45cad9082c2c470bd84a92f0199983bed32c4c45c9ddcc26e8b4b",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/a4f7500c495d5ad4d6e327353723e2291c6f6a6a978562e4488c1dfc4b2945af/commit.json": "4ff886ce58c20a20782b09d4a4f553d5ceb2bb78ea0b1dbe4458ebb97e0fca85",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/a4f7500c495d5ad4d6e327353723e2291c6f6a6a978562e4488c1dfc4b2945af/identity.json": "9cba423b4fbc3f56b499a7c43e01838f9592fc181646a487ab1588c1043a7b4f",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/a4f7500c495d5ad4d6e327353723e2291c6f6a6a978562e4488c1dfc4b2945af/metadata.json": "4d2f84a07ea513ee73b553299fe90f062e140d8862bcf0d482b5d1a91334dd1a",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/a4f7500c495d5ad4d6e327353723e2291c6f6a6a978562e4488c1dfc4b2945af/raw_response.txt": "c48078e08dbfb7aa1c1ac787dd3d4f9bd31e117dfdb3976d7bd689760afbdb1a",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/b1497ddd97c423acd5fba6412cb41f8f4745ff871cd6f7345d75f448242fae45/commit.json": "a0ee5bd53644b98ca5aade5feff332f3265754824ca4f42bd7a4a7788faa8df5",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/b1497ddd97c423acd5fba6412cb41f8f4745ff871cd6f7345d75f448242fae45/identity.json": "47c92f39d911c23ebe51aef5d036aaffd2f881bdba1220cd41570a7a9a40b64b",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/b1497ddd97c423acd5fba6412cb41f8f4745ff871cd6f7345d75f448242fae45/metadata.json": "41aba30f134b9f4d22e6200a543d2ac9df8ecda315c3865259e0508337376902",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/b1497ddd97c423acd5fba6412cb41f8f4745ff871cd6f7345d75f448242fae45/raw_response.txt": "a1e2dbfa765f792250a8f7aa229c41db53d60f4eb0cd302d14ec4892bf27d1da",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/fd7fba5967d57772b81cb1bbc823fb716603da4850bffd292cd82f55075a49c8/commit.json": "a1cf8ccfca1a7a262f9841f37fd7fe8f9b863067eec9716eb2553de5f16124d1",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/fd7fba5967d57772b81cb1bbc823fb716603da4850bffd292cd82f55075a49c8/identity.json": "1750d5d24f4e6b7b43313fccffa3435fdf0b0c2b5039517c35cf56a6f27a48f8",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/fd7fba5967d57772b81cb1bbc823fb716603da4850bffd292cd82f55075a49c8/metadata.json": "bbec24eb8cb72ed7502e2a015cb329c80f0e12283043eec97adfd5266f3c04bd",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/calls/fd7fba5967d57772b81cb1bbc823fb716603da4850bffd292cd82f55075a49c8/raw_response.txt": "dd4b5008edb5743fda91d36cde5b0a0f66b037bd1fc8b06bde1a625e6c0efe33",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/content_approved_script.json": "a49ad6bd21132158d711510a876285502062a65a20b6b7ec4a6f8e0c181a2871",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/event_heard_context.json": "ef3ae573c63949b8d130feff187ae52cad8c43d63c78c1bbd3beb3f7a4bba1ff",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/heard_context.json": "5e2d09b0aea3573f0b1fd9b45eca801b13e42c660bc6a0e6c929b5b5355535f8",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/length_report.json": "cc8b3718ea8cb31ce461c57582a0094956459b7420e9d37b44e569559c2e8e28",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/script.json": "a49ad6bd21132158d711510a876285502062a65a20b6b7ec4a6f8e0c181a2871",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/source.json": "893091c4ff9c0e7f7596b0c0930ac34d8fc9052e26f974b4a11893eeda5f4357",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/script/summary.json": "0695221dbd670adba4fdddb7070ee6de61318a145ecccd0b97802cb76a7a9699",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/R01-V01/source.json": "893091c4ff9c0e7f7596b0c0930ac34d8fc9052e26f974b4a11893eeda5f4357",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/manifest.json": "f8c7292e1500dbf5c6f25adf07d16f43a71dad80b8134d7436b32f4011cca139",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/ambient-catalog.json": "c045e64d1e2723ac9fdd70fa7a5bdad1c96917d45bdd9c0ef7901604218baaa1",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/text-policy.json": "c769cd2d9a4fcaaf16fc52113d898f7488321bcc0755605bb92a762b153f8738",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/http-policy.json": "0332c92de75605435572e68f262081a2512a0be0ff3ec4989ccf2d2cfb7fc3dd",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/portable/qwen3-tts/voice-references/ac9cfa7b3cf77221ad8bf9f7f244ecb3d2dba752b00f51b216804b9380575b32/reference.json": "c1f36272d7b7f14acda9c668f063c6475b987ccfe9a61b019cfb1c3167f607c5",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/portable/qwen3-tts/voice-references/ac9cfa7b3cf77221ad8bf9f7f244ecb3d2dba752b00f51b216804b9380575b32/reference.wav": "dbcd598c53d6d8cee0cf0fcfc2667fdff73e0267ae207d27fa464c776f31b404",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/portable/qwen3-tts/voice-references/ac9cfa7b3cf77221ad8bf9f7f244ecb3d2dba752b00f51b216804b9380575b32/reference-native.wav": "2c6624d8581eccd599935875d435e4cd7b071b59280197fbbab24dd8bf268d7f"
+        },
+        "reference_plan_overrides": {},
+        "assistant_reference_root": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/portable/qwen3-tts/voice-references",
+        "new_semantic_calls_authorized": false,
+        "semantic_budgets_reset": false,
+        "audio_budgets_reset": false,
+        "outer_transport_max_attempts": 6,
+        "completed_clips_resynthesized": false,
+        "created_at": "2026-11-09T10:37:09.055743+00:00"
+      },
+      "timings": {
+        "script": 0.00171612948179245,
+        "audio": 1393.533083516173,
+        "export": 2.0743392277508974,
+        "total": 1395.6264470424503
+      },
+      "audio_result": {
+        "schema": "duplex_v2.compiled_audio_result.v1",
+        "status": "completed",
+        "delivered_turns": [
+          "U01",
+          "U02",
+          "U03",
+          "U04",
+          "U05",
+          "U06",
+          "U07",
+          "U08",
+          "U09",
+          "U10",
+          "U11",
+          "U12",
+          "U13",
+          "U14",
+          "U15",
+          "U16",
+          "U17",
+          "U18",
+          "U19",
+          "U20",
+          "U21",
+          "U22"
+        ],
+        "audio": {
+          "path": "dialogue-stereo.wav",
+          "sha256": "dc9af90a6723060731bb7b5d73b3151fa5d3482a721a4ef1b3bc5beb21b0861b",
+          "frames": 8787460,
+          "sample_rate": 16000,
+          "channels": [
+            "user_including_asides",
+            "assistant"
+          ],
+          "duration_seconds": 549.21625,
+          "background_audio_added": true,
+          "alignment": "qwen3_forced_aligner_0.6b_posthoc;exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2"
+        },
+        "counts": {
+          "main_turns": 22,
+          "backchannels": 7,
+          "side_speech": 0,
+          "interruptions": 4,
+          "user_side_speech": 0,
+          "ambient_layers": 2,
+          "environment_events": 3,
+          "discrete_background_events": 3,
+          "planned_backchannels": 7,
+          "omitted_backchannels": 0
+        },
+        "integrity": {
+          "status": "passed",
+          "exact_anchor_boundaries": true,
+          "heard_context_uses_only_consumed_prefixes": true,
+          "background_complete_and_contained": true,
+          "background_added_to_context": false,
+          "backchannel_stops_assistant": false,
+          "same_speaker_overlap": false,
+          "pcm_clipping": false,
+          "runtime_model_calls": 0,
+          "anchor_boundary_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+          "planned_text_boundaries_exact": true,
+          "spoken_anchor_boundaries_exact": true,
+          "anchor_boundary_warnings": [],
+          "real_environment_sources_verified": true,
+          "environment_audio_stops_assistant": false,
+          "continuous_layers_counted_as_discrete": false,
+          "ambient_plan_sha256": "0a3db5bf2b25a6c6f0bcecd3221bdd58865f03812d9fbac98b99e41faca7ccab",
+          "backchannel_alignment_failure_policy": "warn_and_omit_exhausted_alignment_v1",
+          "omitted_backchannels": [],
+          "user_side_speech_stops_assistant": false,
+          "user_side_speech_added_to_context": false,
+          "user_side_speech_onset_sha256": "50908f9f488a5023b576c23b0a23f427562de6d7744d49c29a851c7e132ac4a2",
+          "speech_onset_policy": "cpu_vad_t03_outer_silence_preroll30ms_same_prefix_speech_start_calibration_v1",
+          "interruption_onset_path": "interruption-onset.json",
+          "interruption_onset_sha256": "1d04aca96751a29687cd7960ee0d0c5e4e08a31a63460b442e6692116ae771d5",
+          "acoustic_interruption_warnings": 0,
+          "speech_overlap_verified": true
+        },
+        "gap_ms": 240,
+        "heard_context_path": "heard-context.json",
+        "failure_reason": null,
+        "anchor_boundary_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+        "planned_text_boundaries_exact": true,
+        "spoken_anchor_boundaries_exact": true,
+        "anchor_boundary_warnings": [],
+        "backchannel_alignment_failure_policy": "warn_and_omit_exhausted_alignment_v1",
+        "omitted_backchannels": [],
+        "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+        "user_side_speech_onset_path": "user-side-speech-onset.json",
+        "user_side_speech_onset_sha256": "50908f9f488a5023b576c23b0a23f427562de6d7744d49c29a851c7e132ac4a2",
+        "ambient_audio": {
+          "plan_sha256": "0a3db5bf2b25a6c6f0bcecd3221bdd58865f03812d9fbac98b99e41faca7ccab",
+          "frozen_plan_path": "frozen-ambient-plan.json",
+          "provenance_path": "ambient-provenance.json",
+          "provenance_sha256": "8e010c77d2b8f48eeadd50443c2f9492c84e6e523a80a5492a276f6f0cc70439",
+          "ambient_layers": 2,
+          "environment_events": 3,
+          "sources_added_to_heard_text": false,
+          "assistant_timing_changed": false
+        },
+        "speech_onset_policy": "cpu_vad_t03_outer_silence_preroll30ms_same_prefix_speech_start_calibration_v1",
+        "interruption_onset_path": "interruption-onset.json",
+        "interruption_onset_sha256": "1d04aca96751a29687cd7960ee0d0c5e4e08a31a63460b442e6692116ae771d5",
+        "acoustic_interruption_warnings": 0,
+        "speech_overlap_verified": true,
+        "wall_seconds": 1390.205221033655
+      },
+      "dataset": {
+        "schema": "duplex_v2.consumed_dataset.v1",
+        "status": "passed",
+        "data_kind": "scripted_target_behavior",
+        "examples": 22,
+        "training_path": "training.jsonl",
+        "training_sha256": "38b9fb81ca7706d1b652a1d030b6151fd3a451603762bc4d89028feff5da9ae0",
+        "assistant_audio_seconds": 375.44,
+        "contains_full_script": false,
+        "contains_unplayed_assistant_text": false,
+        "background_in_history": false,
+        "live_policy_evaluation": false,
+        "verified_artifact_sha256": {
+          "timeline.json": "ee46e101d643b40f91daa2b82d28845a1e86aa4de9687129fb85826e27cff3b8",
+          "heard-context.json": "647bbed46816de011e6cbf158329b3c69d0d0ccc0d941300800bccd26b90bfc3",
+          "integrity.json": "f000fc276dbd2f3d2bf9131d7dda7766af75876cbb694697f52d0cb01c8cb951",
+          "result.json": "d9ec79f429aa07b86fc2c376fa6092089492e8fec2a6ad50f735cbafc41fc262"
+        },
+        "language": "zh",
+        "mixed_audio": {
+          "path": "audio/dialogue-stereo.wav",
+          "sha256": "dc9af90a6723060731bb7b5d73b3151fa5d3482a721a4ef1b3bc5beb21b0861b",
+          "sample_rate": 16000,
+          "frames": 8787460,
+          "channels": [
+            "user_including_asides",
+            "assistant"
+          ]
+        },
+        "background_attribution": {
+          "path": "background-attribution.json",
+          "sha256": "a221dd0e44279a5c9409bd185dec29a6b06a7cf814070db38a97c04aa40438b7"
+        },
+        "verified_background_artifact_sha256": {
+          "frozen-ambient-plan.json": "e3a957417f80c39dd2f606a81c07caf113b0a51f4e0075867769941c9c66f1eb",
+          "ambient-provenance.json": "8e010c77d2b8f48eeadd50443c2f9492c84e6e523a80a5492a276f6f0cc70439"
+        },
+        "full_duplex_training": {
+          "input_audio": {
+            "path": "audio/user-input.wav",
+            "sha256": "ba5e13b364f1b80f53f9d8d7e5e40ed568a5de951ddeb44dfd1d31205c60f948",
+            "sample_rate": 16000,
+            "channels": 1,
+            "frames": 8787460,
+            "includes_user_side_speech": false,
+            "user_side_speech_count": 0
+          },
+          "target_audio": {
+            "path": "audio/assistant-output.wav",
+            "sha256": "56aa62d9e3a165c177d21b0af1da063135d6cb2d149533228f700169f6f72da9",
+            "sample_rate": 16000,
+            "channels": 1,
+            "frames": 8787460
+          },
+          "event_supervision": {
+            "path": "user-side-speech-supervision.json",
+            "sha256": "8af56190c9c15c15823bf6d85c9efc8e1e38cffa56c7e47f6d65fa4249237811",
+            "usage": "supervision_only_not_model_input"
+          },
+          "aligned_clock": true,
+          "data_kind": "scripted_target_behavior"
+        }
+      },
+      "service_recovery_timings": {
+        "total": 1395.702045689337
+      }
+    }
+  ],
+  "exclude_domain_ids": [
+    "D03",
+    "D04",
+    "D05",
+    "D15",
+    "D16",
+    "D17",
+    "D21",
+    "D22",
+    "D25",
+    "D26",
+    "D27",
+    "D32"
+  ],
+  "script_max_repairs": 5,
+  "text_output_token_policy": "omit",
+  "reasoning_effort": "default",
+  "status": "completed",
+  "created_at": "2026-11-09T09:54:46.327643+00:00",
+  "data_kind": "scripted_target_behavior",
+  "live_policy_evaluation": false,
+  "text_policy": {
+    "schema": "duplex_v2.text_policy.v1",
+    "workflow_version": "v2.5",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "models": {
+      "sol": "openai/gpt-5.6-sol",
+      "luna": "openai/gpt-5.6-luna"
+    },
+    "roles": {
+      "stage0_generation": "luna",
+      "stage1_generation": "luna",
+      "stage2_generation": "sol",
+      "script_generation": "sol",
+      "script_patch": "sol",
+      "judge": "sol",
+      "compaction_first": "luna",
+      "compaction_later": "sol"
+    },
+    "reasoning_effort_policy": "default",
+    "stage0_max_judge_attempts": 5,
+    "content_max_repairs": 5,
+    "json_parse_max_retries": 3,
+    "length_compaction_max_attempts": 3,
+    "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+    "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+    "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+  },
+  "text_policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/text-policy.json",
+  "relay_configuration": {
+    "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08/relay-policy.json",
+    "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08/relay-state",
+    "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+    "policy": {
+      "schema": "duplex_v2.timeout_relay_policy.v3",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "backup": {
+        "profile": "lianyu",
+        "endpoint": "https://api.openbili.com/v1/chat/completions",
+        "model_map": {
+          "openai/gpt-5.6-sol": "gpt-5.6-sol",
+          "openai/gpt-5.6-luna": "gpt-5.6-luna"
+        },
+        "verification": {
+          "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+          "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+        }
+      },
+      "trigger": {
+        "max_retries": 5,
+        "http_statuses": [
+          502,
+          503,
+          504
+        ],
+        "error_types": [
+          "TimeoutError",
+          "HTTP2DeadlineExceeded",
+          "ConnectionResetError",
+          "ConnectionAbortedError",
+          "BrokenPipeError",
+          "RemoteDisconnected",
+          "IncompleteRead"
+        ],
+        "http2_transport_errors": "negotiated_h2_only",
+        "require_all_attempts": true
+      },
+      "max_relay_switches": 1
+    }
+  },
+  "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+  "http_policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/http-policy.json",
+  "http_policy": {
+    "schema": "duplex_v2.http_policy.v1",
+    "endpoint": "https://api.modelink.ai/v1/chat/completions",
+    "http_transport": "http2_ping_v1",
+    "proxy": "http://oversea-squid1.jp.txyun:11080",
+    "ping_interval_seconds": 30.0,
+    "max_retries": 5,
+    "trace_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08/network-traces"
+  },
+  "workflow_version": "v2.9",
+  "text_request_timeout_seconds": 1800.0,
+  "dialogue_length_policy": {
+    "schema": "duplex_v2.dialogue_length_policy.v1",
+    "version": 1,
+    "target_tolerance": 1,
+    "tiers": {
+      "short": {
+        "weight_percent": 30,
+        "min_turns": 5,
+        "max_turns": 8
+      },
+      "medium": {
+        "weight_percent": 40,
+        "min_turns": 9,
+        "max_turns": 15
+      },
+      "long": {
+        "weight_percent": 30,
+        "min_turns": 16,
+        "max_turns": 24
+      }
+    },
+    "allocation": "largest_remainder_then_seeded_shuffle; single_plan_weighted_draw",
+    "main_turn_definition": "one main user utterance and its assistant reply; backchannels and background excluded"
+  },
+  "dialogue_length_plans": [
+    {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "long",
+      "target_turns": 22,
+      "min_turns": 21,
+      "max_turns": 23
+    }
+  ],
+  "interaction_profile_policy": {
+    "schema": "duplex_v2.interaction_profile.v1",
+    "axes": {
+      "formality": [
+        "casual",
+        "neutral",
+        "formal"
+      ],
+      "directness": [
+        "indirect",
+        "balanced",
+        "direct"
+      ],
+      "emotional_expressiveness": [
+        "reserved",
+        "balanced",
+        "expressive"
+      ],
+      "verbosity": [
+        "brief",
+        "balanced",
+        "detailed"
+      ],
+      "initiative": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "caution": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "patience": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "behavioral_notes_min": 2,
+    "behavioral_notes_max": 3,
+    "sampling": "seeded_column_balance_without_demographic_coupling",
+    "all_middle_combination": "replace_formality_with_seeded_nonmiddle_value",
+    "sampled_axes_frozen": true,
+    "repairable_fields": [
+      "behavioral_notes"
+    ]
+  },
+  "sampled_interaction_axes": [
+    {
+      "formality": "neutral",
+      "directness": "direct",
+      "emotional_expressiveness": "reserved",
+      "verbosity": "balanced",
+      "initiative": "low",
+      "caution": "medium",
+      "patience": "medium"
+    }
+  ],
+  "language": "zh",
+  "soundscape_policy": {
+    "schema": "duplex_v2.soundscape_policy.v3",
+    "quiet_probability": 0.5,
+    "discrete_targets_by_tier": {
+      "short": [
+        0,
+        1
+      ],
+      "medium": [
+        1,
+        2
+      ],
+      "long": [
+        2,
+        4
+      ]
+    },
+    "discrete_count_includes": [
+      "environment_events",
+      "side_speech"
+    ],
+    "max_ambient_layers": 2,
+    "gain_range": [
+      0.3,
+      0.7
+    ],
+    "speech_request_probability": 0.5,
+    "third_party_preference_probability": 0.8,
+    "speech_requires_existing_scene_source": true,
+    "environment_audio": "base_only",
+    "stage2_repair": "atomic_scoped_patch",
+    "stage2_max_judge_attempts": 3,
+    "json_parse_max_retries": 3,
+    "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+    "user_aside_preference_probability": 0.5,
+    "user_voice_source": "stage1_user",
+    "user_aside_requires_present_recipient": true
+  },
+  "ambient_controls": [
+    {
+      "schema": "duplex_v2.soundscape_control.v3",
+      "seed": 802455460,
+      "mode": "layered",
+      "discrete_event_target": 3,
+      "max_ambient_layers": 2,
+      "side_speech_requested": false,
+      "speech_kind_preferences": [
+        "user_to_third_party",
+        "third_party",
+        "machine"
+      ]
+    }
+  ],
+  "script_repair_policy": {
+    "schema": "duplex_v2.script_repair_policy.v1",
+    "mode": "json_patch",
+    "patch_schema": "duplex_v2.script_patch.v1",
+    "json_parse_max_retries": 3,
+    "content_max_repairs": 5,
+    "length_compaction_max_attempts": 3,
+    "overlength_after_compaction": "fail_case",
+    "judge_scope": "complete_script_and_heard_context"
+  },
+  "speech_onset_policy": "cpu_vad_t03_outer_silence_preroll30ms_same_prefix_speech_start_calibration_v1",
+  "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+  "script_execution_policy": {
+    "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+    "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+    "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+    "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+    "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+    "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+    "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+  },
+  "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+  "ambient_catalog_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g08-sample-007/ambient-catalog.json",
+  "ambient_catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+  "ambient_sampling_policy": {
+    "schema": "duplex_v2.ambient_sampling_policy.v1",
+    "selection": "model_compatible_candidates_then_seeded_category_and_recording",
+    "batch_balance": "seeded_rotating_category_and_recording_preferences",
+    "frozen_after": "existing_stage2_judge",
+    "resample_on_resume": false
+  },
+  "ambient_sampling_plans": [
+    {
+      "schema": "duplex_v2.ambient_preferences.v1",
+      "seed": 202611090008,
+      "slot": 6,
+      "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+      "categories": {
+        "bed": [
+          "birds",
+          "rain",
+          "wind",
+          "fan",
+          "crowd",
+          "traffic"
+        ],
+        "event": [
+          "water_tap",
+          "doorbell",
+          "paper",
+          "door",
+          "keyboard",
+          "footsteps"
+        ]
+      },
+      "recordings": {
+        "bed:birds": [
+          "birds-fsd50k-eval-57907",
+          "birds-fsd50k-eval-319512",
+          "birds-fsd50k-eval-86343"
+        ],
+        "bed:crowd": [
+          "crowd-fsd50k-eval-185058",
+          "crowd-fsd50k-eval-121877",
+          "crowd-fsd50k-eval-340358"
+        ],
+        "bed:fan": [
+          "fan-fsd50k-eval-419427",
+          "fan-fsd50k-eval-415925",
+          "fan-fsd50k-eval-235362"
+        ],
+        "bed:rain": [
+          "rain-fsd50k-eval-21189",
+          "rain-fsd50k-eval-238016",
+          "rain-fsd50k-eval-382582"
+        ],
+        "bed:traffic": [
+          "traffic-fsd50k-eval-232686",
+          "traffic-fsd50k-eval-124020",
+          "traffic-fsd50k-eval-235541"
+        ],
+        "bed:wind": [
+          "wind-fsd50k-eval-113173",
+          "wind-fsd50k-eval-113176",
+          "wind-fsd50k-eval-113175"
+        ],
+        "event:door": [
+          "door-fsd50k-eval-71212",
+          "door-fsd50k-eval-119077",
+          "door-fsd50k-eval-209519"
+        ],
+        "event:doorbell": [
+          "doorbell-fsd50k-eval-348322",
+          "doorbell-fsd50k-eval-332563",
+          "doorbell-fsd50k-eval-426594"
+        ],
+        "event:footsteps": [
+          "footsteps-fsd50k-eval-153104",
+          "footsteps-fsd50k-eval-392303",
+          "footsteps-fsd50k-eval-272381"
+        ],
+        "event:keyboard": [
+          "keyboard-fsd50k-eval-399740",
+          "keyboard-fsd50k-eval-233057",
+          "keyboard-fsd50k-eval-411545"
+        ],
+        "event:paper": [
+          "paper-fsd50k-eval-82562",
+          "paper-fsd50k-eval-343098",
+          "paper-fsd50k-eval-121200"
+        ],
+        "event:water_tap": [
+          "water_tap-fsd50k-eval-402128",
+          "water_tap-fsd50k-eval-232499",
+          "water_tap-fsd50k-eval-402127"
+        ]
+      }
+    }
+  ],
+  "stages": {
+    "0": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g08-sample-007-v2-stage0",
+    "0qa": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g08-sample-007-v2-stage0qa",
+    "1": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g08-sample-007-v2-stage1",
+    "2": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g08-sample-007-v2-stage2"
+  },
+  "timings": {
+    "stage0": 18.044873490929604,
+    "stage0qa": 6.993703695945442,
+    "stage1": 10.200344542041421,
+    "stage2": 56.809611023403704
+  }
+}

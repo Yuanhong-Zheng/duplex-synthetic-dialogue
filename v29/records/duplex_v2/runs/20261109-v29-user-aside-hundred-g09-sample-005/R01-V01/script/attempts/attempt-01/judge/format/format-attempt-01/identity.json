@@ -1,0 +1,2672 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 10 轮，允许 9–11 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 按下方V2.9用户旁话规则审查；第三方与机器旁语仍遵守冻结声源与信息边界。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 必须逐字匹配对应源；用户声源的recipient须逐字匹配且不含voice_profile，其余声源的voice_profile逐字匹配，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。\n[V2.9 用户对同场旁人说话]\n定稿根schema_version为duplex_v2.fixed_script.v3；根字段和原主轮字段不变，quiet声景也保留空environment_events和side_speech。\nside_speech仍只用已冻结的side_speech_sources，数量严格等于side_speech_count。第三方/机器的原字段不变。若冻结源speaker=user，每项严格只有event_id、source_id、target_assistant_id、after_text、text、speaker、recipient、gain；speaker=\"user\"，recipient逐字复制冻结源的同场接收者，不填写voice_profile、voice_source或其他字段。用户音色、克隆参考和表达画像由程序复用主用户，不另造声音。\n用户旁话是用户在助手已开始且仍在实际播报时对旁人说的短句，例如对已在场的小林说“小林，把杯子递给我一下”。台词应自然且接收对象可辨，不能只有“等等”这类不明确话语；不能作为对助手的新请求、附和、打断或主对话轮，也不能泄漏关键任务材料。接收者必须来自冻结场景，不能为了配额新增人物。\ntarget_assistant_id仍指作为音频host的助手A，不是旁话接收对象；after_text是A从首字开始的完整非终止已播前缀。用户旁话起声必须早于下一次用户主表达，且完整音频须装入实际会播出的A范围，与同一用户的主句、附和或另一旁话都不重叠。不要在助手将被真正打断的尾端强塞旁话，不把事件安排在未播尾部；不恢复“用户主句暂停→转头旁话→再继续主句”的模式。\n旁话期间助手继续同一段原音频，不停顿、不让出话权、不增加新回答；后续助手不回应或复述旁话，不把它吸收为任务事实。旁话分类依赖接收对象和语义，不依赖其音量；gain仍在0.3–0.7。用户的旁话仍符合其冻结表达画像。\n上述方向、继续播报与stop_required=false是数据审查/监督标注，不是提前透露给在线模型的输入。仅使用原Judge和局部修复预算：审查台词是否确实面向旁人、主线与已听因果是否保持；只按findings最小修复，并在助手正文变更时同步相关精确锚点。\n\n",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g09-sample-005-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 3302421013,
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g09/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g09/relay-state",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D13",
+          "domain": "金融、银行与保险",
+          "scenario_id": "D13-S08",
+          "scenario": "金融文件与表单说明"
+        },
+        "task_style": "混合型",
+        "task_instance": {
+          "goal": "准备申请一项银行个人贷款时，结合常见申请表各栏目的填写规则、收入与工作情况以及手头已有的工资流水和身份证明，逐项判断哪些信息可以直接填写、哪些需要向银行进一步核实，并整理出提交前仍需补齐或确认的材料清单。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "正在为自己准备首次个人贷款申请材料的社区诊所行政人员",
+          "task_familiarity": "low"
+        },
+        "voice_profile": "女性，感知年龄三十多岁，音色明亮但略带紧绷感，吐字清楚，语速中等偏快，遇到不确定之处时会明显放慢并带有谨慎的停顿。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "neutral",
+          "directness": "direct",
+          "emotional_expressiveness": "expressive",
+          "verbosity": "detailed",
+          "initiative": "low",
+          "caution": "high",
+          "patience": "medium",
+          "behavioral_notes": [
+            "倾向于把已知情况和疑问分开说明，希望对含义相近的说法得到明确区分。",
+            "表达不确定时会补充较多背景，并反复确认判断依据是否足够稳妥。",
+            "通常先等待对方解释完整，再提出下一步具体追问。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "medium",
+        "target_turns": 10,
+        "min_turns": 9,
+        "max_turns": 11
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v3",
+        "seed": 1880245698,
+        "mode": "quiet",
+        "discrete_event_target": 0,
+        "max_ambient_layers": 2,
+        "side_speech_requested": false,
+        "speech_kind_preferences": [
+          "user_to_third_party",
+          "machine",
+          "third_party"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "2026年11月9日晚上八点半，周岚独自在家中书房整理首次个人贷款申请材料，她打算在正式递交前先把表格各栏与手头证明逐项核对清楚。她是澄禾社区诊所有限公司的行政人员，自2022年8月15日起在该单位工作，对日常文件归档很熟悉，但从未填写过银行贷款申请表。她前一天从银行网点带回一份空白的个人消费贷款申请表和一页材料提示单，目前只能依据这些纸质资料、自己的证件及工作记录进行口头梳理。她初步考虑申请人民币80000元、期限36个月，用于购置家具和家电，但只有一份自行记录的预算，没有正式订单或付款合同。身份证、劳动合同、在职收入证明、六张工资单和近六个月工资账户流水都放在桌上，相关日期与金额可以现场读取。身份证登记住址与她现在租住的地址不同，表格又同时出现“户籍地址”和“现居住地址”，她不确定现居地址是否需要另附证明。劳动合同使用单位完整名称，工资流水的付款方却显示简称，这让她担心雇主名称能否直接照抄或是否需要说明。收入证明只写固定税前月收入，工资单还包含浮动绩效，而银行流水体现的是扣除税费后的实发金额，因此“月收入”和“年收入”应采用哪种口径仍需核实。她目前没有未结清的个人贷款，但信用卡有一笔尚未到还款日的当期账单，不清楚申请表中的“其他负债”是否需要填写这笔日常消费。申请表还要求填写紧急联系人，她已有合适的亲属人选，但尚未征得对方同意，也不知道该栏是否必须在首次提交时完整填写。材料提示单对身份证明和收入流水写得较明确，却没有说明贷款用途凭证、居住证明、征信材料及雇主简称差异应如何处理。她希望先区分能够依据现有文件直接填写的项目、必须向银行确认口径的项目，以及确实缺少且需要补充的材料，避免为了填满表格而猜测或填写互相矛盾的信息。",
+        "task_reference_data": [
+          "来源：用户手边的空白《个人消费贷款申请表》，当前可现场逐栏读取。表格包含姓名、证件类型及号码、证件有效期、户籍地址、现居住地址、婚姻状况、最高学历、工作单位全称、单位地址、入职日期、职业及职务、税前年收入、其他收入、现有负债、申请金额、申请期限、贷款用途、紧急联系人姓名及电话、申请人声明和签名日期等栏目。",
+          "来源：用户本人的居民身份证原件，当前已核对。姓名为周岚，证件有效期为2021年3月12日至2041年3月12日，登记住址为武汉市洪山区珞狮路218号；完整证件号码不需要在当前口头整理中朗读。",
+          "来源：用户手边的房屋租赁合同，当前可读取但不确定银行是否接受为居住证明。承租人为周岚，现居住地址为武汉市武昌区中北路166号，租期自2026年4月1日至2027年3月31日。",
+          "来源：用户与单位签署的劳动合同，当前已读。用人单位全称为“澄禾社区诊所有限公司”，岗位为行政专员，首次入职日期为2022年8月15日，现合同期限至2027年8月14日。",
+          "来源：单位于2026年11月6日出具并盖章的在职收入证明，当前已读。证明写明周岚为行政专员，固定税前月收入为7700元，另有按月考核发放的浮动绩效；证明未填写税前年收入，也未说明绩效平均值。",
+          "来源：2026年5月至10月的六张工资单，当前可逐张核对。各月税前应发总额依次为8200元、8350元、8100元、8600元、8300元和8450元；工资项目包括基本工资6800元、岗位津贴900元及金额不等的绩效，另列个人税费和社保扣款。",
+          "来源：用户工资账户的纸质流水，当前已读。2026年5月至10月六笔工资入账依次为7428.36元、7580.00元、7396.42元、7812.90元、7514.18元和7688.64元，付款方均显示“澄禾诊所”，与劳动合同上的单位全称不完全一致。",
+          "来源：用户自行记录的现状，尚未由银行确认应采用何种负债口径。用户没有未结清的个人贷款或分期贷款；一张信用卡当前账单为2180元，还款日是2026年11月18日，账单尚未逾期且没有办理分期。",
+          "来源：用户自己的贷款用途预算，当前可读取但不是商家正式报价。计划申请金额为80000元、期限36个月，预算包括家具36000元、家电32000元及安装运输费用12000元；目前没有订单、合同、发票或明确收款人信息。",
+          "来源：银行网点提供的纸质材料提示单，当前已读且可能不是完整清单。纸面写有“本人有效身份证件”“近六个月收入流水”“工作及收入证明”“银行根据申请情况要求的其他材料”；未列明现居住证明、贷款用途凭证、个人征信报告或紧急联系人授权的具体要求。"
+        ],
+        "environment_audio": "书房门窗关闭，房间整体安静，没有明显的持续设备声。门外没有可辨认的人声或离散动静，近距离语音清晰。",
+        "estimated_snr_db": 35,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "只能依据现有证件和记录填写确定事实；银行口径、必填性或证明效力不明确的栏目必须列为待核实，不得自行猜测。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "姓名、地址、单位名称、任职日期和证件有效期应与相应原始材料保持一致，单位简称差异不得擅自改写成已经获得银行认可。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C03",
+            "text": "固定税前收入、含绩效的税前应发收入和税后实发流水必须分开说明，在银行确认申请表口径前不直接确定年收入数值。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C04",
+            "text": "整理结果需要区分为可直接填写、需向银行核实以及仍需补齐或确认三类。",
+            "kind": "soft"
+          },
+          {
+            "constraint_id": "C05",
+            "text": "紧急联系人信息在确认该栏要求并征得联系人同意前，不作为已经可以提交的完整信息。",
+            "kind": "hard"
+          }
+        ],
+        "safety_limits": [
+          {
+            "limit_id": "L01",
+            "text": "不得为满足申请要求虚构收入、负债、用途、任职情况或联系人信息，也不得建议修改、拼接或伪造证明材料。",
+            "severity": "hard"
+          },
+          {
+            "limit_id": "L02",
+            "text": "申请人声明、授权查询和签名栏在含义及银行要求尚未明确时应保留至正式核验，不应预签空白或未核对完整的表格。",
+            "severity": "advisory"
+          }
+        ],
+        "soundscape_plan": {
+          "mode": "quiet",
+          "ambient_layers": [],
+          "environment_events": [],
+          "schema": "duplex_v2.soundscape_plan.v4",
+          "side_speech_sources": [],
+          "side_speech_count": 0,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v3",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v3",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3,
+              "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+              "user_aside_preference_probability": 0.5,
+              "user_voice_source": "stage1_user",
+              "user_aside_requires_present_recipient": true
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611090009,
+              "slot": 4,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "traffic",
+                  "birds",
+                  "crowd",
+                  "rain",
+                  "wind",
+                  "fan"
+                ],
+                "event": [
+                  "paper",
+                  "keyboard",
+                  "doorbell",
+                  "door",
+                  "footsteps",
+                  "water_tap"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-57907",
+                  "birds-fsd50k-eval-86343",
+                  "birds-fsd50k-eval-319512"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-185058",
+                  "crowd-fsd50k-eval-121877",
+                  "crowd-fsd50k-eval-340358"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-419427",
+                  "fan-fsd50k-eval-235362"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-382582",
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-21189"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-124020",
+                  "traffic-fsd50k-eval-232686",
+                  "traffic-fsd50k-eval-235541"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113173",
+                  "wind-fsd50k-eval-113176",
+                  "wind-fsd50k-eval-113175"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-119077",
+                  "door-fsd50k-eval-209519",
+                  "door-fsd50k-eval-71212"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-348322",
+                  "doorbell-fsd50k-eval-426594",
+                  "doorbell-fsd50k-eval-332563"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-153104",
+                  "footsteps-fsd50k-eval-272381",
+                  "footsteps-fsd50k-eval-392303"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-399740",
+                  "keyboard-fsd50k-eval-411545"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-82562",
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-343098"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-402127",
+                  "water_tap-fsd50k-eval-402128",
+                  "water_tap-fsd50k-eval-232499"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v3",
+              "seed": 1880245698,
+              "mode": "quiet",
+              "discrete_event_target": 0,
+              "max_ambient_layers": 2,
+              "side_speech_requested": false,
+              "speech_kind_preferences": [
+                "user_to_third_party",
+                "machine",
+                "third_party"
+              ]
+            },
+            "control_sha256": "50727f304ae1eb987de44e7e01fe519be4e6fae250973fb9c4ff7fcfa29c66d2",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v4",
+              "mode": "quiet",
+              "ambient_layers": [],
+              "environment_events": [],
+              "side_speech_eligibility": {
+                "user_to_third_party": {
+                  "compatible": false,
+                  "reason": "故事中用户独自在书房整理材料，没有明确同场且可接收话语的旁人。",
+                  "source": null
+                },
+                "third_party": {
+                  "compatible": false,
+                  "reason": "当前环境没有同场第三方人物，也没有可合理发声的既有人物来源。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "故事未设定正在运行且会发出语音提示的设备或机器。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "4b5bf66a5aa3fdc82cb1bce37ef784297c1f7d0075b134007c364db474afd7e7",
+            "aggregate_environment_audio": "书房门窗关闭，房间整体安静，没有明显的持续设备声。门外没有可辨认的人声或离散动静，近距离语音清晰。",
+            "draws": [],
+            "speech_selection": {
+              "requested": false,
+              "compatible_kinds": [],
+              "selected_kind": null,
+              "outcome": "not_requested",
+              "assessments": {
+                "user_to_third_party": {
+                  "compatible": false,
+                  "reason": "故事中用户独自在书房整理材料，没有明确同场且可接收话语的旁人。",
+                  "source": null
+                },
+                "third_party": {
+                  "compatible": false,
+                  "reason": "当前环境没有同场第三方人物，也没有可合理发声的既有人物来源。",
+                  "source": null
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "故事未设定正在运行且会发出语音提示的设备或机器。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v3",
+      "title": "首次个人贷款申请材料逐项核对",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？",
+          "assistant_utterance": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。",
+          "user_intent": "建立贷款申请表核对任务并请求分类指导",
+          "assistant_intent": "说明分类方法，并引导用户先提供身份和地址信息",
+          "semantic_goal": "开始逐项判断申请表内容及材料状态",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。",
+          "assistant_utterance": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。",
+          "user_intent": "提供身份证及现居住址材料信息",
+          "assistant_intent": "区分可直接填写的地址事实与待确认的证明效力",
+          "semantic_goal": "确定身份和两个地址栏的填写依据",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。",
+            "assistant_stop_after_text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "工作这块，劳动合同写的是澄禾社区诊所有限公司，岗位行政专员，首次入职是二零二二年八月十五日，现合同到二零二七年八月十四日。可工资流水的付款方只写澄禾诊所，我担心名称对不上。",
+          "assistant_utterance": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日期按首次入职日填写。流水里的“澄禾诊所”不要反过来改写表格，简称是否需要单位说明应问银行。",
+          "user_intent": "提供任职信息并提出雇主名称不一致问题",
+          "assistant_intent": "明确工作栏填写依据并标记简称差异为待核实事项",
+          "semantic_goal": "避免因工资流水简称而擅自改写单位信息",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。",
+            "assistant_stop_after_text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "先停一下，我想先把收入口径弄清。表格要填税前年收入，收入证明写固定税前月收入七千七，另有浮动绩效。五月到十月的税前应发分别是八千二、八千三百五、八千一、八千六、八千三和八千四百五，这该怎么处理？",
+          "assistant_utterance": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。",
+          "user_intent": "打断工作信息说明，转而优先澄清收入计算口径",
+          "assistant_intent": "分开计算固定收入和含绩效收入，并保留银行口径待核实",
+          "semantic_goal": "获得可供核实的收入数据但不擅自确定年收入",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，",
+            "assistant_stop_after_text": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "流水里的六笔实发又是七千四百二十八元三角六分、七千五百八十元、七千三百九十六元四角二分、七千八百一十二元九角、七千五百一十四元一角八分和七千六百八十八元六角四分。这个平均数能写进收入栏吗？",
+          "assistant_utterance": "不建议直接写。流水金额是扣税费和社保后的实发收入，可作为收入佐证，但不等于表格要求的税前年收入。把流水、工资单和收入证明一并备好，请银行明确采用哪一项及绩效算法。",
+          "user_intent": "补充税后工资流水并询问能否作为收入栏依据",
+          "assistant_intent": "区分税后实发与税前年收入，说明其证明用途",
+          "semantic_goal": "防止把税后流水平均数误填为税前年收入",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。",
+            "assistant_stop_after_text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U06",
+          "assistant_id": "A006",
+          "user_utterance": "我计划申请八万元，期限三十六个月，用途是购置家具和家电。预算里家具三万六、家电三万二、安装运输一万二，但没有订单、合同、发票或收款人信息。这些现在能填到哪一步？",
+          "assistant_utterance": "申请金额八万元、期限三十六个月可直接填，用途可如实写“购置家具和家电”，现有预算也正好合计八万元。预算不是正式用途凭证，是否要订单、报价、合同或收款信息需问银行。",
+          "user_intent": "提供贷款金额、期限、用途预算及凭证缺口",
+          "assistant_intent": "区分可填写的申请条件与尚待确认的用途证明要求",
+          "semantic_goal": "明确贷款用途部分当前可完成的程度",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A005",
+            "user_onset_after_text": "不建议直接写。流水金额是扣税费和社保后的实发收入，可作为收入佐证，但不等于表格要求的税前年收入。把流水、工资单和收入证明一并备好，请银行明确采用哪一项及绩效算法。",
+            "assistant_stop_after_text": "不建议直接写。流水金额是扣税费和社保后的实发收入，可作为收入佐证，但不等于表格要求的税前年收入。把流水、工资单和收入证明一并备好，请银行明确采用哪一项及绩效算法。"
+          },
+          "pause_cue": {
+            "after_text": "我计划申请八万元，期限三十六个月，",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U07",
+          "assistant_id": "A007",
+          "user_utterance": "负债栏也让我犹豫。我没有没还清的个人贷款或分期，但信用卡有二千一百八十元当期账单，十一月十八日才到还款日，没有逾期。其他负债能不能填无？",
+          "assistant_utterance": "可以确认没有未结清的个人贷款或分期，但不能据此直接把其他负债填成无。信用卡当期账单是否计入该栏，各银行口径可能不同；询问时说明金额、未到期、未逾期且未分期。",
+          "user_intent": "披露信用卡当期账单并询问负债栏填法",
+          "assistant_intent": "避免遗漏可能被银行计入的信用卡负债并整理核实要点",
+          "semantic_goal": "确定负债栏应暂缓判断而非直接填无",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A006",
+            "user_onset_after_text": "申请金额八万元、期限三十六个月可直接填，用途可如实写“购置家具和家电”，现有预算也正好合计八万元。预算不是正式用途凭证，是否要订单、报价、合同或收款信息需问银行。",
+            "assistant_stop_after_text": "申请金额八万元、期限三十六个月可直接填，用途可如实写“购置家具和家电”，现有预算也正好合计八万元。预算不是正式用途凭证，是否要订单、报价、合同或收款信息需问银行。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U08",
+          "assistant_id": "A008",
+          "user_utterance": "紧急联系人我有合适的亲属人选，但还没征得对方同意，也不知道首次交表是不是必须填全。申请人声明、授权和签名日期，我现在要不要先签？",
+          "assistant_utterance": "联系人姓名和电话先不要作为完整提交信息，先问是否首次必填，并征得本人同意。声明、征信授权和签名日期也别预签空白表，等所有栏目核对完成、确认授权内容后再签。",
+          "user_intent": "询问紧急联系人和签名授权栏的处理方式",
+          "assistant_intent": "要求先确认联系人要求并取得同意，同时避免提前签署未核完整的表格",
+          "semantic_goal": "安全保留联系人、声明、授权及签名栏",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A007",
+            "user_onset_after_text": "可以确认没有未结清的个人贷款或分期，但不能据此直接把其他负债填成无。信用卡当期账单是否计入该栏，各银行口径可能不同；询问时说明金额、未到期、未逾期且未分期。",
+            "assistant_stop_after_text": "可以确认没有未结清的个人贷款或分期，但不能据此直接把其他负债填成无。信用卡当期账单是否计入该栏，各银行口径可能不同；询问时说明金额、未到期、未逾期且未分期。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U09",
+          "assistant_id": "A009",
+          "user_utterance": "提示单只明确写了有效身份证件、近六个月收入流水、工作及收入证明，其他只说按申请情况补充。你现在帮我按可直接填、要向银行核实、还要补齐或确认，完整归一遍吧。",
+          "assistant_utterance": "可直接填：身份信息、两个地址事实、单位全称、岗位、首次入职日、申请金额、期限和用途。需核实：居住证明效力、单位简称、收入与绩效口径、信用卡账单归类、联系人必填性、用途凭证和征信要求。待补齐或确认：银行认可的居住及用途材料、可能需要的简称说明、经同意的联系人资料；声明、授权和签名留待整表核验后。",
+          "user_intent": "要求将现有结论按三类完整汇总",
+          "assistant_intent": "整合已披露信息并形成提交前分类清单",
+          "semantic_goal": "获得清晰、可执行的申请材料整理结果",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A008",
+            "user_onset_after_text": "联系人姓名和电话先不要作为完整提交信息，先问是否首次必填，并征得本人同意。声明、征信授权和签名日期也别预签空白表，等所有栏目核对完成、确认授权内容后再签。",
+            "assistant_stop_after_text": "联系人姓名和电话先不要作为完整提交信息，先问是否首次必填，并征得本人同意。声明、征信授权和签名日期也别预签空白表，等所有栏目核对完成、确认授权内容后再签。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U10",
+          "assistant_id": "A010",
+          "user_utterance": "这样就清楚多了。最后请把我联系银行时必须问的事项压成一份简短提问清单，我照着问，免得漏掉。",
+          "assistant_utterance": "可依次问：租赁合同能否作居住证明；单位简称是否需说明；税前年收入采用固定收入还是含绩效平均；信用卡未到期账单是否填其他负债；首次提交是否必须填联系人；用途需哪些凭证；征信由银行查询还是要本人提供。",
+          "user_intent": "请求生成联系银行时可直接使用的简短问题清单",
+          "assistant_intent": "把全部待核实事项压缩成有序提问",
+          "semantic_goal": "形成下一步联系银行的执行清单",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A009",
+            "user_onset_after_text": "可直接填：身份信息、两个地址事实、单位全称、岗位、首次入职日、申请金额、期限和用途。需核实：居住证明效力、单位简称、收入与绩效口径、信用卡账单归类、联系人必填性、用途凭证和征信要求。待补齐或确认：银行认可的居住及用途材料、可能需要的简称说明、经同意的联系人资料；声明、授权和签名留待整表核验后。",
+            "assistant_stop_after_text": "可直接填：身份信息、两个地址事实、单位全称、岗位、首次入职日、申请金额、期限和用途。需核实：居住证明效力、单位简称、收入与绩效口径、信用卡账单归类、联系人必填性、用途凭证和征信要求。待补齐或确认：银行认可的居住及用途材料、可能需要的简称说明、经同意的联系人资料；声明、授权和签名留待整表核验后。"
+          },
+          "pause_cue": null
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "姓名、证件有效期和户籍地址可按身份证直接填；",
+          "text": "嗯，清楚"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A004",
+          "after_text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。",
+          "text": "好，明白"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A007",
+          "after_text": "可以确认没有未结清的个人贷款或分期，但不能据此直接把其他负债填成无。",
+          "text": "嗯"
+        },
+        {
+          "event_id": "BC04",
+          "target_assistant_id": "A009",
+          "after_text": "可直接填：身份信息、两个地址事实、单位全称、岗位、首次入职日、申请金额、期限和用途。",
+          "text": "对"
+        }
+      ],
+      "side_speech": [],
+      "environment_events": []
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。",
+          "final_shared_played_prefix": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "工作这块，劳动合同写的是澄禾社区诊所有限公司，岗位行政专员，首次入职是二零二二年八月十五日，现合同到二零二七年八月十四日。可工资流水的付款方只写澄禾诊所，我担心名称对不上。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。",
+          "final_shared_played_prefix": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "姓名、证件有效期和户籍地址可按身份证直接填；",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日期按首次入职日填写。流水里的“澄禾诊所”不要反过来改写表格，简称是否需要单位说明应问银行。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "工作这块，劳动合同写的是澄禾社区诊所有限公司，岗位行政专员，首次入职是二零二二年八月十五日，现合同到二零二七年八月十四日。可工资流水的付款方只写澄禾诊所，我担心名称对不上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "工作这块，劳动合同写的是澄禾社区诊所有限公司，岗位行政专员，首次入职是二零二二年八月十五日，现合同到二零二七年八月十四日。可工资流水的付款方只写澄禾诊所，我担心名称对不上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先停一下，我想先把收入口径弄清。表格要填税前年收入，收入证明写固定税前月收入七千七，另有浮动绩效。五月到十月的税前应发分别是八千二、八千三百五、八千一、八千六、八千三和八千四百五，这该怎么处理？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，",
+          "final_shared_played_prefix": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日",
+          "discarded_unheard_tail": "期按首次入职日填写。流水里的“澄禾诊所”不要反过来改写表格，简称是否需要单位说明应问银行。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "姓名、证件有效期和户籍地址可按身份证直接填；",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "工作这块，劳动合同写的是澄禾社区诊所有限公司，岗位行政专员，首次入职是二零二二年八月十五日，现合同到二零二七年八月十四日。可工资流水的付款方只写澄禾诊所，我担心名称对不上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先停一下，我想先把收入口径弄清。表格要填税前年收入，收入证明写固定税前月收入七千七，另有浮动绩效。五月到十月的税前应发分别是八千二、八千三百五、八千一、八千六、八千三和八千四百五，这该怎么处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "工作这块，劳动合同写的是澄禾社区诊所有限公司，岗位行政专员，首次入职是二零二二年八月十五日，现合同到二零二七年八月十四日。可工资流水的付款方只写澄禾诊所，我担心名称对不上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先停一下，我想先把收入口径弄清。表格要填税前年收入，收入证明写固定税前月收入七千七，另有浮动绩效。五月到十月的税前应发分别是八千二、八千三百五、八千一、八千六、八千三和八千四百五，这该怎么处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "流水里的六笔实发又是七千四百二十八元三角六分、七千五百八十元、七千三百九十六元四角二分、七千八百一十二元九角、七千五百一十四元一角八分和七千六百八十八元六角四分。这个平均数能写进收入栏吗？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。",
+          "final_shared_played_prefix": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "姓名、证件有效期和户籍地址可按身份证直接填；",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。",
+            "text": "好，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "不建议直接写。流水金额是扣税费和社保后的实发收入，可作为收入佐证，但不等于表格要求的税前年收入。把流水、工资单和收入证明一并备好，请银行明确采用哪一项及绩效算法。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "工作这块，劳动合同写的是澄禾社区诊所有限公司，岗位行政专员，首次入职是二零二二年八月十五日，现合同到二零二七年八月十四日。可工资流水的付款方只写澄禾诊所，我担心名称对不上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先停一下，我想先把收入口径弄清。表格要填税前年收入，收入证明写固定税前月收入七千七，另有浮动绩效。五月到十月的税前应发分别是八千二、八千三百五、八千一、八千六、八千三和八千四百五，这该怎么处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "流水里的六笔实发又是七千四百二十八元三角六分、七千五百八十元、七千三百九十六元四角二分、七千八百一十二元九角、七千五百一十四元一角八分和七千六百八十八元六角四分。这个平均数能写进收入栏吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不建议直接写。流水金额是扣税费和社保后的实发收入，可作为收入佐证，但不等于表格要求的税前年收入。把流水、工资单和收入证明一并备好，请银行明确采用哪一项及绩效算法。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "工作这块，劳动合同写的是澄禾社区诊所有限公司，岗位行政专员，首次入职是二零二二年八月十五日，现合同到二零二七年八月十四日。可工资流水的付款方只写澄禾诊所，我担心名称对不上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先停一下，我想先把收入口径弄清。表格要填税前年收入，收入证明写固定税前月收入七千七，另有浮动绩效。五月到十月的税前应发分别是八千二、八千三百五、八千一、八千六、八千三和八千四百五，这该怎么处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "流水里的六笔实发又是七千四百二十八元三角六分、七千五百八十元、七千三百九十六元四角二分、七千八百一十二元九角、七千五百一十四元一角八分和七千六百八十八元六角四分。这个平均数能写进收入栏吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不建议直接写。流水金额是扣税费和社保后的实发收入，可作为收入佐证，但不等于表格要求的税前年收入。把流水、工资单和收入证明一并备好，请银行明确采用哪一项及绩效算法。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我计划申请八万元，期限三十六个月，用途是购置家具和家电。预算里家具三万六、家电三万二、安装运输一万二，但没有订单、合同、发票或收款人信息。这些现在能填到哪一步？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A005",
+          "at_user_onset_heard_prefix": "不建议直接写。流水金额是扣税费和社保后的实发收入，可作为收入佐证，但不等于表格要求的税前年收入。把流水、工资单和收入证明一并备好，请银行明确采用哪一项及绩效算法。",
+          "final_shared_played_prefix": "不建议直接写。流水金额是扣税费和社保后的实发收入，可作为收入佐证，但不等于表格要求的税前年收入。把流水、工资单和收入证明一并备好，请银行明确采用哪一项及绩效算法。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "姓名、证件有效期和户籍地址可按身份证直接填；",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。",
+            "text": "好，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "申请金额八万元、期限三十六个月可直接填，用途可如实写“购置家具和家电”，现有预算也正好合计八万元。预算不是正式用途凭证，是否要订单、报价、合同或收款信息需问银行。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "工作这块，劳动合同写的是澄禾社区诊所有限公司，岗位行政专员，首次入职是二零二二年八月十五日，现合同到二零二七年八月十四日。可工资流水的付款方只写澄禾诊所，我担心名称对不上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先停一下，我想先把收入口径弄清。表格要填税前年收入，收入证明写固定税前月收入七千七，另有浮动绩效。五月到十月的税前应发分别是八千二、八千三百五、八千一、八千六、八千三和八千四百五，这该怎么处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "流水里的六笔实发又是七千四百二十八元三角六分、七千五百八十元、七千三百九十六元四角二分、七千八百一十二元九角、七千五百一十四元一角八分和七千六百八十八元六角四分。这个平均数能写进收入栏吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不建议直接写。流水金额是扣税费和社保后的实发收入，可作为收入佐证，但不等于表格要求的税前年收入。把流水、工资单和收入证明一并备好，请银行明确采用哪一项及绩效算法。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我计划申请八万元，期限三十六个月，用途是购置家具和家电。预算里家具三万六、家电三万二、安装运输一万二，但没有订单、合同、发票或收款人信息。这些现在能填到哪一步？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "申请金额八万元、期限三十六个月可直接填，用途可如实写“购置家具和家电”，现有预算也正好合计八万元。预算不是正式用途凭证，是否要订单、报价、合同或收款信息需问银行。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "工作这块，劳动合同写的是澄禾社区诊所有限公司，岗位行政专员，首次入职是二零二二年八月十五日，现合同到二零二七年八月十四日。可工资流水的付款方只写澄禾诊所，我担心名称对不上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先停一下，我想先把收入口径弄清。表格要填税前年收入，收入证明写固定税前月收入七千七，另有浮动绩效。五月到十月的税前应发分别是八千二、八千三百五、八千一、八千六、八千三和八千四百五，这该怎么处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "流水里的六笔实发又是七千四百二十八元三角六分、七千五百八十元、七千三百九十六元四角二分、七千八百一十二元九角、七千五百一十四元一角八分和七千六百八十八元六角四分。这个平均数能写进收入栏吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不建议直接写。流水金额是扣税费和社保后的实发收入，可作为收入佐证，但不等于表格要求的税前年收入。把流水、工资单和收入证明一并备好，请银行明确采用哪一项及绩效算法。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我计划申请八万元，期限三十六个月，用途是购置家具和家电。预算里家具三万六、家电三万二、安装运输一万二，但没有订单、合同、发票或收款人信息。这些现在能填到哪一步？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "申请金额八万元、期限三十六个月可直接填，用途可如实写“购置家具和家电”，现有预算也正好合计八万元。预算不是正式用途凭证，是否要订单、报价、合同或收款信息需问银行。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "负债栏也让我犹豫。我没有没还清的个人贷款或分期，但信用卡有二千一百八十元当期账单，十一月十八日才到还款日，没有逾期。其他负债能不能填无？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A006",
+          "at_user_onset_heard_prefix": "申请金额八万元、期限三十六个月可直接填，用途可如实写“购置家具和家电”，现有预算也正好合计八万元。预算不是正式用途凭证，是否要订单、报价、合同或收款信息需问银行。",
+          "final_shared_played_prefix": "申请金额八万元、期限三十六个月可直接填，用途可如实写“购置家具和家电”，现有预算也正好合计八万元。预算不是正式用途凭证，是否要订单、报价、合同或收款信息需问银行。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "姓名、证件有效期和户籍地址可按身份证直接填；",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。",
+            "text": "好，明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可以确认没有未结清的个人贷款或分期，但不能据此直接把其他负债填成无。信用卡当期账单是否计入该栏，各银行口径可能不同；询问时说明金额、未到期、未逾期且未分期。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "工作这块，劳动合同写的是澄禾社区诊所有限公司，岗位行政专员，首次入职是二零二二年八月十五日，现合同到二零二七年八月十四日。可工资流水的付款方只写澄禾诊所，我担心名称对不上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先停一下，我想先把收入口径弄清。表格要填税前年收入，收入证明写固定税前月收入七千七，另有浮动绩效。五月到十月的税前应发分别是八千二、八千三百五、八千一、八千六、八千三和八千四百五，这该怎么处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "流水里的六笔实发又是七千四百二十八元三角六分、七千五百八十元、七千三百九十六元四角二分、七千八百一十二元九角、七千五百一十四元一角八分和七千六百八十八元六角四分。这个平均数能写进收入栏吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不建议直接写。流水金额是扣税费和社保后的实发收入，可作为收入佐证，但不等于表格要求的税前年收入。把流水、工资单和收入证明一并备好，请银行明确采用哪一项及绩效算法。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我计划申请八万元，期限三十六个月，用途是购置家具和家电。预算里家具三万六、家电三万二、安装运输一万二，但没有订单、合同、发票或收款人信息。这些现在能填到哪一步？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "申请金额八万元、期限三十六个月可直接填，用途可如实写“购置家具和家电”，现有预算也正好合计八万元。预算不是正式用途凭证，是否要订单、报价、合同或收款信息需问银行。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "负债栏也让我犹豫。我没有没还清的个人贷款或分期，但信用卡有二千一百八十元当期账单，十一月十八日才到还款日，没有逾期。其他负债能不能填无？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "可以确认没有未结清的个人贷款或分期，但不能据此直接把其他负债填成无。信用卡当期账单是否计入该栏，各银行口径可能不同；询问时说明金额、未到期、未逾期且未分期。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "工作这块，劳动合同写的是澄禾社区诊所有限公司，岗位行政专员，首次入职是二零二二年八月十五日，现合同到二零二七年八月十四日。可工资流水的付款方只写澄禾诊所，我担心名称对不上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先停一下，我想先把收入口径弄清。表格要填税前年收入，收入证明写固定税前月收入七千七，另有浮动绩效。五月到十月的税前应发分别是八千二、八千三百五、八千一、八千六、八千三和八千四百五，这该怎么处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "流水里的六笔实发又是七千四百二十八元三角六分、七千五百八十元、七千三百九十六元四角二分、七千八百一十二元九角、七千五百一十四元一角八分和七千六百八十八元六角四分。这个平均数能写进收入栏吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不建议直接写。流水金额是扣税费和社保后的实发收入，可作为收入佐证，但不等于表格要求的税前年收入。把流水、工资单和收入证明一并备好，请银行明确采用哪一项及绩效算法。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我计划申请八万元，期限三十六个月，用途是购置家具和家电。预算里家具三万六、家电三万二、安装运输一万二，但没有订单、合同、发票或收款人信息。这些现在能填到哪一步？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "申请金额八万元、期限三十六个月可直接填，用途可如实写“购置家具和家电”，现有预算也正好合计八万元。预算不是正式用途凭证，是否要订单、报价、合同或收款信息需问银行。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "负债栏也让我犹豫。我没有没还清的个人贷款或分期，但信用卡有二千一百八十元当期账单，十一月十八日才到还款日，没有逾期。其他负债能不能填无？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "可以确认没有未结清的个人贷款或分期，但不能据此直接把其他负债填成无。信用卡当期账单是否计入该栏，各银行口径可能不同；询问时说明金额、未到期、未逾期且未分期。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "紧急联系人我有合适的亲属人选，但还没征得对方同意，也不知道首次交表是不是必须填全。申请人声明、授权和签名日期，我现在要不要先签？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A007",
+          "at_user_onset_heard_prefix": "可以确认没有未结清的个人贷款或分期，但不能据此直接把其他负债填成无。信用卡当期账单是否计入该栏，各银行口径可能不同；询问时说明金额、未到期、未逾期且未分期。",
+          "final_shared_played_prefix": "可以确认没有未结清的个人贷款或分期，但不能据此直接把其他负债填成无。信用卡当期账单是否计入该栏，各银行口径可能不同；询问时说明金额、未到期、未逾期且未分期。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "姓名、证件有效期和户籍地址可按身份证直接填；",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。",
+            "text": "好，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A007",
+            "after_text": "可以确认没有未结清的个人贷款或分期，但不能据此直接把其他负债填成无。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "联系人姓名和电话先不要作为完整提交信息，先问是否首次必填，并征得本人同意。声明、征信授权和签名日期也别预签空白表，等所有栏目核对完成、确认授权内容后再签。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "工作这块，劳动合同写的是澄禾社区诊所有限公司，岗位行政专员，首次入职是二零二二年八月十五日，现合同到二零二七年八月十四日。可工资流水的付款方只写澄禾诊所，我担心名称对不上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先停一下，我想先把收入口径弄清。表格要填税前年收入，收入证明写固定税前月收入七千七，另有浮动绩效。五月到十月的税前应发分别是八千二、八千三百五、八千一、八千六、八千三和八千四百五，这该怎么处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "流水里的六笔实发又是七千四百二十八元三角六分、七千五百八十元、七千三百九十六元四角二分、七千八百一十二元九角、七千五百一十四元一角八分和七千六百八十八元六角四分。这个平均数能写进收入栏吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不建议直接写。流水金额是扣税费和社保后的实发收入，可作为收入佐证，但不等于表格要求的税前年收入。把流水、工资单和收入证明一并备好，请银行明确采用哪一项及绩效算法。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我计划申请八万元，期限三十六个月，用途是购置家具和家电。预算里家具三万六、家电三万二、安装运输一万二，但没有订单、合同、发票或收款人信息。这些现在能填到哪一步？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "申请金额八万元、期限三十六个月可直接填，用途可如实写“购置家具和家电”，现有预算也正好合计八万元。预算不是正式用途凭证，是否要订单、报价、合同或收款信息需问银行。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "负债栏也让我犹豫。我没有没还清的个人贷款或分期，但信用卡有二千一百八十元当期账单，十一月十八日才到还款日，没有逾期。其他负债能不能填无？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "可以确认没有未结清的个人贷款或分期，但不能据此直接把其他负债填成无。信用卡当期账单是否计入该栏，各银行口径可能不同；询问时说明金额、未到期、未逾期且未分期。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "紧急联系人我有合适的亲属人选，但还没征得对方同意，也不知道首次交表是不是必须填全。申请人声明、授权和签名日期，我现在要不要先签？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "联系人姓名和电话先不要作为完整提交信息，先问是否首次必填，并征得本人同意。声明、征信授权和签名日期也别预签空白表，等所有栏目核对完成、确认授权内容后再签。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "工作这块，劳动合同写的是澄禾社区诊所有限公司，岗位行政专员，首次入职是二零二二年八月十五日，现合同到二零二七年八月十四日。可工资流水的付款方只写澄禾诊所，我担心名称对不上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先停一下，我想先把收入口径弄清。表格要填税前年收入，收入证明写固定税前月收入七千七，另有浮动绩效。五月到十月的税前应发分别是八千二、八千三百五、八千一、八千六、八千三和八千四百五，这该怎么处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "流水里的六笔实发又是七千四百二十八元三角六分、七千五百八十元、七千三百九十六元四角二分、七千八百一十二元九角、七千五百一十四元一角八分和七千六百八十八元六角四分。这个平均数能写进收入栏吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不建议直接写。流水金额是扣税费和社保后的实发收入，可作为收入佐证，但不等于表格要求的税前年收入。把流水、工资单和收入证明一并备好，请银行明确采用哪一项及绩效算法。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我计划申请八万元，期限三十六个月，用途是购置家具和家电。预算里家具三万六、家电三万二、安装运输一万二，但没有订单、合同、发票或收款人信息。这些现在能填到哪一步？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "申请金额八万元、期限三十六个月可直接填，用途可如实写“购置家具和家电”，现有预算也正好合计八万元。预算不是正式用途凭证，是否要订单、报价、合同或收款信息需问银行。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "负债栏也让我犹豫。我没有没还清的个人贷款或分期，但信用卡有二千一百八十元当期账单，十一月十八日才到还款日，没有逾期。其他负债能不能填无？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "可以确认没有未结清的个人贷款或分期，但不能据此直接把其他负债填成无。信用卡当期账单是否计入该栏，各银行口径可能不同；询问时说明金额、未到期、未逾期且未分期。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "紧急联系人我有合适的亲属人选，但还没征得对方同意，也不知道首次交表是不是必须填全。申请人声明、授权和签名日期，我现在要不要先签？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "联系人姓名和电话先不要作为完整提交信息，先问是否首次必填，并征得本人同意。声明、征信授权和签名日期也别预签空白表，等所有栏目核对完成、确认授权内容后再签。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "提示单只明确写了有效身份证件、近六个月收入流水、工作及收入证明，其他只说按申请情况补充。你现在帮我按可直接填、要向银行核实、还要补齐或确认，完整归一遍吧。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A008",
+          "at_user_onset_heard_prefix": "联系人姓名和电话先不要作为完整提交信息，先问是否首次必填，并征得本人同意。声明、征信授权和签名日期也别预签空白表，等所有栏目核对完成、确认授权内容后再签。",
+          "final_shared_played_prefix": "联系人姓名和电话先不要作为完整提交信息，先问是否首次必填，并征得本人同意。声明、征信授权和签名日期也别预签空白表，等所有栏目核对完成、确认授权内容后再签。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "姓名、证件有效期和户籍地址可按身份证直接填；",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。",
+            "text": "好，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A007",
+            "after_text": "可以确认没有未结清的个人贷款或分期，但不能据此直接把其他负债填成无。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可直接填：身份信息、两个地址事实、单位全称、岗位、首次入职日、申请金额、期限和用途。需核实：居住证明效力、单位简称、收入与绩效口径、信用卡账单归类、联系人必填性、用途凭证和征信要求。待补齐或确认：银行认可的居住及用途材料、可能需要的简称说明、经同意的联系人资料；声明、授权和签名留待整表核验后。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U10",
+        "assistant_id": "A010",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "工作这块，劳动合同写的是澄禾社区诊所有限公司，岗位行政专员，首次入职是二零二二年八月十五日，现合同到二零二七年八月十四日。可工资流水的付款方只写澄禾诊所，我担心名称对不上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先停一下，我想先把收入口径弄清。表格要填税前年收入，收入证明写固定税前月收入七千七，另有浮动绩效。五月到十月的税前应发分别是八千二、八千三百五、八千一、八千六、八千三和八千四百五，这该怎么处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "流水里的六笔实发又是七千四百二十八元三角六分、七千五百八十元、七千三百九十六元四角二分、七千八百一十二元九角、七千五百一十四元一角八分和七千六百八十八元六角四分。这个平均数能写进收入栏吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不建议直接写。流水金额是扣税费和社保后的实发收入，可作为收入佐证，但不等于表格要求的税前年收入。把流水、工资单和收入证明一并备好，请银行明确采用哪一项及绩效算法。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我计划申请八万元，期限三十六个月，用途是购置家具和家电。预算里家具三万六、家电三万二、安装运输一万二，但没有订单、合同、发票或收款人信息。这些现在能填到哪一步？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "申请金额八万元、期限三十六个月可直接填，用途可如实写“购置家具和家电”，现有预算也正好合计八万元。预算不是正式用途凭证，是否要订单、报价、合同或收款信息需问银行。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "负债栏也让我犹豫。我没有没还清的个人贷款或分期，但信用卡有二千一百八十元当期账单，十一月十八日才到还款日，没有逾期。其他负债能不能填无？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "可以确认没有未结清的个人贷款或分期，但不能据此直接把其他负债填成无。信用卡当期账单是否计入该栏，各银行口径可能不同；询问时说明金额、未到期、未逾期且未分期。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "紧急联系人我有合适的亲属人选，但还没征得对方同意，也不知道首次交表是不是必须填全。申请人声明、授权和签名日期，我现在要不要先签？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "联系人姓名和电话先不要作为完整提交信息，先问是否首次必填，并征得本人同意。声明、征信授权和签名日期也别预签空白表，等所有栏目核对完成、确认授权内容后再签。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "提示单只明确写了有效身份证件、近六个月收入流水、工作及收入证明，其他只说按申请情况补充。你现在帮我按可直接填、要向银行核实、还要补齐或确认，完整归一遍吧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "可直接填：身份信息、两个地址事实、单位全称、岗位、首次入职日、申请金额、期限和用途。需核实：居住证明效力、单位简称、收入与绩效口径、信用卡账单归类、联系人必填性、用途凭证和征信要求。待补齐或确认：银行认可的居住及用途材料、可能需要的简称说明、经同意的联系人资料；声明、授权和签名留待整表核验后。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "工作这块，劳动合同写的是澄禾社区诊所有限公司，岗位行政专员，首次入职是二零二二年八月十五日，现合同到二零二七年八月十四日。可工资流水的付款方只写澄禾诊所，我担心名称对不上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先停一下，我想先把收入口径弄清。表格要填税前年收入，收入证明写固定税前月收入七千七，另有浮动绩效。五月到十月的税前应发分别是八千二、八千三百五、八千一、八千六、八千三和八千四百五，这该怎么处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "流水里的六笔实发又是七千四百二十八元三角六分、七千五百八十元、七千三百九十六元四角二分、七千八百一十二元九角、七千五百一十四元一角八分和七千六百八十八元六角四分。这个平均数能写进收入栏吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不建议直接写。流水金额是扣税费和社保后的实发收入，可作为收入佐证，但不等于表格要求的税前年收入。把流水、工资单和收入证明一并备好，请银行明确采用哪一项及绩效算法。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我计划申请八万元，期限三十六个月，用途是购置家具和家电。预算里家具三万六、家电三万二、安装运输一万二，但没有订单、合同、发票或收款人信息。这些现在能填到哪一步？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "申请金额八万元、期限三十六个月可直接填，用途可如实写“购置家具和家电”，现有预算也正好合计八万元。预算不是正式用途凭证，是否要订单、报价、合同或收款信息需问银行。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "负债栏也让我犹豫。我没有没还清的个人贷款或分期，但信用卡有二千一百八十元当期账单，十一月十八日才到还款日，没有逾期。其他负债能不能填无？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "可以确认没有未结清的个人贷款或分期，但不能据此直接把其他负债填成无。信用卡当期账单是否计入该栏，各银行口径可能不同；询问时说明金额、未到期、未逾期且未分期。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "紧急联系人我有合适的亲属人选，但还没征得对方同意，也不知道首次交表是不是必须填全。申请人声明、授权和签名日期，我现在要不要先签？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "联系人姓名和电话先不要作为完整提交信息，先问是否首次必填，并征得本人同意。声明、征信授权和签名日期也别预签空白表，等所有栏目核对完成、确认授权内容后再签。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "提示单只明确写了有效身份证件、近六个月收入流水、工作及收入证明，其他只说按申请情况补充。你现在帮我按可直接填、要向银行核实、还要补齐或确认，完整归一遍吧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "可直接填：身份信息、两个地址事实、单位全称、岗位、首次入职日、申请金额、期限和用途。需核实：居住证明效力、单位简称、收入与绩效口径、信用卡账单归类、联系人必填性、用途凭证和征信要求。待补齐或确认：银行认可的居住及用途材料、可能需要的简称说明、经同意的联系人资料；声明、授权和签名留待整表核验后。"
+          },
+          {
+            "role": "user",
+            "id": "U10",
+            "text": "这样就清楚多了。最后请把我联系银行时必须问的事项压成一份简短提问清单，我照着问，免得漏掉。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A009",
+          "at_user_onset_heard_prefix": "可直接填：身份信息、两个地址事实、单位全称、岗位、首次入职日、申请金额、期限和用途。需核实：居住证明效力、单位简称、收入与绩效口径、信用卡账单归类、联系人必填性、用途凭证和征信要求。待补齐或确认：银行认可的居住及用途材料、可能需要的简称说明、经同意的联系人资料；声明、授权和签名留待整表核验后。",
+          "final_shared_played_prefix": "可直接填：身份信息、两个地址事实、单位全称、岗位、首次入职日、申请金额、期限和用途。需核实：居住证明效力、单位简称、收入与绩效口径、信用卡账单归类、联系人必填性、用途凭证和征信要求。待补齐或确认：银行认可的居住及用途材料、可能需要的简称说明、经同意的联系人资料；声明、授权和签名留待整表核验后。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "姓名、证件有效期和户籍地址可按身份证直接填；",
+            "text": "嗯，清楚",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A004",
+            "after_text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。",
+            "text": "好，明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A007",
+            "after_text": "可以确认没有未结清的个人贷款或分期，但不能据此直接把其他负债填成无。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC04",
+            "target_assistant_id": "A009",
+            "after_text": "可直接填：身份信息、两个地址事实、单位全称、岗位、首次入职日、申请金额、期限和用途。",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "可依次问：租赁合同能否作居住证明；单位简称是否需说明；税前年收入采用固定收入还是含绩效平均；信用卡未到期账单是否填其他负债；首次提交是否必须填联系人；用途需哪些凭证；征信由银行查询还是要本人提供。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A002",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；"
+          }
+        ],
+        "at_event_onset_heard_prefix": "姓名、证件有效期和户籍地址可按身份证直接填；",
+        "event_text": "嗯，清楚",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC02",
+        "kind": "backchannels",
+        "target_assistant_id": "A004",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "工作这块，劳动合同写的是澄禾社区诊所有限公司，岗位行政专员，首次入职是二零二二年八月十五日，现合同到二零二七年八月十四日。可工资流水的付款方只写澄禾诊所，我担心名称对不上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先停一下，我想先把收入口径弄清。表格要填税前年收入，收入证明写固定税前月收入七千七，另有浮动绩效。五月到十月的税前应发分别是八千二、八千三百五、八千一、八千六、八千三和八千四百五，这该怎么处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。",
+        "event_text": "好，明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC03",
+        "kind": "backchannels",
+        "target_assistant_id": "A007",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "工作这块，劳动合同写的是澄禾社区诊所有限公司，岗位行政专员，首次入职是二零二二年八月十五日，现合同到二零二七年八月十四日。可工资流水的付款方只写澄禾诊所，我担心名称对不上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先停一下，我想先把收入口径弄清。表格要填税前年收入，收入证明写固定税前月收入七千七，另有浮动绩效。五月到十月的税前应发分别是八千二、八千三百五、八千一、八千六、八千三和八千四百五，这该怎么处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "流水里的六笔实发又是七千四百二十八元三角六分、七千五百八十元、七千三百九十六元四角二分、七千八百一十二元九角、七千五百一十四元一角八分和七千六百八十八元六角四分。这个平均数能写进收入栏吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不建议直接写。流水金额是扣税费和社保后的实发收入，可作为收入佐证，但不等于表格要求的税前年收入。把流水、工资单和收入证明一并备好，请银行明确采用哪一项及绩效算法。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我计划申请八万元，期限三十六个月，用途是购置家具和家电。预算里家具三万六、家电三万二、安装运输一万二，但没有订单、合同、发票或收款人信息。这些现在能填到哪一步？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "申请金额八万元、期限三十六个月可直接填，用途可如实写“购置家具和家电”，现有预算也正好合计八万元。预算不是正式用途凭证，是否要订单、报价、合同或收款信息需问银行。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "负债栏也让我犹豫。我没有没还清的个人贷款或分期，但信用卡有二千一百八十元当期账单，十一月十八日才到还款日，没有逾期。其他负债能不能填无？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "可以确认没有未结清的个人贷款或分期，但不能据此直接把其他负债填成无。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "可以确认没有未结清的个人贷款或分期，但不能据此直接把其他负债填成无。",
+        "event_text": "嗯",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC04",
+        "kind": "backchannels",
+        "target_assistant_id": "A009",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "我第一次填个人消费贷款申请表，怕把收入、地址这些容易混的地方填错。身份证、合同、工资材料都在手边，你能陪我逐项分清哪些能填、哪些要问银行吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以。我们按“可直接填、要问银行、还缺材料”三类走。先看身份和地址栏：请读姓名、证件有效期、身份证登记地址，以及现住址有什么依据；证件号不用念。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "姓名是周岚，身份证有效期从二零二一年三月十二日到二零四一年三月十二日，登记住址是武汉市洪山区珞狮路二百一十八号。我现在租住在武汉市武昌区中北路一百六十六号，有租赁合同，租期到二零二七年三月三十一日。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "姓名、证件有效期和户籍地址可按身份证直接填；现居住地址可按租赁合同填武汉市武昌区中北路一百六十六号，但租赁合同是否足够作为居住证明，要向银行确认。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "工作这块，劳动合同写的是澄禾社区诊所有限公司，岗位行政专员，首次入职是二零二二年八月十五日，现合同到二零二七年八月十四日。可工资流水的付款方只写澄禾诊所，我担心名称对不上。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "工作单位栏先按劳动合同填写“澄禾社区诊所有限公司”，岗位填“行政专员”，入职日"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "先停一下，我想先把收入口径弄清。表格要填税前年收入，收入证明写固定税前月收入七千七，另有浮动绩效。五月到十月的税前应发分别是八千二、八千三百五、八千一、八千六、八千三和八千四百五，这该怎么处理？"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "固定口径年化是九万二千四；六个月税前应发合计五万，月均约八千三百三十三。两者不能混用，绩效按实际平均还是只认固定收入要问银行，确认前先别填最终年收入。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "流水里的六笔实发又是七千四百二十八元三角六分、七千五百八十元、七千三百九十六元四角二分、七千八百一十二元九角、七千五百一十四元一角八分和七千六百八十八元六角四分。这个平均数能写进收入栏吗？"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "不建议直接写。流水金额是扣税费和社保后的实发收入，可作为收入佐证，但不等于表格要求的税前年收入。把流水、工资单和收入证明一并备好，请银行明确采用哪一项及绩效算法。"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "我计划申请八万元，期限三十六个月，用途是购置家具和家电。预算里家具三万六、家电三万二、安装运输一万二，但没有订单、合同、发票或收款人信息。这些现在能填到哪一步？"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "申请金额八万元、期限三十六个月可直接填，用途可如实写“购置家具和家电”，现有预算也正好合计八万元。预算不是正式用途凭证，是否要订单、报价、合同或收款信息需问银行。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "负债栏也让我犹豫。我没有没还清的个人贷款或分期，但信用卡有二千一百八十元当期账单，十一月十八日才到还款日，没有逾期。其他负债能不能填无？"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "可以确认没有未结清的个人贷款或分期，但不能据此直接把其他负债填成无。信用卡当期账单是否计入该栏，各银行口径可能不同；询问时说明金额、未到期、未逾期且未分期。"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "紧急联系人我有合适的亲属人选，但还没征得对方同意，也不知道首次交表是不是必须填全。申请人声明、授权和签名日期，我现在要不要先签？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "联系人姓名和电话先不要作为完整提交信息，先问是否首次必填，并征得本人同意。声明、征信授权和签名日期也别预签空白表，等所有栏目核对完成、确认授权内容后再签。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "提示单只明确写了有效身份证件、近六个月收入流水、工作及收入证明，其他只说按申请情况补充。你现在帮我按可直接填、要向银行核实、还要补齐或确认，完整归一遍吧。"
+          },
+          {
+            "role": "assistant",
+            "id": "A009",
+            "text": "可直接填：身份信息、两个地址事实、单位全称、岗位、首次入职日、申请金额、期限和用途。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "可直接填：身份信息、两个地址事实、单位全称、岗位、首次入职日、申请金额、期限和用途。",
+        "event_text": "对",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}

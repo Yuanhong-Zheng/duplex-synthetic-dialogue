@@ -1,0 +1,87 @@
+{
+  "scenario": {
+    "domain_id": "D30",
+    "domain": "游戏、电竞与数字娱乐",
+    "domain_definition": "覆盖电子游戏、实时语音协作、电竞解说、桌游棋类、游戏内容和数字娱乐创作，区别于一般猜谜问答。",
+    "scenario_id": "D30-S08",
+    "scenario": "游戏创作、直播与互动节目",
+    "requested_examples_per_style": 5,
+    "existing_example_task_seeds": [],
+    "dialogue_length_plan": {
+      "schema": "duplex_v2.dialogue_length_plan.v1",
+      "tier": "medium",
+      "target_turns": 10,
+      "min_turns": 9,
+      "max_turns": 11
+    },
+    "dialogue_length_instruction": "本条完整对话目标为 10 个主轮，允许 9–11 轮；一个主轮指用户主表达及对应助手回复，附和和旁语不计主轮。请为该长度匹配足够的真实子目标、必要信息量与自然澄清空间，使每轮都有新的信息、决定或任务进展。禁止拆句凑轮、重复已确认内容或无意义灌水；也不能为了达到轮数虚构已完成操作或任务事实。这只是离线生成的长度计划，不是用户已知事实，不应出现在人物台词中；保持当前阶段规定的输出 JSON schema 不变。",
+    "text_policy": {
+      "schema": "duplex_v2.text_policy.v1",
+      "workflow_version": "v2.5",
+      "primary": {
+        "profile": "qiniu-chat",
+        "endpoint": "https://api.modelink.ai/v1/chat/completions"
+      },
+      "models": {
+        "sol": "openai/gpt-5.6-sol",
+        "luna": "openai/gpt-5.6-luna"
+      },
+      "roles": {
+        "stage0_generation": "luna",
+        "stage1_generation": "luna",
+        "stage2_generation": "sol",
+        "script_generation": "sol",
+        "script_patch": "sol",
+        "judge": "sol",
+        "compaction_first": "luna",
+        "compaction_later": "sol"
+      },
+      "reasoning_effort_policy": "default",
+      "stage0_max_judge_attempts": 5,
+      "content_max_repairs": 5,
+      "json_parse_max_retries": 3,
+      "length_compaction_max_attempts": 3,
+      "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+      "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+      "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+    }
+  },
+  "current_example_tasks": {
+    "开放式互动": [
+      "共同设计一档围绕游戏文化的直播互动节目，探索节目主题、环节和现场节奏。",
+      "来一场即兴游戏解说练习，尝试用不同风格讲述一段虚构的比赛进程。",
+      "把观众参与机制做成创意挑战，讨论怎样让弹幕投票、竞猜和临场任务更有趣。",
+      "以游戏主播的身份排练一次开场与过渡，练习在娱乐性、信息量和个人风格之间取得平衡。",
+      "共同构思一款适合直播呈现的轻量游戏，并推演玩家、主持人与观众之间可能形成的互动。"
+    ],
+    "结构化整理": [
+      "把随后提供的直播节目点子按受众、互动强度和制作复杂度分类，整理成可比较的方案清单。",
+      "根据给出的游戏内容、节目环节和可用素材，筛选出适合串成一场直播的组合，并排出流程顺序。",
+      "整理一批直播选题，分别标注其核心看点、所需准备、观众参与方式和潜在冷场环节。",
+      "核对给出的节目流程与各环节素材，找出重复、缺口和衔接不顺的地方，再形成一版调整后的时间线。",
+      "将提供的主播口播、观众互动和游戏演示片段按用途归档，编排成一份便于制作和复用的内容清单。"
+    ],
+    "混合型": [
+      "结合直播互动节目的设计原则，比较随后提出的几种节目构想，判断哪一种最适合目标观众并说明取舍。",
+      "围绕一组具体的游戏直播片段和解说风格，运用叙事节奏与观众注意力的判断框架，调整出更有吸引力的呈现方案。",
+      "面对给出的节目环节冲突和制作条件，借助互动性、可执行性与娱乐效果的权衡标准，重新选择并组合流程。",
+      "根据具体的主播定位、游戏类型和观众反馈，讨论内容调性应如何调整，并形成一套连贯的直播表达方向。",
+      "从提供的观众评论、节目数据摘要和备选改版点出发，结合留存与参与感的通用判断方法，确定下一轮互动机制。"
+    ]
+  },
+  "judge_findings": [
+    {
+      "severity": "must_fix",
+      "path": "/example_tasks/混合型/3",
+      "problem": "任务包含具体材料判断和结果产出，但未明确引入可复用的通用框架，不足以构成混合型。",
+      "evidence": "根据具体的主播定位、游戏类型和观众反馈，讨论内容调性应如何调整，并形成一套连贯的直播表达方向。",
+      "repair": "补充用于判断的通用框架，如主播定位一致性、受众预期和游戏内容适配度等标准，再据此分析所给材料。"
+    }
+  ],
+  "repair_targets": [
+    {
+      "path": "/example_tasks/混合型/3",
+      "current_value": "根据具体的主播定位、游戏类型和观众反馈，讨论内容调性应如何调整，并形成一套连贯的直播表达方向。"
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "episode_situation": "周日晚上，用户独自在家中书房整理个人成长笔记，近期工作方向有所变化，使他比平时更频繁地想起早年职业选择、告别和被肯定的片段。那些回忆出现时带来的感受并不相同，有的温暖，有的遗憾，他暂时看不出它们为何在当下集中浮现。桌上只有一本尚未整理完的笔记和几张空白便笺，没有连续日记可供核对，因此他更需要先理解常见的记忆与情绪机制，再从触发情境、身体感受、未完成需要和个人价值等线索逐步辨认。当前尚未确定的是，这些片段主要在回应现实压力、身份变化或某种仍被珍视的意义，以及怎样判断它们只是普通回想，还是已经明显影响日常生活。",
+  "task_reference_data": [],
+  "environment_audio": "右后方约两米处的通风扇持续低声运转，机械声平稳而均匀。房间其余声响很少，底噪保持在较低水平。",
+  "estimated_snr_db": 31,
+  "constraints": [
+    {
+      "constraint_id": "C01",
+      "text": "讨论应先提供易理解的一般解释，再结合用户自愿补充的具体回忆线索逐步分析，不要求一次复原完整人生经历。",
+      "kind": "soft"
+    }
+  ],
+  "safety_limits": [],
+  "soundscape_plan": {
+    "schema": "duplex_v2.soundscape_plan.v4",
+    "mode": "layered",
+    "ambient_layers": [
+      {
+        "source_id": "AMB01",
+        "candidates": [
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "reason": "稳定的室内机械通风声与安静书房环境相符，可作为持续低强度底色。",
+            "environment_audio": "右后方约两米处传来平稳、低沉的通风扇运转声，音量基本不变。"
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "reason": "连续而均匀的风扇声适合独自在室内整理笔记的场景，不会引入额外人物或事件。",
+            "environment_audio": "房间右后方持续响着轻微的机械风声，节奏均匀，背景较安静。"
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "reason": "真实的低强度机械风扇录音能够形成书房内稳定、克制的环境底噪。",
+            "environment_audio": "右后侧的通风设备低声连续运转，声音稳定，没有明显起伏。"
+          }
+        ]
+      }
+    ],
+    "environment_events": [
+      {
+        "source_id": "ENV01",
+        "candidates": [
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "reason": "用户桌上放有成长笔记和空白便笺，短促的纸页翻动声有明确场景来源。",
+            "environment_audio": "近处桌面传来一次短促的纸页翻动声，随即恢复安静。"
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "reason": "完整的纸张翻动声与用户正在整理纸质笔记的当前活动相容。",
+            "environment_audio": "正前方近处响起一阵轻微的纸张翻动和摩擦声，音量很快落下。"
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "reason": "短暂纸页声可自然来自桌上的笔记或便笺，不改变情境事实。",
+            "environment_audio": "桌面方向出现一次清晰但不响亮的纸页拨动声，持续不到一秒。"
+          }
+        ]
+      }
+    ],
+    "side_speech_eligibility": {
+      "user_to_third_party": {
+        "compatible": false,
+        "reason": "用户当前独自在书房，故事中没有明确同场且可接收话语的旁人。",
+        "source": null
+      },
+      "third_party": {
+        "compatible": false,
+        "reason": "当前场景未设置任何同场第三方人物，也没有合理的第三方发声来源。",
+        "source": null
+      },
+      "machine": {
+        "compatible": false,
+        "reason": "通风扇只能形成机械底噪，场景中没有能够播放语音的机器来源。",
+        "source": null
+      }
+    }
+  }
+}

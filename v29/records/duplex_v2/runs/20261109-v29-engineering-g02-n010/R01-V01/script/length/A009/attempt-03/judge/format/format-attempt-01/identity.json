@@ -1,0 +1,2595 @@
+{
+  "model": "openai/gpt-5.6-sol",
+  "provider": "openai",
+  "prompt": "你是全双工语音数据 V2 的独立内容与因果 Judge。审查一次性生成的完整双人剧本能否直接 TTS 执行，不替作者写剧本，不按词表猜语义。输入包含冻结源事实 frozen_source、完整候选 script，以及程序重建的 reconstructed_heard_context 和 reconstructed_event_heard_context。后两者是各主轮与附和/旁语锚点的实际可见前缀，不能把完整作者脚本当成用户已听内容。\n\n[冻结轮数计划]\n本例目标 9 轮，允许 9–10 轮；程序只检查允许范围。审查是否有足够的真实任务阶段和信息增量，不要把目标当作每次必须精确相等的硬门，也不要以接近目标为由认可填充轮。不得要求为长档增加未冻结事实、无关人物、重复确认或无请求的长回答。\n\n[冻结用户表达画像]\nfrozen_source.user_voice.interaction_profile 是本例同一用户已冻结的表达与互动倾向；formality 控制口语/正式程度，directness 控制委婉/直接表达，emotional_expressiveness 控制情绪表达外显程度，verbosity 控制用户表达简略/充分程度，initiative、caution、patience 是主动性、谨慎度、耐心的稳定倾向，behavioral_notes 给出可观察的具体方向。用它影响用户主表达和附和的措辞、信息组织与自然互动倾向，整段保持同一人的总体一致性，不要求每轮机械展示所有维度，也不把维度名称念出来。这不是固定当前情绪；用户此刻的情绪及其变化由 Stage 2 情境与已发生对话推演，同一人可以随情境着急、放松或失望。画像不能改变事实、任务意图、角色职责和实际已听内容；不能把画像当作新人物/事实/风险来源。主动性高不等于凭空补材料，谨慎度高不等于无故拒绝，耐心低不等于粗鲁或强制打断。打断/附和仍须有真实语义依据和合法锚点，不按画像硬凑行为配额。该画像只属于用户，不作为助手人格或声音配置，也不改变助手普通120字软目标、250字独立精简规则。审查时看用户多轮表达是否整体违背冻结方向，只有能引用具体台词的实质不一致才要求最小修复；不因单轮受任务或情境影响而强求风格标签完全一致。\n\n只对会影响训练或可执行性的具体问题要求 repair：\n1. 冻结场景、目标、事实、约束与安全限制不得改变。用户可逐步披露原材料，不要求覆盖全部材料。稳定通用知识与直接计算可使用；具体人名、日期、设备、金额、状态、原因等必须有冻结来源。用户可以提出尚未生效的新条件，不能捏造已生效结果。无工具时不能声称已查询、转账、预约、写入、控制或完成外部操作。\n2. 助手每轮只能用 assistant_before_reply_history 中已听到的用户话与已播放助手前缀，以及稳定通用知识。作者看得见的 task_reference_data 等隐藏事实，未由用户说出前不能进入助手回复。不要因为事后在完整源材料里找得到某值，就判助手提前知道它合理。\n3. 用户每轮可以知道自己的冻结情境，但对“你刚才说的”、评价、选择、纠正、接话与附和的依据，必须来自 user_at_onset_history 的已听助手前缀。boundary.at_user_onset_heard_prefix 与 final_shared_played_prefix 不同；起声后才播放的字不能成为已经说出口的用户内容的依据。discarded_unheard_tail 从来没有进入用户听觉历史，后续两方不能假装它已说过。\n4. T03 必须是有真实理由的播报中途打断，起声时已有可理解的语义阶段，但原回答确实未完成；不能把回答已完整结束、提问已完整问完后的接话伪装成打断。助手在下一轮应承接实际新用户请求，不假定未播尾部已告知。普通 T01 完整听完即可，不要求每个 A 都被打断。\n5. 用户与助手话语自然地推进同一任务，有信息或任务状态增量；U01 不倒入全部材料，不用重复改述灌轮次。Act 与用户主要动作匹配，T02 是用户自身自然停顿，不是助手插话。用户不能替助手完整作答或输出内部流程。\n6. 助手直接回应本轮请求，必要的限定、事实来源、安全边界要保留；避免复述用户、重复已有结论、套话、空泛承诺、无请求的教程和长清单。普通回答以 120 字内为软目标；用户明确要求详细或完整回读时可以更长。超过 120 本身不是错误，超过 250 本身也不在本内容预算中拒绝：250 字限制由后续独立三次精简处理。只有能指明具体冗余、重复或无关内容时才因啰嗦 repair。不要要求穷举所有冻结材料或添加用户没问的内容。\n7. 附和必须针对已经播出的实质内容，是极短“嗯、明白”等接受/反馈，不引入新问题、命令、新事实。助手必须继续原回复；附和不增加主轮、不引起新助手回复。锚点处要留足后续语音窗口，且应早于该用户下一次主表达。不要硬性要求任何频率配额。\n8. 按下方V2.9用户旁话规则审查；第三方与机器旁语仍遵守冻结声源与信息边界。\n\n完整剧本可以看见被打断 A 的未播尾部，这是归档和对齐所需。尾部本身可写合理后续内容，错误在于后续对话依赖它或助手提前泄漏隐藏事实。不要因为保留未播尾部而要求删除它。对因截断而未播放的正确内容，不要求在原 A 已播前缀里完成整个语义责任；下一用户打断改变了当前任务。\n\nPython 已验证 JSON、连续 ID、完整前缀及停顿引用，不要重做无意义的结构检查。只报告可定位的最重要问题，最多六条，必须有实际证据；不要为追求更好文风无止境要求重写。无问题时只输出：\n{\"decision\":\"pass\",\"findings\":[]}\n有必须修复的问题时只输出：\n{\"decision\":\"repair\",\"findings\":[{\"severity\":\"must_fix\",\"path\":\"/rounds/1/assistant_utterance\",\"problem\":\"具体问题\",\"evidence\":\"引用当前候选和已听/冻结来源的具体证据\",\"repair\":\"保留事实与主线的最小修复方向\"}]}\nfindings 的 path 是候选内真实 JSON 路径；每项严格只有 severity、path、problem、evidence、repair。不得输出修改后剧本或额外字段。\n\n[V2.3 冻结真实声景]\nfrozen_source.situation_knowledge.soundscape_plan 已由 Stage 2 审查冻结。ambient_layers 由程序铺设整段真实底噪，不写入剧本或台词。新增根字段 environment_events，必须恰好为冻结 environment_events 中每个 source_id 安排一次，每项严格只有 event_id、source_id、target_audio_id、placement_fraction；event_id 必须等于 source_id，target_audio_id 只能是已有用户主轮 Uxx 或助手 Axxx，placement_fraction 是 [0,1] 内有限数值，用来选择实际已播放 host 内的起声位置，不是词句语义锚点。必须选择实际已播放范围足够长的 host，使完整录音装入该 host；不跨主轮，不裁剪音效、不使助手停声。不得编写音效台词、文件路径、秒数或新素材ID。side_speech 必须恰好有 soundscape_plan.side_speech_count 项；每项增加 source_id，引用冻结 side_speech_sources，speaker 必须逐字匹配对应源；用户声源的recipient须逐字匹配且不含voice_profile，其余声源的voice_profile逐字匹配，每个冻结旁语源至少使用一次；允许同一源出现多次。side_speech 的其余字段及完整after_text 前缀沿用原规则，台词由本阶段自然生成，gain仍为0.3–0.7。离散旁音总数为 environment_events 数量加 side_speech 数量，连续底噪不计数。mode=quiet 时两类事件都必须为空，不为配额制造人物或设备；layered 不新增已冻结之外声源。真实底噪、不可辨人群和音效不进入已听文本历史，也不能充当新的任务事实或用户请求；可辨旁语不应泄露隐藏关键材料，助手继续原音频。审查声源与真实场景是否相容、台词是否符合冻结人物来源，不能以个性或事件配额为由编造任务材料。\n\n\n[V2.5 旁音分散软规则] 在场景和因果自然允许时，把多次录音事件及旁语尽量分散到对话前、中、后阶段，避免全挤在同一助手轮或开头。只有一两次时也优先选不同阶段；这不是硬配额，不为分散新增声源或台词。录音必须完整装入实际播放的目标U/A片段；旁语必须完整装入实际已播助手片段，精确前缀与信息边界优先，不得自动移动、裁短或猜测锚点，不允许跨目标片段。\n\n\n[V2.8 汉字逐字与非中文完整单位程序锚点]\n模型决定T03用户起声的精确全文前缀，起声须位于完整发音单位之间，不能落在非中文英文词或编号内部。程序按冻结种子在起声后再播1–3个单位停声，单位定义必须按文字书写形式区分：所有汉字一律每字一个单位，包含中文数词、金额、日期和时间；“六百九十九元”是六/百/九/十/九/元六个单位，允许在“六”“六百”或“六百九”后停声，绝不要求把整笔中文金额或整串中文数词说完。只有非CJK英文单词、连续字母数字编号和阿拉伯数字书写片段按完整片段计一个单位，例如RESET、B32、699、16:02各为一个单位，do you为两个单位；不能停在R、B3、f或do y。标点和空格不计单位，停声后须留下至少一个未播单位。T01起声和停声前缀由程序设为上一A全文；仍返回完整timing对象，程序派生字段并留证。派生后的剧本才重建实际已听上下文并交原独立Judge，后续回应不得依赖未播尾文。Judge不能仅因中文金额、中文数词、中文日期或中文时间未说完整而拒绝合法停点，也不能要求程序越过起声后1–3个汉字来补全它们；仍须审查真实已听事实和后续回应的因果一致性。原停点缺少真实音频边界时，程序仅可在同一起声后的1–3个单位内改选一次，经原Judge完整重审后复用原录音；不移动模型起声、台词、附和、旁语或用户停顿。正文修改时同步修好受影响的模型锚点，仍有效的精确前缀保持，补丁经完整结构与依赖检查后原子接受。\n[V2.9 用户对同场旁人说话]\n定稿根schema_version为duplex_v2.fixed_script.v3；根字段和原主轮字段不变，quiet声景也保留空environment_events和side_speech。\nside_speech仍只用已冻结的side_speech_sources，数量严格等于side_speech_count。第三方/机器的原字段不变。若冻结源speaker=user，每项严格只有event_id、source_id、target_assistant_id、after_text、text、speaker、recipient、gain；speaker=\"user\"，recipient逐字复制冻结源的同场接收者，不填写voice_profile、voice_source或其他字段。用户音色、克隆参考和表达画像由程序复用主用户，不另造声音。\n用户旁话是用户在助手已开始且仍在实际播报时对旁人说的短句，例如对已在场的小林说“小林，把杯子递给我一下”。台词应自然且接收对象可辨，不能只有“等等”这类不明确话语；不能作为对助手的新请求、附和、打断或主对话轮，也不能泄漏关键任务材料。接收者必须来自冻结场景，不能为了配额新增人物。\ntarget_assistant_id仍指作为音频host的助手A，不是旁话接收对象；after_text是A从首字开始的完整非终止已播前缀。用户旁话起声必须早于下一次用户主表达，且完整音频须装入实际会播出的A范围，与同一用户的主句、附和或另一旁话都不重叠。不要在助手将被真正打断的尾端强塞旁话，不把事件安排在未播尾部；不恢复“用户主句暂停→转头旁话→再继续主句”的模式。\n旁话期间助手继续同一段原音频，不停顿、不让出话权、不增加新回答；后续助手不回应或复述旁话，不把它吸收为任务事实。旁话分类依赖接收对象和语义，不依赖其音量；gain仍在0.3–0.7。用户的旁话仍符合其冻结表达画像。\n上述方向、继续播报与stop_required=false是数据审查/监督标注，不是提前透露给在线模型的输入。仅使用原Judge和局部修复预算：审查台词是否确实面向旁人、主线与已听因果是否保持；只按findings最小修复，并在助手正文变更时同步相关精确锚点。\n\n",
+  "context": {
+    "frozen_source": {
+      "case_id": "R01-V01",
+      "source_run": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-engineering-g02-n010-v2-stage2",
+      "language": "zh",
+      "compaction_output_policy": "four_fields_exact_readonly_echo_v1",
+      "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+      "script_execution_policy": {
+        "audio_stop_selection": "exact_1_to_3_mixed_units_one_selection_one_judge_v1",
+        "backchannel_alignment_failure": "warn_and_omit_exhausted_alignment_v1",
+        "patch_acceptance": "atomic_complete_structure_and_dependency_validation",
+        "program_anchors": "t01_full_text_t03_seeded_1_to_3_complete_mixed_units",
+        "schema": "duplex_v2.script_execution_policy.v28.zh.han_units_v2",
+        "third_compaction": "accept_valid_under_250_retain_semantic_findings",
+        "unit_definition": "every_han_character_including_written_numbers_non_cjk_complete_token"
+      },
+      "program_anchor_seed": 3501402946,
+      "restart_provenance": {
+        "schema": "duplex_v2.responsibility_stage_restart.v1",
+        "kind": "new_bounded_stage_run_after_interface_fix",
+        "restart_stage": 2,
+        "parent_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g02-sample-010",
+        "parent_run_id": "20261109-v29-user-aside-hundred-g02-sample-010",
+        "parent_manifest_sha256": "ee2906b6a79f6e95fdc58020d9ff3bc7ccda100748564a13dbfe7f217640bbbe",
+        "reused_stages": {
+          "0": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage0",
+          "0qa": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage0qa",
+          "1": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage1"
+        },
+        "branch_execution_controls_sha256": "ec04cd39a67ec89e4a52724c337fb06be3a19aa6bae8ebccbee681ccc3af28a1",
+        "source_files_sha256": {
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g02-sample-010/ambient-catalog.json": "c045e64d1e2723ac9fdd70fa7a5bdad1c96917d45bdd9c0ef7901604218baaa1",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g02-sample-010/ambient-controls.json": "60ad87a519126d309cf0d2654927d39a42cf16e0b5033143843108a8a548ba28",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g02-sample-010/ambient-preferences.json": "edd6af57afcc84d9721c3b372d19a07e34557aede3dba0b5aeaaa23bbbd174ae",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g02-sample-010/http-policy.json": "08995a77076f4eab1f049e467c092ca8fdad709f7a1bd522e18ce51110da7729",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g02-sample-010/interaction-axes.json": "f75ac15719eb9e76bbe4f2aeb5f9993967f21ca44465ffee1bded855afb84c57",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g02-sample-010/length-plans.json": "a4b8df33c6c2eabdae9065f4bb5c639f343fc497fcba430b11bb65aa0871b844",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g02-sample-010/manifest.json": "ee2906b6a79f6e95fdc58020d9ff3bc7ccda100748564a13dbfe7f217640bbbe",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g02-sample-010/taxonomy-three-styles.json": "095dfe7cabc153133e82f5cf19c2cccb204187d87c332214d213ba06757a7dde",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g02-sample-010/taxonomy.json": "dc39bbd26f290b92348dd85732dd9b9702f43e4fea02939c3fd7ac7d7f4ecf49",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g02-sample-010/text-policy.json": "c769cd2d9a4fcaaf16fc52113d898f7488321bcc0755605bb92a762b153f8738",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage0/D14-S01/example_tasks.json": "e75c57da5871093b6871cc982b6d1c4312f7baeb3357863934ee57bbf4a1e4fb",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage0/D14-S01/input.json": "e0a5429d4e0e287ee66a505b72075add4d061ee30f171bff4d4f3addde13184b",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage0/D14-S01/metadata.json": "12bce00be3aece86217e60f1dbbeb49524c63c83cc9ae89de4bfa82b1944de66",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage0/D14-S01/prompt.md": "972af0cb5710eafc6daab8ea4686b2f26c958002fbf1819474446c629eee0a84",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage0/D14-S01/raw_response.txt": "8382e58601baa873a6fdd139e501385ebde0c8d117ae4d72ee86eef9ee17f038",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage0/D14-S01/validation.json": "261da61a6c2745de8db6df2c1f397084717aebb8bea905f5ab84dc7565a079dc",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage0/manifest.json": "494cfcc2c1c9ec2239152585a02e9040bfac53f75546781f6abd20e0ba073d26",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage0qa/D14-S01/example_tasks.json": "4c1ae593de52b50898de51c2acefc1ff748193dfc1b64a4d23ebc9c7a1f31180",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage0qa/D14-S01/input.json": "e0a5429d4e0e287ee66a505b72075add4d061ee30f171bff4d4f3addde13184b",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage0qa/D14-S01/metadata.json": "614c2f6795cfcfd97068f13f27bab90dd0e8fc1c585b787ec857bfbde893e9d1",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage0qa/D14-S01/prompt.md": "81b5ba9025b4f08e087794096ef26b91e1ebefd1fa36bff5d7087cdf97c335ba",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage0qa/D14-S01/raw_response.txt": "d140db46a6c9c1305f4e3031129f5027391307e216f54fba4481743dab48b9a9",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage0qa/D14-S01/validation.json": "261da61a6c2745de8db6df2c1f397084717aebb8bea905f5ab84dc7565a079dc",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage0qa/manifest.json": "22faad487a3bd03b404529fb4809715d277fc1689d473267ebf2fb028654c864",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage1/R01-V01/metadata.json": "a60253067d8975040e7f8bd16cb0deda8a1731882da0aa1e6d542583a6a90bde",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage1/R01-V01/prompt.md": "6c124900327305fbc790932da038ab5478cdb709afbada627897ddb17b55a227",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage1/R01-V01/raw_response.txt": "92507aef1a0ef15e5d639e9a4c05af7bcee66a6328f60d78041b38aabcfbe482",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage1/R01-V01/scene_task.json": "523c59aa1612a489fd861c395cf30cd1548725b8e5ac3becc668e988e613593d",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage1/R01-V01/user_voice.json": "85d111c372ad6127ca4bd50d5e83c4490dfb3507f1fcee947257cde67081ea65",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage1/R01-V01/validation.json": "b1d32b5e43cedccfdcd3ae6d7ad606595f725350aa75ade9e0dd5a053fc6f1c7",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage1/manifest.json": "36f595188c29aa4abbedf83c540ecc516a557d2ce8b0065fba12b2fef0835e68",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage2/R01-V01/validation.json": "92e0897c11a8524f0ca2e869cca425a1f1f67e20c1f17e03a15794f029c1935f",
+          "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage2/manifest.json": "e0b633f93a39508375d5e99037b4dd50d142a881f5c972090dcfbef5922c6740"
+        },
+        "original_failure_validation": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/runs/20261109-v29-user-aside-hundred-g02-sample-010-v2-stage2/R01-V01/validation.json",
+        "budget_note": "New bounded stage execution explicitly requested after an interface fix; not an HTTP retry or reset of the original run."
+      },
+      "text_policy": {
+        "schema": "duplex_v2.text_policy.v1",
+        "workflow_version": "v2.5",
+        "primary": {
+          "profile": "qiniu-chat",
+          "endpoint": "https://api.modelink.ai/v1/chat/completions"
+        },
+        "models": {
+          "sol": "openai/gpt-5.6-sol",
+          "luna": "openai/gpt-5.6-luna"
+        },
+        "roles": {
+          "stage0_generation": "luna",
+          "stage1_generation": "luna",
+          "stage2_generation": "sol",
+          "script_generation": "sol",
+          "script_patch": "sol",
+          "judge": "sol",
+          "compaction_first": "luna",
+          "compaction_later": "sol"
+        },
+        "reasoning_effort_policy": "default",
+        "stage0_max_judge_attempts": 5,
+        "content_max_repairs": 5,
+        "json_parse_max_retries": 3,
+        "length_compaction_max_attempts": 3,
+        "stage0_repair_pointer_policy": "json_pointer_zero_based_targets_v1",
+        "stage2_review_view_policy": "model_draft_and_readonly_resolved_v1",
+        "stage2_scope_dependency_policy": "speech_count_recording_events_v1"
+      },
+      "relay_configuration": {
+        "policy_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-g02/relay-policy.json",
+        "state_directory": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/duplex_v2/runs/20261109-v29-user-aside-hundred-stage2-engineering/relay-state/G02-N010-R01-V01",
+        "credentials_file": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/work/20261103-concise-workflow-replacement/relays.local.json",
+        "policy": {
+          "schema": "duplex_v2.timeout_relay_policy.v3",
+          "primary": {
+            "profile": "qiniu-chat",
+            "endpoint": "https://api.modelink.ai/v1/chat/completions"
+          },
+          "backup": {
+            "profile": "lianyu",
+            "endpoint": "https://api.openbili.com/v1/chat/completions",
+            "model_map": {
+              "openai/gpt-5.6-sol": "gpt-5.6-sol",
+              "openai/gpt-5.6-luna": "gpt-5.6-luna"
+            },
+            "verification": {
+              "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+              "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+            }
+          },
+          "trigger": {
+            "max_retries": 5,
+            "http_statuses": [
+              502,
+              503,
+              504
+            ],
+            "error_types": [
+              "TimeoutError",
+              "HTTP2DeadlineExceeded",
+              "ConnectionResetError",
+              "ConnectionAbortedError",
+              "BrokenPipeError",
+              "RemoteDisconnected",
+              "IncompleteRead"
+            ],
+            "http2_transport_errors": "negotiated_h2_only",
+            "require_all_attempts": true
+          },
+          "max_relay_switches": 1
+        }
+      },
+      "audio_anchor_policy": "exact_spoken_boundary_with_recorded_context_checked_prose_punctuation_attachment_v2",
+      "script_repair_policy": {
+        "schema": "duplex_v2.script_repair_policy.v1",
+        "mode": "json_patch",
+        "patch_schema": "duplex_v2.script_patch.v1",
+        "json_parse_max_retries": 3,
+        "content_max_repairs": 5,
+        "length_compaction_max_attempts": 3,
+        "overlength_after_compaction": "fail_case",
+        "judge_scope": "complete_script_and_heard_context"
+      },
+      "text_output_token_policy": "omit",
+      "scene_task": {
+        "scene": {
+          "domain_id": "D14",
+          "domain": "医疗、健康与福祉",
+          "scenario_id": "D14-S01",
+          "scenario": "就诊信息采集"
+        },
+        "task_style": "结构化整理",
+        "task_instance": {
+          "goal": "把我随后提供的母亲近期零散健康记录整理成一份就诊前摘要，分别归纳她自己描述的不适、家人观察到的变化、已经做过的自测和仍需向医生核实的问题，并标出记录之间可能存在的矛盾或缺口。"
+        }
+      },
+      "user_voice": {
+        "user_seed": {
+          "role_relation": "负责陪同母亲首次到综合门诊就诊的成年子女",
+          "task_familiarity": "low"
+        },
+        "voice_profile": "男性，四十多岁，音色偏低而温和，吐字清楚，语速平稳，带一点不太确定时的短暂停顿。",
+        "interaction_profile": {
+          "schema": "duplex_v2.interaction_profile.v1",
+          "formality": "casual",
+          "directness": "balanced",
+          "emotional_expressiveness": "balanced",
+          "verbosity": "brief",
+          "initiative": "low",
+          "caution": "high",
+          "patience": "high",
+          "behavioral_notes": [
+            "通常先简短说明自己记得的部分，等对方追问后再补充细节。",
+            "对不确定的日期、描述或前后差异会主动标明不敢确认，倾向于先听清整理规则再继续提供信息。",
+            "愿意按步骤慢慢核对材料，不急于下结论，遇到听不懂的说法会礼貌地请求换一种表达。"
+          ]
+        }
+      },
+      "dialogue_length_plan": {
+        "schema": "duplex_v2.dialogue_length_plan.v1",
+        "tier": "medium",
+        "target_turns": 9,
+        "min_turns": 9,
+        "max_turns": 10
+      },
+      "ambient_catalog": {
+        "schema": "duplex_v2.ambient_catalog.v1",
+        "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+        "assets": [
+          {
+            "asset_id": "fan-fsd50k-eval-419427",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 10.3909375
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-235362",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 11.0
+          },
+          {
+            "asset_id": "fan-fsd50k-eval-415925",
+            "category": "fan",
+            "mode": "bed",
+            "tags": [
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "稳定的真实机械风扇或通风声",
+            "duration_seconds": 7.178
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-235541",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 29.045875
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-232686",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 10.3445
+          },
+          {
+            "asset_id": "traffic-fsd50k-eval-124020",
+            "category": "traffic",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "road",
+              "street",
+              "travel"
+            ],
+            "description": "真实道路车流环境声",
+            "duration_seconds": 24.78875
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-382582",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.9788125
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-21189",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 9.962
+          },
+          {
+            "asset_id": "rain-fsd50k-eval-238016",
+            "category": "rain",
+            "mode": "bed",
+            "tags": [
+              "outdoor",
+              "window",
+              "rain",
+              "home"
+            ],
+            "description": "真实连续雨声",
+            "duration_seconds": 11.32
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-185058",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 5.2114375
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-121877",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 11.696
+          },
+          {
+            "asset_id": "crowd-fsd50k-eval-340358",
+            "category": "crowd",
+            "mode": "bed",
+            "tags": [
+              "public",
+              "crowd",
+              "cafe",
+              "station"
+            ],
+            "description": "远处人群嘈杂环境声，无指定第三方台词",
+            "duration_seconds": 4.2745
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-82562",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 1.0094375
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-121200",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.83525
+          },
+          {
+            "asset_id": "paper-fsd50k-eval-343098",
+            "category": "paper",
+            "mode": "event",
+            "tags": [
+              "indoor",
+              "paper",
+              "office",
+              "home"
+            ],
+            "description": "完整的纸张翻动、揉动或撕纸声效",
+            "duration_seconds": 0.796
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-153104",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.4691875
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-392303",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.6849375
+          },
+          {
+            "asset_id": "footsteps-fsd50k-eval-272381",
+            "category": "footsteps",
+            "mode": "event",
+            "tags": [
+              "footsteps",
+              "indoor",
+              "outdoor"
+            ],
+            "description": "完整的短段真实脚步声",
+            "duration_seconds": 3.933375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-71212",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.3638125
+          },
+          {
+            "asset_id": "door-fsd50k-eval-119077",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 2.7944375
+          },
+          {
+            "asset_id": "door-fsd50k-eval-209519",
+            "category": "door",
+            "mode": "event",
+            "tags": [
+              "door",
+              "indoor",
+              "home",
+              "office"
+            ],
+            "description": "完整的短段真实开关门声",
+            "duration_seconds": 1.0398125
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-399740",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.322
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-233057",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.4700625
+          },
+          {
+            "asset_id": "keyboard-fsd50k-eval-411545",
+            "category": "keyboard",
+            "mode": "event",
+            "tags": [
+              "keyboard",
+              "office",
+              "computer",
+              "indoor"
+            ],
+            "description": "完整的短段真实电脑键盘输入声",
+            "duration_seconds": 2.5686875
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-232499",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 0.842
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402127",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "water_tap-fsd50k-eval-402128",
+            "category": "water_tap",
+            "mode": "event",
+            "tags": [
+              "water",
+              "kitchen",
+              "home",
+              "indoor"
+            ],
+            "description": "完整的短段真实水龙头声",
+            "duration_seconds": 2.0915
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-86343",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 7.5366875
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-57907",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.5773125
+          },
+          {
+            "asset_id": "birds-fsd50k-eval-319512",
+            "category": "birds",
+            "mode": "bed",
+            "tags": [
+              "birds",
+              "park",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实鸟鸣环境声",
+            "duration_seconds": 12.755625
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113173",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 11.2184375
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113175",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.8773125
+          },
+          {
+            "asset_id": "wind-fsd50k-eval-113176",
+            "category": "wind",
+            "mode": "bed",
+            "tags": [
+              "wind",
+              "outdoor",
+              "nature"
+            ],
+            "description": "真实风声环境声",
+            "duration_seconds": 7.6341875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-348322",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 1.625
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-426594",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 0.3666875
+          },
+          {
+            "asset_id": "doorbell-fsd50k-eval-332563",
+            "category": "doorbell",
+            "mode": "event",
+            "tags": [
+              "doorbell",
+              "home",
+              "door",
+              "indoor"
+            ],
+            "description": "完整的真实门铃声效",
+            "duration_seconds": 4.0
+          }
+        ]
+      },
+      "ambient_control": {
+        "schema": "duplex_v2.soundscape_control.v3",
+        "seed": 3391553986,
+        "mode": "layered",
+        "discrete_event_target": 2,
+        "max_ambient_layers": 2,
+        "side_speech_requested": true,
+        "speech_kind_preferences": [
+          "third_party",
+          "machine",
+          "user_to_third_party"
+        ]
+      },
+      "situation_knowledge": {
+        "episode_situation": "现在是2026年11月9日晚上八点左右，用户在母亲位于杭州市的家中餐桌旁，准备第二天陪她第一次去综合门诊。门诊预约单写着11月10日上午九点半，但就诊前还没有形成一份连贯的健康记录。用户是主要陪同的成年子女，平时不与母亲同住，对她近期情况只掌握了一部分。母亲此刻坐在同一张餐桌旁，可以补充自己的感受，但连续回忆太久容易疲倦，因此用户希望分段核对，不反复追问。用户已经收拢了母亲的台历便签、血压计存储值、一次指尖血糖记录、药盒和妹妹发来的几条观察记录，并粗略看出时间和说法并不完全一致。母亲主要提到近来头晕、乏力和夜里容易醒，但她对症状从哪一天开始、是否每天出现都说不准。用户和妹妹分别注意到她走路变慢、重复询问事情以及一次扶墙站稳的情况，不过这些变化究竟是否持续、母亲当时是否真的头晕仍需区分。家用血压记录包含几组偏高和一组相对较低的读数，但部分测量缺少体位、测量前活动和左右手信息。药盒显示母亲手边有两种长期用药，其中一种近期剩余数量与她自述的服用频率对不上，用户不打算自行判断是否漏服或调整药量。台历上最早的相关便签日期早于母亲所说的“两周左右”，而她说自己没有摔倒，妹妹的记录却提到她曾差点绊倒，这两处都需要保留为待核实差异。用户目前拿不到完整既往病历和近期化验单，也不能确认旧药盒上的用法是否仍是医生当前医嘱。整理时的优先事项是明确每条信息是谁说的、记录日期和可信程度，再把不确定之处变成可向医生核实的问题，而不是提前推断病因。母亲目前能正常交谈和在室内行走，用户没有观察到正在发生的昏厥、明显呼吸困难或持续胸痛，但仍希望摘要能够突出任何需要及时告诉医生的变化。尚未解决的问题包括症状的准确起始时间、头晕与测量或服药的关系、是否确有漏服、走路和记忆变化是否比平时明显，以及哪些既往诊断和药物信息需要在门诊现场核对。",
+        "task_reference_data": [
+          "来自母亲台历、用户已粗略看过但尚未逐条口述：10月12日写着“下午没精神，躺了一会儿”；10月24日写着“起床有点晕”；11月3日写着“夜里醒三次”。这些便签是否均由母亲当天记录尚未核实。",
+          "来自母亲目前的自述、可由她现场再次确认：她认为头晕和乏力大约从“两周前”开始，头晕多在起身时出现，不确定是否每天都有；她还说最近夜里容易醒，但记不清持续了多少天。",
+          "来自用户自己的观察、日期基本确定：11月2日晚餐时母亲走路比平时慢，从椅子起身后停了几秒；11月8日电话中母亲连续两次询问同一件预约时间。用户不确定这些变化是否只是疲劳或没听清。",
+          "来自妹妹林岚11月6日发给用户的记录、用户手机中可现场读出：11月5日下午母亲在小区台阶旁脚下绊了一下，扶墙站稳，没有倒地；当天她说“没事，也不晕”。妹妹未记录是否受伤或当时穿什么鞋。",
+          "来自家用血压计存储、用户可现场逐项读取：10月28日早晨158/92毫米汞柱、当晚146/86毫米汞柱；11月2日下午151/89毫米汞柱；11月6日早晨137/82毫米汞柱。记录未标明左右手、坐位休息时间或11月2日测量前是否刚走动。",
+          "来自一张夹在血糖仪盒内的纸条、用户已看到：11月4日早晨指尖血糖6.8毫摩尔每升，旁边写着“没吃早饭”。血糖仪是亲属借来的，试纸有效期、操作是否规范以及是否真正空腹均未核实。",
+          "来自餐桌上的药盒和母亲自述、可现场核对包装：苯磺酸氨氯地平片5毫克，旧标签写“每日一次，每次一片”；阿托伐他汀钙片20毫克，旧标签写“每晚一次，每次一片”。母亲说两种药都“基本每天吃”，但氨氯地平药盒内剩余数量看起来比按时服用应有的更多，实际配药日期和当前医嘱未知。",
+          "来自门诊预约单、用户已确认：杭州市一家综合医院的综合门诊预约时间为2026年11月10日上午九点半。预约单只有科室和时间，没有本次需要携带的检查项目或既往资料清单。"
+        ],
+        "environment_audio": "餐桌右后方约三米处的落地风扇保持低档运转，机械风声平稳而轻。窗外持续有细雨落在窗台上，雨声较远，偶尔随风稍微变响。",
+        "estimated_snr_db": 27,
+        "constraints": [
+          {
+            "constraint_id": "C01",
+            "text": "摘要必须分别归纳母亲自述、家人观察、已经进行的自测以及仍需向医生核实的问题。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C02",
+            "text": "每条记录应保留信息来源、已知日期和不确定程度，不把家人的观察改写成母亲本人确认的症状。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C03",
+            "text": "日期、服药情况或事件描述不一致时应明确标为矛盾或缺口，不自行选择其中一个版本作为事实。",
+            "kind": "hard"
+          },
+          {
+            "constraint_id": "C04",
+            "text": "整理结果用于就诊前陈述和提问准备，不对病因作诊断，也不据此给出药物增减方案。",
+            "kind": "hard"
+          }
+        ],
+        "safety_limits": [
+          {
+            "limit_id": "L01",
+            "text": "不能依据零散记录自行停药、补服、加量或更换长期用药；实际用法应由医生结合处方和病历核实。",
+            "severity": "hard"
+          },
+          {
+            "limit_id": "L02",
+            "text": "如果出现昏厥、持续胸痛、明显呼吸困难、突发单侧无力或言语含糊等急性危险表现，不应为了完成摘要而延误紧急医疗评估。",
+            "severity": "critical"
+          }
+        ],
+        "soundscape_plan": {
+          "mode": "layered",
+          "ambient_layers": [
+            {
+              "source_id": "AMB01",
+              "asset_id": "fan-fsd50k-eval-235362",
+              "reason": "用户与母亲在家中餐桌旁整理材料，低档风扇适合作为稳定室内底色。"
+            },
+            {
+              "source_id": "AMB02",
+              "asset_id": "rain-fsd50k-eval-238016",
+              "reason": "夜间居家场景可容纳窗外连续细雨，并与室内整理活动相容。"
+            }
+          ],
+          "environment_events": [
+            {
+              "source_id": "ENV01",
+              "asset_id": "paper-fsd50k-eval-121200",
+              "reason": "用户正在查看预约单、台历便签和血糖纸条，短促翻纸声有明确场景依据。"
+            }
+          ],
+          "schema": "duplex_v2.soundscape_plan.v4",
+          "side_speech_sources": [
+            {
+              "source_id": "SP01",
+              "speaker": "third_party",
+              "voice_profile": "年长女性声音，音量偏轻，近距离说话，语气自然且略显疲惫。",
+              "description": "坐在用户身旁、准备次日就诊并协助核对自身记录的母亲。"
+            }
+          ],
+          "side_speech_count": 1,
+          "sampling": {
+            "schema": "duplex_v2.ambient_draw.v3",
+            "policy": {
+              "schema": "duplex_v2.soundscape_policy.v3",
+              "quiet_probability": 0.5,
+              "discrete_targets_by_tier": {
+                "short": [
+                  0,
+                  1
+                ],
+                "medium": [
+                  1,
+                  2
+                ],
+                "long": [
+                  2,
+                  4
+                ]
+              },
+              "discrete_count_includes": [
+                "environment_events",
+                "side_speech"
+              ],
+              "max_ambient_layers": 2,
+              "gain_range": [
+                0.3,
+                0.7
+              ],
+              "speech_request_probability": 0.5,
+              "third_party_preference_probability": 0.8,
+              "speech_requires_existing_scene_source": true,
+              "environment_audio": "base_only",
+              "stage2_repair": "atomic_scoped_patch",
+              "stage2_max_judge_attempts": 3,
+              "json_parse_max_retries": 3,
+              "user_side_speech_policy": "user_to_present_third_party_during_assistant_v1",
+              "user_aside_preference_probability": 0.5,
+              "user_voice_source": "stage1_user",
+              "user_aside_requires_present_recipient": true
+            },
+            "preferences": {
+              "schema": "duplex_v2.ambient_preferences.v1",
+              "seed": 202611090002,
+              "slot": 9,
+              "catalog_sha256": "f1403ca3216d0ee37ef64f74829be65baec178744b0a731ba3d7c4b64417041f",
+              "categories": {
+                "bed": [
+                  "wind",
+                  "fan",
+                  "crowd",
+                  "traffic",
+                  "birds",
+                  "rain"
+                ],
+                "event": [
+                  "footsteps",
+                  "water_tap",
+                  "doorbell",
+                  "keyboard",
+                  "door",
+                  "paper"
+                ]
+              },
+              "recordings": {
+                "bed:birds": [
+                  "birds-fsd50k-eval-319512",
+                  "birds-fsd50k-eval-86343",
+                  "birds-fsd50k-eval-57907"
+                ],
+                "bed:crowd": [
+                  "crowd-fsd50k-eval-340358",
+                  "crowd-fsd50k-eval-185058",
+                  "crowd-fsd50k-eval-121877"
+                ],
+                "bed:fan": [
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-419427"
+                ],
+                "bed:rain": [
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-382582",
+                  "rain-fsd50k-eval-21189"
+                ],
+                "bed:traffic": [
+                  "traffic-fsd50k-eval-232686",
+                  "traffic-fsd50k-eval-235541",
+                  "traffic-fsd50k-eval-124020"
+                ],
+                "bed:wind": [
+                  "wind-fsd50k-eval-113175",
+                  "wind-fsd50k-eval-113173",
+                  "wind-fsd50k-eval-113176"
+                ],
+                "event:door": [
+                  "door-fsd50k-eval-209519",
+                  "door-fsd50k-eval-119077",
+                  "door-fsd50k-eval-71212"
+                ],
+                "event:doorbell": [
+                  "doorbell-fsd50k-eval-332563",
+                  "doorbell-fsd50k-eval-348322",
+                  "doorbell-fsd50k-eval-426594"
+                ],
+                "event:footsteps": [
+                  "footsteps-fsd50k-eval-272381",
+                  "footsteps-fsd50k-eval-392303",
+                  "footsteps-fsd50k-eval-153104"
+                ],
+                "event:keyboard": [
+                  "keyboard-fsd50k-eval-233057",
+                  "keyboard-fsd50k-eval-399740",
+                  "keyboard-fsd50k-eval-411545"
+                ],
+                "event:paper": [
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-343098",
+                  "paper-fsd50k-eval-82562"
+                ],
+                "event:water_tap": [
+                  "water_tap-fsd50k-eval-232499",
+                  "water_tap-fsd50k-eval-402127",
+                  "water_tap-fsd50k-eval-402128"
+                ]
+              }
+            },
+            "control": {
+              "schema": "duplex_v2.soundscape_control.v3",
+              "seed": 3391553986,
+              "mode": "layered",
+              "discrete_event_target": 2,
+              "max_ambient_layers": 2,
+              "side_speech_requested": true,
+              "speech_kind_preferences": [
+                "third_party",
+                "machine",
+                "user_to_third_party"
+              ]
+            },
+            "control_sha256": "ae1b31011a9d15b4efd38155b065fb4e1ae150ab18d1a22b7a1d45e08207f9ca",
+            "candidate_plan": {
+              "schema": "duplex_v2.soundscape_plan.v4",
+              "mode": "layered",
+              "ambient_layers": [
+                {
+                  "source_id": "AMB01",
+                  "candidates": [
+                    {
+                      "asset_id": "fan-fsd50k-eval-235362",
+                      "reason": "用户与母亲在家中餐桌旁整理材料，低档风扇适合作为稳定室内底色。",
+                      "environment_audio": "右后方传来持续、低沉而均匀的机械风扇声。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-415925",
+                      "reason": "连续通风声与安静住宅环境相容，不会引入额外人物或任务事实。",
+                      "environment_audio": "数米外的风扇平稳运转，音量较低。"
+                    },
+                    {
+                      "asset_id": "fan-fsd50k-eval-419427",
+                      "reason": "稳定的家用机械声能够形成轻微室内底噪。",
+                      "environment_audio": "餐桌后方有轻柔、连续的风扇运转声。"
+                    }
+                  ]
+                },
+                {
+                  "source_id": "AMB02",
+                  "candidates": [
+                    {
+                      "asset_id": "rain-fsd50k-eval-238016",
+                      "reason": "夜间居家场景可容纳窗外连续细雨，并与室内整理活动相容。",
+                      "environment_audio": "窗外细雨持续落下，声音隔着玻璃显得较远。"
+                    },
+                    {
+                      "asset_id": "rain-fsd50k-eval-382582",
+                      "reason": "轻微雨声可作为窗外远景，不影响同桌交谈的可懂度。",
+                      "environment_audio": "窗台方向传来均匀雨声，偶尔略有起伏。"
+                    },
+                    {
+                      "asset_id": "rain-fsd50k-eval-21189",
+                      "reason": "连续雨声符合安静住宅夜晚的背景，并且不会暗示外部事件。",
+                      "environment_audio": "玻璃窗外有轻而连续的雨声。"
+                    }
+                  ]
+                }
+              ],
+              "environment_events": [
+                {
+                  "source_id": "ENV01",
+                  "candidates": [
+                    {
+                      "asset_id": "paper-fsd50k-eval-121200",
+                      "reason": "用户正在查看预约单、台历便签和血糖纸条，短促翻纸声有明确场景依据。",
+                      "environment_audio": "近处响起一次短促的纸张翻动声。"
+                    },
+                    {
+                      "asset_id": "paper-fsd50k-eval-343098",
+                      "reason": "餐桌上已有多份纸质健康记录，轻微整理纸张符合当前活动。",
+                      "environment_audio": "桌面方向传来一阵轻而完整的纸张拨动声。"
+                    },
+                    {
+                      "asset_id": "paper-fsd50k-eval-82562",
+                      "reason": "翻看台历便签或预约单时可能出现一次较明显的纸张摩擦声。",
+                      "environment_audio": "麦克风近处出现一次清楚的翻页和纸张摩擦声。"
+                    }
+                  ]
+                }
+              ],
+              "side_speech_eligibility": {
+                "user_to_third_party": {
+                  "compatible": true,
+                  "reason": "母亲与用户同坐餐桌旁并可协助核对记录，用户在助手播报期间转向她作简短确认具有场景依据。",
+                  "source": {
+                    "speaker": "user",
+                    "recipient": "坐在餐桌旁的母亲",
+                    "voice_source": "stage1_user",
+                    "description": "用户是陪同就诊的成年子女，正在与同场母亲共同核对她的健康记录。"
+                  }
+                },
+                "third_party": {
+                  "compatible": true,
+                  "reason": "母亲是故事中明确同场且能够补充自身感受的人物，可出现一次不承担主对话的简短旁语。",
+                  "source": {
+                    "speaker": "third_party",
+                    "voice_profile": "年长女性声音，音量偏轻，近距离说话，语气自然且略显疲惫。",
+                    "description": "坐在用户身旁、准备次日就诊并协助核对自身记录的母亲。"
+                  }
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "场景中的血压计和血糖仪仅作为既有记录来源，没有已知的语音播报功能或正在运行的机器语音。",
+                  "source": null
+                }
+              }
+            },
+            "base_environment_audio_sha256": "dcae0745538aafa72c2fb7a2b96a95988b5cbae1fbcd689c74c305d825afaa57",
+            "aggregate_environment_audio": "餐桌右后方约三米处的落地风扇保持低档运转，机械风声平稳而轻。窗外持续有细雨落在窗台上，雨声较远，偶尔随风稍微变响。 右后方传来持续、低沉而均匀的机械风扇声。 窗外细雨持续落下，声音隔着玻璃显得较远。 近处响起一次短促的纸张翻动声。",
+            "draws": [
+              {
+                "source_id": "AMB01",
+                "category": "fan",
+                "asset_id": "fan-fsd50k-eval-235362",
+                "eligible_categories": [
+                  "fan"
+                ],
+                "eligible_assets": [
+                  "fan-fsd50k-eval-235362",
+                  "fan-fsd50k-eval-415925",
+                  "fan-fsd50k-eval-419427"
+                ]
+              },
+              {
+                "source_id": "AMB02",
+                "category": "rain",
+                "asset_id": "rain-fsd50k-eval-238016",
+                "eligible_categories": [
+                  "rain"
+                ],
+                "eligible_assets": [
+                  "rain-fsd50k-eval-21189",
+                  "rain-fsd50k-eval-238016",
+                  "rain-fsd50k-eval-382582"
+                ]
+              },
+              {
+                "source_id": "ENV01",
+                "category": "paper",
+                "asset_id": "paper-fsd50k-eval-121200",
+                "eligible_categories": [
+                  "paper"
+                ],
+                "eligible_assets": [
+                  "paper-fsd50k-eval-121200",
+                  "paper-fsd50k-eval-343098",
+                  "paper-fsd50k-eval-82562"
+                ]
+              }
+            ],
+            "speech_selection": {
+              "requested": true,
+              "compatible_kinds": [
+                "user_to_third_party",
+                "third_party"
+              ],
+              "selected_kind": "third_party",
+              "outcome": "selected",
+              "assessments": {
+                "user_to_third_party": {
+                  "compatible": true,
+                  "reason": "母亲与用户同坐餐桌旁并可协助核对记录，用户在助手播报期间转向她作简短确认具有场景依据。",
+                  "source": {
+                    "speaker": "user",
+                    "recipient": "坐在餐桌旁的母亲",
+                    "voice_source": "stage1_user",
+                    "description": "用户是陪同就诊的成年子女，正在与同场母亲共同核对她的健康记录。"
+                  }
+                },
+                "third_party": {
+                  "compatible": true,
+                  "reason": "母亲是故事中明确同场且能够补充自身感受的人物，可出现一次不承担主对话的简短旁语。",
+                  "source": {
+                    "speaker": "third_party",
+                    "voice_profile": "年长女性声音，音量偏轻，近距离说话，语气自然且略显疲惫。",
+                    "description": "坐在用户身旁、准备次日就诊并协助核对自身记录的母亲。"
+                  }
+                },
+                "machine": {
+                  "compatible": false,
+                  "reason": "场景中的血压计和血糖仪仅作为既有记录来源，没有已知的语音播报功能或正在运行的机器语音。",
+                  "source": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script": {
+      "schema_version": "duplex_v2.fixed_script.v3",
+      "title": "母亲综合门诊就诊前健康摘要",
+      "rounds": [
+        {
+          "user_id": "U01",
+          "assistant_id": "A001",
+          "user_utterance": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？",
+          "assistant_utterance": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。",
+          "user_intent": "说明就诊准备任务和初步症状，询问整理方式。",
+          "assistant_intent": "建立四类摘要结构，并引导用户先提供母亲自述。",
+          "semantic_goal": "确定整理规则并开始采集母亲自述。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": null,
+          "pause_cue": null
+        },
+        {
+          "user_id": "U02",
+          "assistant_id": "A002",
+          "user_utterance": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。",
+          "assistant_utterance": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。",
+          "user_intent": "提供母亲自述及三条台历记录，同时标明日期和来源不确定。",
+          "assistant_intent": "区分口述与台历来源，标出起始时间差异并转入家人观察。",
+          "semantic_goal": "形成带来源和不确定性的症状时间线。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A001",
+            "user_onset_after_text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。",
+            "assistant_stop_after_text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          "pause_cue": {
+            "after_text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U03",
+          "assistant_id": "A003",
+          "user_utterance": "我十一月二日晚饭时看她走得比平时慢，从椅子起来后停了几秒。十一月八日电话里，她连续两次问同一个预约时间，但也可能只是累了或者没听清。",
+          "assistant_utterance": "这两项记为你的观察，不写成母亲确认的症状。十一月二日记录步速变慢和起身后停顿，十一月八日记录重复询问，同时保留疲劳或未听清的可能。接下来请说妹妹的观察。",
+          "user_intent": "补充自己观察到的步态和重复询问变化，并说明其他可能解释。",
+          "assistant_intent": "将观察与母亲自述分开记录，保留用户对观察局限的说明。",
+          "semantic_goal": "准确归纳用户本人的两项观察而不将其症状化。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A002",
+            "user_onset_after_text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。",
+            "assistant_stop_after_text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U04",
+          "assistant_id": "A004",
+          "user_utterance": "对，这两条先这样，妹妹那条我直接读。她十一月六日发消息说，母亲十一月五日下午在小区台阶旁绊了一下，扶墙站稳，没有倒地，当时还说没事、也不晕。妹妹没写有没有受伤，也没写穿什么鞋。母亲自己一直说没有摔倒。",
+          "assistant_utterance": "妹妹的记录可写为险些绊倒后扶墙站稳、未倒地，不能改写成摔倒。母亲说没摔倒与此不必强行二选一，但是否受伤、诱因及当时是否头晕仍待核。下面读家中自测记录。",
+          "user_intent": "打断后直接提供妹妹的完整观察，并补充母亲对摔倒的说法。",
+          "assistant_intent": "承接打断内容，区分绊倒、扶墙和摔倒，明确记录缺口。",
+          "semantic_goal": "保留妹妹记录与母亲说法的差异并继续采集自测。",
+          "act_ref": "A02",
+          "timing_refs": [
+            "T03"
+          ],
+          "timing": {
+            "target_assistant_id": "A003",
+            "user_onset_after_text": "这两项记为你的观察，不写成母亲确认的症状。",
+            "assistant_stop_after_text": "这两项记为你的观察，不写成母亲确认的症状。十"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U05",
+          "assistant_id": "A005",
+          "user_utterance": "血压计里有四组：十月二十八日早晨一百五十八比九十二，当晚一百四十六比八十六；十一月二日下午一百五十一比八十九；十一月六日早晨一百三十七比八十二。左右手、坐着休息多久都没记，十一月二日测量前有没有走动也不知道。",
+          "assistant_utterance": "这四组先记为家用血压记录，不据此判断病因。缺口是左右手、体位、休息时长，以及十一月二日前是否活动。还有血糖或其他自测吗？",
+          "user_intent": "逐项提供血压计读数及缺失的测量条件。",
+          "assistant_intent": "整理血压自测并明确其测量条件缺口，不作病因判断。",
+          "semantic_goal": "将血压读数准确纳入自测部分。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A004",
+            "user_onset_after_text": "妹妹的记录可写为险些绊倒后扶墙站稳、未倒地，不能改写成摔倒。母亲说没摔倒与此不必强行二选一，但是否受伤、诱因及当时是否头晕仍待核。下面读家中自测记录。",
+            "assistant_stop_after_text": "妹妹的记录可写为险些绊倒后扶墙站稳、未倒地，不能改写成摔倒。母亲说没摔倒与此不必强行二选一，但是否受伤、诱因及当时是否头晕仍待核。下面读家中自测记录。"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U06",
+          "assistant_id": "A006",
+          "user_utterance": "还有一张纸条写着十一月四日早晨指尖血糖六点八，旁边写没吃早饭。仪器是亲戚借的，试纸有没有过期、操作对不对，还有算不算真正空腹，我都确认不了。",
+          "assistant_utterance": "血糖记为十一月四日早晨指尖值六点八，纸条称没吃早饭，但是否真正空腹、试纸效期和操作都未核实，因此只列记录，不作判断。下面核对药盒和她自述的吃法。",
+          "user_intent": "提供一次指尖血糖记录及仪器、试纸和空腹状态的不确定性。",
+          "assistant_intent": "记录血糖数值及可信度限制，并转入用药信息核对。",
+          "semantic_goal": "将血糖自测作为有限可信的记录纳入摘要。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A005",
+            "user_onset_after_text": "这四组先记为家用血压记录，不据此判断病因。缺口是左右手、体位、休息时长，以及十一月二日前是否活动。还有血糖或其他自测吗？",
+            "assistant_stop_after_text": "这四组先记为家用血压记录，不据此判断病因。缺口是左右手、体位、休息时长，以及十一月二日前是否活动。还有血糖或其他自测吗？"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U07",
+          "assistant_id": "A007",
+          "user_utterance": "药盒上有两种长期药，苯磺酸氨氯地平五毫克，旧标签是每天一次、每次一片；阿托伐他汀钙片二十毫克，旧标签是每晚一片。母亲说基本每天都吃，可氨氯地平剩得比按时吃应该剩的多。配药日期和现在的医嘱我都不知道。",
+          "assistant_utterance": "药物栏写旧标签和现状，不推定漏服：氨氯地平五毫克每日一片、阿托伐他汀二十毫克每晚一片均是旧标签；前者余量偏多，需问配药日和当前医嘱。既往病历或化验能拿到吗？",
+          "user_intent": "提供两种药的旧标签、母亲自述及氨氯地平余量差异。",
+          "assistant_intent": "记录药物信息和服药缺口，避免推定漏服或提出调药。",
+          "semantic_goal": "形成需由医生核实的用药问题。",
+          "act_ref": "A01",
+          "timing_refs": [
+            "T01",
+            "T02"
+          ],
+          "timing": {
+            "target_assistant_id": "A006",
+            "user_onset_after_text": "血糖记为十一月四日早晨指尖值六点八，纸条称没吃早饭，但是否真正空腹、试纸效期和操作都未核实，因此只列记录，不作判断。下面核对药盒和她自述的吃法。",
+            "assistant_stop_after_text": "血糖记为十一月四日早晨指尖值六点八，纸条称没吃早饭，但是否真正空腹、试纸效期和操作都未核实，因此只列记录，不作判断。下面核对药盒和她自述的吃法。"
+          },
+          "pause_cue": {
+            "after_text": "药盒上有两种长期药，",
+            "duration_ms": 650
+          }
+        },
+        {
+          "user_id": "U08",
+          "assistant_id": "A008",
+          "user_utterance": "完整病历和近期化验单现在都拿不到，旧药盒上的用法是不是现医嘱也不敢确认。还需要补哪一项，才能整理成明天能直接给医生看的版本？",
+          "assistant_utterance": "在定稿前确认安全情况：她现在有没有昏厥、持续胸痛、明显呼吸困难、突发单侧无力或言语含糊？若有任一项，应立即寻求急诊评估，不要等摘要完成。",
+          "user_intent": "说明既往资料缺失，并询问定稿前还需补充什么。",
+          "assistant_intent": "在定稿前核实当前是否存在需要紧急评估的危险表现。",
+          "semantic_goal": "排除当前明确急症后完成就诊摘要。",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A007",
+            "user_onset_after_text": "药物栏写旧标签和现状，不推定漏服：氨氯地平五毫克每日一片、阿托伐他汀二十毫克每晚一片均是旧标签；前者余量偏多，需问配药日和当前医嘱。既往病历或化验能拿到吗？",
+            "assistant_stop_after_text": "药物栏写旧标签和现状，不推定漏服：氨氯地平五毫克每日一片、阿托伐他汀二十毫克每晚一片均是旧标签；前者余量偏多，需问配药日和当前医嘱。既往病历或化验能拿到吗？"
+          },
+          "pause_cue": null
+        },
+        {
+          "user_id": "U09",
+          "assistant_id": "A009",
+          "user_utterance": "这些现在都没有，她能正常说话，也能在屋里走。那就请你把摘要完整读一遍，差异和明天要核实的问题都保留。",
+          "assistant_utterance": "摘要：①母亲自述：约两周前起身易晕、乏力，频率不明；近期夜醒，时长不明。台历记录更早的不适和夜醒，但作者、日期及是否同一不适待核，可能存在起始差异。②家人：你见走慢、起身停顿及重复问预约，或因疲劳/未听清；妹妹记绊后扶墙未倒，母亲当时自称没事、不晕，伤情、诱因待核。③自测：四次血压及指血6.8已录，测量条件、空腹、试纸和操作待核。④问医生：症状与测量/服药关系、步态记忆变化、既往诊断化验、两药现医嘱及氨氯地平余量偏多是否漏服。无所列急症，能正常说话、室内行走；勿调药，出现所列急症立即就医。",
+          "user_intent": "确认目前没有所列急性危险表现，并要求完整回读摘要。",
+          "assistant_intent": "按四类信息完成就诊前摘要，保留来源差异、缺口、待核问题和安全提醒。",
+          "semantic_goal": "获得可在次日门诊直接陈述的结构化摘要。",
+          "act_ref": "A03",
+          "timing_refs": [
+            "T01"
+          ],
+          "timing": {
+            "target_assistant_id": "A008",
+            "user_onset_after_text": "在定稿前确认安全情况：她现在有没有昏厥、持续胸痛、明显呼吸困难、突发单侧无力或言语含糊？若有任一项，应立即寻求急诊评估，不要等摘要完成。",
+            "assistant_stop_after_text": "在定稿前确认安全情况：她现在有没有昏厥、持续胸痛、明显呼吸困难、突发单侧无力或言语含糊？若有任一项，应立即寻求急诊评估，不要等摘要完成。"
+          },
+          "pause_cue": null
+        }
+      ],
+      "backchannels": [
+        {
+          "event_id": "BC01",
+          "target_assistant_id": "A002",
+          "after_text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。",
+          "text": "嗯"
+        },
+        {
+          "event_id": "BC02",
+          "target_assistant_id": "A006",
+          "after_text": "血糖记为十一月四日早晨指尖值六点八，纸条称没吃早饭，",
+          "text": "明白"
+        },
+        {
+          "event_id": "BC03",
+          "target_assistant_id": "A007",
+          "after_text": "药物栏写旧标签和现状，不推定漏服：",
+          "text": "对"
+        }
+      ],
+      "side_speech": [
+        {
+          "event_id": "S01",
+          "source_id": "SP01",
+          "target_assistant_id": "A005",
+          "after_text": "这四组先记为家用血压记录，不据此判断病因。",
+          "text": "我先靠一会儿，你们慢慢记。",
+          "speaker": "third_party",
+          "voice_profile": "年长女性声音，音量偏轻，近距离说话，语气自然且略显疲惫。",
+          "gain": 0.46
+        }
+      ],
+      "environment_events": [
+        {
+          "event_id": "ENV01",
+          "source_id": "ENV01",
+          "target_audio_id": "U02",
+          "placement_fraction": 0.55
+        }
+      ]
+    },
+    "reconstructed_heard_context": [
+      {
+        "user_id": "U01",
+        "assistant_id": "A001",
+        "user_at_onset_history": [],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          }
+        ],
+        "boundary": null,
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U02",
+        "assistant_id": "A002",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A001",
+          "at_user_onset_heard_prefix": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。",
+          "final_shared_played_prefix": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [],
+        "assistant_candidate": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U03",
+        "assistant_id": "A003",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我十一月二日晚饭时看她走得比平时慢，从椅子起来后停了几秒。十一月八日电话里，她连续两次问同一个预约时间，但也可能只是累了或者没听清。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A002",
+          "at_user_onset_heard_prefix": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。",
+          "final_shared_played_prefix": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "这两项记为你的观察，不写成母亲确认的症状。十一月二日记录步速变慢和起身后停顿，十一月八日记录重复询问，同时保留疲劳或未听清的可能。接下来请说妹妹的观察。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U04",
+        "assistant_id": "A004",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我十一月二日晚饭时看她走得比平时慢，从椅子起来后停了几秒。十一月八日电话里，她连续两次问同一个预约时间，但也可能只是累了或者没听清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这两项记为你的观察，不写成母亲确认的症状。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我十一月二日晚饭时看她走得比平时慢，从椅子起来后停了几秒。十一月八日电话里，她连续两次问同一个预约时间，但也可能只是累了或者没听清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这两项记为你的观察，不写成母亲确认的症状。十"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "对，这两条先这样，妹妹那条我直接读。她十一月六日发消息说，母亲十一月五日下午在小区台阶旁绊了一下，扶墙站稳，没有倒地，当时还说没事、也不晕。妹妹没写有没有受伤，也没写穿什么鞋。母亲自己一直说没有摔倒。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A003",
+          "at_user_onset_heard_prefix": "这两项记为你的观察，不写成母亲确认的症状。",
+          "final_shared_played_prefix": "这两项记为你的观察，不写成母亲确认的症状。十",
+          "discarded_unheard_tail": "一月二日记录步速变慢和起身后停顿，十一月八日记录重复询问，同时保留疲劳或未听清的可能。接下来请说妹妹的观察。"
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "妹妹的记录可写为险些绊倒后扶墙站稳、未倒地，不能改写成摔倒。母亲说没摔倒与此不必强行二选一，但是否受伤、诱因及当时是否头晕仍待核。下面读家中自测记录。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U05",
+        "assistant_id": "A005",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我十一月二日晚饭时看她走得比平时慢，从椅子起来后停了几秒。十一月八日电话里，她连续两次问同一个预约时间，但也可能只是累了或者没听清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这两项记为你的观察，不写成母亲确认的症状。十"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "对，这两条先这样，妹妹那条我直接读。她十一月六日发消息说，母亲十一月五日下午在小区台阶旁绊了一下，扶墙站稳，没有倒地，当时还说没事、也不晕。妹妹没写有没有受伤，也没写穿什么鞋。母亲自己一直说没有摔倒。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "妹妹的记录可写为险些绊倒后扶墙站稳、未倒地，不能改写成摔倒。母亲说没摔倒与此不必强行二选一，但是否受伤、诱因及当时是否头晕仍待核。下面读家中自测记录。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我十一月二日晚饭时看她走得比平时慢，从椅子起来后停了几秒。十一月八日电话里，她连续两次问同一个预约时间，但也可能只是累了或者没听清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这两项记为你的观察，不写成母亲确认的症状。十"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "对，这两条先这样，妹妹那条我直接读。她十一月六日发消息说，母亲十一月五日下午在小区台阶旁绊了一下，扶墙站稳，没有倒地，当时还说没事、也不晕。妹妹没写有没有受伤，也没写穿什么鞋。母亲自己一直说没有摔倒。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "妹妹的记录可写为险些绊倒后扶墙站稳、未倒地，不能改写成摔倒。母亲说没摔倒与此不必强行二选一，但是否受伤、诱因及当时是否头晕仍待核。下面读家中自测记录。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "血压计里有四组：十月二十八日早晨一百五十八比九十二，当晚一百四十六比八十六；十一月二日下午一百五十一比八十九；十一月六日早晨一百三十七比八十二。左右手、坐着休息多久都没记，十一月二日测量前有没有走动也不知道。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A004",
+          "at_user_onset_heard_prefix": "妹妹的记录可写为险些绊倒后扶墙站稳、未倒地，不能改写成摔倒。母亲说没摔倒与此不必强行二选一，但是否受伤、诱因及当时是否头晕仍待核。下面读家中自测记录。",
+          "final_shared_played_prefix": "妹妹的记录可写为险些绊倒后扶墙站稳、未倒地，不能改写成摔倒。母亲说没摔倒与此不必强行二选一，但是否受伤、诱因及当时是否头晕仍待核。下面读家中自测记录。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "这四组先记为家用血压记录，不据此判断病因。缺口是左右手、体位、休息时长，以及十一月二日前是否活动。还有血糖或其他自测吗？",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U06",
+        "assistant_id": "A006",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我十一月二日晚饭时看她走得比平时慢，从椅子起来后停了几秒。十一月八日电话里，她连续两次问同一个预约时间，但也可能只是累了或者没听清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这两项记为你的观察，不写成母亲确认的症状。十"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "对，这两条先这样，妹妹那条我直接读。她十一月六日发消息说，母亲十一月五日下午在小区台阶旁绊了一下，扶墙站稳，没有倒地，当时还说没事、也不晕。妹妹没写有没有受伤，也没写穿什么鞋。母亲自己一直说没有摔倒。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "妹妹的记录可写为险些绊倒后扶墙站稳、未倒地，不能改写成摔倒。母亲说没摔倒与此不必强行二选一，但是否受伤、诱因及当时是否头晕仍待核。下面读家中自测记录。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "血压计里有四组：十月二十八日早晨一百五十八比九十二，当晚一百四十六比八十六；十一月二日下午一百五十一比八十九；十一月六日早晨一百三十七比八十二。左右手、坐着休息多久都没记，十一月二日测量前有没有走动也不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这四组先记为家用血压记录，不据此判断病因。缺口是左右手、体位、休息时长，以及十一月二日前是否活动。还有血糖或其他自测吗？"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我十一月二日晚饭时看她走得比平时慢，从椅子起来后停了几秒。十一月八日电话里，她连续两次问同一个预约时间，但也可能只是累了或者没听清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这两项记为你的观察，不写成母亲确认的症状。十"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "对，这两条先这样，妹妹那条我直接读。她十一月六日发消息说，母亲十一月五日下午在小区台阶旁绊了一下，扶墙站稳，没有倒地，当时还说没事、也不晕。妹妹没写有没有受伤，也没写穿什么鞋。母亲自己一直说没有摔倒。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "妹妹的记录可写为险些绊倒后扶墙站稳、未倒地，不能改写成摔倒。母亲说没摔倒与此不必强行二选一，但是否受伤、诱因及当时是否头晕仍待核。下面读家中自测记录。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "血压计里有四组：十月二十八日早晨一百五十八比九十二，当晚一百四十六比八十六；十一月二日下午一百五十一比八十九；十一月六日早晨一百三十七比八十二。左右手、坐着休息多久都没记，十一月二日测量前有没有走动也不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这四组先记为家用血压记录，不据此判断病因。缺口是左右手、体位、休息时长，以及十一月二日前是否活动。还有血糖或其他自测吗？"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一张纸条写着十一月四日早晨指尖血糖六点八，旁边写没吃早饭。仪器是亲戚借的，试纸有没有过期、操作对不对，还有算不算真正空腹，我都确认不了。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A005",
+          "at_user_onset_heard_prefix": "这四组先记为家用血压记录，不据此判断病因。缺口是左右手、体位、休息时长，以及十一月二日前是否活动。还有血糖或其他自测吗？",
+          "final_shared_played_prefix": "这四组先记为家用血压记录，不据此判断病因。缺口是左右手、体位、休息时长，以及十一月二日前是否活动。还有血糖或其他自测吗？",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "血糖记为十一月四日早晨指尖值六点八，纸条称没吃早饭，但是否真正空腹、试纸效期和操作都未核实，因此只列记录，不作判断。下面核对药盒和她自述的吃法。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U07",
+        "assistant_id": "A007",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我十一月二日晚饭时看她走得比平时慢，从椅子起来后停了几秒。十一月八日电话里，她连续两次问同一个预约时间，但也可能只是累了或者没听清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这两项记为你的观察，不写成母亲确认的症状。十"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "对，这两条先这样，妹妹那条我直接读。她十一月六日发消息说，母亲十一月五日下午在小区台阶旁绊了一下，扶墙站稳，没有倒地，当时还说没事、也不晕。妹妹没写有没有受伤，也没写穿什么鞋。母亲自己一直说没有摔倒。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "妹妹的记录可写为险些绊倒后扶墙站稳、未倒地，不能改写成摔倒。母亲说没摔倒与此不必强行二选一，但是否受伤、诱因及当时是否头晕仍待核。下面读家中自测记录。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "血压计里有四组：十月二十八日早晨一百五十八比九十二，当晚一百四十六比八十六；十一月二日下午一百五十一比八十九；十一月六日早晨一百三十七比八十二。左右手、坐着休息多久都没记，十一月二日测量前有没有走动也不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这四组先记为家用血压记录，不据此判断病因。缺口是左右手、体位、休息时长，以及十一月二日前是否活动。还有血糖或其他自测吗？"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一张纸条写着十一月四日早晨指尖血糖六点八，旁边写没吃早饭。仪器是亲戚借的，试纸有没有过期、操作对不对，还有算不算真正空腹，我都确认不了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "血糖记为十一月四日早晨指尖值六点八，纸条称没吃早饭，但是否真正空腹、试纸效期和操作都未核实，因此只列记录，不作判断。下面核对药盒和她自述的吃法。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我十一月二日晚饭时看她走得比平时慢，从椅子起来后停了几秒。十一月八日电话里，她连续两次问同一个预约时间，但也可能只是累了或者没听清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这两项记为你的观察，不写成母亲确认的症状。十"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "对，这两条先这样，妹妹那条我直接读。她十一月六日发消息说，母亲十一月五日下午在小区台阶旁绊了一下，扶墙站稳，没有倒地，当时还说没事、也不晕。妹妹没写有没有受伤，也没写穿什么鞋。母亲自己一直说没有摔倒。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "妹妹的记录可写为险些绊倒后扶墙站稳、未倒地，不能改写成摔倒。母亲说没摔倒与此不必强行二选一，但是否受伤、诱因及当时是否头晕仍待核。下面读家中自测记录。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "血压计里有四组：十月二十八日早晨一百五十八比九十二，当晚一百四十六比八十六；十一月二日下午一百五十一比八十九；十一月六日早晨一百三十七比八十二。左右手、坐着休息多久都没记，十一月二日测量前有没有走动也不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这四组先记为家用血压记录，不据此判断病因。缺口是左右手、体位、休息时长，以及十一月二日前是否活动。还有血糖或其他自测吗？"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一张纸条写着十一月四日早晨指尖血糖六点八，旁边写没吃早饭。仪器是亲戚借的，试纸有没有过期、操作对不对，还有算不算真正空腹，我都确认不了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "血糖记为十一月四日早晨指尖值六点八，纸条称没吃早饭，但是否真正空腹、试纸效期和操作都未核实，因此只列记录，不作判断。下面核对药盒和她自述的吃法。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "药盒上有两种长期药，苯磺酸氨氯地平五毫克，旧标签是每天一次、每次一片；阿托伐他汀钙片二十毫克，旧标签是每晚一片。母亲说基本每天都吃，可氨氯地平剩得比按时吃应该剩的多。配药日期和现在的医嘱我都不知道。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A006",
+          "at_user_onset_heard_prefix": "血糖记为十一月四日早晨指尖值六点八，纸条称没吃早饭，但是否真正空腹、试纸效期和操作都未核实，因此只列记录，不作判断。下面核对药盒和她自述的吃法。",
+          "final_shared_played_prefix": "血糖记为十一月四日早晨指尖值六点八，纸条称没吃早饭，但是否真正空腹、试纸效期和操作都未核实，因此只列记录，不作判断。下面核对药盒和她自述的吃法。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "血糖记为十一月四日早晨指尖值六点八，纸条称没吃早饭，",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "药物栏写旧标签和现状，不推定漏服：氨氯地平五毫克每日一片、阿托伐他汀二十毫克每晚一片均是旧标签；前者余量偏多，需问配药日和当前医嘱。既往病历或化验能拿到吗？",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U08",
+        "assistant_id": "A008",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我十一月二日晚饭时看她走得比平时慢，从椅子起来后停了几秒。十一月八日电话里，她连续两次问同一个预约时间，但也可能只是累了或者没听清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这两项记为你的观察，不写成母亲确认的症状。十"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "对，这两条先这样，妹妹那条我直接读。她十一月六日发消息说，母亲十一月五日下午在小区台阶旁绊了一下，扶墙站稳，没有倒地，当时还说没事、也不晕。妹妹没写有没有受伤，也没写穿什么鞋。母亲自己一直说没有摔倒。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "妹妹的记录可写为险些绊倒后扶墙站稳、未倒地，不能改写成摔倒。母亲说没摔倒与此不必强行二选一，但是否受伤、诱因及当时是否头晕仍待核。下面读家中自测记录。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "血压计里有四组：十月二十八日早晨一百五十八比九十二，当晚一百四十六比八十六；十一月二日下午一百五十一比八十九；十一月六日早晨一百三十七比八十二。左右手、坐着休息多久都没记，十一月二日测量前有没有走动也不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这四组先记为家用血压记录，不据此判断病因。缺口是左右手、体位、休息时长，以及十一月二日前是否活动。还有血糖或其他自测吗？"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一张纸条写着十一月四日早晨指尖血糖六点八，旁边写没吃早饭。仪器是亲戚借的，试纸有没有过期、操作对不对，还有算不算真正空腹，我都确认不了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "血糖记为十一月四日早晨指尖值六点八，纸条称没吃早饭，但是否真正空腹、试纸效期和操作都未核实，因此只列记录，不作判断。下面核对药盒和她自述的吃法。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "药盒上有两种长期药，苯磺酸氨氯地平五毫克，旧标签是每天一次、每次一片；阿托伐他汀钙片二十毫克，旧标签是每晚一片。母亲说基本每天都吃，可氨氯地平剩得比按时吃应该剩的多。配药日期和现在的医嘱我都不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "药物栏写旧标签和现状，不推定漏服：氨氯地平五毫克每日一片、阿托伐他汀二十毫克每晚一片均是旧标签；前者余量偏多，需问配药日和当前医嘱。既往病历或化验能拿到吗？"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我十一月二日晚饭时看她走得比平时慢，从椅子起来后停了几秒。十一月八日电话里，她连续两次问同一个预约时间，但也可能只是累了或者没听清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这两项记为你的观察，不写成母亲确认的症状。十"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "对，这两条先这样，妹妹那条我直接读。她十一月六日发消息说，母亲十一月五日下午在小区台阶旁绊了一下，扶墙站稳，没有倒地，当时还说没事、也不晕。妹妹没写有没有受伤，也没写穿什么鞋。母亲自己一直说没有摔倒。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "妹妹的记录可写为险些绊倒后扶墙站稳、未倒地，不能改写成摔倒。母亲说没摔倒与此不必强行二选一，但是否受伤、诱因及当时是否头晕仍待核。下面读家中自测记录。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "血压计里有四组：十月二十八日早晨一百五十八比九十二，当晚一百四十六比八十六；十一月二日下午一百五十一比八十九；十一月六日早晨一百三十七比八十二。左右手、坐着休息多久都没记，十一月二日测量前有没有走动也不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这四组先记为家用血压记录，不据此判断病因。缺口是左右手、体位、休息时长，以及十一月二日前是否活动。还有血糖或其他自测吗？"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一张纸条写着十一月四日早晨指尖血糖六点八，旁边写没吃早饭。仪器是亲戚借的，试纸有没有过期、操作对不对，还有算不算真正空腹，我都确认不了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "血糖记为十一月四日早晨指尖值六点八，纸条称没吃早饭，但是否真正空腹、试纸效期和操作都未核实，因此只列记录，不作判断。下面核对药盒和她自述的吃法。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "药盒上有两种长期药，苯磺酸氨氯地平五毫克，旧标签是每天一次、每次一片；阿托伐他汀钙片二十毫克，旧标签是每晚一片。母亲说基本每天都吃，可氨氯地平剩得比按时吃应该剩的多。配药日期和现在的医嘱我都不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "药物栏写旧标签和现状，不推定漏服：氨氯地平五毫克每日一片、阿托伐他汀二十毫克每晚一片均是旧标签；前者余量偏多，需问配药日和当前医嘱。既往病历或化验能拿到吗？"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "完整病历和近期化验单现在都拿不到，旧药盒上的用法是不是现医嘱也不敢确认。还需要补哪一项，才能整理成明天能直接给医生看的版本？"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A007",
+          "at_user_onset_heard_prefix": "药物栏写旧标签和现状，不推定漏服：氨氯地平五毫克每日一片、阿托伐他汀二十毫克每晚一片均是旧标签；前者余量偏多，需问配药日和当前医嘱。既往病历或化验能拿到吗？",
+          "final_shared_played_prefix": "药物栏写旧标签和现状，不推定漏服：氨氯地平五毫克每日一片、阿托伐他汀二十毫克每晚一片均是旧标签；前者余量偏多，需问配药日和当前医嘱。既往病历或化验能拿到吗？",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "血糖记为十一月四日早晨指尖值六点八，纸条称没吃早饭，",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A007",
+            "after_text": "药物栏写旧标签和现状，不推定漏服：",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "在定稿前确认安全情况：她现在有没有昏厥、持续胸痛、明显呼吸困难、突发单侧无力或言语含糊？若有任一项，应立即寻求急诊评估，不要等摘要完成。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      },
+      {
+        "user_id": "U09",
+        "assistant_id": "A009",
+        "user_at_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我十一月二日晚饭时看她走得比平时慢，从椅子起来后停了几秒。十一月八日电话里，她连续两次问同一个预约时间，但也可能只是累了或者没听清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这两项记为你的观察，不写成母亲确认的症状。十"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "对，这两条先这样，妹妹那条我直接读。她十一月六日发消息说，母亲十一月五日下午在小区台阶旁绊了一下，扶墙站稳，没有倒地，当时还说没事、也不晕。妹妹没写有没有受伤，也没写穿什么鞋。母亲自己一直说没有摔倒。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "妹妹的记录可写为险些绊倒后扶墙站稳、未倒地，不能改写成摔倒。母亲说没摔倒与此不必强行二选一，但是否受伤、诱因及当时是否头晕仍待核。下面读家中自测记录。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "血压计里有四组：十月二十八日早晨一百五十八比九十二，当晚一百四十六比八十六；十一月二日下午一百五十一比八十九；十一月六日早晨一百三十七比八十二。左右手、坐着休息多久都没记，十一月二日测量前有没有走动也不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这四组先记为家用血压记录，不据此判断病因。缺口是左右手、体位、休息时长，以及十一月二日前是否活动。还有血糖或其他自测吗？"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一张纸条写着十一月四日早晨指尖血糖六点八，旁边写没吃早饭。仪器是亲戚借的，试纸有没有过期、操作对不对，还有算不算真正空腹，我都确认不了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "血糖记为十一月四日早晨指尖值六点八，纸条称没吃早饭，但是否真正空腹、试纸效期和操作都未核实，因此只列记录，不作判断。下面核对药盒和她自述的吃法。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "药盒上有两种长期药，苯磺酸氨氯地平五毫克，旧标签是每天一次、每次一片；阿托伐他汀钙片二十毫克，旧标签是每晚一片。母亲说基本每天都吃，可氨氯地平剩得比按时吃应该剩的多。配药日期和现在的医嘱我都不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "药物栏写旧标签和现状，不推定漏服：氨氯地平五毫克每日一片、阿托伐他汀二十毫克每晚一片均是旧标签；前者余量偏多，需问配药日和当前医嘱。既往病历或化验能拿到吗？"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "完整病历和近期化验单现在都拿不到，旧药盒上的用法是不是现医嘱也不敢确认。还需要补哪一项，才能整理成明天能直接给医生看的版本？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "在定稿前确认安全情况：她现在有没有昏厥、持续胸痛、明显呼吸困难、突发单侧无力或言语含糊？若有任一项，应立即寻求急诊评估，不要等摘要完成。"
+          }
+        ],
+        "assistant_before_reply_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我十一月二日晚饭时看她走得比平时慢，从椅子起来后停了几秒。十一月八日电话里，她连续两次问同一个预约时间，但也可能只是累了或者没听清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这两项记为你的观察，不写成母亲确认的症状。十"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "对，这两条先这样，妹妹那条我直接读。她十一月六日发消息说，母亲十一月五日下午在小区台阶旁绊了一下，扶墙站稳，没有倒地，当时还说没事、也不晕。妹妹没写有没有受伤，也没写穿什么鞋。母亲自己一直说没有摔倒。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "妹妹的记录可写为险些绊倒后扶墙站稳、未倒地，不能改写成摔倒。母亲说没摔倒与此不必强行二选一，但是否受伤、诱因及当时是否头晕仍待核。下面读家中自测记录。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "血压计里有四组：十月二十八日早晨一百五十八比九十二，当晚一百四十六比八十六；十一月二日下午一百五十一比八十九；十一月六日早晨一百三十七比八十二。左右手、坐着休息多久都没记，十一月二日测量前有没有走动也不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这四组先记为家用血压记录，不据此判断病因。缺口是左右手、体位、休息时长，以及十一月二日前是否活动。还有血糖或其他自测吗？"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一张纸条写着十一月四日早晨指尖血糖六点八，旁边写没吃早饭。仪器是亲戚借的，试纸有没有过期、操作对不对，还有算不算真正空腹，我都确认不了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "血糖记为十一月四日早晨指尖值六点八，纸条称没吃早饭，但是否真正空腹、试纸效期和操作都未核实，因此只列记录，不作判断。下面核对药盒和她自述的吃法。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "药盒上有两种长期药，苯磺酸氨氯地平五毫克，旧标签是每天一次、每次一片；阿托伐他汀钙片二十毫克，旧标签是每晚一片。母亲说基本每天都吃，可氨氯地平剩得比按时吃应该剩的多。配药日期和现在的医嘱我都不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "药物栏写旧标签和现状，不推定漏服：氨氯地平五毫克每日一片、阿托伐他汀二十毫克每晚一片均是旧标签；前者余量偏多，需问配药日和当前医嘱。既往病历或化验能拿到吗？"
+          },
+          {
+            "role": "user",
+            "id": "U08",
+            "text": "完整病历和近期化验单现在都拿不到，旧药盒上的用法是不是现医嘱也不敢确认。还需要补哪一项，才能整理成明天能直接给医生看的版本？"
+          },
+          {
+            "role": "assistant",
+            "id": "A008",
+            "text": "在定稿前确认安全情况：她现在有没有昏厥、持续胸痛、明显呼吸困难、突发单侧无力或言语含糊？若有任一项，应立即寻求急诊评估，不要等摘要完成。"
+          },
+          {
+            "role": "user",
+            "id": "U09",
+            "text": "这些现在都没有，她能正常说话，也能在屋里走。那就请你把摘要完整读一遍，差异和明天要核实的问题都保留。"
+          }
+        ],
+        "boundary": {
+          "target_assistant_id": "A008",
+          "at_user_onset_heard_prefix": "在定稿前确认安全情况：她现在有没有昏厥、持续胸痛、明显呼吸困难、突发单侧无力或言语含糊？若有任一项，应立即寻求急诊评估，不要等摘要完成。",
+          "final_shared_played_prefix": "在定稿前确认安全情况：她现在有没有昏厥、持续胸痛、明显呼吸困难、突发单侧无力或言语含糊？若有任一项，应立即寻求急诊评估，不要等摘要完成。",
+          "discarded_unheard_tail": ""
+        },
+        "prior_backchannel_onsets": [
+          {
+            "event_id": "BC01",
+            "target_assistant_id": "A002",
+            "after_text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。",
+            "text": "嗯",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC02",
+            "target_assistant_id": "A006",
+            "after_text": "血糖记为十一月四日早晨指尖值六点八，纸条称没吃早饭，",
+            "text": "明白",
+            "completion_status": "not_known_before_tts"
+          },
+          {
+            "event_id": "BC03",
+            "target_assistant_id": "A007",
+            "after_text": "药物栏写旧标签和现状，不推定漏服：",
+            "text": "对",
+            "completion_status": "not_known_before_tts"
+          }
+        ],
+        "assistant_candidate": "摘要：①母亲自述：约两周前起身易晕、乏力，频率不明；近期夜醒，时长不明。台历记录更早的不适和夜醒，但作者、日期及是否同一不适待核，可能存在起始差异。②家人：你见走慢、起身停顿及重复问预约，或因疲劳/未听清；妹妹记绊后扶墙未倒，母亲当时自称没事、不晕，伤情、诱因待核。③自测：四次血压及指血6.8已录，测量条件、空腹、试纸和操作待核。④问医生：症状与测量/服药关系、步态记忆变化、既往诊断化验、两药现医嘱及氨氯地平余量偏多是否漏服。无所列急症，能正常说话、室内行走；勿调药，出现所列急症立即就医。",
+        "knowledge_rule": "User knows frozen situation; assistant knows only this heard history plus stable general knowledge. Side speech is not a user request."
+      }
+    ],
+    "reconstructed_event_heard_context": [
+      {
+        "event_id": "BC01",
+        "kind": "backchannels",
+        "target_assistant_id": "A002",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。",
+        "event_text": "嗯",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC02",
+        "kind": "backchannels",
+        "target_assistant_id": "A006",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我十一月二日晚饭时看她走得比平时慢，从椅子起来后停了几秒。十一月八日电话里，她连续两次问同一个预约时间，但也可能只是累了或者没听清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这两项记为你的观察，不写成母亲确认的症状。十"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "对，这两条先这样，妹妹那条我直接读。她十一月六日发消息说，母亲十一月五日下午在小区台阶旁绊了一下，扶墙站稳，没有倒地，当时还说没事、也不晕。妹妹没写有没有受伤，也没写穿什么鞋。母亲自己一直说没有摔倒。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "妹妹的记录可写为险些绊倒后扶墙站稳、未倒地，不能改写成摔倒。母亲说没摔倒与此不必强行二选一，但是否受伤、诱因及当时是否头晕仍待核。下面读家中自测记录。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "血压计里有四组：十月二十八日早晨一百五十八比九十二，当晚一百四十六比八十六；十一月二日下午一百五十一比八十九；十一月六日早晨一百三十七比八十二。左右手、坐着休息多久都没记，十一月二日测量前有没有走动也不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这四组先记为家用血压记录，不据此判断病因。缺口是左右手、体位、休息时长，以及十一月二日前是否活动。还有血糖或其他自测吗？"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一张纸条写着十一月四日早晨指尖血糖六点八，旁边写没吃早饭。仪器是亲戚借的，试纸有没有过期、操作对不对，还有算不算真正空腹，我都确认不了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "血糖记为十一月四日早晨指尖值六点八，纸条称没吃早饭，"
+          }
+        ],
+        "at_event_onset_heard_prefix": "血糖记为十一月四日早晨指尖值六点八，纸条称没吃早饭，",
+        "event_text": "明白",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "BC03",
+        "kind": "backchannels",
+        "target_assistant_id": "A007",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我十一月二日晚饭时看她走得比平时慢，从椅子起来后停了几秒。十一月八日电话里，她连续两次问同一个预约时间，但也可能只是累了或者没听清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这两项记为你的观察，不写成母亲确认的症状。十"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "对，这两条先这样，妹妹那条我直接读。她十一月六日发消息说，母亲十一月五日下午在小区台阶旁绊了一下，扶墙站稳，没有倒地，当时还说没事、也不晕。妹妹没写有没有受伤，也没写穿什么鞋。母亲自己一直说没有摔倒。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "妹妹的记录可写为险些绊倒后扶墙站稳、未倒地，不能改写成摔倒。母亲说没摔倒与此不必强行二选一，但是否受伤、诱因及当时是否头晕仍待核。下面读家中自测记录。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "血压计里有四组：十月二十八日早晨一百五十八比九十二，当晚一百四十六比八十六；十一月二日下午一百五十一比八十九；十一月六日早晨一百三十七比八十二。左右手、坐着休息多久都没记，十一月二日测量前有没有走动也不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这四组先记为家用血压记录，不据此判断病因。缺口是左右手、体位、休息时长，以及十一月二日前是否活动。还有血糖或其他自测吗？"
+          },
+          {
+            "role": "user",
+            "id": "U06",
+            "text": "还有一张纸条写着十一月四日早晨指尖血糖六点八，旁边写没吃早饭。仪器是亲戚借的，试纸有没有过期、操作对不对，还有算不算真正空腹，我都确认不了。"
+          },
+          {
+            "role": "assistant",
+            "id": "A006",
+            "text": "血糖记为十一月四日早晨指尖值六点八，纸条称没吃早饭，但是否真正空腹、试纸效期和操作都未核实，因此只列记录，不作判断。下面核对药盒和她自述的吃法。"
+          },
+          {
+            "role": "user",
+            "id": "U07",
+            "text": "药盒上有两种长期药，苯磺酸氨氯地平五毫克，旧标签是每天一次、每次一片；阿托伐他汀钙片二十毫克，旧标签是每晚一片。母亲说基本每天都吃，可氨氯地平剩得比按时吃应该剩的多。配药日期和现在的医嘱我都不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A007",
+            "text": "药物栏写旧标签和现状，不推定漏服："
+          }
+        ],
+        "at_event_onset_heard_prefix": "药物栏写旧标签和现状，不推定漏服：",
+        "event_text": "对",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      },
+      {
+        "event_id": "S01",
+        "kind": "side_speech",
+        "target_assistant_id": "A005",
+        "at_event_onset_history": [
+          {
+            "role": "user",
+            "id": "U01",
+            "text": "明天我要陪母亲去综合门诊。她最近说头晕、没力气，记录又比较零散，想请你按来源帮我整理，怎么开始比较合适？"
+          },
+          {
+            "role": "assistant",
+            "id": "A001",
+            "text": "可以按母亲自述、家人观察、家中自测、待问医生四部分整理，每条保留日期、来源和不确定处。先说她自己描述的不适和大致时间。"
+          },
+          {
+            "role": "user",
+            "id": "U02",
+            "text": "她说头晕和乏力大概两周前开始，起身时更容易晕，不确定是不是每天都有；最近夜里也容易醒，但持续多久记不清。台历上十月十二日写过下午没精神，十月二十四日写起床有点晕，十一月三日写夜里醒三次，不过不敢确定是不是她当天写的。"
+          },
+          {
+            "role": "assistant",
+            "id": "A002",
+            "text": "先分开记：母亲自述约两周前开始，台历则最早到十月十二日，二者暂列为起始时间差异。十月二十四日头晕和十一月三日夜醒可作有日期记录，但便签作者待核。接着说家人观察吧。"
+          },
+          {
+            "role": "user",
+            "id": "U03",
+            "text": "我十一月二日晚饭时看她走得比平时慢，从椅子起来后停了几秒。十一月八日电话里，她连续两次问同一个预约时间，但也可能只是累了或者没听清。"
+          },
+          {
+            "role": "assistant",
+            "id": "A003",
+            "text": "这两项记为你的观察，不写成母亲确认的症状。十"
+          },
+          {
+            "role": "user",
+            "id": "U04",
+            "text": "对，这两条先这样，妹妹那条我直接读。她十一月六日发消息说，母亲十一月五日下午在小区台阶旁绊了一下，扶墙站稳，没有倒地，当时还说没事、也不晕。妹妹没写有没有受伤，也没写穿什么鞋。母亲自己一直说没有摔倒。"
+          },
+          {
+            "role": "assistant",
+            "id": "A004",
+            "text": "妹妹的记录可写为险些绊倒后扶墙站稳、未倒地，不能改写成摔倒。母亲说没摔倒与此不必强行二选一，但是否受伤、诱因及当时是否头晕仍待核。下面读家中自测记录。"
+          },
+          {
+            "role": "user",
+            "id": "U05",
+            "text": "血压计里有四组：十月二十八日早晨一百五十八比九十二，当晚一百四十六比八十六；十一月二日下午一百五十一比八十九；十一月六日早晨一百三十七比八十二。左右手、坐着休息多久都没记，十一月二日测量前有没有走动也不知道。"
+          },
+          {
+            "role": "assistant",
+            "id": "A005",
+            "text": "这四组先记为家用血压记录，不据此判断病因。"
+          }
+        ],
+        "at_event_onset_heard_prefix": "这四组先记为家用血压记录，不据此判断病因。",
+        "event_text": "我先靠一会儿，你们慢慢记。",
+        "expected_assistant_behavior": "Continue the same existing assistant audio without pausing or starting a new reply."
+      }
+    ],
+    "length_rule": "Ordinary replies aim at <=120 characters. Only semantic redundancy is a content error; >250 character compaction has its own separate three-attempt budget.",
+    "format_repair_attempt": 0
+  },
+  "max_tokens": null,
+  "response_format": {
+    "type": "json_object"
+  },
+  "reasoning_effort_policy": "default",
+  "relay_policy": {
+    "schema": "duplex_v2.timeout_relay_policy.v3",
+    "primary": {
+      "profile": "qiniu-chat",
+      "endpoint": "https://api.modelink.ai/v1/chat/completions"
+    },
+    "backup": {
+      "profile": "lianyu",
+      "endpoint": "https://api.openbili.com/v1/chat/completions",
+      "model_map": {
+        "openai/gpt-5.6-sol": "gpt-5.6-sol",
+        "openai/gpt-5.6-luna": "gpt-5.6-luna"
+      },
+      "verification": {
+        "path": "/ytech_m2v8_hdd/workspace/kling_mm/zhengyuanhong/read_paper/全双工/duplex-env-scaling-package/project/reports/20261105-v25-routing-probe/verification.json",
+        "sha256": "285bc1af9fbf964972751954bcb01d44eefd789ab95a9b25b0d7e267377fe3e2"
+      }
+    },
+    "trigger": {
+      "max_retries": 5,
+      "http_statuses": [
+        502,
+        503,
+        504
+      ],
+      "error_types": [
+        "TimeoutError",
+        "HTTP2DeadlineExceeded",
+        "ConnectionResetError",
+        "ConnectionAbortedError",
+        "BrokenPipeError",
+        "RemoteDisconnected",
+        "IncompleteRead"
+      ],
+      "http2_transport_errors": "negotiated_h2_only",
+      "require_all_attempts": true
+    },
+    "max_relay_switches": 1
+  },
+  "request_timeout_seconds": 1800.0,
+  "text_output_token_policy": "omit",
+  "request_max_retries": 5,
+  "http_transport": "http2_ping_v1",
+  "http2_proxy": "http://oversea-squid1.jp.txyun:11080",
+  "http2_ping_interval_seconds": 30.0,
+  "require_http2_alpn": true
+}
