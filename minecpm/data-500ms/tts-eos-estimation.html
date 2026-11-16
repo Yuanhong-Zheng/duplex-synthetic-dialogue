@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MineCPM V1.4 · TTS 完成时间与文本特征</title>
+  <style>
+    :root{color-scheme:light;--ink:#172c3a;--muted:#526877;--line:#dce6eb;--green:#087d69;--pale:#edf7f4;--amber:#8b5a17}
+    *{box-sizing:border-box}body{margin:0;background:#f4f7f8;color:var(--ink);font:15px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}main{width:100%;padding:28px clamp(16px,3vw,56px) 48px}a{color:var(--green);text-decoration:none}a:hover{text-decoration:underline}nav{display:flex;gap:24px;flex-wrap:wrap;font-size:14px}.eyebrow{margin-top:30px;color:var(--green);font-weight:700;font-size:12px;letter-spacing:.13em}h1{font-size:clamp(25px,3vw,39px);line-height:1.25;margin:8px 0 12px;letter-spacing:-.03em}h2{font-size:20px;margin:0 0 10px}p{margin:8px 0}.muted{color:var(--muted)}.scope{max-width:100ch}.notice{padding:15px 18px;margin:22px 0;border:1px solid #d9e8df;border-left:4px solid var(--green);border-radius:10px;background:var(--pale)}.notice strong{font-weight:650}.cards{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin:24px 0}.card{min-width:0;padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:white}.card small{display:block;color:var(--muted)}.card strong{display:block;font-size:26px;letter-spacing:-.03em;white-space:nowrap}.card span{font-size:12px;color:var(--muted)}.panel{padding:20px;border:1px solid var(--line);border-radius:14px;background:white}.toolbar{display:flex;gap:14px;align-items:end;flex-wrap:wrap;margin:18px 0 14px}label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted)}select,input[type=search]{border:1px solid #cbd9e0;background:white;border-radius:7px;min-height:39px;padding:8px 11px;color:var(--ink);font:inherit}input[type=search]{min-width:240px}.check{flex-direction:row;align-items:center;min-height:39px}.table-scroll{overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:9px}table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px;white-space:nowrap}th,td{text-align:right;padding:10px 12px;border-bottom:1px solid #e5edf1;vertical-align:top}th{position:sticky;top:0;background:#eef4f5;color:#345361;font-weight:650;z-index:1}th:first-child,td:first-child{text-align:left}td:first-child{background:white;position:sticky;left:0;z-index:1;border-right:1px solid #e5edf1}th:first-child{left:0;z-index:2}tr:hover td{background:#f4faf8}.row-case{display:block;font-weight:600}.row-sub{display:block;color:var(--muted);font-size:12px}.badge{display:inline-block;border-radius:20px;background:var(--pale);padding:2px 8px;color:var(--green);font-size:12px}.badge.probe{background:#fff4e3;color:var(--amber)}.hide-extra [data-extra]{display:none}.error{color:#9f3434;background:#fff0ee;padding:15px;border-radius:9px}.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:24px}.notes dt{font-weight:650;margin-bottom:5px}.notes dd{margin:0;color:var(--muted);font-size:13px}code{font-size:.95em}footer{margin-top:24px;font-size:12px;color:var(--muted)}button{font:inherit;border:1px solid var(--line);background:white;border-radius:6px;padding:7px 12px;color:var(--ink);cursor:pointer}button:hover{background:#f0f6f4}
+    @media(max-width:1100px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}.notes{grid-template-columns:1fr}}
+    @media(max-width:600px){main{padding:18px 12px 30px}.cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.card{padding:12px}.card strong{font-size:23px}.panel{padding:12px}input[type=search]{min-width:180px}}
+  </style>
+</head>
+<body class="hide-extra">
+<main>
+  <nav><a id="case-view-link" href="../?source=training-minicpm-en&amp;version=V1.4">← MineCPM V1.4 案例与训练序列</a><a href="tts-eos-estimation.json" download>下载完整统计 JSON</a></nav>
+  <header>
+    <div id="clock-caption" class="eyebrow">V1.4 / MINECPM / REAL STREAMING TTS</div>
+    <h1>TTS 完成时间与文本特征</h1>
+    <p id="timing-scope" class="muted scope">记录每秒 16 个正文 token 输入下，dots.tts 双向流式的音频到达、播放完成和文本特征，为之后研究 tts_eos 时间估计提供依据。本版训练标签使用实际测量，没有使用估计时长。</p>
+  </header>
+  <aside class="notice"><strong>自然结束与打断探针分别查看。</strong> 自然结束回复在完整播放后插入外部 <code>&lt;|tts_eos|&gt;</code>，label 为 −100。打断回复先做完整流式合成探针，用于确定新音频的语义锚点；训练对话只播放截断前缀、不插入 tts_eos。下表探针的完整时长不代表用户实际听到了这么长。</aside>
+  <aside id="timing-observations" class="notice" hidden></aside>
+  <div id="status" class="muted" role="status">正在读取本版实际记录…</div>
+  <div id="cards" class="cards"></div>
+  <section class="panel" aria-label="逐回复的文本与语音时间">
+    <h2>逐回复记录</h2>
+    <p class="muted">所有秒数从该回复首批文字实际提交开始计；tts_eos unit 是整条对话的全局训练位置。正文 token 数来自 MiniCPM 原 tokenizer，不是 ASR 词数。</p>
+    <div class="toolbar">
+      <label>记录范围<select id="cohort"><option value="natural">自然结束 · 插入 tts_eos</option><option value="probe">打断回复 · 完整合成探针</option><option value="all">全部记录</option></select></label>
+      <label>排序<select id="sort"><option value="natural_completion_seconds">完整完成时间 · 从长到短</option><option value="playback_seconds">播放耗时 · 从长到短</option><option value="body_tokens">正文 token · 从多到少</option><option value="words">英文词数 · 从多到少</option><option value="first_audible_seconds">首次有声估计 · 从慢到快</option><option value="native_done_seconds">原生 EOS · 从慢到快</option><option value="last_text_sent_seconds">最后文字送达 · 从晚到早</option><option value="case_id">案例编号</option></select></label>
+      <label>搜索<input id="search" type="search" placeholder="案例编号或助手轮次"></label>
+      <label class="check"><input id="extras" type="checkbox">展开字符、标点、声纹等特征</label>
+      <button id="refresh" type="button">刷新记录</button>
+    </div>
+    <p id="selection" class="muted" aria-live="polite"></p>
+    <div class="table-scroll"><table><thead><tr>
+      <th>案例 / 助手回复</th><th>类型</th><th>正文<br>token</th><th>英文<br>词数</th>
+      <th data-extra>字符 /<br>非空白字符</th><th data-extra>数字 /<br>标点</th><th data-extra>语言 /<br>语速</th><th data-extra>声音参考<br>SHA</th>
+      <th>末批文字<br>提交 (s)</th><th>文字结束<br>通知 (s)</th><th>首包<br>PCM (ms)</th><th>首次有声<br>估计 (ms)</th>
+      <th>原生<br>EOS (s)</th><th>纯波形<br>时长 (s)</th><th>FIFO 播放<br>完成 (s)</th><th>完整完成<br>时间 (s)</th><th>供给等待<br>合计 (s)</th><th>中途<br>断供</th><th>tts_eos<br>全局 unit</th>
+    </tr></thead><tbody id="rows"></tbody></table></div>
+  </section>
+  <dl class="notes">
+    <div><dt>生成结束、播放结束、外部反馈</dt><dd>原生 EOS 表示 TTS 生成完成。FIFO 播放包含真实首包等待和音频供给空档；完整完成时间取原生 EOS 与最后一块播放结束的较晚者，随后才允许外部 tts_eos。</dd></div>
+    <div><dt>首次有声与供给等待</dt><dd>首次有声通过连续两个 20ms RMS 窗估计，不是人工验证的可懂起声或语义 VAD。“供给等待合计”包括首次等待；“中途断供”排除首次等待。波形内部自然停顿不计为供给断流。</dd></div>
+    <div><dt>当前统计的适用范围</dt><dd>本版只有英文、一个冻结的助手克隆参考和一种两步 STTS 配置。文本、机器排队、输入节奏与语速都会影响完成时间；这些数据不能直接泛化到其他语言、声纹或部署负载。</dd></div>
+  </dl>
+  <footer>实际模型请求、连续声学特征、音频块与时间戳均另行保留。这里展示训练调度与实际 TTS 测量，不是 Thinker 采样结果或新的模型性能榜单。</footer>
+</main>
+<script>
+"use strict";
+(() => {
+  const $ = id => document.getElementById(id);
+  const escape = value => String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
+  const finite = value => typeof value === 'number' && Number.isFinite(value);
+  const audible = row => finite(row.first_audible_seconds) ? row.first_audible_seconds : row.first_audible_seconds?.seconds;
+  const number = (value, places=3) => finite(value) ? value.toFixed(places) : '—';
+  const median = values => { const x=values.filter(finite).sort((a,b)=>a-b);return !x.length ? null : x.length%2 ? x[(x.length-1)/2] : (x[x.length/2-1]+x[x.length/2])/2; };
+  let records = [], packet = null, loading = 0;
+  function filtered() {
+    const cohort=$('cohort').value, query=$('search').value.trim().toLowerCase(), key=$('sort').value;
+    const rows=records.filter(row=>(cohort==='all' || (cohort==='probe' ? row.is_interrupted_in_training===true : row.is_interrupted_in_training===false)) && `${row.case_id} ${row.assistant_id}`.toLowerCase().includes(query));
+    return rows.sort((a,b)=>key==='case_id' ? `${a.case_id}/${a.assistant_id}`.localeCompare(`${b.case_id}/${b.assistant_id}`) : (key==='first_audible_seconds' ? (audible(b) ?? -Infinity)-(audible(a) ?? -Infinity) : (finite(b[key]) ? b[key] : -Infinity)-(finite(a[key]) ? a[key] : -Infinity)) || `${a.case_id}/${a.assistant_id}`.localeCompare(`${b.case_id}/${b.assistant_id}`));
+  }
+  function render() {
+    const rows=filtered(), natural=rows.filter(row=>!row.is_interrupted_in_training).length;
+    const card=(label,value,note)=>`<div class="card"><small>${escape(label)}</small><strong>${escape(value)}</strong><span>${escape(note)}</span></div>`;
+    $('cards').innerHTML=[card('当前记录',String(rows.length),`${natural} 条自然结束 · ${rows.length-natural} 条完整探针`),card('正文 token 中位数',number(median(rows.map(row=>row.body_tokens)),1),'只计正文，不含控制 token'),card('首包 PCM 中位数',number(median(rows.map(row=>finite(row.first_audio_seconds)?row.first_audio_seconds*1000:null)),0)+' ms','真实音频块首次到达'),card('首次有声估计中位数',number(median(rows.map(row=>finite(audible(row))?audible(row)*1000:null)),0)+' ms','双 20ms 能量窗估计'),card('完整完成时间中位数',number(median(rows.map(row=>row.natural_completion_seconds)),2)+' s','原生 EOS 与 FIFO 播完取较晚'),card('存在中途断供',String(rows.filter(row=>row.delivery_underruns>0).length),'不含首次等待')].join('');
+    $('selection').textContent=`当前 ${rows.length} / ${records.length} 条记录。点击案例编号返回该条对话、训练序列与实际音频。`;
+    $('rows').innerHTML=rows.map(row=>{
+      const probe=row.is_interrupted_in_training, punctuation=row.punctuation || {}, count=Object.values(punctuation).filter(finite).reduce((a,b)=>a+b,0);
+      const url=`../?source=training-minicpm-en&version=V1.4${packet?.new_target_unit_ms===500 || packet?.unit_duration_ms===500 || packet?.training_unit_ms===500 ? '&unit_ms=500' : ''}&case=${encodeURIComponent(row.case_id)}`;
+      return `<tr><td><a class="row-case" href="${escape(url)}">${escape(row.case_id)}</a><span class="row-sub">${escape(row.assistant_id)}</span></td><td><span class="badge${probe?' probe':''}">${probe?'完整探针':'自然结束'}</span></td><td>${escape(row.body_tokens ?? '—')}</td><td>${escape(row.words ?? '—')}</td><td data-extra>${escape(row.characters ?? '—')} / ${escape(row.non_whitespace_characters ?? '—')}</td><td data-extra title="${escape(JSON.stringify(punctuation))}">${escape(row.digits ?? '—')} / ${count}</td><td data-extra>${escape(row.language || '—')} / ${number(row.speech_speed,2)}×</td><td data-extra title="${escape(row.reference_audio_sha256 || '')}">${escape(row.reference_audio_sha256?.slice(0,12) || '—')}</td><td>${number(row.last_text_sent_seconds)}</td><td>${number(row.text_finish_sent_seconds)}</td><td>${number(finite(row.first_audio_seconds)?row.first_audio_seconds*1000:null,1)}</td><td title="${escape(row.first_audible_seconds?.method || 'RMS energy estimate')}">${number(finite(audible(row))?audible(row)*1000:null,1)}</td><td>${number(row.native_done_seconds)}</td><td>${number(row.waveform_seconds)}</td><td>${number(row.playback_seconds)}</td><td>${number(row.natural_completion_seconds)}</td><td>${number(row.gaps_seconds)}</td><td>${escape(row.delivery_underruns ?? '—')}</td><td>${probe ? '不插入' : escape(row.tts_eos_unit ?? '—')}</td></tr>`;
+    }).join('') || '<tr><td colspan="19">当前筛选没有记录。</td></tr>';
+  }
+  async function load() {
+    const ticket=++loading;$('refresh').disabled=true;$('status').className='muted';$('status').textContent='正在读取本版实际记录…';
+    try {
+      const response=await fetch('tts-eos-estimation.json',{cache:'no-cache'});
+      if(!response.ok)throw new Error(`HTTP ${response.status}`);
+      const data=await response.json();if(ticket!==loading)return;
+      if(data.version!=='V1.4' || !Array.isArray(data.feature_rows) || data.feature_rows.some(row=>typeof row.case_id!=='string' || typeof row.assistant_id!=='string' || typeof row.is_interrupted_in_training!=='boolean'))throw new Error('统计文件版本或逐回复字段不匹配');
+      if(data.replies!=null && data.replies!==data.feature_rows.length)throw new Error('逐回复数量与统计摘要不匹配');
+      const keys=data.feature_rows.map(row=>`${row.case_id}/${row.assistant_id}`);if(new Set(keys).size!==keys.length)throw new Error('统计包含重复回复');
+      packet=data;records=data.feature_rows;
+      const targetUnitMs=data.new_target_unit_ms ?? data.unit_duration_ms ?? data.training_unit_ms ?? 1000;
+      if(targetUnitMs===500){
+        $('case-view-link').href='../?source=training-minicpm-en&version=V1.4&unit_ms=500';
+        $('clock-caption').textContent='V1.4 / MINECPM / 500ms TRAINING UNITS';
+        $('timing-scope').textContent=`训练标签按500ms unit转换，每个SPEAK unit固定16个正文token。录音与下表TTS耗时复用原16 token/${data.measured_tts_unit_ms ?? 1000}ms供字测量，没有重新合成；实际语音完成帧不变，外部tts_eos映射到新的半秒unit。`;
+      }
+      $('timing-observations').hidden=!data.timing_observations;
+      if(data.timing_observations)$('timing-observations').textContent=`计时包含完整原始记录的采集开销。${data.timing_observations.observation} ${data.timing_observations.unknown} 异常记录：${(data.timing_observations.latency_outliers || []).join('、')}。后续估计应分开考察波形时长与工程等待。`;
+      const natural=records.filter(row=>!row.is_interrupted_in_training).length;
+      $('status').textContent=`已读取 ${records.length} 条真实流式记录：自然结束 ${natural} 条，打断回复完整探针 ${records.length-natural} 条。实际时长用于本版标签，尚未训练或应用估计模型。`;
+      render();
+    }catch(error){if(ticket===loading){$('status').className='error';$('status').textContent=`统计读取失败：${error.message}。可点击“刷新记录”重试。`;}}
+    finally{if(ticket===loading)$('refresh').disabled=false;}
+  }
+  for(const id of ['cohort','sort'])$(id).addEventListener('change',render);
+  $('search').addEventListener('input',render);
+  $('extras').addEventListener('change',event=>document.body.classList.toggle('hide-extra',!event.target.checked));
+  $('refresh').addEventListener('click',load);
+  load();
+})();
+</script>
+</body>
+</html>

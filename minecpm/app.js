@@ -13,13 +13,18 @@
   let dataVersions = [{id:'V1.4', label:'V1.4 · MineCPM', root:'data/'}];
   let versionRegistryPromise = null;
   let latestDataVersion = 'V1.4';
+  let selectedUnitMs = new URL(window.location).searchParams.get('unit_ms') === '500' ? 500 : 1000;
+  let activeUnitMs = 1000;
+  const unitSeconds = () => activeUnitMs / 1000;
+  const unitToSeconds = unit => unit * unitSeconds();
   let trainingTimeline = null, tailAnimation = 0;
   const nowSeconds = () => performance.now() / 1000;
   const isTurnRelative = () => isMiniTraining() && trainingProtocol === 'minicpm_tail_turn_relative';
   const isDelayedEOS = () => isMiniTraining() && ['minicpm_tail_delayed_eos','minicpm_tail_turn_relative'].includes(trainingProtocol);
   const isMineCPM = () => isMiniTraining() && trainingProtocol === 'minecpm_fixed16_tts_eos';
   const selectedVersion = () => dataVersions.find(v => v.id === dataVersion) || dataVersions[0];
-  const datasetBase = () => isMiniTraining() ? new URL(selectedVersion().root, pageBase) : pageBase;
+  const selectedVariant = () => selectedVersion().variants?.find(v => v.unit_duration_ms === selectedUnitMs);
+  const datasetBase = () => isMiniTraining() ? new URL(selectedVariant()?.root || selectedVersion().root, pageBase) : pageBase;
   const datasetURL = path => path ? new URL(path, datasetBase()).href : '';
   function resolveCaseURLs(info) {
     const value = {...info};
@@ -37,9 +42,13 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const value = await response.json();
       if (!Array.isArray(value.versions) || !value.versions.length || new Set(value.versions.map(v=>v.id)).size !== value.versions.length ||
-          value.versions.some(v=>!['V1.1','V1.2','V1.3','V1.4'].includes(v.id) || typeof v.root !== 'string' || new URL(v.root,pageBase).origin !== pageBase.origin))
+          value.versions.some(v=>v.id !== 'V1.4' || typeof v.root !== 'string' || new URL(v.root,pageBase).origin !== pageBase.origin))
         throw new Error('训练版本索引格式不正确');
       dataVersions = value.versions;
+      for (const version of dataVersions) if (version.variants &&
+          (!Array.isArray(version.variants) || new Set(version.variants.map(v=>v.unit_duration_ms)).size !== version.variants.length ||
+           version.variants.some(v=>![500,1000].includes(v.unit_duration_ms) || typeof v.root !== 'string' || new URL(v.root,pageBase).origin !== pageBase.origin)))
+        throw new Error('训练 unit 时长索引格式不正确');
       latestDataVersion = dataVersions.some(v=>v.id===value.latest) ? value.latest : dataVersions[dataVersions.length-1].id;
     } catch (error) {
       versionRegistryPromise = null;
@@ -51,12 +60,21 @@
   function renderDataVersions() {
     $('data-version-picker').hidden = !isMiniTraining();
     $('data-version-note').hidden = !isMiniTraining();
+    $('unit-duration-picker').hidden = true;
     if (!isMiniTraining()) return;
     if (!dataVersions.some(v=>v.id===dataVersion)) dataVersion = latestDataVersion;
     $('data-version').innerHTML = dataVersions.map(v=>`<option value="${escape(v.id)}">${escape(v.label || v.id)}</option>`).join('');
     $('data-version').value = dataVersion;
+    const variants = selectedVersion().variants || [];
+    if (!variants.some(v=>v.unit_duration_ms===selectedUnitMs)) selectedUnitMs = 1000;
+    activeUnitMs = selectedVariant()?.unit_duration_ms || 1000;
+    $('unit-duration-picker').hidden = variants.length < 2;
+    $('unit-duration').innerHTML = (variants.length ? variants : [{unit_duration_ms:1000}]).map(v=>
+      `<option value="${v.unit_duration_ms}">${escape(v.label || `${v.unit_duration_ms}ms / unit${v.unit_duration_ms===1000?' · 原版':''}`)}</option>`).join('');
+    $('unit-duration').value = String(selectedUnitMs);
+    $('nav-tts-report').href = datasetURL('tts-eos-estimation.html');
     $('data-source').value = sourcePickerValue();
-    $('data-version-note').textContent = dataVersion === 'V1.4' ? 'V1.4 · MineCPM：每秒生成 16 个正文 token，轮末允许不足；每个 SPEAK unit 保留 chunk_eos，不使用 turn_eos。文字结束后保留空 SPEAK，直到真实 TTS 播放完成，由外部插入不监督的 tts_eos，再进入 LISTEN；打断直接进入 LISTEN 并取消旧语音。' : dataVersion === 'V1.3' ? 'V1.3：正文按每轮首个保留 token 起点划完整 1 秒窗口；生成 unit 与原声学 unit 分开标注，麦克风、音频与源时间戳保持不变。' : dataVersion === 'V1.2' ? 'V1.2：正常结束在最后正文的下一 unit 独立输出 turn_eos；打断标注沿用 V1.1。' : 'V1.1：保留此前的转换数据；正常结束的 turn_eos 与最后正文位于同一 unit。';
+    $('data-version-note').textContent = dataVersion === 'V1.4' ? `V1.4 · MineCPM：每 ${activeUnitMs}ms unit 生成 16 个正文 token，轮末允许不足；每个 SPEAK unit 保留 chunk_eos，不使用 turn_eos。文字结束后保留空 SPEAK，直到真实 TTS 播放完成，由外部插入不监督的 tts_eos，再进入 LISTEN；打断直接进入 LISTEN 并取消旧语音。` : dataVersion === 'V1.3' ? 'V1.3：正文按每轮首个保留 token 起点划完整 1 秒窗口；生成 unit 与原声学 unit 分开标注，麦克风、音频与源时间戳保持不变。' : dataVersion === 'V1.2' ? 'V1.2：正常结束在最后正文的下一 unit 独立输出 turn_eos；打断标注沿用 V1.1。' : 'V1.1：保留此前的转换数据；正常结束的 turn_eos 与最后正文位于同一 unit。';
   }
   function resetTrainingTimeline() {
     if (tailAnimation) cancelAnimationFrame(tailAnimation);
@@ -69,8 +87,8 @@
     return trainingTimeline ? Math.min(value, trainingTimeline.originalEnd) : value;
   }
   function trainingUnitAt(seconds) {
-    const unit = Math.floor(seconds);
-    return trainingTimeline ? Math.min(Math.max(0,Math.ceil(duration)-1),unit) : unit;
+    const unit = Math.floor(seconds / unitSeconds());
+    return trainingTimeline ? Math.min(Math.max(0,Math.ceil(duration / unitSeconds())-1),unit) : unit;
   }
   function dialoguePlaying() {
     return trainingTimeline?.active ? trainingTimeline.playing : !$('mixed-audio').paused && !$('mixed-audio').ended;
@@ -108,7 +126,8 @@
     if (!isMiniTraining() || !['V1.2','V1.3','V1.4'].includes(dataVersion)) { resetTrainingTimeline(); return; }
     const sourceFrames = meta.original_source_frames ?? meta.source_frames;
     const originalEnd = Number(info.original_audio_seconds ?? (sourceFrames != null ? sourceFrames / 16000 : info.seconds));
-    const total = Number(info.training_duration_seconds ?? info.training_total_units ?? meta.training_total_units ?? info.seconds);
+    const total = Number(info.training_duration_seconds ?? ((info.training_total_units ?? meta.training_total_units) != null
+      ? (info.training_total_units ?? meta.training_total_units) * unitSeconds() : info.seconds));
     if (!Number.isFinite(originalEnd) || originalEnd < 0 || !Number.isFinite(total) || total < originalEnd) throw new Error('训练尾部时长元数据不正确');
     const appended = Number(info.appended_silence_units ?? meta.appended_silence_units ?? 0);
     const previous = trainingTimeline;
@@ -118,9 +137,9 @@
     duration = total;
     $('training-timeline-controls').hidden = false;
     $('training-timeline-progress').max = String(total);
-    const partial = Math.max(0, Math.ceil(originalEnd) - originalEnd);
+    const partial = Math.max(0, Math.ceil(originalEnd / unitSeconds()) * unitSeconds() - originalEnd);
     $('training-tail-note').textContent = isMineCPM()
-      ? `本版录音 ${originalEnd.toFixed(3)} 秒；训练时间轴 ${total.toFixed(0)} 个 1 秒 unit。${partial > 0.000001 ? `末块补齐 ${partial.toFixed(3)} 秒。` : ''}${appended ? `另补 ${appended} 个明确标记的静音 unit。` : ''} tts_eos 的位置由真实语音播放结束决定，label 为 -100；文字生成桶与声音实际播放时间分别查看。`
+      ? `本版录音 ${originalEnd.toFixed(3)} 秒；训练时间轴 ${Math.round(total / unitSeconds())} 个 ${activeUnitMs}ms unit。${partial > 0.000001 ? `末块补齐 ${partial.toFixed(3)} 秒。` : ''}${appended ? `另补 ${appended} 个明确标记的静音 unit。` : ''} tts_eos 的位置由真实语音播放结束决定，label 为 -100；文字生成桶与声音实际播放时间分别查看。`
       : `原录音 ${originalEnd.toFixed(3)} 秒；训练时间轴 ${total.toFixed(0)} 个 1 秒 unit。${partial > 0.000001 ? `原末块补齐 ${partial.toFixed(3)} 秒。` : ''}${appended ? `另新增 ${appended} 个明确标记的静音 unit，用于独立 EOS。` : '没有新增整块静音 unit。'} 原音频文件没有改写。`;
   }
   async function resumeSelectedPlayer() {
@@ -132,14 +151,14 @@
   let filterReportURL = '';
   let trainingProtocol = null;
   const filterReports = new Map();
-  // This public bundle intentionally contains only the current V1.4 cohort.
+  // Public bundle: only the V1.4 MineCPM cohort is published.
   let sourceMode = 'training-minicpm-en';
   const isInference = () => ['native','gander'].includes(sourceMode);
   const isEnglishTraining = () => ['training-gander-en','training-minicpm-en'].includes(sourceMode);
   const isMiniTraining = () => ['training-minicpm','training-minicpm-en'].includes(sourceMode);
   const sourcePickerValue = () => isMiniTraining() && dataVersion === 'V1.4' ? 'minecpm-v14' : sourceMode;
   const isMiniInterruptExtension = () => isMiniTraining() && trainingProtocol === 'minicpm_tail_interrupt';
-  const trainingName = () => isMineCPM() ? 'MineCPM · V1.4 · 固定16 token＋外部TTS结束反馈' : `${isEnglishTraining() ? 'English · ' : ''}${isMiniTraining() ? `MiniCPM-o 4.5 · ${dataVersion || 'V1.1'} · ${isTurnRelative() ? '轮内完整1秒正文＋原生 turn_eos' : `TAIL＋${isMiniInterruptExtension() ? '历史打断扩展' : '原生 turn_eos'}`}` : 'Gander · 固定 8 token'}`;
+  const trainingName = () => isMineCPM() ? `MineCPM · V1.4${activeUnitMs===1000?'':` · ${activeUnitMs}ms/unit`} · 固定16 token＋外部TTS结束反馈` : `${isEnglishTraining() ? 'English · ' : ''}${isMiniTraining() ? `MiniCPM-o 4.5 · ${dataVersion || 'V1.1'} · ${isTurnRelative() ? '轮内完整1秒正文＋原生 turn_eos' : `TAIL＋${isMiniInterruptExtension() ? '历史打断扩展' : '原生 turn_eos'}`}` : 'Gander · 固定 8 token'}`;
   const trainingCloseName = () => isMineCPM() ? 'listen' : isMiniTraining() && !isMiniInterruptExtension() ? 'turn_eos' : 'interrupt';
   const inferenceName = () => sourceMode === 'gander' ? 'Gander' : 'MiniCPM-o 4.5';
   const caseRoot = () => ({native:'native-cases',gander:'gander-cases','training-gander':'converted-cases','training-minicpm':'minicpm-training-cases','training-gander-en':'english-gander-cases','training-minicpm-en':'english-minicpm-cases'})[sourceMode];
@@ -190,7 +209,7 @@
   }
   const view = new window.TrainingTokenView($('training-tokens'), {returnedAudio:true, seek: seconds => {
     seekTo(isInference()?modelTime(seconds):seconds,false); resumeSelectedPlayer().catch(() => {});
-  }, onUnitSelect: (unit,detail) => seekTo(isInference() ? modelTime(unit) : isTurnRelative() && Number.isFinite(detail?.sourceSeconds) ? detail.sourceSeconds : unit, false)});
+  }, onUnitSelect: (unit,detail) => seekTo(isInference() ? modelTime(unit) : isTurnRelative() && Number.isFinite(detail?.sourceSeconds) ? detail.sourceSeconds : unitToSeconds(unit), false)});
   view.setLiveProgress(false);
   function syncDialogueControls() {
     const player = $('mixed-audio');
@@ -272,7 +291,7 @@
       $('training-timeline-time').textContent = `${t.toFixed(2)} / ${duration.toFixed(2)} 秒`;
       $('training-timeline-progress').value = String(t);
       $('training-timeline-progress').setAttribute('aria-valuetext', `${t.toFixed(2)} 秒，${tail ? '训练补充静音' : '原录音'}`);
-      const added = Math.floor(t) >= Math.ceil(trainingTimeline.originalEnd);
+      const added = Math.floor(t / unitSeconds()) >= Math.ceil(trainingTimeline.originalEnd / unitSeconds());
       $('training-tail-state').textContent = tail ? `${added && trainingTimeline.appended ? '新增的 EOS 静音 unit' : '原末块的静音补齐'} · 原录音已结束，此处是明确标记的训练输入补齐。` : '正在回放原始录音；末尾训练补齐另行标记。';
       $('training-tail-state').classList.toggle('is-tail',tail);
     }
@@ -505,6 +524,8 @@
     renderMineCPM(info);
     const location = new URL(window.location); location.searchParams.set('case',id); location.searchParams.set('source',sourceMode);
     if (isMiniTraining()) location.searchParams.set('version',dataVersion); else location.searchParams.delete('version');
+    if (isMiniTraining() && activeUnitMs !== 1000) location.searchParams.set('unit_ms',String(activeUnitMs));
+    else location.searchParams.delete('unit_ms');
     if (isEnglishTraining()) location.searchParams.set('batch',String(batchIndex + 1)); else location.searchParams.delete('batch');
     history.replaceState(null,'',location);
     const tokenReady = view.load(info.token_url || datasetURL(`${isMiniTraining() ? 'minicpm-training-sequences' : 'token-sequences'}/${encodeURIComponent(id)}.json`), inputAudio, isInference() ? undefined : info.transcript_url || datasetURL(`${isEnglishTraining() ? 'english-audio-transcripts' : 'audio-transcripts'}/${encodeURIComponent(id)}.json`), isInference() ? datasetURL(`native-audio/${encodeURIComponent(id)}/returned-audio.json`) : undefined, datasetBase().href);
@@ -549,7 +570,7 @@
     const shifted = e.target.closest('[data-quantization-unit]');
     if (shifted) { seekTo(Number(shifted.dataset.quantizationUnit)); return; }
     const control = e.target.closest('[data-control-unit]');
-    if (control) { seekTo(Number(control.dataset.controlUnit)); return; }
+    if (control) { seekTo(unitToSeconds(Number(control.dataset.controlUnit))); return; }
     const item = e.target.closest('[data-event-index]'); if (!item) return;
     const event = dialogueEvents[Number(item.dataset.eventIndex)]; if (event) seekTo(event.start,true,event.sourceUnit);
   });
@@ -634,6 +655,8 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       if (summaryResponse && !summaryResponse.ok) throw new Error(`训练格式统计 HTTP ${summaryResponse.status}`);
       const [data, summary] = await Promise.all([response.json(), summaryResponse ? summaryResponse.json() : Promise.resolve(null)]); if (loading !== request) return;
+      activeUnitMs = summary?.unit_duration_ms || 1000;
+      if (![500,1000].includes(activeUnitMs)) throw new Error('不支持的训练 unit 时长');
       cases = data.map(resolveCaseURLs);
       trainingProtocol = summary?.protocol || null;
       const params = new URL(window.location).searchParams, preferredCase = preferredInfo?.id || params.get('case');
@@ -669,6 +692,7 @@
       $('sequence-description').textContent = isMineCPM() ? '' : isInference() ? `${sourceMode === 'gander' ? '从实际系统前缀' : '从系统和参考声音前缀'}到最后一个 unit，完整展示本次实际记录的所有 token，包括回放进度中尚未处理完的 unit。橙色标记正在处理，蓝色标记声音来源；这些状态随播放更新，音频特征没有词表 ID。` : `${isMiniTraining() ? miniSequenceDescription() + ' 本数据以整段 full-context 序列导出，关闭训练滑窗与 KV 删除；配置中的 context_max_units=128 不表示已启用 128u 滑窗。' : '按 Gander 原生规则，每个常规发言 unit 最多 8 个正文 token，interrupt 独占控制 unit；实际训练仍使用所配的 128u 上下文记忆。'} 完整展示模型输入与监督标签；未播放的训练正文以虚线标注。`;
       $('timeline-caption').textContent = isInference() ? '录音时间轴、模型处理与声音播放分别记录' : '播放、事件和训练 unit 联动';
       $('timeline-description').textContent = isInference() ? '模型处理轨道按实际调用时间展开：处理输入、生成文字、生成语音码、合成波形。录音时间轴继续推进时，模型可能仍在处理较早的 unit。点击处理轨道或 token 可定位其实际处理时刻。' : isMineCPM() ? '音轨来自每秒 16 token 供字下的真实 dots.tts 双向流式合成，包含真实供给不足造成的播放空档。训练正文的生成 unit 与音频实际读到的位置分开；已生成不代表已播放。点击音轨、事件或 unit 定位同一条完整对话。' : isTurnRelative() ? '音轨和事件始终使用原始实际播放时间；点击正文 token 定位其原声学起点，生成 unit 可提前一格，并不表示该文字已在该时刻被听到。unit 定位按钮与麦克风输入仍按全局 1 秒时间轴。' : '音轨展示原始实际播放时间。点击音轨或事件定位音频和 unit；点击 token 或选择 unit，也会定位到相同的会话时间。';
+      if (isMineCPM() && activeUnitMs===500) $('timeline-description').textContent = '原44条录音保持不变；训练输入改按500ms分桶，每个SPEAK unit固定16个正文token。音轨仍为原16 token/1000ms供字下的真实TTS测量，并非重新按500ms供字合成。点击音轨、事件或unit定位同一真实秒数。';
       $('event-description').textContent = isInference() ? '片段中的生成文字用于查看模型输出，不是逐字音频字幕。是否停声以实际播放结果为准；没有人为插入 interrupt。' : `事件台词和类别仅用于人工审查，不作为额外文本输入模型。用户打断起声和训练 ${trainingCloseName()} 可能位于不同 unit；事件列表提供两个定位入口。`;
       $('input-description').textContent = isInference() ? '单声道：Qwen3-TTS 合成的模拟用户输入，其余时刻为静音。' : isMineCPM() ? '单声道：本版用户输入；不混入助手语音，本批关闭附和、旁话和背景音。' : '单声道：用户、附和、旁话和环境声。';
       $('case-json-title').textContent = isInference() ? '查看完整静态推理事件 JSON' : `查看 ${trainingName()} 训练 JSON`;
@@ -680,6 +704,7 @@
 
       $('playback-note').textContent = isInference() ? `用户录音复用 Qwen3-TTS 合成结果，助手由 ${inferenceName()} 实际生成。录音进度、实际处理与播放分别记录。序列默认跟随橙色的模型处理 unit；蓝色表示当前声音来源。输入积压和音频排队单独显示，生成文字不是逐字字幕。` : `原始音频继续只播放实际保留的部分；训练序列包含按本格式分块后、打断前可生成的正文，包括未播放文字。剩余完整计划另存，不进入模型上下文。${isMiniTraining() ? (isMiniInterruptExtension() ? '历史扩展在打断处用 interrupt 监督取消旧轮，需配套推理实现。' : `${isDelayedEOS() ? `${dataVersion} 正常结束另有独立的空正文 EOS unit；打断处仍沿用原停声桶。${isTurnRelative() ? '正文生成 unit 不是原声学播放时间；用户实际听到哪里仍按原 source 时间与录音判断。' : ''}` : 'V1.1 正常和提前结束均在 SPEAK 块末监督 <|turn_eos|>。'} 不监督 interrupt。EOS 结束旧轮生成，已有语音队列仍会收尾；混音中的精确停声沿用源录音，不代表原生播放器必然在同一采样点停声。`) : '打断按原停声所在的 1u 控制块映射。'} 这些是重建的训练目标调度，不是实测模型执行时间。`;
       if (isMineCPM()) $('playback-note').textContent = '本页展示重新合成并更新时序的 V1.4 dots.tts 双向流式音频。正文按每秒 16 token 模拟生成，完整回答、纳入训练的文字与实际已播文字分别展示。文字结束后仍可有多轮空 SPEAK；tts_eos 由真实播放完成事件作为外部输入插入（label=-100）。打断 unit 仅 LISTEN 并取消旧语音，不插入 tts_eos，也不使用 turn_eos。这里展示训练 collator 的真实序列与真实 TTS 记录，不是 Thinker 的推理速度。';
+      if (isMineCPM() && activeUnitMs===500) $('playback-note').textContent = 'V1.4 · 500ms/unit：每个unit固定16个正文token，保留chunk_eos、外部tts_eos和LISTEN打断规则。复用原44条录音与TTS测量，仅重新转换训练分桶；实际音频时刻不变。文字生成位置、已播放范围和训练目标分别展示，不是Thinker实测推理。';
       const legend = document.querySelector('.timeline-legend');
       legend.innerHTML = isInference() ? '<span class="leg-user">用户输入</span><span class="leg-interrupt">用户插话 / 模型interrupt</span><span class="tl-phase-input">处理输入</span><span class="tl-phase-text">生成文字</span><span class="tl-phase-speech">生成语音码</span><span class="tl-phase-wave">合成波形</span><span class="leg-assistant">实际播放</span>' : '<span class="leg-user">用户</span><span class="leg-backchannel">附和</span><span class="leg-interrupt">用户打断</span><span class="leg-assistant">助手</span><span class="leg-aside">旁话</span><span class="leg-ambient">环境音</span>' + (isDelayedEOS() ? '<span class="leg-synthetic">训练尾部补齐</span>' : '');
       $('case-search').disabled = false;
@@ -702,6 +727,10 @@
   $('data-version').addEventListener('change',e=>{
     const preferredInfo = cases.find(c=>c.id===loadedId);
     dataVersion=e.target.value; loadSource(preferredInfo);
+  });
+  $('unit-duration').addEventListener('change',e=>{
+    const preferredInfo = cases.find(c=>c.id===loadedId);
+    selectedUnitMs = Number(e.target.value); loadSource(preferredInfo);
   });
   $('training-timeline-progress').addEventListener('input',e=>seekTo(Number(e.target.value)));
   document.addEventListener('training-token-audio-start',()=>{ pauseTrainingTail(); syncDialogueControls(); });

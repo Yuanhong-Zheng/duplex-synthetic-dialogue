@@ -1,7 +1,7 @@
 "use strict";
 (() => {
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const time = n => `${Math.floor(n / 60)}:${String(n % 60).padStart(2,'0')}`;
+  const time = n => `${Math.floor(n / 60)}:${String(Math.floor(n % 60)).padStart(2,'0')}${n%1 ? '.'+String(Math.round((n%1)*1000)).padStart(3,'0').replace(/0+$/,'') : ''}`;
   const nativeEOS = data => ['minicpm_tail_turn_eos','minicpm_tail_delayed_eos','minicpm_tail_turn_relative'].includes(data?.protocol);
   const minecpm = data => data?.protocol === 'minecpm_fixed16_tts_eos';
   const syntheticInput = (data, unit) => data?.mode !== 'native_inference' && ['minicpm_tail_delayed_eos','minicpm_tail_turn_relative','minecpm_fixed16_tts_eos'].includes(data?.protocol) && !!data.audio_inputs?.find(a => a.source?.block_index === unit && a.source?.synthetic && a.source?.kind === 'silence');
@@ -9,6 +9,10 @@
   const timingLabel = row => `训练生成 unit ${row.generation_unit_index} · 原声学 unit ${row.source_unit_index} · 原声学对齐区间 [${(row.timeline_start_frame/16000).toFixed(3)}, ${(row.timeline_end_frame/16000).toFixed(3)}) 秒`;
   const actions = {151705:'listen',151706:'speak',151707:'interrupt',151717:'turn_eos'};
   class TrainingTokenView {
+    unitSeconds() {
+      return (this.data?.config?.unit_duration_ms ?? this.data?.unit_duration_ms ?? 1000) / 1000;
+    }
+
     constructor(host, {seek, onUnitSelect, returnedAudio = false} = {}) {
       this.host = host; this.seek = seek; this.onUnitSelect = onUnitSelect; this.request = 0; this.playGeneration = 0;
       this.returnedAudioEnabled = returnedAudio; this.playingReturnedUnit = null;
@@ -85,12 +89,12 @@
         if (data.token_playback_status?.some(s => s === 'unplayed' || s === 'partial')) this.$('.tv-legend').insertAdjacentHTML('beforeend','<span class="tv-unplayed-key">虚线上边框 = 未播放或仅播放部分，仍参与训练</span>');
         this.$('.tv-mode option[value="raw"]').textContent = native ? '原始 ID 数组' : '原始 ID / label 数组';
         this.$('.tv-inspector').textContent = native ? '点击任意 token，查看实际 ID 与输入、生成或边界来源。' : '点击任意 token，查看真实位置、ID 与监督标注。';
-        this.$('.tv-note').textContent = native ? '直接记录本次实际推理送入解码器的顺序。音频特征没有词表 ID，以 null 表示。生成 token 与运行时插入的边界分别标注，无训练 labels。' : `直接由实际训练 collator 导出。每秒音频占 10 个特征位，input_ids 中占位 ID 为 0，模型嵌入随后由音频编码特征替换；“音频位”是页面注释，不是新增 token。点击带 ▶ 的第一个音频位，播放该 unit 的 1 秒麦克风输入；其他音频位可查看 token 信息。${transcripts ? transcripts.notice : ''} 标签 -100 表示不预测；labels 未做因果移位，由 loss 内部移位。当前 text loss=${w.text_loss_weight}，audio loss=${w.audio_loss_weight}。`;
+        this.$('.tv-note').textContent = native ? '直接记录本次实际推理送入解码器的顺序。音频特征没有词表 ID，以 null 表示。生成 token 与运行时插入的边界分别标注，无训练 labels。' : `直接由实际训练 collator 导出。${this.unitSeconds()===1 ? '每秒音频占 10 个特征位' : `每个 ${this.unitSeconds()*1000}ms unit 占 ${w.audio_features_per_unit} 个音频特征位`}，input_ids 中占位 ID 为 0，模型嵌入随后由音频编码特征替换；“音频位”是页面注释，不是新增 token。点击带 ▶ 的第一个音频位，播放该 unit 的 ${this.unitSeconds()} 秒麦克风输入；其他音频位可查看 token 信息。${transcripts ? transcripts.notice : ''} 标签 -100 表示不预测；labels 未做因果移位，由 loss 内部移位。当前 text loss=${w.text_loss_weight}，audio loss=${w.audio_loss_weight}。`;
         if (turnRelative(data)) this.$('.tv-note').textContent += ' V1.3 正文按轮内完整 1 秒窗口安排生成；生成 unit 与原声学 unit 分开标注。麦克风输入仍是全局 [unit, unit+1) 秒，正文可提前一格生成，不代表已播放；点击正文 token 定位原声学起点，unit 定位按钮仍定位全局输入桶。';
         if (this.returnedAudioEnabled) this.$('.tv-note').textContent += native
           ? ' 标题旁可试听该 unit 的原始返回音频块，内容可能延续先前生成的文字；收听返回的静音也原样保留。'+(returnedAudio?.notice || '')
           : ' 本训练视图没有保存模型逐 unit 返回的独立输出音频，因此输出试听按钮置灰；麦克风输入仍可点击音频位试听。';
-        this.$('.tv-jump').innerHTML = data.units.map(u => `<option value="${u.unit}">${u.unit < 0 ? '系统 / 保护前缀' : native ? `unit ${u.unit}` : `unit ${u.unit} · ${time(u.unit)}`}</option>`).join('');
+        this.$('.tv-jump').innerHTML = data.units.map(u => `<option value="${u.unit}">${u.unit < 0 ? '系统 / 保护前缀' : native ? `unit ${u.unit}` : `unit ${u.unit} · ${time(u.unit*this.unitSeconds())}`}</option>`).join('');
         this.$('.tv-interrupt').textContent = minecpm(data) ? '下一个打断 · LISTEN' : nativeEOS(data) ? '下一个打断 · turn_eos' : data.training_format === 'minicpm' && data.protocol !== 'minicpm_tail_interrupt' ? '下一个源打断' : '下一个 interrupt';
         this.$('.tv-interrupt').disabled = !this.interruptionUnits().length;
         this.render(); this.renderTalker();
@@ -118,8 +122,8 @@
       const playback = d.token_playback_status?.[p];
       const playbackLabel = playback === 'unplayed' ? '纳入训练，但原音频未播放' : playback === 'partial' ? '纳入训练，原音频只播放了此 token 的一部分' : playback === 'played' ? '纳入训练，原音频已播放' : '';
       const unit = d.unit_ids[p], silence = firstAudio && d.audio_inputs?.find(a => a.source?.block_index === unit)?.source?.kind === 'silence';
-      const play = firstAudio ? ` data-unit-audio="${unit}" aria-label="播放 unit ${unit} 的 1 秒输入音频${synthetic ? '，新增的合成静音输入，不是原录音' : silence ? '，静音' : ''}"` : '';
-      return `<button type="button" class="tv-token tv-${kind}${firstAudio ? ' tv-audio-play' : ''}${label ? ' tv-label' : ''}${['unplayed','partial'].includes(playback) ? ' tv-unplayed' : ''}" data-token-position="${p}"${play} title="位置 ${p} · ${feature && d.mode === 'native_inference' ? '音频特征，无词表 ID' : 'ID '+id}${d.mode === 'native_inference' ? ' · 来源 '+(d.token_origins?.[p] || '') : ' · label '+d.labels[p]}${timing ? ' · '+escape(timingLabel(timing)) : ''}${playbackLabel ? ' · '+playbackLabel : ''}${firstAudio ? (synthetic ? ' · 点击试听新增的 1 秒静音输入；原录音不含此 unit' : ' · 点击播放本 unit 的 1 秒输入音频') : ''}">${escape(text)}</button>`;
+      const play = firstAudio ? ` data-unit-audio="${unit}" aria-label="播放 unit ${unit} 的 ${this.unitSeconds()} 秒输入音频${synthetic ? '，新增的合成静音输入，不是原录音' : silence ? '，静音' : ''}"` : '';
+      return `<button type="button" class="tv-token tv-${kind}${firstAudio ? ' tv-audio-play' : ''}${label ? ' tv-label' : ''}${['unplayed','partial'].includes(playback) ? ' tv-unplayed' : ''}" data-token-position="${p}"${play} title="位置 ${p} · ${feature && d.mode === 'native_inference' ? '音频特征，无词表 ID' : 'ID '+id}${d.mode === 'native_inference' ? ' · 来源 '+(d.token_origins?.[p] || '') : ' · label '+d.labels[p]}${timing ? ' · '+escape(timingLabel(timing)) : ''}${playbackLabel ? ' · '+playbackLabel : ''}${firstAudio ? (synthetic ? ` · 点击试听新增的 ${this.unitSeconds()} 秒静音输入；原录音不含此 unit` : ` · 点击播放本 unit 的 ${this.unitSeconds()} 秒输入音频`) : ''}">${escape(text)}</button>`;
     }
     tokensBetween(start, end) {
       const parts = [];
@@ -150,7 +154,7 @@
         const prefix = u.unit < 0;
         const body = this.tokensBetween(u.start,u.end);
         const action = d.input_ids.slice(u.start,u.end).map(id => actions[id] || (d.mode === 'native_inference' && id === 151703 ? 'tts_bos' : null)).filter(Boolean).join(' / ') || (d.mode === 'native_inference' ? '原始模型输出' : 'tool / context');
-        const heading = prefix ? `系统 / 保护前缀 · ${u.end-u.start} tokens` : d.mode === 'native_inference' ? `unit ${u.unit} · 输入区间 [${u.unit}, ${u.unit+1})u <span class="tv-unit-action">· ${action}</span> <span class="tv-unit-state"></span>` : turnRelative(d) ? `训练生成 unit ${u.unit} · 全局麦克风输入 [${u.unit}, ${u.unit+1}) 秒 · ${action}` : `unit ${u.unit} · 输入 [${u.unit}, ${u.unit+1}) 秒 · ${action}`;
+        const heading = prefix ? `系统 / 保护前缀 · ${u.end-u.start} tokens` : d.mode === 'native_inference' ? `unit ${u.unit} · 输入区间 [${u.unit}, ${u.unit+1})u <span class="tv-unit-action">· ${action}</span> <span class="tv-unit-state"></span>` : turnRelative(d) ? `训练生成 unit ${u.unit} · 全局麦克风输入 [${u.unit}, ${u.unit+1}) 秒 · ${action}` : `unit ${u.unit} · 输入 [${u.unit*this.unitSeconds()}, ${(u.unit+1)*this.unitSeconds()}) 秒 · ${action}`;
         const bounds = `位置 ${u.start}–${u.end-1}`;
         if (prefix) return `<details class="tv-prefix" data-tv-unit="${u.unit}"><summary>${heading} <small>${bounds} · 点击展开全部</small></summary><div class="tv-tokens">${body}</div><pre class="tv-decoded">${escape(u.decoded)}</pre></details>`;
         const returned = this.returnedAudio?.units?.[String(u.unit)], hasReturned = returned?.status === 'available' && returned.sample_count > 0;
@@ -160,7 +164,7 @@
         const closure = nativeEOS(d) ? (d.generation_close_records || []).find(r => r.unit_index === u.unit) : null;
         const closeNote = closure ? `<p class="tv-note">${closure.is_interrupted ? '用户打断 · 提前结束旧轮' : ['minicpm_tail_delayed_eos','minicpm_tail_turn_relative'].includes(d.protocol) ? '正常结束话轮 · 最后正文的下一空正文 unit' : '正常结束话轮'}：<code>&lt;|turn_eos|&gt;</code> 结束生成并收尾，已有待播语音继续播放。</p>` : '';
         const minecpmNote = !minecpm(d) ? '' : this.interruptionUnits().includes(u.unit)
-          ? '<p class="tv-note">真正打断：直接监督 LISTEN；本 unit 不生成旧正文，也不插入 tts_eos。运行时应取消旧 TTS 与待播音频；这里是所在一秒 unit 的训练标签。</p>'
+          ? `<p class="tv-note">真正打断：直接监督 LISTEN；本 unit 不生成旧正文，也不插入 tts_eos。运行时应取消旧 TTS 与待播音频；这里是所在${this.unitSeconds()===1?'一秒':this.unitSeconds()+'秒'} unit 的训练标签。</p>`
           : d.input_ids.slice(u.start,u.end).includes(151704)
           ? '<p class="tv-note">播放完成反馈：tts_eos 由外部播放端插入，label=-100；随后监督 LISTEN。此标记不由 Thinker 预测。</p>'
           : '';
@@ -169,9 +173,9 @@
         const generationNote = turnRelative(d) && Array.isArray(d.text_generation_records) && action.includes('speak')
           ? generationRecords.length ? `<p class="tv-generation-timing">正文生成 unit ${u.unit} · 对应原声学 unit ${[...new Set(generationRecords.map(r=>r.source_unit_index))].join('、')}；原声学对齐范围 [${(Math.min(...generationRecords.map(r=>r.timeline_start_frame))/16000).toFixed(3)}, ${(Math.max(...generationRecords.map(r=>r.timeline_end_frame))/16000).toFixed(3)}) 秒。生成桶不表示这些正文已在此时被听到；逐 token 位置可点击查看。</p>` : '<p class="tv-generation-timing">此训练生成 unit 没有正文 token，保留空 SPEAK 与原有控制监督；麦克风输入仍按全局时间读取。</p>'
           : '';
-        const syntheticNote = syntheticInput(d,u.unit) ? '<p class="tv-synthetic-note">新增静音输入 · synthetic：原录音已结束，本 unit 的麦克风输入为明确补充的 1 秒零波形，用于独立 EOS；原音频文件未修改。</p>' : '';
+        const syntheticNote = syntheticInput(d,u.unit) ? `<p class="tv-synthetic-note">新增静音输入 · synthetic：原录音已结束，本 unit 的麦克风输入为明确补充的 ${this.unitSeconds()} 秒零波形，用于独立 EOS；原音频文件未修改。</p>` : '';
         const context = d.mode === 'native_inference' ? '此处保留实际推理顺序；音频特征位没有词表 ID。文字产生时间与音频开始播放时间分别记录。' : d.config.sliding_window_training === 'off' && !d.config.kv_delete_mask ? `音频 / 图像特征位不解码为文字。本配置使用完整因果上下文，可关注样本开头至 unit ${u.unit} 的历史及系统前缀；同一 unit 内仍遵守 token 因果顺序。` : `音频 / 图像特征位不解码为文字。本 unit 可直接关注 unit ${Math.max(0,u.unit-d.config.context_max_units)}–${u.unit} 及保护前缀；同一 unit 内仍遵守 token 因果顺序。`;
-        return `<article class="tv-unit" data-tv-unit="${u.unit}"><header><strong>${heading}</strong><small>${bounds} ${returnedButton} ${this.seek ? `<button type="button" data-seek="${u.unit}">定位播放器</button>` : ''}</small></header>${actualTime}${compatibility}${closeNote}${minecpmNote}${wholeTurnShiftNote}${generationNote}${syntheticNote}<div class="tv-tokens">${body}</div><details class="tv-decoding"><summary>整段文字解码与上下文范围</summary><pre>${escape(u.decoded)}</pre><p>${context}</p></details></article>`;
+        return `<article class="tv-unit" data-tv-unit="${u.unit}"><header><strong>${heading}</strong><small>${bounds} ${returnedButton} ${this.seek ? `<button type="button" data-seek="${u.unit*this.unitSeconds()}">定位播放器</button>` : ''}</small></header>${actualTime}${compatibility}${closeNote}${minecpmNote}${wholeTurnShiftNote}${generationNote}${syntheticNote}<div class="tv-tokens">${body}</div><details class="tv-decoding"><summary>整段文字解码与上下文范围</summary><pre>${escape(u.decoded)}</pre><p>${context}</p></details></article>`;
       }).join('');
       this.syncReturnedAudioButtons();
       this.applyRuntime();
@@ -257,7 +261,7 @@
       if (returned) { this.playingReturnedUnit = unit; this.syncReturnedAudioButtons(); }
       document.dispatchEvent(new CustomEvent('training-token-audio-start',{detail:{unit,returned,synthetic}}));
       document.querySelectorAll('audio').forEach(audio => audio.pause());
-      this.$('.tv-inspector').textContent = returned ? `正在加载 unit ${unit} 的原始返回音频块…` : synthetic ? `正在准备 unit ${unit} 的补充静音输入（synthetic）…` : `正在加载 unit ${unit} 的 1 秒麦克风输入…`;
+      this.$('.tv-inspector').textContent = returned ? `正在加载 unit ${unit} 的原始返回音频块…` : synthetic ? `正在准备 unit ${unit} 的补充静音输入（synthetic）…` : `正在加载 unit ${unit} 的 ${this.unitSeconds()} 秒麦克风输入…`;
       try {
         const Context = window.AudioContext || window.webkitAudioContext;
         if (!Context) throw new Error('浏览器不支持 Web Audio');
@@ -289,8 +293,8 @@
           header = {...fmt,...data};
           if (returned) this.returnedAudioHeaders.set(url, header); else this.audioHeader = header;
         }
-        const h = header, bytesPerSample = h.bits / 8, frames = returned ? entry.sample_count : 16000;
-        const offset = returned ? 0 : unit * 16000 * bytesPerSample;
+        const h = header, bytesPerSample = h.bits / 8, frames = returned ? entry.sample_count : Math.round(16000*this.unitSeconds());
+        const offset = returned ? 0 : unit * frames * bytesPerSample;
         const available = Math.max(0, Math.min(frames * bytesPerSample, h.size - offset));
         if (returned && available !== frames * bytesPerSample) throw new Error('返回音频块的采样数与记录不符');
         let payload = new ArrayBuffer(0);
@@ -307,7 +311,7 @@
           channel[i] = h.format === 1 ? pcm.getInt16(i * 2,true) / 32768 : pcm.getFloat32(i * 4,true);
         const source = this.audioContext.createBufferSource(); source.buffer = buffer;
         source.connect(this.audioContext.destination); this.audioSource = source;
-        this.$('.tv-inspector').textContent = returned ? `正在试听 unit ${unit} 的原始返回音频块，${(frames/h.rate).toFixed(3)} 秒；音频内容与本次新增正文不保证逐段对应。` : synthetic ? `正在试听 unit ${unit} 的 1 秒补充静音输入（synthetic）；此 unit 不在原录音内。` : `正在播放 unit ${unit} 的麦克风输入 [${unit}, ${unit+1}) 秒；播放 1 秒后自动停止。`;
+        this.$('.tv-inspector').textContent = returned ? `正在试听 unit ${unit} 的原始返回音频块，${(frames/h.rate).toFixed(3)} 秒；音频内容与本次新增正文不保证逐段对应。` : synthetic ? `正在试听 unit ${unit} 的 ${this.unitSeconds()} 秒补充静音输入（synthetic）；此 unit 不在原录音内。` : `正在播放 unit ${unit} 的麦克风输入 [${unit*this.unitSeconds()}, ${(unit+1)*this.unitSeconds()}) 秒；播放 ${this.unitSeconds()} 秒后自动停止。`;
         source.onended = () => {
           if (generation === this.playGeneration) {
             source.disconnect(); this.audioSource = null; this.playingReturnedUnit = null; this.syncReturnedAudioButtons();
@@ -344,7 +348,7 @@
       else if (this.$('.tv-mode').value !== 'units') { this.$('.tv-mode').value = 'units'; this.render(); this.jump(unit, {notify}); }
     }
     setTime(seconds, follow = false) {
-      const unit = Math.floor(seconds); if (this.playingUnit === unit) return;
+      const unit = Math.floor(seconds/this.unitSeconds()); if (this.playingUnit === unit) return;
       this.playingUnit = unit;
       this.host.querySelector('.tv-playing')?.classList.remove('tv-playing');
       const node = this.host.querySelector(`[data-tv-unit="${unit}"]`); node?.classList.add('tv-playing');
