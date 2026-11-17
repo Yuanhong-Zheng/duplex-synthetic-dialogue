@@ -9,10 +9,10 @@
   let runtime = null, runtimeState = null;
   let dialogueLoading = true;
   const pageBase = new URL('./', window.location.href);
-  let dataVersion = 'V1.4';
-  let dataVersions = [{id:'V1.4', label:'V1.4 · MineCPM', root:'data/'}];
+  let dataVersion = new URL(window.location).searchParams.get('version');
+  let dataVersions = [{id:'V1.5', label:'V1.5 · MineCPM · TTS_EOS 后置', root:'data-v15/'}];
   let versionRegistryPromise = null;
-  let latestDataVersion = 'V1.4';
+  let latestDataVersion = 'V1.5';
   let selectedUnitMs = new URL(window.location).searchParams.get('unit_ms') === '500' ? 500 : 1000;
   let activeUnitMs = 1000;
   const unitSeconds = () => activeUnitMs / 1000;
@@ -21,7 +21,8 @@
   const nowSeconds = () => performance.now() / 1000;
   const isTurnRelative = () => isMiniTraining() && trainingProtocol === 'minicpm_tail_turn_relative';
   const isDelayedEOS = () => isMiniTraining() && ['minicpm_tail_delayed_eos','minicpm_tail_turn_relative'].includes(trainingProtocol);
-  const isMineCPM = () => isMiniTraining() && trainingProtocol === 'minecpm_fixed16_tts_eos';
+  const isMineVersion = version => ['V1.4','V1.5'].includes(version);
+  const isMineCPM = () => isMiniTraining() && ['minecpm_fixed16_tts_eos','minecpm_fixed16_tts_eos_post_chunk'].includes(trainingProtocol);
   const selectedVersion = () => dataVersions.find(v => v.id === dataVersion) || dataVersions[0];
   const selectedVariant = () => selectedVersion().variants?.find(v => v.unit_duration_ms === selectedUnitMs);
   const datasetBase = () => isMiniTraining() ? new URL(selectedVariant()?.root || selectedVersion().root, pageBase) : pageBase;
@@ -42,7 +43,7 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const value = await response.json();
       if (!Array.isArray(value.versions) || !value.versions.length || new Set(value.versions.map(v=>v.id)).size !== value.versions.length ||
-          value.versions.some(v=>v.id !== 'V1.4' || typeof v.root !== 'string' || new URL(v.root,pageBase).origin !== pageBase.origin))
+          value.versions.some(v=>!['V1.4','V1.5'].includes(v.id) || typeof v.root !== 'string' || new URL(v.root,pageBase).origin !== pageBase.origin))
         throw new Error('训练版本索引格式不正确');
       dataVersions = value.versions;
       for (const version of dataVersions) if (version.variants &&
@@ -74,7 +75,7 @@
     $('unit-duration').value = String(selectedUnitMs);
     $('nav-tts-report').href = datasetURL('tts-eos-estimation.html');
     $('data-source').value = sourcePickerValue();
-    $('data-version-note').textContent = dataVersion === 'V1.4' ? `V1.4 · MineCPM：每 ${activeUnitMs}ms unit 生成 16 个正文 token，轮末允许不足；每个 SPEAK unit 保留 chunk_eos，不使用 turn_eos。文字结束后保留空 SPEAK，直到真实 TTS 播放完成，由外部插入不监督的 tts_eos，再进入 LISTEN；打断直接进入 LISTEN 并取消旧语音。` : dataVersion === 'V1.3' ? 'V1.3：正文按每轮首个保留 token 起点划完整 1 秒窗口；生成 unit 与原声学 unit 分开标注，麦克风、音频与源时间戳保持不变。' : dataVersion === 'V1.2' ? 'V1.2：正常结束在最后正文的下一 unit 独立输出 turn_eos；打断标注沿用 V1.1。' : 'V1.1：保留此前的转换数据；正常结束的 turn_eos 与最后正文位于同一 unit。';
+    $('data-version-note').textContent = dataVersion === 'V1.5' ? 'V1.5：tts_eos 放在 SPEAK unit 的 chunk_eos 后、unit 结束前，作为不监督的输入；下一 unit 输出 LISTEN。复用 V1.4 录音，真实打断位置不变。' : dataVersion === 'V1.4' ? `V1.4 · MineCPM：每 ${activeUnitMs}ms unit 生成 16 个正文 token，轮末允许不足；每个 SPEAK unit 保留 chunk_eos，不使用 turn_eos。文字结束后保留空 SPEAK，直到真实 TTS 播放完成，由外部插入不监督的 tts_eos，再进入 LISTEN；打断直接进入 LISTEN 并取消旧语音。` : dataVersion === 'V1.3' ? 'V1.3：正文按每轮首个保留 token 起点划完整 1 秒窗口；生成 unit 与原声学 unit 分开标注，麦克风、音频与源时间戳保持不变。' : dataVersion === 'V1.2' ? 'V1.2：正常结束在最后正文的下一 unit 独立输出 turn_eos；打断标注沿用 V1.1。' : 'V1.1：保留此前的转换数据；正常结束的 turn_eos 与最后正文位于同一 unit。';
   }
   function resetTrainingTimeline() {
     if (tailAnimation) cancelAnimationFrame(tailAnimation);
@@ -123,7 +124,7 @@
   }
   function configureTrainingTimeline(info, sample = null) {
     const meta = sample?.meta || {};
-    if (!isMiniTraining() || !['V1.2','V1.3','V1.4'].includes(dataVersion)) { resetTrainingTimeline(); return; }
+    if (!isMiniTraining() || !['V1.2','V1.3','V1.4','V1.5'].includes(dataVersion)) { resetTrainingTimeline(); return; }
     const sourceFrames = meta.original_source_frames ?? meta.source_frames;
     const originalEnd = Number(info.original_audio_seconds ?? (sourceFrames != null ? sourceFrames / 16000 : info.seconds));
     const total = Number(info.training_duration_seconds ?? ((info.training_total_units ?? meta.training_total_units) != null
@@ -151,14 +152,16 @@
   let filterReportURL = '';
   let trainingProtocol = null;
   const filterReports = new Map();
-  // Public bundle: only the V1.4 MineCPM cohort is published.
+  // Public bundle contains V1.4 and V1.5 of the same English cohort.
   let sourceMode = 'training-minicpm-en';
+  const requestedSource = new URL(window.location).searchParams.get('source');
+  if (['minecpm-v14','minecpm-v15'].includes(requestedSource)) dataVersion = requestedSource === 'minecpm-v15' ? 'V1.5' : 'V1.4';
   const isInference = () => ['native','gander'].includes(sourceMode);
   const isEnglishTraining = () => ['training-gander-en','training-minicpm-en'].includes(sourceMode);
   const isMiniTraining = () => ['training-minicpm','training-minicpm-en'].includes(sourceMode);
-  const sourcePickerValue = () => isMiniTraining() && dataVersion === 'V1.4' ? 'minecpm-v14' : sourceMode;
+  const sourcePickerValue = () => isMiniTraining() && isMineVersion(dataVersion) ? (dataVersion === 'V1.5' ? 'minecpm-v15' : 'minecpm-v14') : sourceMode;
   const isMiniInterruptExtension = () => isMiniTraining() && trainingProtocol === 'minicpm_tail_interrupt';
-  const trainingName = () => isMineCPM() ? `MineCPM · V1.4${activeUnitMs===1000?'':` · ${activeUnitMs}ms/unit`} · 固定16 token＋外部TTS结束反馈` : `${isEnglishTraining() ? 'English · ' : ''}${isMiniTraining() ? `MiniCPM-o 4.5 · ${dataVersion || 'V1.1'} · ${isTurnRelative() ? '轮内完整1秒正文＋原生 turn_eos' : `TAIL＋${isMiniInterruptExtension() ? '历史打断扩展' : '原生 turn_eos'}`}` : 'Gander · 固定 8 token'}`;
+  const trainingName = () => isMineCPM() ? `MineCPM · ${dataVersion}${activeUnitMs===1000?'':` · ${activeUnitMs}ms/unit`} · 固定16 token＋外部TTS结束反馈` : `${isEnglishTraining() ? 'English · ' : ''}${isMiniTraining() ? `MiniCPM-o 4.5 · ${dataVersion || 'V1.1'} · ${isTurnRelative() ? '轮内完整1秒正文＋原生 turn_eos' : `TAIL＋${isMiniInterruptExtension() ? '历史打断扩展' : '原生 turn_eos'}`}` : 'Gander · 固定 8 token'}`;
   const trainingCloseName = () => isMineCPM() ? 'listen' : isMiniTraining() && !isMiniInterruptExtension() ? 'turn_eos' : 'interrupt';
   const inferenceName = () => sourceMode === 'gander' ? 'Gander' : 'MiniCPM-o 4.5';
   const caseRoot = () => ({native:'native-cases',gander:'gander-cases','training-gander':'converted-cases','training-minicpm':'minicpm-training-cases','training-gander-en':'english-gander-cases','training-minicpm-en':'english-minicpm-cases'})[sourceMode];
@@ -170,12 +173,12 @@
     if (isMiniTraining() && summary) miniSummaryCache.set(`${dataVersion}:${sourceMode}`,{samples:cases.length,filtered:summary.filtered_samples || 0});
     for (const option of $('data-source').options) {
       if (!['training-minicpm','training-minicpm-en'].includes(option.value)) continue;
-      const legacyVersion = dataVersion === 'V1.4' ? [...dataVersions].reverse().find(v => v.id !== 'V1.4') || dataVersions[0] : selectedVersion();
+      const legacyVersion = isMineVersion(dataVersion) ? [...dataVersions].reverse().find(v => !isMineVersion(v.id)) || dataVersions[0] : selectedVersion();
       const english = option.value.endsWith('-en'), cohort = legacyVersion.cohorts?.[english ? 'english' : 'chinese'];
       const cached = miniSummaryCache.get(`${dataVersion}:${option.value}`);
       const samples = cached?.samples ?? cohort?.samples;
       option.disabled = false;
-      option.textContent = dataVersion === 'V1.4'
+      option.textContent = isMineVersion(dataVersion)
         ? `${english ? 'English · ' : ''}MiniCPM-o 4.5 · V1.1–V1.3 · ${english ? '英文' : '中文'}训练数据`
         : `${english ? 'English · ' : ''}MiniCPM-o 4.5 · ${dataVersion || '训练数据'} · ${english ? '英文' : '中文'}${samples != null ? ` ${samples} 条` : '训练数据'}${cached?.filtered ? ` · ${cached.filtered} 条预算过滤` : ''}`;
     }
@@ -202,7 +205,7 @@
     const jump = (frame, label) => Number.isFinite(Number(frame)) && frame != null
       ? `<button type="button" class="event-control" data-minecpm-seconds="${Number(frame)/16000}">${escape(label ?? `${(Number(frame)/16000).toFixed(3)} 秒`)} →</button>` : '未提供';
     const unit = value => Number.isInteger(value) ? `unit ${value}` : '未提供';
-    const eosRows = eos?.map(event => `<div class="reply-plan"><strong>${escape(event.assistant_id || '助手')} · 自然播放结束</strong><dl><dt>语音实际播完</dt><dd>${jump(event.playback_end_frame)}</dd><dt>外部反馈位置</dt><dd>${escape(unit(event.feedback_unit))}${Number.isInteger(event.token_position) ? ` · 序列位置 ${event.token_position}` : ''}</dd><dt>输入与监督</dt><dd><code>&lt;|tts_eos|&gt;</code> · label=${escape(event.label ?? -100)}；随后 LISTEN</dd></dl></div>`).join('');
+    const eosRows = eos?.map(event => `<div class="reply-plan"><strong>${escape(event.assistant_id || '助手')} · 自然播放结束</strong><dl><dt>语音实际播完</dt><dd>${jump(event.playback_end_frame)}</dd><dt>外部反馈位置</dt><dd>${escape(unit(event.feedback_unit))}${Number.isInteger(event.token_position) ? ` · 序列位置 ${event.token_position}` : ''}</dd><dt>输入与监督</dt><dd><code>&lt;|tts_eos|&gt;</code> · label=${escape(event.label ?? -100)}；${dataVersion==='V1.5' ? `chunk_eos 后追加，${escape(unit(event.listen_unit))} 转 LISTEN` : '随后 LISTEN'}</dd></dl></div>`).join('');
     const stopRows = interruptions.map(event => `<div class="reply-plan"><strong>${escape(event.assistant_id || '助手')} · 用户打断</strong><dl><dt>切换收听</dt><dd>${escape(unit(event.listen_unit))} · 仅 LISTEN，无正文、无 tts_eos</dd><dt>实际截断</dt><dd>${jump(event.stop_frame)}</dd></dl></div>`).join('');
     const gapRows = allGaps?.map(gap => `<li>${escape(gap.assistant_id || '助手')} · ${gap.initial ? '首包等待' : '播放断供'} · ${jump(gap.start_frame,`${(Number(gap.start_frame)/16000).toFixed(3)}–${(Number(gap.end_frame)/16000).toFixed(3)} 秒`)} · ${((Number(gap.end_frame)-Number(gap.start_frame))/16000).toFixed(3)} 秒</li>`).join('');
     host.innerHTML = `<div class="section-top"><h2>MineCPM · 文字生成与语音播放</h2><span><a href="${escape(datasetURL('tts-eos-estimation.html'))}" target="_blank" rel="noopener">本版 TTS 结束反馈与统计报告 ↗</a> · <a href="${escape(datasetURL('tts-eos-estimation.json'))}" download>下载统计 JSON</a></span></div><p class="annotation">这是训练目标与真实流式语音记录的配对展示。先生成的文字可能仍在语音队列中；tts_eos 表示语音已播放完成，由外部作为输入提供，不让 Thinker 预测。</p><div class="runtime-cards"><div><small>常规正文批量</small><strong>16 token / unit</strong><span>轮末允许不足；不使用 turn_eos</span></div><div><small>正常结束的外部反馈</small><strong>${eos ? eos.length + ' 次' : '等待样本记录'}</strong><span>tts_eos 输入 · label=-100</span></div><div><small>真实流式播放断供</small><strong>${gaps ? gaps.length + ' 处' : '等待样本记录'}</strong><span>${gapSeconds != null ? `累计 ${gapSeconds.toFixed(3)} 秒；不含首次等待` : '缺失记录不记为 0 次'}</span></div></div><details class="reply-plans"><summary>查看 TTS 结束反馈与打断位置</summary><div class="reply-plan-list">${eosRows || (eos ? '<p>本样本没有自然结束反馈。</p>' : '<p>尚未提供本样本的反馈位置记录。</p>')}${stopRows}</div></details><details class="reply-plans"><summary>查看真实音频供给空档${allGaps ? ` · ${allGaps.length} 处（含首次等待）` : ''}</summary><p class="annotation">这些空档来自真实音频块的到达与播放记录；与录音内自然停顿分别统计。点击可定位完整对话音频。</p>${gapRows ? `<ol>${gapRows}</ol>` : `<p>${allGaps ? '没有记录到音频供给空档。' : '尚未提供本样本的真实供给空档记录。'}</p>`}</details>${info.tts_trace_url ? `<p><a href="${escape(info.tts_trace_url)}" target="_blank" rel="noopener">查看本样本原始 TTS 记录 ↗</a></p>` : ''}`;
@@ -645,10 +648,10 @@
       if (isMiniTraining()) await loadDataVersions();
       if (loading !== request) return;
       renderDataVersions(); renderSourceLabels();
-      if (isMiniTraining() && dataVersion === 'V1.4' && sourceMode === 'training-minicpm') {
+      if (isMiniTraining() && isMineVersion(dataVersion) && sourceMode === 'training-minicpm') {
         sourceMode = 'training-minicpm-en';
         $('data-source').value = sourcePickerValue();
-        $('format-notice').textContent = 'V1.4 · MineCPM 本版只有英文数据；已切换到英文案例。V1.1–V1.3 的中文数据仍可切版查看。';
+        $('format-notice').textContent = `${dataVersion} · MineCPM 本版只有英文数据；已切换到英文案例。V1.1–V1.3 的中文数据仍可切版查看。`;
         $('format-notice').hidden = false;
       }
       const [response, summaryResponse] = await Promise.all([fetch(datasetURL(`${caseRoot()}/index.json`), {cache:'no-cache'}), isInference() ? Promise.resolve(null) : fetch(datasetURL(`${caseRoot()}/summary.json`), {cache:'no-cache'})]);
@@ -696,14 +699,15 @@
       $('event-description').textContent = isInference() ? '片段中的生成文字用于查看模型输出，不是逐字音频字幕。是否停声以实际播放结果为准；没有人为插入 interrupt。' : `事件台词和类别仅用于人工审查，不作为额外文本输入模型。用户打断起声和训练 ${trainingCloseName()} 可能位于不同 unit；事件列表提供两个定位入口。`;
       $('input-description').textContent = isInference() ? '单声道：Qwen3-TTS 合成的模拟用户输入，其余时刻为静音。' : isMineCPM() ? '单声道：本版用户输入；不混入助手语音，本批关闭附和、旁话和背景音。' : '单声道：用户、附和、旁话和环境声。';
       $('case-json-title').textContent = isInference() ? '查看完整静态推理事件 JSON' : `查看 ${trainingName()} 训练 JSON`;
-      $('case-download').textContent = isInference() ? '下载推理事件记录' : `下载 ${isMineCPM() ? 'MineCPM V1.4' : isMiniTraining() ? 'MiniCPM-o TAIL' : 'Gander'} 训练 JSON`;
+      $('case-download').textContent = isInference() ? '下载推理事件记录' : `下载 ${isMineCPM() ? `MineCPM ${dataVersion}` : isMiniTraining() ? 'MiniCPM-o TAIL' : 'Gander'} 训练 JSON`;
       $('runtime-panel').hidden = !isInference();
       $('locate-output').hidden = !isInference();
       $('follow-label').textContent = isInference() ? '序列跟随模型实际处理' : '序列随音频在框内滚动';
       $('locate-audio').textContent = isInference() ? '定位模型处理 unit' : '定位当前 unit';
 
       $('playback-note').textContent = isInference() ? `用户录音复用 Qwen3-TTS 合成结果，助手由 ${inferenceName()} 实际生成。录音进度、实际处理与播放分别记录。序列默认跟随橙色的模型处理 unit；蓝色表示当前声音来源。输入积压和音频排队单独显示，生成文字不是逐字字幕。` : `原始音频继续只播放实际保留的部分；训练序列包含按本格式分块后、打断前可生成的正文，包括未播放文字。剩余完整计划另存，不进入模型上下文。${isMiniTraining() ? (isMiniInterruptExtension() ? '历史扩展在打断处用 interrupt 监督取消旧轮，需配套推理实现。' : `${isDelayedEOS() ? `${dataVersion} 正常结束另有独立的空正文 EOS unit；打断处仍沿用原停声桶。${isTurnRelative() ? '正文生成 unit 不是原声学播放时间；用户实际听到哪里仍按原 source 时间与录音判断。' : ''}` : 'V1.1 正常和提前结束均在 SPEAK 块末监督 <|turn_eos|>。'} 不监督 interrupt。EOS 结束旧轮生成，已有语音队列仍会收尾；混音中的精确停声沿用源录音，不代表原生播放器必然在同一采样点停声。`) : '打断按原停声所在的 1u 控制块映射。'} 这些是重建的训练目标调度，不是实测模型执行时间。`;
-      if (isMineCPM()) $('playback-note').textContent = '本页展示重新合成并更新时序的 V1.4 dots.tts 双向流式音频。正文按每秒 16 token 模拟生成，完整回答、纳入训练的文字与实际已播文字分别展示。文字结束后仍可有多轮空 SPEAK；tts_eos 由真实播放完成事件作为外部输入插入（label=-100）。打断 unit 仅 LISTEN 并取消旧语音，不插入 tts_eos，也不使用 turn_eos。这里展示训练 collator 的真实序列与真实 TTS 记录，不是 Thinker 的推理速度。';
+      if (isMineCPM()) $('playback-note').textContent = '本页 V1.4 使用已更新的 dots.tts 双向流式音频。正文按每秒 16 token 模拟生成，完整回答、纳入训练的文字与实际已播文字分别展示。文字结束后仍可有多轮空 SPEAK；tts_eos 由真实播放完成事件作为外部输入插入（label=-100）。打断 unit 仅 LISTEN 并取消旧语音，不插入 tts_eos，也不使用 turn_eos。这里展示训练 collator 的真实序列与真实 TTS 记录，不是 Thinker 的推理速度。';
+      if (isMineCPM() && dataVersion==='V1.5') $('playback-note').textContent = 'V1.5 复用 V1.4 的真实流式录音与正文；tts_eos 改放在 SPEAK unit 的 chunk_eos 后（label=-100），下一 unit 再 LISTEN。自然结束可增加一个明确标记的静音训练 unit；音频文件和打断位置保持不变。';
       if (isMineCPM() && activeUnitMs===500) $('playback-note').textContent = 'V1.4 · 500ms/unit：每个unit固定16个正文token，保留chunk_eos、外部tts_eos和LISTEN打断规则。复用原44条录音与TTS测量，仅重新转换训练分桶；实际音频时刻不变。文字生成位置、已播放范围和训练目标分别展示，不是Thinker实测推理。';
       const legend = document.querySelector('.timeline-legend');
       legend.innerHTML = isInference() ? '<span class="leg-user">用户输入</span><span class="leg-interrupt">用户插话 / 模型interrupt</span><span class="tl-phase-input">处理输入</span><span class="tl-phase-text">生成文字</span><span class="tl-phase-speech">生成语音码</span><span class="tl-phase-wave">合成波形</span><span class="leg-assistant">实际播放</span>' : '<span class="leg-user">用户</span><span class="leg-backchannel">附和</span><span class="leg-interrupt">用户打断</span><span class="leg-assistant">助手</span><span class="leg-aside">旁话</span><span class="leg-ambient">环境音</span>' + (isDelayedEOS() ? '<span class="leg-synthetic">训练尾部补齐</span>' : '');
@@ -715,12 +719,12 @@
   }
   $('data-source').addEventListener('change',e => {
     const preferredInfo = cases.find(c => c.id === loadedId);
-    if (e.target.value === 'minecpm-v14') {
-      sourceMode = 'training-minicpm-en'; dataVersion = 'V1.4';
+    if (['minecpm-v14','minecpm-v15'].includes(e.target.value)) {
+      sourceMode = 'training-minicpm-en'; dataVersion = e.target.value === 'minecpm-v15' ? 'V1.5' : 'V1.4';
     } else {
       sourceMode = e.target.value;
-      if (isMiniTraining() && (!dataVersion || dataVersion === 'V1.4'))
-        dataVersion = dataVersions.length > 1 ? [...dataVersions].reverse().find(v => v.id !== 'V1.4')?.id || 'V1.3' : 'V1.3';
+      if (isMiniTraining() && (!dataVersion || isMineVersion(dataVersion)))
+        dataVersion = dataVersions.length > 1 ? [...dataVersions].reverse().find(v => !isMineVersion(v.id))?.id || 'V1.3' : 'V1.3';
     }
     loadSource(preferredInfo);
   });

@@ -3,8 +3,9 @@
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const time = n => `${Math.floor(n / 60)}:${String(Math.floor(n % 60)).padStart(2,'0')}${n%1 ? '.'+String(Math.round((n%1)*1000)).padStart(3,'0').replace(/0+$/,'') : ''}`;
   const nativeEOS = data => ['minicpm_tail_turn_eos','minicpm_tail_delayed_eos','minicpm_tail_turn_relative'].includes(data?.protocol);
-  const minecpm = data => data?.protocol === 'minecpm_fixed16_tts_eos';
-  const syntheticInput = (data, unit) => data?.mode !== 'native_inference' && ['minicpm_tail_delayed_eos','minicpm_tail_turn_relative','minecpm_fixed16_tts_eos'].includes(data?.protocol) && !!data.audio_inputs?.find(a => a.source?.block_index === unit && a.source?.synthetic && a.source?.kind === 'silence');
+  const minecpm = data => ['minecpm_fixed16_tts_eos','minecpm_fixed16_tts_eos_post_chunk'].includes(data?.protocol);
+  const postChunk = data => data?.protocol === 'minecpm_fixed16_tts_eos_post_chunk';
+  const syntheticInput = (data, unit) => data?.mode !== 'native_inference' && (minecpm(data) || ['minicpm_tail_delayed_eos','minicpm_tail_turn_relative'].includes(data?.protocol)) && !!data.audio_inputs?.find(a => a.source?.block_index === unit && a.source?.synthetic && a.source?.kind === 'silence');
   const turnRelative = data => data?.mode !== 'native_inference' && data?.protocol === 'minicpm_tail_turn_relative';
   const timingLabel = row => `训练生成 unit ${row.generation_unit_index} · 原声学 unit ${row.source_unit_index} · 原声学对齐区间 [${(row.timeline_start_frame/16000).toFixed(3)}, ${(row.timeline_end_frame/16000).toFixed(3)}) 秒`;
   const actions = {151705:'listen',151706:'speak',151707:'interrupt',151717:'turn_eos'};
@@ -166,7 +167,11 @@
         const minecpmNote = !minecpm(d) ? '' : this.interruptionUnits().includes(u.unit)
           ? `<p class="tv-note">真正打断：直接监督 LISTEN；本 unit 不生成旧正文，也不插入 tts_eos。运行时应取消旧 TTS 与待播音频；这里是所在${this.unitSeconds()===1?'一秒':this.unitSeconds()+'秒'} unit 的训练标签。</p>`
           : d.input_ids.slice(u.start,u.end).includes(151704)
-          ? '<p class="tv-note">播放完成反馈：tts_eos 由外部播放端插入，label=-100；随后监督 LISTEN。此标记不由 Thinker 预测。</p>'
+          ? postChunk(d)
+            ? '<p class="tv-note">播放完成反馈：本 unit 保持 SPEAK；外部播放端在 chunk_eos 后、unit 结束前插入 tts_eos（label=-100），下一 unit 监督 LISTEN。</p>'
+            : '<p class="tv-note">播放完成反馈：tts_eos 由外部播放端插入，label=-100；随后监督 LISTEN。此标记不由 Thinker 预测。</p>'
+          : postChunk(d) && d.minecpm_external_inputs?.some(event=>event.listen_unit===u.unit)
+          ? '<p class="tv-note">正常转入 LISTEN：上一 unit 的 chunk_eos 后已收到外部 tts_eos；本 unit 的首个预测 token 为 LISTEN。</p>'
           : '';
         const wholeTurnShiftNote = turnRelative(d) ? (d.generation_unit_shift_records || []).filter(record=>record.target_unit_index===u.unit).map(record=>`<p class="tv-generation-timing">${escape(record.assistant_id)}：为避开前轮结束桶，本轮全部正文窗口顺延 1 unit；原录音与打断停声不变。</p>`).join('') : '';
         const generationRecords = turnRelative(d) ? this.textGenerationByUnit?.get(u.unit) || [] : [];
